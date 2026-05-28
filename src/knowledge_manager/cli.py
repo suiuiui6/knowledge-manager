@@ -28,6 +28,7 @@ from knowledge_manager.storage import (
     save_index,
     save_module,
     save_to_staging,
+    search_modules,
 )
 
 
@@ -151,15 +152,7 @@ def search(ctx: click.Context, query: str) -> None:
     kb = ctx.obj["kb_path"]
     _require_kb(kb)
 
-    q = query.lower()
-    words = q.split()
-    results = []
-    for m in list_modules(kb):
-        haystack = " ".join(
-            [m.title, m.summary, " ".join(m.metadata.tags), m.content.overview]
-        ).lower()
-        if any(w in haystack for w in words):
-            results.append(m)
+    results = search_modules(query, kb)
 
     if not results:
         click.echo("No matches.")

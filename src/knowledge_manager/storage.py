@@ -1,10 +1,14 @@
 import json
 import os
+import re
 import tempfile
 from pathlib import Path
 from typing import List, Optional
 
 from knowledge_manager.schemas import Index, Module
+
+
+_FIELD_WEIGHTS = {"title": 5, "tag": 3, "summary": 2, "overview": 1}
 
 
 def _atomic_write(path: Path, data: str) -> None:
@@ -46,6 +50,34 @@ def list_modules(kb_path: Path) -> List[Module]:
         except Exception:
             pass
     return modules
+
+
+def search_modules(query: str, kb_path: Path) -> List[Module]:
+    terms = query.lower().split()
+    if not terms:
+        return []
+    patterns = [re.compile(rf"\b{re.escape(t)}\b", re.IGNORECASE) for t in terms]
+
+    scored: List[tuple] = []
+    for m in list_modules(kb_path):
+        score = 0
+        for pat in patterns:
+            best = 0
+            if pat.search(m.title):
+                best = _FIELD_WEIGHTS["title"]
+            else:
+                if any(pat.search(tag) for tag in m.metadata.tags):
+                    best = max(best, _FIELD_WEIGHTS["tag"])
+                if pat.search(m.summary):
+                    best = max(best, _FIELD_WEIGHTS["summary"])
+                if pat.search(m.content.overview):
+                    best = max(best, _FIELD_WEIGHTS["overview"])
+            score += best
+        if score > 0:
+            scored.append((score, m))
+
+    scored.sort(key=lambda pair: pair[0], reverse=True)
+    return [m for _, m in scored]
 
 
 def save_index(index: Index, kb_path: Path) -> None:

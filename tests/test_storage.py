@@ -7,6 +7,7 @@ from knowledge_manager.storage import (
     save_module, load_module, delete_module, list_modules,
     save_index, load_index, rebuild_index,
     save_to_staging, list_staging, load_from_staging, approve_from_staging,
+    search_modules,
 )
 
 
@@ -134,3 +135,71 @@ def test_approve_from_staging(staging_path, kb_path):
     approve_from_staging("test-module", staging_path, kb_path)
     assert load_module("test-module", "general", kb_path) is not None
     assert load_from_staging("test-module", staging_path) is None
+
+
+def _kb_with_signals(kb_path: Path) -> None:
+    save_module(Module(
+        id="jwt", category="auth",
+        title="JWT signing and validation",
+        summary="Issuing and validating JSON Web Tokens with RS256",
+        content=ModuleContent(
+            overview="A JWT is a compact token signed with RS256.",
+            details="Signing uses an RSA private key; gateways validate via JWKS.",
+        ),
+        metadata=ModuleMetadata(tags=["jwt", "authentication", "rs256"]),
+    ), kb_path)
+    save_module(Module(
+        id="conn-pool", category="database",
+        title="Database connection pooling",
+        summary="Sizing and lifecycle of database connection pools for Postgres",
+        content=ModuleContent(
+            overview="Pool keeps connections so requests skip the TCP+TLS+auth handshake.",
+            details="Right-size the pool; Postgres prefers a small number of busy connections.",
+        ),
+        metadata=ModuleMetadata(tags=["database", "postgres", "performance"]),
+    ), kb_path)
+
+
+def test_search_modules_empty_query_returns_empty(kb_path):
+    _kb_with_signals(kb_path)
+    assert search_modules("", kb_path) == []
+    assert search_modules("   ", kb_path) == []
+
+
+def test_search_modules_no_match_returns_empty(kb_path):
+    _kb_with_signals(kb_path)
+    assert search_modules("kubernetes ingress", kb_path) == []
+
+
+def test_search_modules_uses_word_boundaries(kb_path):
+    # "auth" appears as a standalone word only in conn-pool's overview
+    # ("TCP+TLS+auth"). JWT module has "authentication" — substring match
+    # would falsely surface it, but word-boundary match should not.
+    _kb_with_signals(kb_path)
+    results = search_modules("auth", kb_path)
+    ids = [m.id for m in results]
+    assert "conn-pool" in ids
+    assert "jwt" not in ids
+
+
+def test_search_modules_ranks_title_above_overview(kb_path):
+    # Query "signing auth" — jwt matches "signing" in title (weight 5);
+    # conn-pool matches "auth" in overview (weight 1). jwt should rank first.
+    _kb_with_signals(kb_path)
+    results = search_modules("signing auth", kb_path)
+    ids = [m.id for m in results]
+    assert ids[0] == "jwt"
+    assert ids == ["jwt", "conn-pool"]
+
+
+def test_search_modules_filters_out_zero_score(kb_path):
+    # Query that matches nothing should return empty even when modules exist
+    _kb_with_signals(kb_path)
+    assert search_modules("nonexistentterm", kb_path) == []
+
+
+def test_search_modules_case_insensitive(kb_path):
+    _kb_with_signals(kb_path)
+    lower = search_modules("jwt", kb_path)
+    upper = search_modules("JWT", kb_path)
+    assert [m.id for m in lower] == [m.id for m in upper]

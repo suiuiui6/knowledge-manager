@@ -3,7 +3,7 @@ from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
 
-from knowledge_manager.storage import load_index, load_module, list_modules
+from knowledge_manager.storage import load_index, load_module, search_modules
 
 
 def create_server(kb_path: Path) -> FastMCP:
@@ -26,24 +26,18 @@ def create_server(kb_path: Path) -> FastMCP:
 
     @mcp.tool(name="search_modules")
     def search_modules_tool(query: str) -> str:
-        """Search modules by keyword match against title, summary, and tags."""
-        modules = list_modules(kb_path)
-        query_lower = query.lower()
-        results = []
-        for m in modules:
-            searchable = " ".join([
-                m.title, m.summary,
-                " ".join(m.metadata.tags),
-                m.content.overview,
-            ]).lower()
-            if any(word in searchable for word in query_lower.split()):
-                results.append({
-                    "id": m.id,
-                    "category": m.category,
-                    "title": m.title,
-                    "summary": m.summary,
-                    "tags": m.metadata.tags,
-                })
+        """Search modules by keyword. Word-boundary matching across title, tags,
+        summary, and overview; results scored and sorted by relevance."""
+        results = [
+            {
+                "id": m.id,
+                "category": m.category,
+                "title": m.title,
+                "summary": m.summary,
+                "tags": m.metadata.tags,
+            }
+            for m in search_modules(query, kb_path)
+        ]
         return json.dumps(results, indent=2)
 
     @mcp.tool(name="list_categories")
