@@ -1,0 +1,26 @@
+{
+  "id": "connection-pool",
+  "category": "database",
+  "title": "Database connection pooling",
+  "summary": "Sizing, lifecycle, and pitfalls of database connection pools for our Postgres workloads.",
+  "created_at": "2026-05-28T11:53:08.501312",
+  "updated_at": "2026-05-28T11:53:08.501312",
+  "content": {
+    "overview": "A connection pool keeps a bounded set of open database connections so that requests do not pay the TCP+TLS+auth handshake on every query. Right-sizing the pool is more important than raising the max — Postgres performs best with a small number of busy connections.",
+    "details": "Rule of thumb for Postgres: pool size = ((core_count * 2) + effective_spindle_count) per app instance, capped well below max_connections. Use a connection-level timeout (e.g., 5s) and an acquisition timeout (e.g., 1s) so clients fail fast under load instead of queueing forever. Health-check connections cheaply (SELECT 1) before issuing user queries, and recycle connections older than ~30 minutes to handle network/firewall idle drops.",
+    "examples": "asyncpg pool: asyncpg.create_pool(dsn, min_size=5, max_size=20, max_inactive_connection_lifetime=1800). HikariCP: maximumPoolSize=20, connectionTimeout=1000, idleTimeout=600000, maxLifetime=1800000.",
+    "references": "https://www.postgresql.org/docs/current/runtime-config-connection.html, https://github.com/brettwooldridge/HikariCP/wiki/About-Pool-Sizing",
+    "caveats": "A single oversized pool per app times many app instances equals thundering herd on Postgres. Consider PgBouncer in transaction mode in front of Postgres if you must scale instances. Long-running transactions hold a pool slot — never start a transaction before doing slow external I/O."
+  },
+  "metadata": {
+    "tags": [
+      "database",
+      "postgres",
+      "performance",
+      "connection-pool"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": "internal-runbook"
+  }
+}

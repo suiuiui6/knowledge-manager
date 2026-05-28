@@ -1,0 +1,64 @@
+{
+  "version": "1.0",
+  "description": "",
+  "categories": {
+    "auth": {
+      "name": "auth",
+      "description": "",
+      "modules": [
+        {
+          "id": "jwt-tokens",
+          "category": "auth",
+          "title": "JWT signing and validation",
+          "summary": "How JSON Web Tokens are issued, signed with RS256, and validated in our API gateway.",
+          "tags": [
+            "jwt",
+            "authentication",
+            "security",
+            "rs256"
+          ],
+          "word_count": 180
+        },
+        {
+          "id": "oauth-flow",
+          "category": "auth",
+          "title": "OAuth 2.0 authorization code flow",
+          "summary": "End-to-end implementation of the OAuth 2.0 authorization code grant for server-side web apps.",
+          "tags": [
+            "oauth",
+            "authentication",
+            "security",
+            "api"
+          ],
+          "word_count": 162
+        }
+      ]
+    },
+    "database": {
+      "name": "database",
+      "description": "",
+      "modules": [
+        {
+          "id": "connection-pool",
+          "category": "database",
+          "title": "Database connection pooling",
+          "summary": "Sizing, lifecycle, and pitfalls of database connection pools for our Postgres workloads.",
+          "tags": [
+            "database",
+            "postgres",
+            "performance",
+            "connection-pool"
+          ],
+          "word_count": 165
+        }
+      ]
+    }
+  },
+  "stats": {
+    "total_modules": 3,
+    "total_words": 507,
+    "categories": 2,
+    "last_updated": "2026-05-28T11:53:08.511367"
+  },
+  "updated_at": "2026-05-28T11:53:08.511369"
+}

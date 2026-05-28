@@ -1,0 +1,28 @@
+{
+  "id": "jwt-tokens",
+  "category": "auth",
+  "title": "JWT signing and validation",
+  "summary": "How JSON Web Tokens are issued, signed with RS256, and validated in our API gateway.",
+  "created_at": "2026-05-28T11:53:08.501304",
+  "updated_at": "2026-05-28T11:53:08.501304",
+  "content": {
+    "overview": "A JWT is a compact, URL-safe token consisting of three base64url-encoded segments: header, payload, and signature. We use RS256 (RSA + SHA-256) so that services can validate tokens with the public key without holding the signing key.",
+    "details": "Issuance: the auth service holds a private RSA key and signs a payload containing sub, iat, exp, aud, and any role claims. Lifetime is 24 hours; refresh is handled separately. Validation at the gateway: (1) decode header, confirm alg=RS256 and a known kid, (2) fetch the corresponding public key from the JWKS endpoint, (3) verify the signature, (4) check exp, nbf, aud, and iss. Rotate keys by adding a new kid to JWKS before retiring the old one.",
+    "examples": "Decoded header: {alg: RS256, kid: 2026-q2, typ: JWT}. Decoded payload: {sub: user_123, iat: 1716800000, exp: 1716886400, aud: api.example.com, roles: [user]}.",
+    "references": "RFC 7519 (JWT), RFC 7517 (JWK), https://jwt.io",
+    "caveats": "Never accept alg=none. Reject HS256 tokens at gateways that expect RS256 (algorithm-confusion attack). Do not store sensitive PII in the payload — JWTs are signed but not encrypted. Set short exp; rely on refresh tokens for long sessions."
+  },
+  "metadata": {
+    "tags": [
+      "jwt",
+      "authentication",
+      "security",
+      "rs256"
+    ],
+    "related_modules": [
+      "auth/oauth-flow"
+    ],
+    "confidence": "high",
+    "source": "internal-runbook"
+  }
+}

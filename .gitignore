@@ -45,4 +45,5 @@ test_kb/
 
 # Config with secrets
 config.json
+!examples/sample_knowledge_base/config.json
 .env

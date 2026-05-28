@@ -1,0 +1,28 @@
+{
+  "id": "oauth-flow",
+  "category": "auth",
+  "title": "OAuth 2.0 authorization code flow",
+  "summary": "End-to-end implementation of the OAuth 2.0 authorization code grant for server-side web apps.",
+  "created_at": "2026-05-28T11:53:08.501290",
+  "updated_at": "2026-05-28T11:53:08.501295",
+  "content": {
+    "overview": "OAuth 2.0 is an authorization framework that lets a third-party application obtain limited access to an HTTP service on behalf of a resource owner. The authorization code flow is the recommended grant type for server-side applications.",
+    "details": "Steps: (1) Register the application with the provider to obtain client_id and client_secret. (2) Redirect the user to the provider authorization endpoint with response_type=code, client_id, redirect_uri, scope, and state. (3) The provider redirects back with code and state on the redirect_uri. (4) The server exchanges the code for an access_token (and optionally refresh_token) at the token endpoint, authenticated with client_secret. (5) The access_token is then used in Authorization Bearer headers to call protected APIs.",
+    "examples": "Authorization URL: https://provider.com/oauth/authorize?response_type=code&client_id=abc123&redirect_uri=https://app.example.com/callback&scope=read+write&state=xyz. Token exchange: POST /oauth/token with grant_type=authorization_code&code=...&redirect_uri=...&client_id=...&client_secret=...",
+    "references": "RFC 6749 (OAuth 2.0), RFC 7636 (PKCE), https://oauth.net/2/",
+    "caveats": "Always use HTTPS. Validate the state parameter to prevent CSRF. Store client_secret server-side only — never embed it in mobile or browser code; use PKCE for public clients instead. Treat refresh tokens as highly sensitive."
+  },
+  "metadata": {
+    "tags": [
+      "oauth",
+      "authentication",
+      "security",
+      "api"
+    ],
+    "related_modules": [
+      "auth/jwt-tokens"
+    ],
+    "confidence": "high",
+    "source": "internal-runbook"
+  }
+}
