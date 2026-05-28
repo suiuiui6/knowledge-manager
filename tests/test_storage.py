@@ -49,18 +49,19 @@ def test_save_creates_category_dir(kb_path):
 
 
 def test_save_is_atomic(kb_path, monkeypatch):
-    # Verify no partial file left if rename fails
+    # Verify no partial file left if replace fails
+    import os
     module = make_module()
-    original_rename = Path.rename
+    original_replace = os.replace
 
     call_count = [0]
-    def fail_rename(self, target):
+    def fail_replace(src, dst):
         call_count[0] += 1
         if call_count[0] == 1:
             raise OSError("simulated failure")
-        return original_rename(self, target)
+        return original_replace(src, dst)
 
-    monkeypatch.setattr(Path, "rename", fail_rename)
+    monkeypatch.setattr("knowledge_manager.storage.os.replace", fail_replace)
     with pytest.raises(OSError):
         save_module(module, kb_path)
     # No partial file should remain at final path

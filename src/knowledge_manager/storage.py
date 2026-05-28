@@ -1,4 +1,5 @@
 import json
+import os
 import tempfile
 from pathlib import Path
 from typing import List, Optional
@@ -10,7 +11,7 @@ def _atomic_write(path: Path, data: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".tmp")
     tmp.write_text(data, encoding="utf-8")
-    tmp.rename(path)
+    os.replace(tmp, path)
 
 
 def save_module(module: Module, kb_path: Path) -> None:
