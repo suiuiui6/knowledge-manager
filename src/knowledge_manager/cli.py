@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import sys
 from pathlib import Path
 from typing import Optional
@@ -33,6 +34,7 @@ from knowledge_manager.storage import (
 
 
 console = Console()
+logger = logging.getLogger("knowledge_manager")
 
 
 def _config_path(kb_path: Path) -> Path:
@@ -68,11 +70,29 @@ def _require_kb(kb_path: Path) -> None:
     default=Path.cwd(),
     help="Path to the knowledge base directory",
 )
+@click.option(
+    "--verbose",
+    "-v",
+    is_flag=True,
+    help="Enable verbose logging output",
+)
 @click.pass_context
-def cli(ctx: click.Context, kb_path: Path) -> None:
+def cli(ctx: click.Context, kb_path: Path, verbose: bool) -> None:
     """Knowledge Manager — lightweight AI knowledge management."""
     ctx.ensure_object(dict)
     ctx.obj["kb_path"] = Path(kb_path)
+    ctx.obj["verbose"] = verbose
+
+    # Configure logging
+    if verbose:
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+            datefmt="%H:%M:%S",
+        )
+        logger.debug("Verbose logging enabled")
+    else:
+        logging.basicConfig(level=logging.WARNING)
 
 
 @cli.command()
@@ -291,17 +311,28 @@ def add(ctx: click.Context, file: Path, category: str) -> None:
     kb = ctx.obj["kb_path"]
     _require_kb(kb)
 
+    logger.info(f"Reading file: {file}")
     text = file.read_text(encoding="utf-8")
+    logger.debug(f"File size: {len(text)} characters")
+
+    logger.info("Loading configuration")
     cfg = _load_config(kb)
     provider_name, provider_cfg = cfg.get_default_provider()
+    logger.info(f"Using LLM provider: {provider_name} (model: {provider_cfg.model})")
+
+    logger.info("Creating LLM client")
     client = create_client(provider_name, provider_cfg)
     extractor = Extractor(client, cfg.extraction)
 
+    logger.info(f"Extracting modules (category: {category}, max: {cfg.extraction.max_modules_per_extraction})")
     modules = asyncio.run(extractor.extract(text, category))
+    logger.debug(f"Extraction returned {len(modules)} modules")
 
     staging = _staging_path(kb)
     staging.mkdir(exist_ok=True)
+    logger.info(f"Saving to staging: {staging}")
     for m in modules:
+        logger.debug(f"Saving module: {m.id}")
         save_to_staging(m, staging)
 
     click.echo(f"Extracted {len(modules)} module(s) into staging")

@@ -1,11 +1,15 @@
 import re
 import json
+import logging
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 
 import httpx
 
 from knowledge_manager.schemas import LLMProviderConfig
+
+
+logger = logging.getLogger(__name__)
 
 
 class BaseLLMClient(ABC):
@@ -26,15 +30,28 @@ class DeepSeekClient(BaseLLMClient):
             "temperature": self.config.temperature,
             "max_tokens": self.config.max_tokens,
         }
+        logger.debug(f"DeepSeek API call: {url}")
+        logger.debug(f"Model: {self.config.model}, temp: {self.config.temperature}, max_tokens: {self.config.max_tokens}")
+
         async with httpx.AsyncClient() as client:
-            resp = await client.post(
-                url,
-                json=payload,
-                headers={"Authorization": f"Bearer {self.config.api_key}"},
-                timeout=60,
-            )
-            resp.raise_for_status()
-            return resp.json()["choices"][0]["message"]["content"]
+            try:
+                resp = await client.post(
+                    url,
+                    json=payload,
+                    headers={"Authorization": f"Bearer {self.config.api_key}"},
+                    timeout=60,
+                )
+                resp.raise_for_status()
+                result = resp.json()
+                content = result["choices"][0]["message"]["content"]
+                logger.debug(f"DeepSeek response: {len(content)} characters")
+                return content
+            except httpx.HTTPStatusError as e:
+                logger.error(f"DeepSeek API error: {e.response.status_code} - {e.response.text}")
+                raise
+            except Exception as e:
+                logger.error(f"DeepSeek API call failed: {e}")
+                raise
 
 
 class ClaudeClient(BaseLLMClient):
