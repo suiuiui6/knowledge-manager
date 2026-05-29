@@ -56,28 +56,61 @@ def search_modules(query: str, kb_path: Path) -> List[Module]:
     terms = query.lower().split()
     if not terms:
         return []
-    patterns = [re.compile(rf"\b{re.escape(t)}\b", re.IGNORECASE) for t in terms]
+
+    # For each term, create both word-boundary and partial-match patterns
+    # Short terms (<5 chars) get partial matching to handle abbreviations
+    patterns = []
+    for t in terms:
+        word_boundary = re.compile(rf"\b{re.escape(t)}\b", re.IGNORECASE)
+        partial = re.compile(re.escape(t), re.IGNORECASE) if len(t) < 5 else None
+        patterns.append((word_boundary, partial))
 
     scored: List[tuple] = []
     for m in list_modules(kb_path):
         score = 0
-        for pat in patterns:
-            best = 0
-            if pat.search(m.title):
-                best = _FIELD_WEIGHTS["title"]
-            else:
-                if any(pat.search(tag) for tag in m.metadata.tags):
-                    best = max(best, _FIELD_WEIGHTS["tag"])
-                if pat.search(m.summary):
-                    best = max(best, _FIELD_WEIGHTS["summary"])
-                if pat.search(m.content.overview):
-                    best = max(best, _FIELD_WEIGHTS["overview"])
-            score += best
-        if score > 0:
-            scored.append((score, m))
+        is_word_boundary = False  # Track if any match was word-boundary
 
-    scored.sort(key=lambda pair: pair[0], reverse=True)
-    return [m for _, m in scored]
+        for word_pat, partial_pat in patterns:
+            best = 0
+            matched_word_boundary = False
+
+            # Try word boundary match first (full weight)
+            if word_pat.search(m.title):
+                best = _FIELD_WEIGHTS["title"]
+                matched_word_boundary = True
+            elif any(word_pat.search(tag) for tag in m.metadata.tags):
+                best = max(best, _FIELD_WEIGHTS["tag"])
+                matched_word_boundary = True
+            elif word_pat.search(m.summary):
+                best = max(best, _FIELD_WEIGHTS["summary"])
+                matched_word_boundary = True
+            elif word_pat.search(m.content.overview):
+                best = max(best, _FIELD_WEIGHTS["overview"])
+                matched_word_boundary = True
+
+            # If no word boundary match and partial pattern exists, try partial match (half weight)
+            if best == 0 and partial_pat:
+                if partial_pat.search(m.title):
+                    best = _FIELD_WEIGHTS["title"] // 2
+                elif any(partial_pat.search(tag) for tag in m.metadata.tags):
+                    best = max(best, _FIELD_WEIGHTS["tag"] // 2)
+                elif partial_pat.search(m.summary):
+                    best = max(best, _FIELD_WEIGHTS["summary"] // 2)
+                elif partial_pat.search(m.content.overview):
+                    best = max(best, _FIELD_WEIGHTS["overview"] // 2)
+
+            score += best
+            if matched_word_boundary:
+                is_word_boundary = True
+
+        if score > 0:
+            # Use tuple (score, is_word_boundary, module) for sorting
+            # Higher score first, then word-boundary matches before partial matches
+            scored.append((score, is_word_boundary, m))
+
+    # Sort by score (desc), then by word_boundary flag (True before False)
+    scored.sort(key=lambda item: (item[0], item[1]), reverse=True)
+    return [m for _, _, m in scored]
 
 
 def save_index(index: Index, kb_path: Path) -> None:

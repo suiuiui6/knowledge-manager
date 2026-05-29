@@ -172,14 +172,20 @@ def test_search_modules_no_match_returns_empty(kb_path):
 
 
 def test_search_modules_uses_word_boundaries(kb_path):
-    # "auth" appears as a standalone word only in conn-pool's overview
-    # ("TCP+TLS+auth"). JWT module has "authentication" — substring match
-    # would falsely surface it, but word-boundary match should not.
+    # "auth" is a short term (<5 chars), so it uses both word-boundary and partial matching.
+    # conn-pool has "auth" as standalone word in overview ("TCP+TLS+auth") → word boundary match
+    # jwt has "authentication" tag → partial match (lower score)
+    # Both should be found, but conn-pool should rank higher due to word boundary match
     _kb_with_signals(kb_path)
     results = search_modules("auth", kb_path)
     ids = [m.id for m in results]
-    assert "conn-pool" in ids
-    assert "jwt" not in ids
+
+    # Both modules should be found
+    assert "conn-pool" in ids, "Should find conn-pool via word boundary match"
+    assert "jwt" in ids, "Should find jwt via partial match on 'authentication' tag"
+
+    # conn-pool should rank higher (word boundary match > partial match)
+    assert ids.index("conn-pool") < ids.index("jwt"), "Word boundary match should rank higher than partial match"
 
 
 def test_search_modules_ranks_title_above_overview(kb_path):
@@ -203,3 +209,40 @@ def test_search_modules_case_insensitive(kb_path):
     lower = search_modules("jwt", kb_path)
     upper = search_modules("JWT", kb_path)
     assert [m.id for m in lower] == [m.id for m in upper]
+
+
+def test_search_modules_short_term_partial_match(kb_path):
+    """Short terms (<5 chars) should use partial matching to find results."""
+    _kb_with_signals(kb_path)
+
+    # "auth" should match "authentication" in tags via partial match
+    results = search_modules("auth", kb_path)
+    assert len(results) > 0, "Short term 'auth' should return results via partial matching"
+
+    # Should find the jwt module (has "authentication" tag)
+    ids = [m.id for m in results]
+    assert "jwt" in ids, "Should find jwt module with 'authentication' tag"
+
+
+def test_search_modules_short_term_lower_score(kb_path):
+    """Partial matches should score lower than word-boundary matches."""
+    _kb_with_signals(kb_path)
+
+    # Create a module with exact "auth" word boundary match
+    exact_match = Module(
+        id="auth-exact",
+        category="auth",
+        title="Auth System",
+        summary="Authentication and authorization system",
+        content=ModuleContent(
+            overview="Auth system overview",
+            details="Auth system handles authentication"
+        ),
+        metadata=ModuleMetadata(tags=["auth", "security"])
+    )
+    save_module(exact_match, kb_path)
+
+    results = search_modules("auth", kb_path)
+
+    # The exact match should rank higher than partial matches
+    assert results[0].id == "auth-exact", "Exact word boundary match should rank first"
