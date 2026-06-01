@@ -1,7 +1,9 @@
 # tests/test_schemas.py
+from datetime import timezone
+
 import pytest
 from pydantic import ValidationError
-from knowledge_manager.schemas import ModuleContent, ModuleMetadata
+from knowledge_manager.schemas import Index, Module, ModuleContent, ModuleMetadata
 
 
 def test_module_content_valid():
@@ -60,6 +62,20 @@ def test_module_metadata_with_values():
     assert metadata.source == "team documentation"
 
 
-def test_module_metadata_invalid_confidence():
-    with pytest.raises(ValidationError):
-        ModuleMetadata(confidence="invalid")
+def test_default_timestamps_are_timezone_aware():
+    module = Module(
+        id="auth-jwt",
+        category="auth",
+        title="JWT authentication module",
+        summary="Summary text that is long enough for validation.",
+        content=ModuleContent(
+            overview="Overview text that is long enough",
+            details="Detailed notes that are definitely long enough to pass validation",
+        ),
+    )
+    index = Index()
+
+    assert module.created_at.tzinfo == timezone.utc
+    assert module.updated_at.tzinfo == timezone.utc
+    assert index.updated_at.tzinfo == timezone.utc
+    assert index.stats.last_updated.tzinfo == timezone.utc

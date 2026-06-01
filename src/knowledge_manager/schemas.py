@@ -1,8 +1,12 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Literal, Optional, Tuple
 
 from pydantic import BaseModel, Field
+
+
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 class ModuleContent(BaseModel):
@@ -25,8 +29,8 @@ class Module(BaseModel):
     category: str
     title: str = Field(..., min_length=5)
     summary: str = Field(..., min_length=10, max_length=500)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
     content: ModuleContent
     metadata: ModuleMetadata = Field(default_factory=ModuleMetadata)
 
@@ -63,7 +67,7 @@ class IndexStats(BaseModel):
     total_modules: int = 0
     total_words: int = 0
     categories: int = 0
-    last_updated: datetime = Field(default_factory=datetime.utcnow)
+    last_updated: datetime = Field(default_factory=utc_now)
 
 
 class Index(BaseModel):
@@ -71,7 +75,7 @@ class Index(BaseModel):
     description: str = ""
     categories: Dict[str, IndexCategory] = Field(default_factory=dict)
     stats: IndexStats = Field(default_factory=IndexStats)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=utc_now)
 
     def add_module(self, module: Module) -> None:
         if module.category not in self.categories:
@@ -107,7 +111,7 @@ class Index(BaseModel):
             total_words=total_words,
             categories=len(self.categories),
         )
-        self.updated_at = datetime.utcnow()
+        self.updated_at = utc_now()
 
 
 class LLMProviderConfig(BaseModel):
@@ -122,6 +126,8 @@ class LLMProviderConfig(BaseModel):
 class ExtractionConfig(BaseModel):
     provider: str = "deepseek"
     max_modules_per_extraction: int = 10
+    chunk_size: int = 8000
+    chunk_overlap: int = 400
 
 
 class CacheConfig(BaseModel):

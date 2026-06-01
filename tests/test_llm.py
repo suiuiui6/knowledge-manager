@@ -1,9 +1,10 @@
 import json
+import logging
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from knowledge_manager.schemas import LLMProviderConfig, ExtractionConfig
 from knowledge_manager.llm_clients import DeepSeekClient, ClaudeClient, OpenAIClient, create_client
-from knowledge_manager.extractor import Extractor
+from knowledge_manager.extractor import Extractor, _chunk_text
 
 
 def make_deepseek_config(**kwargs) -> LLMProviderConfig:
@@ -97,6 +98,31 @@ async def test_openai_calls_correct_endpoint():
         assert "openai.com" in call_kwargs[0][0]
 
 
+@pytest.mark.asyncio
+async def test_llm_client_logs_metadata_without_prompt_leak(caplog):
+    prompt = "top secret prompt body"
+    mock_response = MagicMock()
+    mock_response.json.return_value = MOCK_OPENAI_RESPONSE
+    mock_response.raise_for_status = MagicMock()
+
+    with patch("httpx.AsyncClient") as mock_client_cls:
+        mock_client = AsyncMock()
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=False)
+        mock_client.post = AsyncMock(return_value=mock_response)
+        mock_client_cls.return_value = mock_client
+
+        client = DeepSeekClient(make_deepseek_config())
+        with caplog.at_level(logging.DEBUG, logger="knowledge_manager.llm_clients"):
+            result = await client.complete(prompt)
+
+    assert result == "hello"
+    assert any("request prepared" in record.getMessage() for record in caplog.records)
+    assert any("response received" in record.getMessage() for record in caplog.records)
+    assert prompt not in caplog.text
+    assert "hello" not in caplog.text
+
+
 def test_create_client_deepseek():
     client = create_client("deepseek", make_deepseek_config())
     assert isinstance(client, DeepSeekClient)
@@ -187,3 +213,97 @@ async def test_extractor_respects_max_modules():
     extractor = Extractor(mock_llm, ExtractionConfig(max_modules_per_extraction=5))
     modules = await extractor.extract("raw text", "general")
     assert len(modules) <= 5
+
+
+# --- Chunking tests ---
+
+
+def test_chunk_text_no_split_when_small():
+    assert _chunk_text("short", 8000, 400) == ["short"]
+
+
+def test_chunk_text_splits_with_overlap():
+    text = "abcdefghij"  # 10 chars
+    chunks = _chunk_text(text, chunk_size=4, overlap=1)
+    assert chunks == ["abcd", "defg", "ghij"]
+    # overlap: end of one chunk reappears at start of next
+    assert chunks[0][-1] == chunks[1][0]
+
+
+def test_chunk_text_zero_size_returns_whole():
+    assert _chunk_text("anything", 0, 0) == ["anything"]
+
+
+def _module_json(mod_id: str) -> dict:
+    return {
+        "id": mod_id,
+        "title": f"Title for {mod_id}",
+        "summary": f"Summary for {mod_id} which is long enough to pass validation",
+        "content": {
+            "overview": "Overview text that is long enough",
+            "details": "Details text that is definitely long enough to pass",
+        },
+        "metadata": {"tags": ["t"], "confidence": "high"},
+    }
+
+
+@pytest.mark.asyncio
+async def test_extractor_aggregates_across_chunks():
+    chunk1 = json.dumps([_module_json("alpha"), _module_json("beta")])
+    chunk2 = json.dumps([_module_json("gamma")])
+    mock_llm = AsyncMock()
+    mock_llm.complete = AsyncMock(side_effect=[chunk1, chunk2])
+
+    # chunk_size=5 forces "0123456789" into multiple chunks
+    cfg = ExtractionConfig(chunk_size=5, chunk_overlap=0)
+    extractor = Extractor(mock_llm, cfg)
+    modules = await extractor.extract("0123456789", "general")
+
+    assert mock_llm.complete.await_count == 2
+    assert [m.id for m in modules] == ["alpha", "beta", "gamma"]
+
+
+@pytest.mark.asyncio
+async def test_extractor_dedupes_ids_across_chunks():
+    chunk1 = json.dumps([_module_json("dup"), _module_json("alpha")])
+    chunk2 = json.dumps([_module_json("dup"), _module_json("beta")])
+    mock_llm = AsyncMock()
+    mock_llm.complete = AsyncMock(side_effect=[chunk1, chunk2])
+
+    cfg = ExtractionConfig(chunk_size=5, chunk_overlap=0)
+    extractor = Extractor(mock_llm, cfg)
+    modules = await extractor.extract("0123456789", "general")
+
+    assert [m.id for m in modules] == ["dup", "alpha", "beta"]
+
+
+@pytest.mark.asyncio
+async def test_extractor_global_cap_across_chunks():
+    chunk1 = json.dumps([_module_json("a"), _module_json("b")])
+    chunk2 = json.dumps([_module_json("c"), _module_json("d")])
+    mock_llm = AsyncMock()
+    mock_llm.complete = AsyncMock(side_effect=[chunk1, chunk2])
+
+    cfg = ExtractionConfig(max_modules_per_extraction=3, chunk_size=5, chunk_overlap=0)
+    extractor = Extractor(mock_llm, cfg)
+    modules = await extractor.extract("0123456789", "general")
+
+    assert len(modules) == 3
+    assert [m.id for m in modules] == ["a", "b", "c"]
+
+
+@pytest.mark.asyncio
+async def test_extractor_logs_metadata_without_content_leak(caplog):
+    raw_text = "private source material with credentials-like text"
+    mock_llm = AsyncMock()
+    mock_llm.complete = AsyncMock(return_value=VALID_EXTRACTION_JSON)
+
+    extractor = Extractor(mock_llm, ExtractionConfig())
+    with caplog.at_level(logging.DEBUG, logger="knowledge_manager.extractor"):
+        modules = await extractor.extract(raw_text, "auth")
+
+    assert len(modules) == 1
+    assert any("Extracting category=auth" in record.getMessage() for record in caplog.records)
+    assert any("Prepared prompt" in record.getMessage() for record in caplog.records)
+    assert raw_text not in caplog.text
+    assert VALID_EXTRACTION_JSON not in caplog.text

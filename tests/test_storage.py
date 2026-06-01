@@ -7,7 +7,7 @@ from knowledge_manager.storage import (
     save_module, load_module, delete_module, list_modules,
     save_index, load_index, rebuild_index,
     save_to_staging, list_staging, load_from_staging, approve_from_staging,
-    search_modules,
+    _stem, search_modules,
 )
 
 
@@ -246,3 +246,55 @@ def test_search_modules_short_term_lower_score(kb_path):
 
     # The exact match should rank higher than partial matches
     assert results[0].id == "auth-exact", "Exact word boundary match should rank first"
+
+
+
+def test_stem_reduces_morphological_variants():
+    assert _stem("validation") == "valid"
+    assert _stem("validating") == "valid"
+    assert _stem("validate") == "valid"
+    assert _stem("running") == "run"
+    assert _stem("connections") == "connect"
+    assert _stem("SIGNING") == "sign"
+
+
+
+def test_search_modules_stem_matches_long_term(kb_path):
+    _kb_with_signals(kb_path)
+
+    results = search_modules("validate", kb_path)
+    ids = [m.id for m in results]
+
+    assert "jwt" in ids
+
+
+
+def test_search_modules_stem_matches_pooling_query(kb_path):
+    _kb_with_signals(kb_path)
+
+    results = search_modules("pooling", kb_path)
+    ids = [m.id for m in results]
+
+    assert "conn-pool" in ids
+
+
+
+def test_search_modules_exact_ranks_above_stem(kb_path):
+    _kb_with_signals(kb_path)
+    save_module(Module(
+        id="validate-guide", category="auth",
+        title="Validate requests correctly",
+        summary="Guidance for outbound request authentication",
+        content=ModuleContent(
+            overview="Clients must sign each gateway request.",
+            details="Use the shared secret to sign each outbound request body.",
+        ),
+        metadata=ModuleMetadata(tags=["gateway"]),
+    ), kb_path)
+
+    results = search_modules("validate", kb_path)
+    ids = [m.id for m in results]
+
+    assert ids[0] == "validate-guide"
+    assert "jwt" in ids
+    assert ids.index("validate-guide") < ids.index("jwt")

@@ -1,4 +1,5 @@
 import json
+import logging
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
@@ -256,6 +257,47 @@ def test_cli_review_skip(cli_runner, initialized_kb):
     assert result.exit_code == 0
     # Skipped — should remain in staging
     assert (initialized_kb / ".staging" / "auth-jwt.json").exists()
+
+
+def test_cli_add_verbose_logs_only_metadata(cli_runner, initialized_kb, tmp_path, caplog):
+    src_file = tmp_path / "notes.txt"
+    raw_text = "Sensitive note about JWT authentication and internal claims."
+    src_file.write_text(raw_text)
+
+    sample = make_module("auth-jwt", "auth")
+
+    async def fake_extract(self, text, category):
+        logging.getLogger("knowledge_manager.extractor").debug(
+            "Extractor chunk processed (%s chars)", len(text)
+        )
+        return [sample]
+
+    with patch("knowledge_manager.cli.Extractor.extract", new=fake_extract):
+        with patch("knowledge_manager.cli.create_client") as mock_create:
+            mock_create.return_value = AsyncMock()
+            with caplog.at_level(logging.DEBUG, logger="knowledge_manager"):
+                result = cli_runner.invoke(
+                    cli,
+                    [
+                        "--verbose",
+                        "--kb-path",
+                        str(initialized_kb),
+                        "add",
+                        str(src_file),
+                        "-c",
+                        "auth",
+                    ],
+                )
+
+    assert result.exit_code == 0, result.output
+    assert any(
+        record.name == "knowledge_manager.extractor"
+        and "Extractor chunk processed" in record.getMessage()
+        for record in caplog.records
+    )
+    log_text = caplog.text
+    assert raw_text not in log_text
+    assert str(src_file) not in log_text
 
 
 def test_cli_review_empty_staging(cli_runner, initialized_kb):

@@ -1,8 +1,6 @@
-import re
-import json
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict
+from typing import Any, cast
 
 import httpx
 
@@ -30,8 +28,7 @@ class DeepSeekClient(BaseLLMClient):
             "temperature": self.config.temperature,
             "max_tokens": self.config.max_tokens,
         }
-        logger.debug(f"DeepSeek API call: {url}")
-        logger.debug(f"Model: {self.config.model}, temp: {self.config.temperature}, max_tokens: {self.config.max_tokens}")
+        logger.debug("DeepSeek request prepared for model=%s max_tokens=%s", self.config.model, self.config.max_tokens)
 
         async with httpx.AsyncClient() as client:
             try:
@@ -42,61 +39,89 @@ class DeepSeekClient(BaseLLMClient):
                     timeout=60,
                 )
                 resp.raise_for_status()
-                result = resp.json()
-                content = result["choices"][0]["message"]["content"]
-                logger.debug(f"DeepSeek response: {len(content)} characters")
+                result = cast(dict[str, Any], resp.json())
+                content = cast(str, result["choices"][0]["message"]["content"])
+                logger.debug("DeepSeek response received (%s characters)", len(content))
                 return content
             except httpx.HTTPStatusError as e:
-                logger.error(f"DeepSeek API error: {e.response.status_code} - {e.response.text}")
+                logger.error("DeepSeek API error: %s", e.response.status_code)
                 raise
-            except Exception as e:
-                logger.error(f"DeepSeek API call failed: {e}")
+            except Exception:
+                logger.exception("DeepSeek API call failed")
                 raise
 
 
 class ClaudeClient(BaseLLMClient):
     async def complete(self, prompt: str) -> str:
+        logger.debug(
+            "Claude request prepared for model=%s max_tokens=%s",
+            self.config.model,
+            self.config.max_tokens,
+        )
         async with httpx.AsyncClient() as client:
-            resp = await client.post(
-                "https://api.anthropic.com/v1/messages",
-                json={
-                    "model": self.config.model,
-                    "max_tokens": self.config.max_tokens,
-                    "messages": [{"role": "user", "content": prompt}],
-                },
-                headers={
-                    "x-api-key": self.config.api_key,
-                    "anthropic-version": "2023-06-01",
-                },
-                timeout=60,
-            )
-            resp.raise_for_status()
-            return resp.json()["content"][0]["text"]
+            try:
+                resp = await client.post(
+                    "https://api.anthropic.com/v1/messages",
+                    json={
+                        "model": self.config.model,
+                        "max_tokens": self.config.max_tokens,
+                        "messages": [{"role": "user", "content": prompt}],
+                    },
+                    headers={
+                        "x-api-key": self.config.api_key,
+                        "anthropic-version": "2023-06-01",
+                    },
+                    timeout=60,
+                )
+                resp.raise_for_status()
+                result = cast(dict[str, Any], resp.json())
+                content = cast(str, result["content"][0]["text"])
+                logger.debug("Claude response received (%s characters)", len(content))
+                return content
+            except httpx.HTTPStatusError as e:
+                logger.error("Claude API error: %s", e.response.status_code)
+                raise
+            except Exception:
+                logger.exception("Claude API call failed")
+                raise
 
 
 class OpenAIClient(BaseLLMClient):
     async def complete(self, prompt: str) -> str:
+        logger.debug(
+            "OpenAI request prepared for model=%s max_tokens=%s",
+            self.config.model,
+            self.config.max_tokens,
+        )
         async with httpx.AsyncClient() as client:
-            resp = await client.post(
-                "https://api.openai.com/v1/chat/completions",
-                json={
-                    "model": self.config.model,
-                    "messages": [{"role": "user", "content": prompt}],
-                    "temperature": self.config.temperature,
-                    "max_tokens": self.config.max_tokens,
-                },
-                headers={"Authorization": f"Bearer {self.config.api_key}"},
-                timeout=60,
-            )
-            resp.raise_for_status()
-            return resp.json()["choices"][0]["message"]["content"]
+            try:
+                resp = await client.post(
+                    "https://api.openai.com/v1/chat/completions",
+                    json={
+                        "model": self.config.model,
+                        "messages": [{"role": "user", "content": prompt}],
+                        "temperature": self.config.temperature,
+                        "max_tokens": self.config.max_tokens,
+                    },
+                    headers={"Authorization": f"Bearer {self.config.api_key}"},
+                    timeout=60,
+                )
+                resp.raise_for_status()
+                result = cast(dict[str, Any], resp.json())
+                content = cast(str, result["choices"][0]["message"]["content"])
+                logger.debug("OpenAI response received (%s characters)", len(content))
+                return content
+            except httpx.HTTPStatusError as e:
+                logger.error("OpenAI API error: %s", e.response.status_code)
+                raise
+            except Exception:
+                logger.exception("OpenAI API call failed")
+                raise
 
 
 def create_client(provider_name: str, config: LLMProviderConfig) -> BaseLLMClient:
-    clients = {
-        "deepseek": DeepSeekClient,
-        "claude": ClaudeClient,
-        "openai": OpenAIClient,
-    }
-    cls = clients.get(provider_name, DeepSeekClient)
-    return cls(config)
+    if provider_name == "claude":
+        return ClaudeClient(config)
+    if provider_name == "openai":
+        return OpenAIClient(config)
+    return DeepSeekClient(config)

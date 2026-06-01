@@ -3,12 +3,28 @@ import os
 import re
 import tempfile
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, List, Mapping, Optional, cast
+
+from snowballstemmer import stemmer as _snowball_stemmer  # type: ignore[import-untyped]
 
 from knowledge_manager.schemas import Index, Module
 
 
 _FIELD_WEIGHTS = {"title": 5, "tag": 3, "summary": 2, "overview": 1}
+_WORD_RE = re.compile(r"\w+")
+_EN_STEMMER: Any = _snowball_stemmer("english")
+
+_QUALITY_EXACT = 3
+_QUALITY_STEM = 2
+_QUALITY_PARTIAL = 1
+
+
+def _stem(word: str) -> str:
+    return cast(str, _EN_STEMMER.stemWord(word.lower()))
+
+
+def _field_stems(text: str) -> set[str]:
+    return {_stem(word) for word in _WORD_RE.findall(text)}
 
 
 def _atomic_write(path: Path, data: str) -> None:
@@ -57,60 +73,66 @@ def search_modules(query: str, kb_path: Path) -> List[Module]:
     if not terms:
         return []
 
-    # For each term, create both word-boundary and partial-match patterns
-    # Short terms (<5 chars) get partial matching to handle abbreviations
+    def score_term(
+        term: str,
+        fields: Mapping[str, str | list[str]],
+        field_stems: Mapping[str, set[str]],
+        word_pattern: re.Pattern[str],
+        partial_pattern: re.Pattern[str] | None,
+    ) -> tuple[int, int]:
+        for field_name in ("title", "tag", "summary", "overview"):
+            field_value = fields[field_name]
+            values = field_value if isinstance(field_value, list) else [field_value]
+            if any(word_pattern.search(value) for value in values):
+                return _FIELD_WEIGHTS[field_name], _QUALITY_EXACT
+
+        term_stem = _stem(term)
+        for field_name in ("title", "tag", "summary", "overview"):
+            if term_stem in field_stems[field_name]:
+                return _FIELD_WEIGHTS[field_name], _QUALITY_STEM
+
+        if partial_pattern is not None:
+            for field_name in ("title", "tag", "summary", "overview"):
+                field_value = fields[field_name]
+                values = field_value if isinstance(field_value, list) else [field_value]
+                if any(partial_pattern.search(value) for value in values):
+                    return _FIELD_WEIGHTS[field_name] // 2, _QUALITY_PARTIAL
+
+        return 0, 0
+
     patterns = []
-    for t in terms:
-        word_boundary = re.compile(rf"\b{re.escape(t)}\b", re.IGNORECASE)
-        partial = re.compile(re.escape(t), re.IGNORECASE) if len(t) < 5 else None
-        patterns.append((word_boundary, partial))
+    for term in terms:
+        word_boundary = re.compile(rf"\b{re.escape(term)}\b", re.IGNORECASE)
+        partial = re.compile(re.escape(term), re.IGNORECASE) if len(term) < 5 else None
+        patterns.append((term, word_boundary, partial))
 
-    scored: List[tuple] = []
-    for m in list_modules(kb_path):
+    scored: List[tuple[int, int, Module]] = []
+    for module in list_modules(kb_path):
+        fields: dict[str, str | list[str]] = {
+            "title": module.title,
+            "tag": module.metadata.tags,
+            "summary": module.summary,
+            "overview": module.content.overview,
+        }
+        field_stems = {
+            "title": _field_stems(module.title),
+            "tag": {_stem(tag) for tag in module.metadata.tags},
+            "summary": _field_stems(module.summary),
+            "overview": _field_stems(module.content.overview),
+        }
         score = 0
-        is_word_boundary = False  # Track if any match was word-boundary
+        best_quality = 0
 
-        for word_pat, partial_pat in patterns:
-            best = 0
-            matched_word_boundary = False
-
-            # Try word boundary match first (full weight)
-            if word_pat.search(m.title):
-                best = _FIELD_WEIGHTS["title"]
-                matched_word_boundary = True
-            elif any(word_pat.search(tag) for tag in m.metadata.tags):
-                best = max(best, _FIELD_WEIGHTS["tag"])
-                matched_word_boundary = True
-            elif word_pat.search(m.summary):
-                best = max(best, _FIELD_WEIGHTS["summary"])
-                matched_word_boundary = True
-            elif word_pat.search(m.content.overview):
-                best = max(best, _FIELD_WEIGHTS["overview"])
-                matched_word_boundary = True
-
-            # If no word boundary match and partial pattern exists, try partial match (half weight)
-            if best == 0 and partial_pat:
-                if partial_pat.search(m.title):
-                    best = _FIELD_WEIGHTS["title"] // 2
-                elif any(partial_pat.search(tag) for tag in m.metadata.tags):
-                    best = max(best, _FIELD_WEIGHTS["tag"] // 2)
-                elif partial_pat.search(m.summary):
-                    best = max(best, _FIELD_WEIGHTS["summary"] // 2)
-                elif partial_pat.search(m.content.overview):
-                    best = max(best, _FIELD_WEIGHTS["overview"] // 2)
-
-            score += best
-            if matched_word_boundary:
-                is_word_boundary = True
+        for term, word_pattern, partial_pattern in patterns:
+            term_score, quality = score_term(term, fields, field_stems, word_pattern, partial_pattern)
+            score += term_score
+            best_quality = max(best_quality, quality)
 
         if score > 0:
-            # Use tuple (score, is_word_boundary, module) for sorting
-            # Higher score first, then word-boundary matches before partial matches
-            scored.append((score, is_word_boundary, m))
+            scored.append((score, best_quality, module))
 
-    # Sort by score (desc), then by word_boundary flag (True before False)
     scored.sort(key=lambda item: (item[0], item[1]), reverse=True)
-    return [m for _, _, m in scored]
+    return [module for _, _, module in scored]
 
 
 def save_index(index: Index, kb_path: Path) -> None:

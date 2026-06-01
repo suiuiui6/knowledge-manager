@@ -37,6 +37,26 @@ console = Console()
 logger = logging.getLogger("knowledge_manager")
 
 
+def _configure_logging(verbose: bool) -> None:
+    level = logging.DEBUG if verbose else logging.WARNING
+    root = logging.getLogger()
+    root.setLevel(level)
+
+    package_logger = logging.getLogger("knowledge_manager")
+    package_logger.setLevel(level)
+    package_logger.propagate = True
+
+    if verbose and not root.handlers:
+        handler = logging.StreamHandler()
+        handler.setFormatter(
+            logging.Formatter(
+                "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+                datefmt="%H:%M:%S",
+            )
+        )
+        root.addHandler(handler)
+
+
 def _config_path(kb_path: Path) -> Path:
     return kb_path / "config.json"
 
@@ -83,16 +103,9 @@ def cli(ctx: click.Context, kb_path: Path, verbose: bool) -> None:
     ctx.obj["kb_path"] = Path(kb_path)
     ctx.obj["verbose"] = verbose
 
-    # Configure logging
+    _configure_logging(verbose)
     if verbose:
-        logging.basicConfig(
-            level=logging.DEBUG,
-            format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-            datefmt="%H:%M:%S",
-        )
         logger.debug("Verbose logging enabled")
-    else:
-        logging.basicConfig(level=logging.WARNING)
 
 
 @cli.command()
@@ -311,9 +324,9 @@ def add(ctx: click.Context, file: Path, category: str) -> None:
     kb = ctx.obj["kb_path"]
     _require_kb(kb)
 
-    logger.info(f"Reading file: {file}")
+    logger.info("Reading input file")
     text = file.read_text(encoding="utf-8")
-    logger.debug(f"File size: {len(text)} characters")
+    logger.debug("Input file size: %s characters", len(text))
 
     logger.info("Loading configuration")
     cfg = _load_config(kb)
@@ -330,9 +343,8 @@ def add(ctx: click.Context, file: Path, category: str) -> None:
 
     staging = _staging_path(kb)
     staging.mkdir(exist_ok=True)
-    logger.info(f"Saving to staging: {staging}")
+    logger.info("Saving %s module(s) to staging", len(modules))
     for m in modules:
-        logger.debug(f"Saving module: {m.id}")
         save_to_staging(m, staging)
 
     click.echo(f"Extracted {len(modules)} module(s) into staging")
