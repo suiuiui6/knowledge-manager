@@ -47,3 +47,6 @@ test_kb/
 config.json
 !examples/sample_knowledge_base/config.json
 .env
+
+# Claude local worktrees
+.claude/
