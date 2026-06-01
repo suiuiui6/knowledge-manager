@@ -1,0 +1,25 @@
+{
+  "id": "api-documentation-essentials",
+  "category": "api",
+  "title": "API Documentation Essentials",
+  "summary": "Comprehensive API documentation including authentication, endpoints, and examples drives adoption and ease of use.",
+  "created_at": "2026-05-29T12:01:37.499950",
+  "updated_at": "2026-05-29T12:01:37.499950",
+  "content": {
+    "overview": "Good documentation is crucial for developers integrating with an API.",
+    "details": "Include: Authentication methods, endpoint descriptions, request/response examples, error codes meanings, rate limits and quotas. Use tools like OpenAPI/Swagger for specification, Postman collections for interactive docs.",
+    "examples": "OpenAPI spec snippet describing GET /users with 200 response schema; Postman collection demonstrating request flow.",
+    "references": "OpenAPI/Swagger, Postman",
+    "caveats": "Keep documentation up-to-date with API changes; outdated docs cause integration issues and developer frustration."
+  },
+  "metadata": {
+    "tags": [
+      "documentation",
+      "openapi",
+      "developer-experience"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": ""
+  }
+}

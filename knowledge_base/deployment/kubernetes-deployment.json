@@ -1,0 +1,25 @@
+{
+  "id": "kubernetes-deployment",
+  "category": "deployment",
+  "title": "Kubernetes Deployment",
+  "summary": "Orchestrate containerized applications at scale using pods, deployments, and services.",
+  "created_at": "2026-05-29T12:02:17.536089",
+  "updated_at": "2026-05-29T12:02:17.536090",
+  "content": {
+    "overview": "Kubernetes orchestrates containerized applications at scale, managing deployment, scaling, and networking.",
+    "details": "Key concepts: Pods (smallest deployable units); Deployments (manage replica sets); Services (expose pods to network); ConfigMaps (configuration data); Secrets (sensitive data).",
+    "examples": "",
+    "references": "",
+    "caveats": ""
+  },
+  "metadata": {
+    "tags": [
+      "deployment",
+      "kubernetes",
+      "orchestration"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": ""
+  }
+}

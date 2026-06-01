@@ -1,0 +1,60 @@
+RESTful API Design
+
+REST (Representational State Transfer) is an architectural style for designing networked applications.
+
+Core principles:
+- Resources identified by URIs
+- Standard HTTP methods (GET, POST, PUT, DELETE)
+- Stateless communication
+- Uniform interface
+
+HTTP Status Codes
+
+Proper status codes help clients understand response outcomes.
+
+Common codes:
+- 200 OK: Successful request
+- 201 Created: Resource created successfully
+- 400 Bad Request: Invalid client input
+- 401 Unauthorized: Authentication required
+- 403 Forbidden: Authenticated but not authorized
+- 404 Not Found: Resource doesn't exist
+- 500 Internal Server Error: Server-side error
+
+API Versioning
+
+API versioning allows backward-compatible evolution of APIs.
+
+Strategies:
+- URL versioning: /v1/users, /v2/users
+- Header versioning: Accept: application/vnd.api.v1+json
+- Query parameter: /users?version=1
+
+Best practice: Use URL versioning for simplicity and discoverability.
+
+Rate Limiting
+
+Rate limiting prevents API abuse and ensures fair resource allocation.
+
+Implementation:
+- Token bucket algorithm
+- Fixed window counters
+- Sliding window logs
+
+Headers:
+- X-RateLimit-Limit: Maximum requests allowed
+- X-RateLimit-Remaining: Requests remaining
+- X-RateLimit-Reset: Time when limit resets
+
+API Documentation
+
+Good documentation is essential for API adoption.
+
+Include:
+- Authentication methods
+- Endpoint descriptions
+- Request/response examples
+- Error codes and meanings
+- Rate limits and quotas
+
+Tools: OpenAPI/Swagger, Postman collections

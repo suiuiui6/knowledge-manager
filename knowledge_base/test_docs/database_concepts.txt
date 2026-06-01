@@ -1,0 +1,49 @@
+Database Connection Pooling
+
+Connection pooling is a technique to maintain a pool of database connections that can be reused. Instead of opening a new connection for each request, applications borrow from the pool and return connections when done.
+
+Benefits:
+- Reduced connection overhead
+- Better resource utilization
+- Improved application performance
+
+Configuration:
+- Pool size: 10-20 connections for most workloads
+- Max lifetime: 30 minutes
+- Connection timeout: 5 seconds
+
+Query Optimization
+
+Query optimization involves analyzing and improving SQL queries for better performance.
+
+Key techniques:
+- Use indexes on frequently queried columns
+- Avoid SELECT * in production code
+- Use EXPLAIN to analyze query plans
+- Batch operations when possible
+
+Database Migrations
+
+Database migrations are version-controlled schema changes that can be applied incrementally.
+
+Best practices:
+- Always write reversible migrations
+- Test migrations on staging first
+- Use migration tools like Alembic or Flyway
+- Never modify old migrations after deployment
+
+Transaction Management
+
+Transactions ensure data consistency by grouping operations into atomic units.
+
+ACID properties:
+- Atomicity: All or nothing
+- Consistency: Valid state transitions
+- Isolation: Concurrent transactions don't interfere
+- Durability: Committed data persists
+
+Isolation levels:
+- READ UNCOMMITTED
+- READ COMMITTED (default in most databases)
+- REPEATABLE READ
+- SERIALIZABLE

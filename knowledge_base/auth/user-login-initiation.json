@@ -1,0 +1,25 @@
+{
+  "id": "user-login-initiation",
+  "category": "auth",
+  "title": "User Login Initiation",
+  "summary": "The user starts the OAuth flow by clicking a 'Login with Provider' button in the client application.",
+  "created_at": "2026-05-29T07:30:24.343192",
+  "updated_at": "2026-05-29T07:30:24.343193",
+  "content": {
+    "overview": "The initial user action triggers the authorization code flow.",
+    "details": "The client prepares the authorization request, constructing a URL with parameters like client_id, redirect_uri, scope, and state, and then redirects the user's browser.",
+    "examples": "",
+    "references": "",
+    "caveats": ""
+  },
+  "metadata": {
+    "tags": [
+      "oauth",
+      "user-initiation",
+      "login"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": ""
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "id": "blue-green-deployment",
+  "category": "deployment",
+  "title": "Blue-Green Deployment",
+  "summary": "Reduce downtime by running two identical environments and switching traffic after testing.",
+  "created_at": "2026-05-29T12:02:17.536095",
+  "updated_at": "2026-05-29T12:02:17.536096",
+  "content": {
+    "overview": "Blue-green deployment reduces downtime by maintaining two identical environments and routing traffic after validation.",
+    "details": "Process: 1. Blue environment serves production traffic; 2. Deploy new version to green environment; 3. Test green environment; 4. Switch traffic from blue to green; 5. Keep blue as rollback option.",
+    "examples": "",
+    "references": "",
+    "caveats": ""
+  },
+  "metadata": {
+    "tags": [
+      "deployment",
+      "blue-green",
+      "zero-downtime"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": ""
+  }
+}

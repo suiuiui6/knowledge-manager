@@ -1,0 +1,64 @@
+CI/CD Pipeline
+
+Continuous Integration and Continuous Deployment automate the software delivery process.
+
+Pipeline stages:
+1. Code commit triggers build
+2. Run automated tests
+3. Build artifacts (Docker images, binaries)
+4. Deploy to staging
+5. Run integration tests
+6. Deploy to production
+
+Docker Containerization
+
+Docker packages applications with their dependencies into containers.
+
+Benefits:
+- Consistent environments across dev/staging/prod
+- Isolation between applications
+- Easy scaling and orchestration
+
+Best practices:
+- Use multi-stage builds to reduce image size
+- Don't run as root inside containers
+- Use .dockerignore to exclude unnecessary files
+- Pin base image versions
+
+Kubernetes Deployment
+
+Kubernetes orchestrates containerized applications at scale.
+
+Key concepts:
+- Pods: Smallest deployable units
+- Deployments: Manage replica sets
+- Services: Expose pods to network
+- ConfigMaps: Configuration data
+- Secrets: Sensitive data
+
+Blue-Green Deployment
+
+Blue-green deployment reduces downtime by running two identical environments.
+
+Process:
+1. Blue environment serves production traffic
+2. Deploy new version to green environment
+3. Test green environment
+4. Switch traffic from blue to green
+5. Keep blue as rollback option
+
+Monitoring and Logging
+
+Observability is critical for production systems.
+
+Metrics to track:
+- Request rate and latency
+- Error rates
+- CPU and memory usage
+- Database connection pool stats
+
+Tools:
+- Prometheus for metrics
+- Grafana for visualization
+- ELK stack for logs
+- Jaeger for distributed tracing

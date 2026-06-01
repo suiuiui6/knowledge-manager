@@ -1,0 +1,420 @@
+{
+  "version": "1.0",
+  "description": "Knowledge base",
+  "categories": {
+    "api": {
+      "name": "api",
+      "description": "",
+      "modules": [
+        {
+          "id": "api-documentation-essentials",
+          "category": "api",
+          "title": "API Documentation Essentials",
+          "summary": "Comprehensive API documentation including authentication, endpoints, and examples drives adoption and ease of use.",
+          "tags": [
+            "documentation",
+            "openapi",
+            "developer-experience"
+          ],
+          "word_count": 66
+        },
+        {
+          "id": "api-rate-limiting",
+          "category": "api",
+          "title": "API Rate Limiting Implementation",
+          "summary": "Rate limiting protects APIs from abuse and ensures fair usage via algorithms and response headers.",
+          "tags": [
+            "rate-limiting",
+            "security",
+            "fair-use"
+          ],
+          "word_count": 64
+        },
+        {
+          "id": "api-versioning-strategies",
+          "category": "api",
+          "title": "API Versioning Strategies",
+          "summary": "API versioning enables backward-compatible changes using URL paths, headers, or query parameters.",
+          "tags": [
+            "versioning",
+            "api-design",
+            "compatibility"
+          ],
+          "word_count": 45
+        },
+        {
+          "id": "http-status-codes",
+          "category": "api",
+          "title": "HTTP Status Codes Usage",
+          "summary": "Proper HTTP status codes inform clients about the result of their requests, distinguishing success, client error, and server error.",
+          "tags": [
+            "http",
+            "status-codes",
+            "error-handling"
+          ],
+          "word_count": 82
+        },
+        {
+          "id": "restful-api-core-principles",
+          "category": "api",
+          "title": "RESTful API Core Principles",
+          "summary": "REST (Representational State Transfer) is an architectural style with key constraints like statelessness and uniform interface.",
+          "tags": [
+            "rest",
+            "architecture",
+            "http"
+          ],
+          "word_count": 65
+        }
+      ]
+    },
+    "deployment": {
+      "name": "deployment",
+      "description": "",
+      "modules": [
+        {
+          "id": "blue-green-deployment",
+          "category": "deployment",
+          "title": "Blue-Green Deployment",
+          "summary": "Reduce downtime by running two identical environments and switching traffic after testing.",
+          "tags": [
+            "deployment",
+            "blue-green",
+            "zero-downtime"
+          ],
+          "word_count": 45
+        },
+        {
+          "id": "ci-cd-pipeline",
+          "category": "deployment",
+          "title": "CI/CD Pipeline",
+          "summary": "Automated stages from code commit to production deployment for reliable software delivery.",
+          "tags": [
+            "deployment",
+            "ci-cd",
+            "automation"
+          ],
+          "word_count": 39
+        },
+        {
+          "id": "docker-containerization",
+          "category": "deployment",
+          "title": "Docker Containerization",
+          "summary": "Package applications with dependencies into portable containers for consistent environments.",
+          "tags": [
+            "deployment",
+            "docker",
+            "containers"
+          ],
+          "word_count": 50
+        },
+        {
+          "id": "kubernetes-deployment",
+          "category": "deployment",
+          "title": "Kubernetes Deployment",
+          "summary": "Orchestrate containerized applications at scale using pods, deployments, and services.",
+          "tags": [
+            "deployment",
+            "kubernetes",
+            "orchestration"
+          ],
+          "word_count": 32
+        },
+        {
+          "id": "monitoring-and-logging",
+          "category": "deployment",
+          "title": "Monitoring and Logging",
+          "summary": "Observability practices for production systems, tracking key metrics and using specialized tools.",
+          "tags": [
+            "deployment",
+            "monitoring",
+            "observability",
+            "logging"
+          ],
+          "word_count": 45
+        }
+      ]
+    },
+    "database": {
+      "name": "database",
+      "description": "",
+      "modules": [
+        {
+          "id": "database-connection-pooling",
+          "category": "database",
+          "title": "Database Connection Pooling",
+          "summary": "Maintaining a reusable pool of database connections to reduce overhead and improve performance.",
+          "tags": [
+            "database",
+            "connection-pooling",
+            "performance"
+          ],
+          "word_count": 68
+        },
+        {
+          "id": "database-migrations",
+          "category": "database",
+          "title": "Database Migrations",
+          "summary": "Version-controlled schema changes applied incrementally to keep database schemas in sync.",
+          "tags": [
+            "migrations",
+            "version-control",
+            "schema",
+            "alembic",
+            "flyway"
+          ],
+          "word_count": 36
+        },
+        {
+          "id": "query-optimization",
+          "category": "database",
+          "title": "Query Optimization",
+          "summary": "Analyzing and improving SQL queries for better database performance.",
+          "tags": [
+            "sql",
+            "optimization",
+            "indexing",
+            "performance"
+          ],
+          "word_count": 36
+        },
+        {
+          "id": "transaction-management",
+          "category": "database",
+          "title": "Transaction Management",
+          "summary": "Ensuring data consistency by grouping operations into atomic units with ACID properties and isolation levels.",
+          "tags": [
+            "transactions",
+            "acid",
+            "isolation",
+            "consistency"
+          ],
+          "word_count": 43
+        }
+      ]
+    },
+    "general": {
+      "name": "general",
+      "description": "",
+      "modules": [
+        {
+          "id": "evaluation-rubric-overview",
+          "category": "general",
+          "title": "Retrieval Evaluation Rubric Overview",
+          "summary": "Defines a live test for the knowledge-manager MCP server retrieval using fresh Claude Code sessions and five scenarios.",
+          "tags": [
+            "retrieval",
+            "evaluation",
+            "mcp",
+            "knowledge-manager",
+            "rubric"
+          ],
+          "word_count": 156
+        },
+        {
+          "id": "pass-criteria-summary",
+          "category": "general",
+          "title": "Overall Pass Criteria Summary",
+          "summary": "A collection of what 'good' looks like across all five scenarios: correct module loading and no fabricated content from unrelated modules.",
+          "tags": [
+            "evaluation",
+            "pass-criteria",
+            "summary",
+            "retrieval"
+          ],
+          "word_count": 102
+        },
+        {
+          "id": "retrieval-scoring-algorithm",
+          "category": "general",
+          "title": "Retrieval Scoring Algorithm",
+          "summary": "Describes the word-boundary regex scoring used by search_modules to rank candidate modules.",
+          "tags": [
+            "retrieval",
+            "scoring",
+            "implementation",
+            "search"
+          ],
+          "word_count": 144
+        },
+        {
+          "id": "scenario-1-jwt-tokens-direct-hit",
+          "category": "general",
+          "title": "Scenario 1: JWT Tokens Direct Hit",
+          "summary": "Tests retrieval when the query directly matches the module id auth/jwt-tokens.",
+          "tags": [
+            "scenario",
+            "jwt",
+            "auth",
+            "direct-hit",
+            "retrieval"
+          ],
+          "word_count": 96
+        },
+        {
+          "id": "scenario-2-oauth-flow-direct-hit",
+          "category": "general",
+          "title": "Scenario 2: OAuth Flow Direct Hit",
+          "summary": "Tests retrieval for the OAuth 2.0 server-side callback flow using the knowledge base.",
+          "tags": [
+            "scenario",
+            "oauth",
+            "auth",
+            "direct-hit",
+            "retrieval"
+          ],
+          "word_count": 64
+        },
+        {
+          "id": "scenario-3-connection-pool-direct-hit",
+          "category": "general",
+          "title": "Scenario 3: Connection Pool Direct Hit",
+          "summary": "Tests retrieval of Postgres connection pool sizing guidance from the database/connection-pool module.",
+          "tags": [
+            "scenario",
+            "database",
+            "connection-pool",
+            "direct-hit"
+          ],
+          "word_count": 49
+        },
+        {
+          "id": "scenario-4-cross-content-match",
+          "category": "general",
+          "title": "Scenario 4: Indirect Cross-Content Match",
+          "summary": "Tests retrieval when the relevant information is in the caveats field of a module, not in its title or summary.",
+          "tags": [
+            "scenario",
+            "cross-content",
+            "caveats",
+            "jwt",
+            "retrieval"
+          ],
+          "word_count": 109
+        },
+        {
+          "id": "scenario-5-abstention-out-of-scope",
+          "category": "general",
+          "title": "Scenario 5: Out-of-Scope Abstention",
+          "summary": "Tests that Claude does not hallucinate an answer by loading an unrelated module for an out-of-scope question about Kubernetes ingress.",
+          "tags": [
+            "scenario",
+            "abstention",
+            "out-of-scope",
+            "hallucination-prevention"
+          ],
+          "word_count": 100
+        }
+      ]
+    },
+    "auth": {
+      "name": "auth",
+      "description": "",
+      "modules": [
+        {
+          "id": "access-token-usage",
+          "category": "auth",
+          "title": "Access Token Usage for API Requests",
+          "summary": "The access token is used to make API requests on behalf of the user.",
+          "tags": [
+            "oauth",
+            "access-token",
+            "api"
+          ],
+          "word_count": 45
+        },
+        {
+          "id": "authorization-code-flow",
+          "category": "auth",
+          "title": "Authorization Code Flow",
+          "summary": "The authorization code flow is an OAuth 2.0 grant type where the user authorizes the app, and an authorization code is exchanged for an access token.",
+          "tags": [
+            "oauth",
+            "authorization-code",
+            "flow"
+          ],
+          "word_count": 58
+        },
+        {
+          "id": "authorization-code-redirect",
+          "category": "auth",
+          "title": "Authorization Code Return",
+          "summary": "The provider redirects back to the client with an authorization code after permission is granted.",
+          "tags": [
+            "oauth",
+            "authorization-code",
+            "redirect-uri"
+          ],
+          "word_count": 37
+        },
+        {
+          "id": "oauth-2-0-framework",
+          "category": "auth",
+          "title": "OAuth 2.0 Authorization Framework",
+          "summary": "OAuth 2.0 is a framework for authorization, enabling third-party applications to obtain limited access to a user's resources.",
+          "tags": [
+            "oauth",
+            "authorization",
+            "framework"
+          ],
+          "word_count": 42
+        },
+        {
+          "id": "redirect-to-authorization-endpoint",
+          "category": "auth",
+          "title": "Redirect to Authorization Endpoint",
+          "summary": "The user is redirected to the provider's authorization endpoint to start the permission process.",
+          "tags": [
+            "oauth",
+            "redirect",
+            "authorization-endpoint"
+          ],
+          "word_count": 35
+        },
+        {
+          "id": "token-exchange",
+          "category": "auth",
+          "title": "Token Exchange for Access Token",
+          "summary": "The client exchanges the authorization code for an access token at the provider's token endpoint.",
+          "tags": [
+            "oauth",
+            "token-exchange",
+            "access-token"
+          ],
+          "word_count": 39
+        },
+        {
+          "id": "user-login-initiation",
+          "category": "auth",
+          "title": "User Login Initiation",
+          "summary": "The user starts the OAuth flow by clicking a 'Login with Provider' button in the client application.",
+          "tags": [
+            "oauth",
+            "user-initiation",
+            "login"
+          ],
+          "word_count": 32
+        },
+        {
+          "id": "user-permission-grant",
+          "category": "auth",
+          "title": "User Permission Grant",
+          "summary": "The user grants permission to the application at the authorization server's consent screen.",
+          "tags": [
+            "oauth",
+            "user-consent",
+            "permission"
+          ],
+          "word_count": 32
+        }
+      ]
+    }
+  },
+  "stats": {
+    "total_modules": 30,
+    "total_words": 1856,
+    "categories": 5,
+    "last_updated": "2026-05-29T12:05:48.290818"
+  },
+  "updated_at": "2026-05-29T12:05:48.290819"
+}

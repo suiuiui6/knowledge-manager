@@ -1,0 +1,25 @@
+{
+  "id": "api-rate-limiting",
+  "category": "api",
+  "title": "API Rate Limiting Implementation",
+  "summary": "Rate limiting protects APIs from abuse and ensures fair usage via algorithms and response headers.",
+  "created_at": "2026-05-29T12:01:37.499942",
+  "updated_at": "2026-05-29T12:01:37.499942",
+  "content": {
+    "overview": "Rate limiting controls the number of requests a client can make in a given time window.",
+    "details": "Implementation algorithms: Token bucket, fixed window counters, sliding window logs. Standard response headers: X-RateLimit-Limit (max allowed), X-RateLimit-Remaining (left), X-RateLimit-Reset (time of reset).",
+    "examples": "Response header: X-RateLimit-Limit: 100, X-RateLimit-Remaining: 45, X-RateLimit-Reset: 1620000000.",
+    "references": "",
+    "caveats": "Choose algorithm based on burst handling requirements; token bucket allows bursts, fixed window may suffer from boundary issues."
+  },
+  "metadata": {
+    "tags": [
+      "rate-limiting",
+      "security",
+      "fair-use"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": ""
+  }
+}

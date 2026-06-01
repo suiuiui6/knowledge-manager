@@ -1,0 +1,25 @@
+{
+  "id": "restful-api-core-principles",
+  "category": "api",
+  "title": "RESTful API Core Principles",
+  "summary": "REST (Representational State Transfer) is an architectural style with key constraints like statelessness and uniform interface.",
+  "created_at": "2026-05-29T12:01:37.499916",
+  "updated_at": "2026-05-29T12:01:37.499918",
+  "content": {
+    "overview": "REST architecture defines how networked applications should be designed around resources identified by URIs and manipulated through standard HTTP methods.",
+    "details": "Core principles: Resources identified by URIs; Standard HTTP methods (GET, POST, PUT, DELETE); Stateless communication; Uniform interface.",
+    "examples": "GET /users/123 retrieves user resource; POST /users creates a new user.",
+    "references": "",
+    "caveats": "Statelessness means each request must contain all necessary context; server does not store client state between requests."
+  },
+  "metadata": {
+    "tags": [
+      "rest",
+      "architecture",
+      "http"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": ""
+  }
+}

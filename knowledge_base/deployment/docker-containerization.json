@@ -1,0 +1,25 @@
+{
+  "id": "docker-containerization",
+  "category": "deployment",
+  "title": "Docker Containerization",
+  "summary": "Package applications with dependencies into portable containers for consistent environments.",
+  "created_at": "2026-05-29T12:02:17.536082",
+  "updated_at": "2026-05-29T12:02:17.536083",
+  "content": {
+    "overview": "Docker packages applications with their dependencies into containers, enabling consistent execution across environments.",
+    "details": "Benefits: consistent environments across dev/staging/prod; isolation between applications; easy scaling and orchestration. Best practices: use multi-stage builds to reduce image size; don't run as root inside containers; use .dockerignore to exclude unnecessary files; pin base image versions.",
+    "examples": "",
+    "references": "",
+    "caveats": ""
+  },
+  "metadata": {
+    "tags": [
+      "deployment",
+      "docker",
+      "containers"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": ""
+  }
+}

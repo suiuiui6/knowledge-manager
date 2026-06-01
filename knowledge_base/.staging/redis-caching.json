@@ -1,0 +1,30 @@
+{
+  "id": "redis-caching",
+  "category": "cache",
+  "title": "Redis Caching",
+  "summary": "Redis is an in-memory data store used for caching, supporting key-value storage, TTL expiration, and pub/sub messaging.",
+  "created_at": "2026-05-29T12:21:40.184141",
+  "updated_at": "2026-05-29T12:21:40.184143",
+  "content": {
+    "overview": "Redis is an in-memory data store that provides high-performance caching through key-value storage, automatic key expiration, and publish-subscribe messaging.",
+    "details": "Redis supports key-value storage, TTL (time to live) expiration for cache entries, and pub/sub messaging. Common caching use cases include session storage and API response caching, leveraging its speed and data structure flexibility.",
+    "examples": "",
+    "references": "",
+    "caveats": "Being in-memory, data may be lost on restart unless persistence is configured. TTLs must be managed carefully to avoid stale data or premature eviction."
+  },
+  "metadata": {
+    "tags": [
+      "redis",
+      "caching",
+      "in-memory",
+      "key-value",
+      "ttl",
+      "pub-sub",
+      "session-storage",
+      "api-cache"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": ""
+  }
+}

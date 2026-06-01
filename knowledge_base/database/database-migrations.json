@@ -1,0 +1,27 @@
+{
+  "id": "database-migrations",
+  "category": "database",
+  "title": "Database Migrations",
+  "summary": "Version-controlled schema changes applied incrementally to keep database schemas in sync.",
+  "created_at": "2026-05-29T12:00:19.882475",
+  "updated_at": "2026-05-29T12:00:19.882475",
+  "content": {
+    "overview": "Database migrations are version-controlled schema changes that can be applied incrementally.",
+    "details": "Best practices: always write reversible migrations, test migrations on staging first, use migration tools like Alembic or Flyway, and never modify old migrations after deployment.",
+    "examples": "",
+    "references": "",
+    "caveats": ""
+  },
+  "metadata": {
+    "tags": [
+      "migrations",
+      "version-control",
+      "schema",
+      "alembic",
+      "flyway"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": ""
+  }
+}

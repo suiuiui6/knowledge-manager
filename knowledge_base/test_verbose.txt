@@ -1,0 +1,12 @@
+# Test Document
+
+This is a simple test document about caching strategies.
+
+## Redis Caching
+
+Redis is an in-memory data store used for caching. It supports:
+- Key-value storage
+- TTL (time to live) expiration
+- Pub/sub messaging
+
+Common use cases include session storage and API response caching.

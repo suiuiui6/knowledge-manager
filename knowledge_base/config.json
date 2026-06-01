@@ -1,0 +1,20 @@
+{
+  "llm_providers": {
+    "deepseek": {
+      "api_key": "<redacted-api-key>",
+      "model": "deepseek-v4-pro",
+      "base_url": "https://api.deepseek.com",
+      "default": true,
+      "temperature": 0.3,
+      "max_tokens": 4096
+    }
+  },
+  "extraction": {
+    "provider": "deepseek",
+    "max_modules_per_extraction": 10
+  },
+  "cache": {
+    "enabled": true,
+    "max_modules": 50
+  }
+}

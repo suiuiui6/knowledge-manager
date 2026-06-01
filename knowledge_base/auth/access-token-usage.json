@@ -1,0 +1,25 @@
+{
+  "id": "access-token-usage",
+  "category": "auth",
+  "title": "Access Token Usage for API Requests",
+  "summary": "The access token is used to make API requests on behalf of the user.",
+  "created_at": "2026-05-29T07:30:24.343223",
+  "updated_at": "2026-05-29T07:30:24.343223",
+  "content": {
+    "overview": "The access token is presented to the resource server to access protected resources.",
+    "details": "The client includes the access token in the Authorization header (as a Bearer token) of HTTP requests to the API. The resource server validates the token before responding with the requested data.",
+    "examples": "",
+    "references": "",
+    "caveats": ""
+  },
+  "metadata": {
+    "tags": [
+      "oauth",
+      "access-token",
+      "api"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": ""
+  }
+}

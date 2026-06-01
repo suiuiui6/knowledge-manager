@@ -1,0 +1,26 @@
+{
+  "id": "query-optimization",
+  "category": "database",
+  "title": "Query Optimization",
+  "summary": "Analyzing and improving SQL queries for better database performance.",
+  "created_at": "2026-05-29T12:00:19.882468",
+  "updated_at": "2026-05-29T12:00:19.882468",
+  "content": {
+    "overview": "Query optimization involves analyzing and improving SQL queries for better performance.",
+    "details": "Key techniques: use indexes on frequently queried columns, avoid SELECT * in production code, use EXPLAIN to analyze query plans, and batch operations when possible.",
+    "examples": "",
+    "references": "",
+    "caveats": ""
+  },
+  "metadata": {
+    "tags": [
+      "sql",
+      "optimization",
+      "indexing",
+      "performance"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": ""
+  }
+}

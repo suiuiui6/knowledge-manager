@@ -1,0 +1,10 @@
+# OAuth 2.0 Flow
+
+OAuth 2.0 is an authorization framework. The authorization code flow involves:
+1. User clicks "Login with Provider"
+2. Redirect to provider's authorization endpoint
+3. User grants permission
+4. Provider redirects back with authorization code
+5. Exchange code for access token
+
+The access token is then used to make API requests on behalf of the user.

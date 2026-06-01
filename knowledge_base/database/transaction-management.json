@@ -1,0 +1,26 @@
+{
+  "id": "transaction-management",
+  "category": "database",
+  "title": "Transaction Management",
+  "summary": "Ensuring data consistency by grouping operations into atomic units with ACID properties and isolation levels.",
+  "created_at": "2026-05-29T12:00:19.882480",
+  "updated_at": "2026-05-29T12:00:19.882481",
+  "content": {
+    "overview": "Transactions ensure data consistency by grouping operations into atomic units.",
+    "details": "ACID properties: Atomicity (all or nothing), Consistency (valid state transitions), Isolation (concurrent transactions don't interfere), Durability (committed data persists). Isolation levels: READ UNCOMMITTED, READ COMMITTED (default in most databases), REPEATABLE READ, and SERIALIZABLE.",
+    "examples": "",
+    "references": "",
+    "caveats": ""
+  },
+  "metadata": {
+    "tags": [
+      "transactions",
+      "acid",
+      "isolation",
+      "consistency"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": ""
+  }
+}

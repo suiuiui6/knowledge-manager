@@ -233,15 +233,16 @@ File: `config.json`
 
 ```bash
 km init [path]                          # Initialize new knowledge base
-km add <file|text> [-c category]       # Extract modules from raw input
-km review                               # Review pending extracted modules
-km edit <category>/<module-id>          # Edit existing module
-km delete <category>/<module-id>        # Delete a module
-km list [category]                      # List all modules or by category
+km add <file> [-c category]             # Extract modules from a file into staging
+km review                               # Review pending staged modules
+km delete <module-id> -c <category> [--yes]  # Delete a module
+km show <module-id> -c <category>       # Show full module JSON
+km list [-c category]                   # List all modules or filter by category
 km search <query>                       # Search modules by keyword
 km rebuild                              # Rebuild index from modules
 km config set <key> <value>             # Configure LLM providers
 km stats                                # Show knowledge base statistics
+km serve                                # Run the MCP server over stdio
 ```
 
 ### Workflow Examples
@@ -255,15 +256,15 @@ km config set llm_providers.deepseek.api_key "sk-..."
 **Adding knowledge:**
 ```bash
 km add notes.txt -c database
-# Extracts modules, shows preview
+# Extracts modules into staging
 km review
-# User sees extracted modules, can edit/approve/reject
+# User reviews staged modules with approve/reject/skip
 ```
 
 **Managing modules:**
 ```bash
 km list                              # See all modules
-km edit auth/oauth-flow              # Opens in $EDITOR
+km show oauth-flow -c auth           # Inspect full module JSON
 km search "authentication"           # Find related modules
 ```
 
@@ -284,12 +285,11 @@ Found 3 extracted modules:
     Title: JWT Token Management
     Summary: Best practices for JWT token generation...
     
-    Actions: (a)pprove, (e)dit, (r)eject, (s)kip
+    Actions: (a)pprove, (r)eject, (s)kip
 ```
 
 **Actions:**
 - `a` (approve): Save module to knowledge base
-- `e` (edit): Open in $EDITOR, then save
 - `r` (reject): Discard module
 - `s` (skip): Leave in staging for later review
 
@@ -403,7 +403,6 @@ Return a JSON array of module objects following this schema:
 3. User runs `km review` to see extracted modules
 4. For each module, user can:
    - Approve (saves to knowledge base)
-   - Edit (opens in editor, then saves)
    - Reject (discards)
    - Skip (leaves in staging for later)
 5. After review, index is rebuilt automatically
@@ -497,12 +496,11 @@ knowledge-manager/
 
 **Version Control:**
 - Knowledge base is a git repository
-- Each module save = atomic commit with descriptive message
 - User can use standard git commands for history/rollback
 
 **Commit Messages:**
-- `km add`: "Add N modules to <category>"
-- `km edit`: "Update <category>/<module-id>"
+- Optional workflow examples when users choose to commit:
+- `km review`: "Add N modules to <category>"
 - `km delete`: "Delete <category>/<module-id>"
 
 **`.gitignore`:**

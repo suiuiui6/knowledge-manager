@@ -1,0 +1,25 @@
+{
+  "id": "ci-cd-pipeline",
+  "category": "deployment",
+  "title": "CI/CD Pipeline",
+  "summary": "Automated stages from code commit to production deployment for reliable software delivery.",
+  "created_at": "2026-05-29T12:02:17.536068",
+  "updated_at": "2026-05-29T12:02:17.536071",
+  "content": {
+    "overview": "Continuous Integration and Continuous Deployment automate the software delivery process.",
+    "details": "Pipeline stages: 1. Code commit triggers build; 2. Run automated tests; 3. Build artifacts (Docker images, binaries); 4. Deploy to staging; 5. Run integration tests; 6. Deploy to production.",
+    "examples": "",
+    "references": "",
+    "caveats": ""
+  },
+  "metadata": {
+    "tags": [
+      "deployment",
+      "ci-cd",
+      "automation"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": ""
+  }
+}

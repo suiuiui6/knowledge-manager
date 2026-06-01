@@ -1,0 +1,26 @@
+{
+  "id": "monitoring-and-logging",
+  "category": "deployment",
+  "title": "Monitoring and Logging",
+  "summary": "Observability practices for production systems, tracking key metrics and using specialized tools.",
+  "created_at": "2026-05-29T12:02:17.536104",
+  "updated_at": "2026-05-29T12:02:17.536104",
+  "content": {
+    "overview": "Observability is critical for production systems, requiring collection of metrics, logs, and traces.",
+    "details": "Metrics to track: request rate and latency, error rates, CPU and memory usage, database connection pool stats. Tools: Prometheus for metrics, Grafana for visualization, ELK stack for logs, Jaeger for distributed tracing.",
+    "examples": "",
+    "references": "",
+    "caveats": ""
+  },
+  "metadata": {
+    "tags": [
+      "deployment",
+      "monitoring",
+      "observability",
+      "logging"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": ""
+  }
+}

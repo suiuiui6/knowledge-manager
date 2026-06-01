@@ -1,0 +1,25 @@
+{
+  "id": "authorization-code-flow",
+  "category": "auth",
+  "title": "Authorization Code Flow",
+  "summary": "The authorization code flow is an OAuth 2.0 grant type where the user authorizes the app, and an authorization code is exchanged for an access token.",
+  "created_at": "2026-05-29T07:30:24.343182",
+  "updated_at": "2026-05-29T07:30:24.343182",
+  "content": {
+    "overview": "This involving redirecting the user to the authorization server's endpoint, the user granting permission, and the server returning an authorization code.",
+    "details": "The flow consists of: 1) user initiates login; 2) redirect to provider; 3) user grants permission; 4) provider redirects back with authorization code; 5) exchange code for access token. The token is then used for API calls.",
+    "examples": "",
+    "references": "",
+    "caveats": ""
+  },
+  "metadata": {
+    "tags": [
+      "oauth",
+      "authorization-code",
+      "flow"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": ""
+  }
+}
