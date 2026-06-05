@@ -136,9 +136,11 @@ class Extractor:
             try:
                 content_data = item.get("content", {})
                 meta_data = item.get("metadata", {})
+                llm_category = item.get("category") if self.config.auto_categorize else None
+                module_category = (llm_category or category)
                 module = Module(
                     id=item["id"],
-                    category=category,
+                    category=module_category,
                     title=item["title"],
                     summary=item["summary"],
                     content=ModuleContent(**content_data),

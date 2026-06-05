@@ -398,3 +398,74 @@ async def test_extractor_returns_empty_on_llm_exception():
 
     assert modules == []
     assert mock_llm.complete.await_count == 1  # No retry on exception
+
+
+AUTO_CATEGORIZE_JSON = json.dumps([
+    {
+        "category": "auth",
+        "id": "jwt-token-strategy",
+        "title": "JWT Token Strategy",
+        "summary": "We use short-lived access tokens with refresh rotation for API auth",
+        "content": {
+            "overview": "Our auth strategy uses RS256-signed JWTs with 15min expiry",
+            "details": "We chose RS256 over HS256 so the API gateway can validate without shared secrets.",
+            "examples": "",
+            "references": "",
+            "caveats": "",
+        },
+        "metadata": {"tags": ["jwt", "auth"], "confidence": "high"},
+    },
+    {
+        "category": "database",
+        "id": "connection-pool-sizing",
+        "title": "Connection Pool Sizing",
+        "summary": "Postgres connection pool sizing for our workload pattern",
+        "content": {
+            "overview": "We size pools based on active query count, not connection count",
+            "details": "Our workload is read-heavy with occasional writes. We use PgBouncer in transaction mode.",
+            "examples": "",
+            "references": "",
+            "caveats": "",
+        },
+        "metadata": {"tags": ["database", "performance"], "confidence": "high"},
+    },
+])
+
+
+@pytest.mark.asyncio
+async def test_auto_categorize_uses_llm_category_field():
+    """When auto_categorize is True, use category from LLM response, not the parameter."""
+    mock_llm = AsyncMock()
+    mock_llm.complete = AsyncMock(return_value=AUTO_CATEGORIZE_JSON)
+
+    cfg = ExtractionConfig(auto_categorize=True)
+    extractor = Extractor(mock_llm, cfg)
+    modules = await extractor.extract("raw text", "general")
+
+    assert len(modules) == 2
+    assert modules[0].category == "auth"
+    assert modules[1].category == "database"
+
+
+@pytest.mark.asyncio
+async def test_auto_categorize_fallback_when_no_category_in_response():
+    """When LLM doesn't include category in a module, fall back to the parameter."""
+    no_cat = json.dumps([{
+        "id": "some-module",
+        "title": "Some Module Title",
+        "summary": "A summary that is long enough",
+        "content": {
+            "overview": "Overview text that is long enough",
+            "details": "Details text that is definitely long enough to pass validation",
+        },
+        "metadata": {"tags": ["test"], "confidence": "high"},
+    }])
+    mock_llm = AsyncMock()
+    mock_llm.complete = AsyncMock(return_value=no_cat)
+
+    cfg = ExtractionConfig(auto_categorize=True)
+    extractor = Extractor(mock_llm, cfg)
+    modules = await extractor.extract("raw text", "general")
+
+    assert len(modules) == 1
+    assert modules[0].category == "general"

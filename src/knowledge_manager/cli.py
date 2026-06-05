@@ -337,8 +337,20 @@ def add(ctx: click.Context, file: Path, category: str) -> None:
     client = create_client(provider_name, provider_cfg)
     extractor = Extractor(client, cfg.extraction)
 
+    existing_categories = ""
+    if cfg.extraction.auto_categorize:
+        index = load_index(kb)
+        if index is not None and index.categories:
+            cat_descs = []
+            for name, cat in index.categories.items():
+                desc = f"  {name}"
+                if cat.description:
+                    desc += f": {cat.description}"
+                cat_descs.append(desc)
+            existing_categories = "\n".join(cat_descs)
+
     logger.info(f"Extracting modules (category: {category}, max: {cfg.extraction.max_modules_per_extraction})")
-    modules = asyncio.run(extractor.extract(text, category))
+    modules = asyncio.run(extractor.extract(text, category, existing_categories))
     logger.debug(f"Extraction returned {len(modules)} modules")
 
     staging = _staging_path(kb)
