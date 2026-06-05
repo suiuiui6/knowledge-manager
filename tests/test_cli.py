@@ -184,7 +184,7 @@ def test_cli_add_extracts_to_staging(cli_runner, initialized_kb, tmp_path):
 
     sample = make_module("auth-jwt", "auth")
 
-    async def fake_extract(self, text, category):
+    async def fake_extract(self, text, category, existing_categories=""):
         return [sample]
 
     with patch("knowledge_manager.cli.Extractor.extract", new=fake_extract):
@@ -266,7 +266,7 @@ def test_cli_add_verbose_logs_only_metadata(cli_runner, initialized_kb, tmp_path
 
     sample = make_module("auth-jwt", "auth")
 
-    async def fake_extract(self, text, category):
+    async def fake_extract(self, text, category, existing_categories=""):
         logging.getLogger("knowledge_manager.extractor").debug(
             "Extractor chunk processed (%s chars)", len(text)
         )
