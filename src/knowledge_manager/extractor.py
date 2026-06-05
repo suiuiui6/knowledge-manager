@@ -135,6 +135,12 @@ class Extractor:
         for i, item in enumerate(items[: self.config.max_modules_per_extraction]):
             try:
                 content_data = item.get("content", {})
+                for key in content_data:
+                    val = content_data[key]
+                    if val is None:
+                        content_data[key] = ""
+                    elif isinstance(val, list):
+                        content_data[key] = ", ".join(str(v) for v in val)
                 meta_data = item.get("metadata", {})
                 llm_category = item.get("category") if self.config.auto_categorize else None
                 module_category = (llm_category or category)

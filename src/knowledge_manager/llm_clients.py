@@ -36,7 +36,7 @@ class DeepSeekClient(BaseLLMClient):
                     url,
                     json=payload,
                     headers={"Authorization": f"Bearer {self.config.api_key}"},
-                    timeout=60,
+                    timeout=120,
                 )
                 resp.raise_for_status()
                 result = cast(dict[str, Any], resp.json())
@@ -71,7 +71,7 @@ class ClaudeClient(BaseLLMClient):
                         "x-api-key": self.config.api_key,
                         "anthropic-version": "2023-06-01",
                     },
-                    timeout=60,
+                    timeout=120,
                 )
                 resp.raise_for_status()
                 result = cast(dict[str, Any], resp.json())
@@ -104,7 +104,7 @@ class OpenAIClient(BaseLLMClient):
                         "max_tokens": self.config.max_tokens,
                     },
                     headers={"Authorization": f"Bearer {self.config.api_key}"},
-                    timeout=60,
+                    timeout=120,
                 )
                 resp.raise_for_status()
                 result = cast(dict[str, Any], resp.json())
