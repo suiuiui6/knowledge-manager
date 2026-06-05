@@ -172,6 +172,7 @@ class Extractor:
     async def _call_llm_with_retry(
         self, prompt: str, chunk_index: int, total_chunks: int, max_retries: int = 2
     ) -> list | None:
+        original_prompt = prompt
         for attempt in range(max_retries + 1):
             logger.info(
                 "Calling LLM for chunk %s/%s (attempt %s/%s)",
@@ -212,7 +213,7 @@ class Extractor:
                     prompt = (
                         f"Your previous response was not valid JSON. Error: {e}\n\n"
                         f"Return ONLY a JSON array, no markdown wrapping, no explanation.\n\n"
-                        f"Original instructions:\n{prompt}"
+                        f"Original instructions:\n{original_prompt}"
                     )
                     continue
                 return None
@@ -226,7 +227,7 @@ class Extractor:
                     prompt = (
                         f"Your previous response was a JSON object, but a JSON array is required.\n\n"
                         f"Return ONLY a JSON array of module objects, no markdown wrapping, no explanation.\n\n"
-                        f"Original instructions:\n{prompt}"
+                        f"Original instructions:\n{original_prompt}"
                     )
                     continue
                 return None

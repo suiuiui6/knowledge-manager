@@ -385,3 +385,16 @@ async def test_extractor_preserves_category_in_module():
     modules = await extractor.extract("raw text", "auth")
 
     assert modules[0].category == "auth"
+
+
+@pytest.mark.asyncio
+async def test_extractor_returns_empty_on_llm_exception():
+    """LLM call failure should return empty list, not retry."""
+    mock_llm = AsyncMock()
+    mock_llm.complete = AsyncMock(side_effect=RuntimeError("API connection failed"))
+
+    extractor = Extractor(mock_llm, ExtractionConfig())
+    modules = await extractor.extract("raw text", "auth")
+
+    assert modules == []
+    assert mock_llm.complete.await_count == 1  # No retry on exception
