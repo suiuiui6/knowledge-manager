@@ -2,22 +2,21 @@
   "id": "transaction-management",
   "category": "database",
   "title": "Transaction Management",
-  "summary": "Ensuring data consistency by grouping operations into atomic units with ACID properties and isolation levels.",
-  "created_at": "2026-05-29T12:00:19.882480",
-  "updated_at": "2026-05-29T12:00:19.882481",
+  "summary": "We wrap related operations in database transactions, relying on the default READ COMMITTED isolation level to balance consistency and performance.",
+  "created_at": "2026-06-05T05:07:45.329172Z",
+  "updated_at": "2026-06-05T05:07:45.329172Z",
   "content": {
-    "overview": "Transactions ensure data consistency by grouping operations into atomic units.",
-    "details": "ACID properties: Atomicity (all or nothing), Consistency (valid state transitions), Isolation (concurrent transactions don't interfere), Durability (committed data persists). Isolation levels: READ UNCOMMITTED, READ COMMITTED (default in most databases), REPEATABLE READ, and SERIALIZABLE.",
-    "examples": "",
-    "references": "",
-    "caveats": ""
+    "overview": "We group multiple database operations into atomic transactions, using the READ COMMITTED isolation level as our default to prevent dirty reads while keeping lock contention low.",
+    "details": "We begin a transaction, run all necessary writes, and explicitly commit or roll back based on success or failure, ensuring all‑or‑nothing execution and durability. We accept READ COMMITTED as the default (most databases) because it provides the performance and concurrency needed for typical workloads while forbidding dirty reads. When stricter isolation is necessary, we can escalate to REPEATABLE READ or SERIALIZABLE, but we default to the lower level to avoid excessive locking and serialisation failures.",
+    "examples": "Idiomatic transaction block (Python/DB‑API):\nconn = engine.connect()\ntrans = conn.begin()\ntry:\n    conn.execute(…)\n    conn.execute(…)\n    trans.commit()\nexcept:\n    trans.rollback()\n    raise\nfinally:\n    conn.close()",
+    "references": "Connection Pooling",
+    "caveats": "Long‑running transactions hold locks and can block other operations, degrading concurrency. Always keep transactions as short as possible. The chosen isolation level directly impacts anomaly exposure; validate against realistic concurrent load in staging."
   },
   "metadata": {
     "tags": [
       "transactions",
       "acid",
-      "isolation",
-      "consistency"
+      "isolation"
     ],
     "related_modules": [],
     "confidence": "high",

@@ -1,22 +1,23 @@
 {
   "id": "api-documentation-essentials",
   "category": "api",
-  "title": "API Documentation Essentials",
-  "summary": "Comprehensive API documentation including authentication, endpoints, and examples drives adoption and ease of use.",
-  "created_at": "2026-05-29T12:01:37.499950",
-  "updated_at": "2026-05-29T12:01:37.499950",
+  "title": "API Documentation Standards",
+  "summary": "We create comprehensive API documentation with authentication, endpoints, and examples using OpenAPI and Postman to drive adoption and ease of integration.",
+  "created_at": "2026-06-05T05:05:15.009984Z",
+  "updated_at": "2026-06-05T05:05:15.009988Z",
   "content": {
-    "overview": "Good documentation is crucial for developers integrating with an API.",
-    "details": "Include: Authentication methods, endpoint descriptions, request/response examples, error codes meanings, rate limits and quotas. Use tools like OpenAPI/Swagger for specification, Postman collections for interactive docs.",
-    "examples": "OpenAPI spec snippet describing GET /users with 200 response schema; Postman collection demonstrating request flow.",
-    "references": "OpenAPI/Swagger, Postman",
-    "caveats": "Keep documentation up-to-date with API changes; outdated docs cause integration issues and developer frustration."
+    "overview": "We produce thorough API documentation that covers authentication methods, endpoint descriptions, request/response examples, error codes, and rate limits/quotas to maximize developer adoption and reduce integration friction.",
+    "details": "Our documentation relies on OpenAPI/Swagger specifications for machine-readable contract definition and Postman collections for interactive exploration. We include explicit meaning for error codes, all available request/response schemas, and clear statements of rate limits and quotas. This combination ensures both programmatic and human-friendly onboarding.",
+    "examples": "An OpenAPI spec snippet describing GET /users with a 200 response schema; a Postman collection demonstrating a multi-step request flow for user management.",
+    "references": "",
+    "caveats": "Documentation must stay rigorously aligned with API changes; outdated docs cause integration breakage and developer frustration."
   },
   "metadata": {
     "tags": [
+      "api",
       "documentation",
       "openapi",
-      "developer-experience"
+      "postman"
     ],
     "related_modules": [],
     "confidence": "high",

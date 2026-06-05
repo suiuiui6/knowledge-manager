@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "description": "Knowledge base",
+  "description": "A curated knowledge base of our team's technical methodology — architecture decisions, implementation patterns, operational practices, and lessons learned. Each module captures HOW we approach a topic, not just what it means. Use the index to identify relevant modules, then load the ones you need. Prefer modules with higher confidence ratings. Cross-reference related modules when topics overlap.",
   "categories": {
     "api": {
       "name": "api",
@@ -9,62 +9,183 @@
         {
           "id": "api-documentation-essentials",
           "category": "api",
-          "title": "API Documentation Essentials",
-          "summary": "Comprehensive API documentation including authentication, endpoints, and examples drives adoption and ease of use.",
+          "title": "API Documentation Standards",
+          "summary": "We create comprehensive API documentation with authentication, endpoints, and examples using OpenAPI and Postman to drive adoption and ease of integration.",
           "tags": [
+            "api",
             "documentation",
             "openapi",
-            "developer-experience"
+            "postman"
           ],
-          "word_count": 66
+          "word_count": 108
         },
         {
           "id": "api-rate-limiting",
           "category": "api",
-          "title": "API Rate Limiting Implementation",
-          "summary": "Rate limiting protects APIs from abuse and ensures fair usage via algorithms and response headers.",
+          "title": "Rate Limiting Implementation",
+          "summary": "We apply rate limiting with standard response headers and choose algorithms like token bucket based on burst-handling requirements to protect the API and ensure fair usage.",
           "tags": [
+            "api",
             "rate-limiting",
-            "security",
-            "fair-use"
+            "headers"
           ],
-          "word_count": 64
+          "word_count": 123
         },
         {
-          "id": "api-versioning-strategies",
+          "id": "api-versioning",
           "category": "api",
-          "title": "API Versioning Strategies",
-          "summary": "API versioning enables backward-compatible changes using URL paths, headers, or query parameters.",
+          "title": "API Versioning Strategy",
+          "summary": "We use URL path versioning for its simplicity and discoverability, accepting the added complexity in HATEOAS management to avoid breaking existing clients.",
           "tags": [
+            "api",
             "versioning",
-            "api-design",
-            "compatibility"
+            "url-path"
           ],
-          "word_count": 45
+          "word_count": 129
         },
         {
           "id": "http-status-codes",
           "category": "api",
-          "title": "HTTP Status Codes Usage",
-          "summary": "Proper HTTP status codes inform clients about the result of their requests, distinguishing success, client error, and server error.",
+          "title": "HTTP Status Code Usage",
+          "summary": "We return precise HTTP status codes to clearly communicate request outcomes, avoiding generic 200 and selecting the most specific code for each situation.",
           "tags": [
-            "http",
-            "status-codes",
+            "api",
+            "http-status-codes",
             "error-handling"
           ],
-          "word_count": 82
+          "word_count": 125
         },
         {
-          "id": "restful-api-core-principles",
+          "id": "restful-api-principles",
           "category": "api",
-          "title": "RESTful API Core Principles",
-          "summary": "REST (Representational State Transfer) is an architectural style with key constraints like statelessness and uniform interface.",
+          "title": "RESTful API Design Principles",
+          "summary": "We design APIs following REST constraints, requiring stateless communication and a uniform interface where resources are identified by URIs and manipulated with standard HTTP methods.",
           "tags": [
+            "api",
             "rest",
-            "architecture",
-            "http"
+            "stateless",
+            "uniform-interface"
           ],
-          "word_count": 65
+          "word_count": 129
+        }
+      ]
+    },
+    "auth": {
+      "name": "auth",
+      "description": "",
+      "modules": [
+        {
+          "id": "access-token-presentation",
+          "category": "auth",
+          "title": "API Access Token Usage",
+          "summary": "We pass the access token in the Authorization header as a Bearer token for all protected API requests.",
+          "tags": [
+            "api",
+            "access-token",
+            "bearer"
+          ],
+          "word_count": 120
+        },
+        {
+          "id": "authorization-code-flow",
+          "category": "auth",
+          "title": "Authorization Code Flow Implementation",
+          "summary": "We authenticate users using the OAuth 2.0 Authorization Code flow, exchanging an authorization code for tokens server-side.",
+          "tags": [
+            "oauth2",
+            "authentication",
+            "authorization-code"
+          ],
+          "word_count": 173
+        },
+        {
+          "id": "authorization-code-receipt",
+          "category": "auth",
+          "title": "Authorization Code Return Handling",
+          "summary": "We receive the temporary authorization code appended to the redirect URI after user consent.",
+          "tags": [
+            "oauth2",
+            "callback",
+            "authorization-code"
+          ],
+          "word_count": 111
+        },
+        {
+          "id": "token-exchange-endpoint",
+          "category": "auth",
+          "title": "Token Exchange for Access Token",
+          "summary": "We exchange the authorization code for an access token by making a server-to-server POST to the provider's token endpoint.",
+          "tags": [
+            "oauth2",
+            "token-exchange",
+            "server-to-server"
+          ],
+          "word_count": 99
+        },
+        {
+          "id": "user-authorization-consent",
+          "category": "auth",
+          "title": "User Authorization Consent Flow",
+          "summary": "We rely on the provider's consent screen where users explicitly approve requested scopes before granting access.",
+          "tags": [
+            "oauth2",
+            "consent",
+            "scopes"
+          ],
+          "word_count": 122
+        }
+      ]
+    },
+    "database": {
+      "name": "database",
+      "description": "",
+      "modules": [
+        {
+          "id": "connection-pooling",
+          "category": "database",
+          "title": "Database Connection Pooling",
+          "summary": "We maintain a reusable pool of database connections with specific configuration parameters to reduce overhead and improve performance.",
+          "tags": [
+            "connection-pooling",
+            "performance"
+          ],
+          "word_count": 132
+        },
+        {
+          "id": "database-migrations",
+          "category": "database",
+          "title": "Database Migrations",
+          "summary": "We version-control schema changes using incremental, reversible migrations tested on staging before production deployment.",
+          "tags": [
+            "migrations",
+            "schema",
+            "version-control"
+          ],
+          "word_count": 147
+        },
+        {
+          "id": "query-optimization",
+          "category": "database",
+          "title": "Query Optimization",
+          "summary": "We optimize SQL queries by leveraging indexes, avoiding SELECT *, using EXPLAIN, and batching operations.",
+          "tags": [
+            "sql",
+            "performance",
+            "indexes"
+          ],
+          "word_count": 161
+        },
+        {
+          "id": "transaction-management",
+          "category": "database",
+          "title": "Transaction Management",
+          "summary": "We wrap related operations in database transactions, relying on the default READ COMMITTED isolation level to balance consistency and performance.",
+          "tags": [
+            "transactions",
+            "acid",
+            "isolation"
+          ],
+          "word_count": 155
         }
       ]
     },
@@ -76,120 +197,62 @@
           "id": "blue-green-deployment",
           "category": "deployment",
           "title": "Blue-Green Deployment",
-          "summary": "Reduce downtime by running two identical environments and switching traffic after testing.",
+          "summary": "We reduce downtime by maintaining two identical environments and switching traffic after validation.",
           "tags": [
             "deployment",
             "blue-green",
             "zero-downtime"
           ],
-          "word_count": 45
+          "word_count": 52
         },
         {
           "id": "ci-cd-pipeline",
           "category": "deployment",
           "title": "CI/CD Pipeline",
-          "summary": "Automated stages from code commit to production deployment for reliable software delivery.",
+          "summary": "We automate code delivery with stages from commit to production deployment, ensuring reliable releases.",
           "tags": [
-            "deployment",
             "ci-cd",
-            "automation"
+            "automation",
+            "pipelines"
           ],
-          "word_count": 39
+          "word_count": 42
         },
         {
           "id": "docker-containerization",
           "category": "deployment",
           "title": "Docker Containerization",
-          "summary": "Package applications with dependencies into portable containers for consistent environments.",
+          "summary": "We package applications with dependencies into containers using best practices like multi-stage builds and non-root users.",
           "tags": [
-            "deployment",
             "docker",
-            "containers"
+            "containers",
+            "build"
           ],
-          "word_count": 50
+          "word_count": 49
         },
         {
           "id": "kubernetes-deployment",
           "category": "deployment",
           "title": "Kubernetes Deployment",
-          "summary": "Orchestrate containerized applications at scale using pods, deployments, and services.",
+          "summary": "We orchestrate containerized applications with Kubernetes, using Deployments, Services, ConfigMaps, and Secrets.",
           "tags": [
-            "deployment",
             "kubernetes",
-            "orchestration"
+            "orchestration",
+            "scaling"
           ],
-          "word_count": 32
+          "word_count": 38
         },
         {
           "id": "monitoring-and-logging",
           "category": "deployment",
           "title": "Monitoring and Logging",
-          "summary": "Observability practices for production systems, tracking key metrics and using specialized tools.",
+          "summary": "We monitor request rate, latency, errors, CPU/memory, and connection pools using Prometheus, Grafana, ELK, and Jaeger.",
           "tags": [
-            "deployment",
             "monitoring",
             "observability",
+            "metrics",
             "logging"
           ],
-          "word_count": 45
-        }
-      ]
-    },
-    "database": {
-      "name": "database",
-      "description": "",
-      "modules": [
-        {
-          "id": "database-connection-pooling",
-          "category": "database",
-          "title": "Database Connection Pooling",
-          "summary": "Maintaining a reusable pool of database connections to reduce overhead and improve performance.",
-          "tags": [
-            "database",
-            "connection-pooling",
-            "performance"
-          ],
-          "word_count": 68
-        },
-        {
-          "id": "database-migrations",
-          "category": "database",
-          "title": "Database Migrations",
-          "summary": "Version-controlled schema changes applied incrementally to keep database schemas in sync.",
-          "tags": [
-            "migrations",
-            "version-control",
-            "schema",
-            "alembic",
-            "flyway"
-          ],
-          "word_count": 36
-        },
-        {
-          "id": "query-optimization",
-          "category": "database",
-          "title": "Query Optimization",
-          "summary": "Analyzing and improving SQL queries for better database performance.",
-          "tags": [
-            "sql",
-            "optimization",
-            "indexing",
-            "performance"
-          ],
-          "word_count": 36
-        },
-        {
-          "id": "transaction-management",
-          "category": "database",
-          "title": "Transaction Management",
-          "summary": "Ensuring data consistency by grouping operations into atomic units with ACID properties and isolation levels.",
-          "tags": [
-            "transactions",
-            "acid",
-            "isolation",
-            "consistency"
-          ],
-          "word_count": 43
+          "word_count": 51
         }
       ]
     },
@@ -306,115 +369,13 @@
           "word_count": 100
         }
       ]
-    },
-    "auth": {
-      "name": "auth",
-      "description": "",
-      "modules": [
-        {
-          "id": "access-token-usage",
-          "category": "auth",
-          "title": "Access Token Usage for API Requests",
-          "summary": "The access token is used to make API requests on behalf of the user.",
-          "tags": [
-            "oauth",
-            "access-token",
-            "api"
-          ],
-          "word_count": 45
-        },
-        {
-          "id": "authorization-code-flow",
-          "category": "auth",
-          "title": "Authorization Code Flow",
-          "summary": "The authorization code flow is an OAuth 2.0 grant type where the user authorizes the app, and an authorization code is exchanged for an access token.",
-          "tags": [
-            "oauth",
-            "authorization-code",
-            "flow"
-          ],
-          "word_count": 58
-        },
-        {
-          "id": "authorization-code-redirect",
-          "category": "auth",
-          "title": "Authorization Code Return",
-          "summary": "The provider redirects back to the client with an authorization code after permission is granted.",
-          "tags": [
-            "oauth",
-            "authorization-code",
-            "redirect-uri"
-          ],
-          "word_count": 37
-        },
-        {
-          "id": "oauth-2-0-framework",
-          "category": "auth",
-          "title": "OAuth 2.0 Authorization Framework",
-          "summary": "OAuth 2.0 is a framework for authorization, enabling third-party applications to obtain limited access to a user's resources.",
-          "tags": [
-            "oauth",
-            "authorization",
-            "framework"
-          ],
-          "word_count": 42
-        },
-        {
-          "id": "redirect-to-authorization-endpoint",
-          "category": "auth",
-          "title": "Redirect to Authorization Endpoint",
-          "summary": "The user is redirected to the provider's authorization endpoint to start the permission process.",
-          "tags": [
-            "oauth",
-            "redirect",
-            "authorization-endpoint"
-          ],
-          "word_count": 35
-        },
-        {
-          "id": "token-exchange",
-          "category": "auth",
-          "title": "Token Exchange for Access Token",
-          "summary": "The client exchanges the authorization code for an access token at the provider's token endpoint.",
-          "tags": [
-            "oauth",
-            "token-exchange",
-            "access-token"
-          ],
-          "word_count": 39
-        },
-        {
-          "id": "user-login-initiation",
-          "category": "auth",
-          "title": "User Login Initiation",
-          "summary": "The user starts the OAuth flow by clicking a 'Login with Provider' button in the client application.",
-          "tags": [
-            "oauth",
-            "user-initiation",
-            "login"
-          ],
-          "word_count": 32
-        },
-        {
-          "id": "user-permission-grant",
-          "category": "auth",
-          "title": "User Permission Grant",
-          "summary": "The user grants permission to the application at the authorization server's consent screen.",
-          "tags": [
-            "oauth",
-            "user-consent",
-            "permission"
-          ],
-          "word_count": 32
-        }
-      ]
     }
   },
   "stats": {
-    "total_modules": 30,
-    "total_words": 1856,
+    "total_modules": 27,
+    "total_words": 2886,
     "categories": 5,
-    "last_updated": "2026-05-29T12:05:48.290818"
+    "last_updated": "2026-06-05T06:00:09.454946Z"
   },
-  "updated_at": "2026-05-29T12:05:48.290819"
+  "updated_at": "2026-06-05T06:00:09.454948Z"
 }

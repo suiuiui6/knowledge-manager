@@ -1,22 +1,22 @@
 {
   "id": "api-rate-limiting",
   "category": "api",
-  "title": "API Rate Limiting Implementation",
-  "summary": "Rate limiting protects APIs from abuse and ensures fair usage via algorithms and response headers.",
-  "created_at": "2026-05-29T12:01:37.499942",
-  "updated_at": "2026-05-29T12:01:37.499942",
+  "title": "Rate Limiting Implementation",
+  "summary": "We apply rate limiting with standard response headers and choose algorithms like token bucket based on burst-handling requirements to protect the API and ensure fair usage.",
+  "created_at": "2026-06-05T05:05:15.010014Z",
+  "updated_at": "2026-06-05T05:05:15.010015Z",
   "content": {
-    "overview": "Rate limiting controls the number of requests a client can make in a given time window.",
-    "details": "Implementation algorithms: Token bucket, fixed window counters, sliding window logs. Standard response headers: X-RateLimit-Limit (max allowed), X-RateLimit-Remaining (left), X-RateLimit-Reset (time of reset).",
-    "examples": "Response header: X-RateLimit-Limit: 100, X-RateLimit-Remaining: 45, X-RateLimit-Reset: 1620000000.",
+    "overview": "We enforce rate limiting on our APIs to guard against abuse and guarantee equitable access. The implementation exposes standard headers and selects an algorithm that fits burst tolerance needs.",
+    "details": "We evaluate token bucket, fixed window, and sliding window log algorithms. Token bucket is preferred when we need to allow bursts while maintaining an average rate; fixed window is simpler but can suffer from boundary double-spend issues. Whichever algorithm is used, our responses always include X-RateLimit-Limit, X-RateLimit-Remaining, and X-RateLimit-Reset headers so clients can adapt their request pacing.",
+    "examples": "Response header example: X-RateLimit-Limit: 100, X-RateLimit-Remaining: 45, X-RateLimit-Reset: 1620000000.",
     "references": "",
-    "caveats": "Choose algorithm based on burst handling requirements; token bucket allows bursts, fixed window may suffer from boundary issues."
+    "caveats": "Fixed window counters are susceptible to boundary problems where clients send requests at the edge of two windows; choose token bucket or sliding logs when this is unacceptable."
   },
   "metadata": {
     "tags": [
+      "api",
       "rate-limiting",
-      "security",
-      "fair-use"
+      "headers"
     ],
     "related_modules": [],
     "confidence": "high",

@@ -2,22 +2,21 @@
   "id": "query-optimization",
   "category": "database",
   "title": "Query Optimization",
-  "summary": "Analyzing and improving SQL queries for better database performance.",
-  "created_at": "2026-05-29T12:00:19.882468",
-  "updated_at": "2026-05-29T12:00:19.882468",
+  "summary": "We optimize SQL queries by leveraging indexes, avoiding SELECT *, using EXPLAIN, and batching operations.",
+  "created_at": "2026-06-05T05:07:45.329163Z",
+  "updated_at": "2026-06-05T05:07:45.329163Z",
   "content": {
-    "overview": "Query optimization involves analyzing and improving SQL queries for better performance.",
-    "details": "Key techniques: use indexes on frequently queried columns, avoid SELECT * in production code, use EXPLAIN to analyze query plans, and batch operations when possible.",
-    "examples": "",
-    "references": "",
-    "caveats": ""
+    "overview": "We analyze query execution with EXPLAIN, add indexes on high‑usage columns, avoid fetching unnecessary data, and batch writes to reduce round‑trips.",
+    "details": "We use the database’s EXPLAIN (or EXPLAIN ANALYZE) to inspect query plans and confirm that indexes are used appropriately. We never use SELECT * in production code to minimise bandwidth and enable index‑only scans. For multiple inserts, updates, or deletes, we batch them into a single statement or use bulk APIs. We weigh the trade‑off that indexes speed up reads at the cost of write performance and storage, so we only add indexes that match frequent query patterns.",
+    "examples": "Analyzing a query:\nEXPLAIN ANALYZE SELECT id FROM orders WHERE customer_id = 123;\n\nAdding a supporting index:\nCREATE INDEX idx_orders_customer_id ON orders(customer_id);\n\nBatching inserts:\nINSERT INTO logs (event, timestamp) VALUES (…), (…), (…);",
+    "references": "Connection Pooling, Transaction Management",
+    "caveats": "Indexes incur write overhead; over‑indexing can degrade insert/update throughput. EXPLAIN plans depend on current statistics; keep statistics updated. Avoid introducing full‑table scans under production load."
   },
   "metadata": {
     "tags": [
       "sql",
-      "optimization",
-      "indexing",
-      "performance"
+      "performance",
+      "indexes"
     ],
     "related_modules": [],
     "confidence": "high",
