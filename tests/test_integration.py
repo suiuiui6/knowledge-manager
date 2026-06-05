@@ -154,7 +154,7 @@ def test_extract_review_approve_workflow(runner, integration_kb):
 
     extracted = [make_module("auth-jwt", "auth"), make_module("auth-oauth", "auth")]
 
-    async def fake_extract(self, text, category):
+    async def fake_extract(self, text, category, existing_categories=""):
         return extracted
 
     with patch("knowledge_manager.cli.Extractor.extract", new=fake_extract), patch(
