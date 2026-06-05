@@ -119,7 +119,15 @@ def init(path: Optional[Path]) -> None:
 
     kb.mkdir(parents=True, exist_ok=True)
     _staging_path(kb).mkdir(exist_ok=True)
-    save_index(Index(description="Knowledge base"), kb)
+    overview = (
+        "A curated knowledge base of our team's technical methodology — "
+        "architecture decisions, implementation patterns, operational practices, "
+        "and lessons learned. Each module captures HOW we approach a topic, "
+        "not just what it means. Use the index to identify relevant modules, "
+        "then load the ones you need. Prefer modules with higher confidence "
+        "ratings. Cross-reference related modules when topics overlap."
+    )
+    save_index(Index(description=overview), kb)
 
     default_config = Config(
         llm_providers={
@@ -130,7 +138,7 @@ def init(path: Optional[Path]) -> None:
                 default=True,
             )
         },
-        extraction=ExtractionConfig(provider="deepseek"),
+        extraction=ExtractionConfig(provider="deepseek", auto_categorize=True),
     )
     _save_config(kb, default_config)
 

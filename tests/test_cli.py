@@ -8,7 +8,7 @@ from click.testing import CliRunner
 
 from knowledge_manager.cli import cli
 from knowledge_manager.schemas import Module, ModuleContent, ModuleMetadata
-from knowledge_manager.storage import save_module, save_to_staging, save_index, rebuild_index
+from knowledge_manager.storage import save_module, save_to_staging, save_index, rebuild_index, load_index
 from knowledge_manager.schemas import Index
 
 
@@ -304,3 +304,16 @@ def test_cli_review_empty_staging(cli_runner, initialized_kb):
     result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "review"])
     assert result.exit_code == 0
     assert "No" in result.output or "no" in result.output.lower()
+
+
+def test_init_creates_meaningful_description():
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        kb = Path("test_kb")
+        result = runner.invoke(cli, ["init", str(kb)])
+        assert result.exit_code == 0
+
+        index = load_index(kb)
+        assert index is not None
+        assert len(index.description) > 20, "Description should be more than just 'Knowledge base'"
+        assert "methodology" in index.description.lower() or "knowledge" in index.description.lower()
