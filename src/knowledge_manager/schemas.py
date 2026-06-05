@@ -128,6 +128,7 @@ class ExtractionConfig(BaseModel):
     max_modules_per_extraction: int = 10
     chunk_size: int = 8000
     chunk_overlap: int = 400
+    auto_categorize: bool = False
 
 
 class CacheConfig(BaseModel):

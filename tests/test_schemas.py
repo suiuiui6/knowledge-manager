@@ -79,3 +79,15 @@ def test_default_timestamps_are_timezone_aware():
     assert module.updated_at.tzinfo == timezone.utc
     assert index.updated_at.tzinfo == timezone.utc
     assert index.stats.last_updated.tzinfo == timezone.utc
+
+
+def test_extraction_config_auto_categorize_default():
+    from knowledge_manager.schemas import ExtractionConfig
+    cfg = ExtractionConfig()
+    assert cfg.auto_categorize is False
+
+
+def test_extraction_config_auto_categorize_explicit():
+    from knowledge_manager.schemas import ExtractionConfig
+    cfg = ExtractionConfig(auto_categorize=True)
+    assert cfg.auto_categorize is True
