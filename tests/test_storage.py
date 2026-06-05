@@ -259,6 +259,28 @@ def test_stem_reduces_morphological_variants():
 
 
 
+def test_search_modules_with_category_filter(kb_path):
+    _kb_with_signals(kb_path)
+    results = search_modules("auth", kb_path, category="auth")
+    ids = [m.id for m in results]
+    assert "jwt" in ids
+    assert "conn-pool" not in ids, "conn-pool is in database category, should be filtered out"
+
+
+def test_search_modules_with_nonexistent_category(kb_path):
+    _kb_with_signals(kb_path)
+    results = search_modules("auth", kb_path, category="nonexistent")
+    assert results == []
+
+
+def test_search_modules_without_category_filter_returns_all(kb_path):
+    _kb_with_signals(kb_path)
+    results = search_modules("auth", kb_path)
+    ids = [m.id for m in results]
+    assert "jwt" in ids
+    assert "conn-pool" in ids
+
+
 def test_search_modules_stem_matches_long_term(kb_path):
     _kb_with_signals(kb_path)
 

@@ -68,7 +68,7 @@ def list_modules(kb_path: Path) -> List[Module]:
     return modules
 
 
-def search_modules(query: str, kb_path: Path) -> List[Module]:
+def search_modules(query: str, kb_path: Path, category: str | None = None) -> List[Module]:
     terms = query.lower().split()
     if not terms:
         return []
@@ -130,6 +130,10 @@ def search_modules(query: str, kb_path: Path) -> List[Module]:
 
         if score > 0:
             scored.append((score, best_quality, module))
+
+    # Filter by category if specified
+    if category is not None:
+        scored = [(s, q, m) for s, q, m in scored if m.category == category]
 
     scored.sort(key=lambda item: (item[0], item[1]), reverse=True)
     return [module for _, _, module in scored]
