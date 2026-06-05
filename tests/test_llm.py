@@ -307,3 +307,81 @@ async def test_extractor_logs_metadata_without_content_leak(caplog):
     assert any("Prepared prompt" in record.getMessage() for record in caplog.records)
     assert raw_text not in caplog.text
     assert VALID_EXTRACTION_JSON not in caplog.text
+
+
+METHODOLOGY_EXTRACTION_JSON = json.dumps([
+    {
+        "category": "auth",
+        "id": "jwt-token-strategy",
+        "title": "JWT Token Strategy",
+        "summary": "We use short-lived access tokens with refresh rotation for API auth",
+        "content": {
+            "overview": "Our auth strategy uses RS256-signed JWTs with 15min expiry and rotating refresh tokens",
+            "details": "We chose RS256 over HS256 so the API gateway can validate without shared secrets. Refresh tokens rotate on each use to limit replay window. Token blacklist is maintained in Redis.",
+            "examples": "Authorization: Bearer eyJ...\n\ncurl -H 'Authorization: Bearer $TOKEN' https://api.example.com/v1/users",
+            "references": "auth/oauth-2-0-framework, auth/access-token-usage",
+            "caveats": "Short expiry means clients must handle 401s gracefully and retry with refresh. Redis blacklist is a SPOF — fail open if Redis is unavailable."
+        },
+        "metadata": {"tags": ["jwt", "auth", "tokens", "security"], "confidence": "high"},
+    }
+])
+
+INVALID_THEN_VALID_JSON = [
+    'not valid json at all {{{broken',
+    METHODOLOGY_EXTRACTION_JSON,
+]
+
+
+@pytest.mark.asyncio
+async def test_extractor_retries_on_json_failure():
+    mock_llm = AsyncMock()
+    mock_llm.complete = AsyncMock(side_effect=INVALID_THEN_VALID_JSON)
+
+    extractor = Extractor(mock_llm, ExtractionConfig())
+    modules = await extractor.extract("raw text about JWT", "auth")
+
+    assert mock_llm.complete.await_count == 2
+    assert len(modules) == 1
+    assert modules[0].id == "jwt-token-strategy"
+
+
+@pytest.mark.asyncio
+async def test_extractor_handles_list_response_even_on_second_try():
+    """After a non-list response on attempt 1, retry should get list on attempt 2."""
+    mock_llm = AsyncMock()
+    mock_llm.complete = AsyncMock(side_effect=[
+        '{"not": "a list"}',
+        METHODOLOGY_EXTRACTION_JSON,
+    ])
+
+    extractor = Extractor(mock_llm, ExtractionConfig())
+    modules = await extractor.extract("raw text about JWT", "auth")
+
+    assert len(modules) == 1
+    assert modules[0].id == "jwt-token-strategy"
+
+
+@pytest.mark.asyncio
+async def test_extractor_methodology_prompt_includes_category_context():
+    """Verify the prompt tells the LLM about existing categories."""
+    mock_llm = AsyncMock()
+    mock_llm.complete = AsyncMock(return_value=METHODOLOGY_EXTRACTION_JSON)
+
+    extractor = Extractor(mock_llm, ExtractionConfig())
+    await extractor.extract("raw text", "auth")
+
+    call_text = mock_llm.complete.call_args[0][0]
+    assert "methodology" in call_text.lower() or "how we" in call_text.lower() or "our approach" in call_text.lower()
+    assert "auth" in call_text
+
+
+@pytest.mark.asyncio
+async def test_extractor_preserves_category_in_module():
+    """Module's category field should be set from the extraction category parameter."""
+    mock_llm = AsyncMock()
+    mock_llm.complete = AsyncMock(return_value=METHODOLOGY_EXTRACTION_JSON)
+
+    extractor = Extractor(mock_llm, ExtractionConfig())
+    modules = await extractor.extract("raw text", "auth")
+
+    assert modules[0].category == "auth"
