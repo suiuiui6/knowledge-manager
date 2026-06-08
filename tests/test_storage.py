@@ -743,6 +743,56 @@ def test_search_modules_boost_ids_promotes_recently_loaded(kb_path):
     assert boosted_ids[0] == "mod-b", f"Boost should promote mod-b, got {boosted_ids}"
 
 
+def test_sanitize_config_replaces_api_keys():
+    from knowledge_manager.storage import sanitize_config
+    from knowledge_manager.schemas import Config, LLMProviderConfig
+
+    cfg = Config(
+        llm_providers={
+            "deepseek": LLMProviderConfig(
+                api_key="sk-secret-123",
+                model="deepseek-v4",
+                default=True,
+            ),
+            "claude": LLMProviderConfig(
+                api_key="sk-ant-secret-456",
+                model="claude-opus-4",
+            ),
+        }
+    )
+    sanitized = sanitize_config(cfg)
+    assert sanitized.llm_providers["deepseek"].api_key == "<LOCAL>"
+    assert sanitized.llm_providers["claude"].api_key == "<LOCAL>"
+    # Other fields preserved
+    assert sanitized.llm_providers["deepseek"].model == "deepseek-v4"
+    assert sanitized.llm_providers["deepseek"].default is True
+
+
+def test_sanitize_config_handles_empty_keys():
+    from knowledge_manager.storage import sanitize_config
+    from knowledge_manager.schemas import Config, LLMProviderConfig
+
+    cfg = Config(
+        llm_providers={
+            "deepseek": LLMProviderConfig(
+                api_key="",
+                model="deepseek-v4",
+                default=True,
+            ),
+        }
+    )
+    sanitized = sanitize_config(cfg)
+    assert sanitized.llm_providers["deepseek"].api_key == ""
+
+
+def test_sanitize_config_handles_no_providers():
+    from knowledge_manager.storage import sanitize_config
+    from knowledge_manager.schemas import Config
+    cfg = Config()
+    sanitized = sanitize_config(cfg)
+    assert sanitized.llm_providers == {}
+
+
 def test_record_search_event_writes_jsonl(kb_path):
     record_search_event("JWT authentication", ["auth/jwt", "auth/oauth-flow"], kb_path)
     events_file = kb_path / ".telemetry" / "search_events.jsonl"

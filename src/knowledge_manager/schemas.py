@@ -24,6 +24,7 @@ class ModuleMetadata(BaseModel):
     source: str = Field(default="")
     expires_at: Optional[datetime] = None
     review_interval_days: Optional[int] = None
+    status: Literal["draft", "reviewed", "published", "deprecated", "archived"] = "published"
 
 
 class Module(BaseModel):
@@ -154,12 +155,37 @@ class TelemetryConfig(BaseModel):
     enabled: bool = True
 
 
+class ReviewRecord(BaseModel):
+    reviewer: str
+    action: Literal["approved", "changes-requested"]
+    comment: str = ""
+    timestamp: datetime = Field(default_factory=utc_now)
+
+
+class StagingMeta(BaseModel):
+    module_id: str
+    status: Literal["pending", "approved", "changes-requested"] = "pending"
+    submitted_by: str = ""
+    submitted_at: datetime = Field(default_factory=utc_now)
+    reviews: List[ReviewRecord] = Field(default_factory=list)
+
+    def approval_count(self) -> int:
+        return sum(1 for r in self.reviews if r.action == "approved")
+
+
+class ReviewConfig(BaseModel):
+    required_approvals: int = 1
+    auto_approve_self_submitted: bool = False
+    reviewer_whitelist: List[str] = Field(default_factory=list)
+
+
 class Config(BaseModel):
     llm_providers: Dict[str, LLMProviderConfig] = Field(default_factory=dict)
     extraction: ExtractionConfig = Field(default_factory=ExtractionConfig)
     cache: CacheConfig = Field(default_factory=CacheConfig)
     telemetry: TelemetryConfig = Field(default_factory=TelemetryConfig)
     synonyms: Dict[str, List[str]] = Field(default_factory=dict)
+    review: ReviewConfig = Field(default_factory=ReviewConfig)
 
     def get_default_provider(self) -> Tuple[str, LLMProviderConfig]:
         for name, provider in self.llm_providers.items():

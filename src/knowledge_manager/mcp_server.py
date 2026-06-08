@@ -5,7 +5,7 @@ from pathlib import Path
 from mcp.server.fastmcp import FastMCP
 
 from knowledge_manager.cache import ModuleCache
-from knowledge_manager.storage import load_index, load_module, record_load_event, search_modules
+from knowledge_manager.storage import load_changelogs, load_index, load_module, load_module_changelog, record_load_event, search_modules
 
 
 def _snippet(text: str, query: str, maxlen: int = 100) -> str:
@@ -50,6 +50,18 @@ def create_server(kb_path: Path, cache: ModuleCache | None = None) -> FastMCP:
             })
         return index.model_dump_json()
 
+    @mcp.resource("knowledge://changelog/{module_key}")
+    def get_module_changelog(module_key: str) -> str:
+        """Get changelog history for a specific module (category/id)."""
+        entries = load_module_changelog(kb_path, module_key)
+        return json.dumps(entries, indent=2)
+
+    @mcp.resource("knowledge://changelog")
+    def get_changelog() -> str:
+        """Get recent knowledge base changelog (last 7 days of module changes)."""
+        changelogs = load_changelogs(kb_path, days=7)
+        return json.dumps(changelogs, indent=2)
+
     @mcp.tool(name="load_module")
     def load_module_tool(module_id: str, category: str) -> str:
         """Load a full knowledge module by ID and category."""
@@ -73,10 +85,10 @@ def create_server(kb_path: Path, cache: ModuleCache | None = None) -> FastMCP:
         return module.model_dump_json(indent=2)
 
     @mcp.tool(name="search_modules")
-    def search_modules_tool(query: str, category: str = "") -> str:
+    def search_modules_tool(query: str, category: str = "", include_archived: bool = False) -> str:
         """Search modules by keyword. Word-boundary matching across title, tags,
         summary, and overview; results scored and sorted by relevance.
-        Optionally filter by category."""
+        Optionally filter by category. Set include_archived=true to search archived modules."""
         results = [
             {
                 "id": r.module.id,
@@ -85,12 +97,13 @@ def create_server(kb_path: Path, cache: ModuleCache | None = None) -> FastMCP:
                 "summary": r.module.summary,
                 "tags": r.module.metadata.tags,
                 "confidence": r.module.metadata.confidence,
+                "status": r.module.metadata.status,
                 "source": r.source,
                 "caveats": r.module.content.caveats,
                 "related_modules": r.module.metadata.related_modules,
                 "snippet": _snippet(r.module.content.overview, query),
             }
-            for r in search_modules(query, kb_path, category if category else None, boost_ids=_session_loaded)
+            for r in search_modules(query, kb_path, category if category else None, boost_ids=_session_loaded, include_archived=include_archived)
         ]
         return json.dumps(results, indent=2)
 

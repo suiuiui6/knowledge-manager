@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Mapping, NamedTuple, Optional, cast
 
 from snowballstemmer import stemmer as _snowball_stemmer  # type: ignore[import-untyped]
 
-from knowledge_manager.schemas import Config, Index, Module
+from knowledge_manager.schemas import Config, Index, Module, StagingMeta
 
 
 _FIELD_WEIGHTS = {"title": 5, "tag": 3, "summary": 2, "overview": 1, "details": 1, "examples": 0, "caveats": 0}
@@ -200,12 +200,14 @@ def _bm25_scores(query: str, modules: List[Module]) -> Dict[str, float]:
     return scores
 
 
-def search_modules(query: str, kb_path: Path, category: str | None = None, limit: int = 15, boost_ids: List[str] | None = None) -> List[SearchResult]:
+def search_modules(query: str, kb_path: Path, category: str | None = None, limit: int = 15, boost_ids: List[str] | None = None, include_archived: bool = False) -> List[SearchResult]:
     terms = query.lower().split()
     if not terms:
         return []
 
     all_modules = list_modules(kb_path)
+    if not include_archived:
+        all_modules = [m for m in all_modules if m.metadata.status != "archived"]
     bm25 = _bm25_scores(query, all_modules)
 
     # Build tag synonym map from co-occurring tags across all modules
@@ -378,11 +380,18 @@ def search_modules(query: str, kb_path: Path, category: str | None = None, limit
     def _session_boost(module_id: str, heur_score: float) -> float:
         return heur_score * 1.2 if module_id in boost_set else heur_score
 
+    def _effective_confidence(module: Module) -> float:
+        """Deprecated modules get confidence penalty (treated as low)."""
+        conf = module.metadata.confidence
+        if module.metadata.status == "deprecated":
+            conf = "low"
+        return _CONFIDENCE_WEIGHT.get(conf, 0.85)
+
     # Primary: confidence-weighted heuristic score (with session boost).
     # Secondary: match quality. Tertiary: Bayesian prior. Fourth: BM25.
     scored.sort(
         key=lambda item: (
-            _session_boost(item[3].id, item[1]) * _CONFIDENCE_WEIGHT.get(item[3].metadata.confidence, 0.85),
+            _session_boost(item[3].id, item[1]) * _effective_confidence(item[3]),
             item[2],
             _bayesian_bonus(item[3]),
             item[0],
@@ -396,6 +405,136 @@ def search_modules(query: str, kb_path: Path, category: str | None = None, limit
     record_search_event(query, result_ids, kb_path)
 
     return results[:limit]
+
+
+def generate_changelog(kb_path: Path) -> dict | None:
+    """Generate changelog from git log since the last changelog entry."""
+    import subprocess
+
+    # Find last changelog date
+    changelog_dir = kb_path / ".changelog"
+    changelog_dir.mkdir(parents=True, exist_ok=True)
+    existing_dates = sorted([f.stem for f in changelog_dir.glob("*.json")])
+
+    since_arg = ""
+    if existing_dates:
+        since_arg = f"--since={existing_dates[-1]}"
+
+    # Get git log
+    cmd = ["git", "-C", str(kb_path), "log", "--format=%H||%an||%s"]
+    if since_arg:
+        cmd.append(since_arg)
+    result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    if result.returncode != 0 or not result.stdout.strip():
+        return None
+
+    commits = []
+    for line in result.stdout.strip().split("\n"):
+        parts = line.split("||", 2)
+        if len(parts) != 3:
+            continue
+        commit_hash, author, message = parts
+
+        # Get changed files
+        diff_result = subprocess.run(
+            ["git", "-C", str(kb_path), "diff-tree", "--no-commit-id", "--name-only", "-r", commit_hash],
+            capture_output=True, text=True, check=False,
+        )
+        changed_files = [f for f in diff_result.stdout.strip().split("\n") if f.endswith(".json") and f not in ("index.json", "config.json")]
+
+        if not changed_files:
+            continue
+
+        changes = {"added": [], "modified": [], "deleted": []}
+        for f in changed_files:
+            # Determine if added/modified/deleted by checking parent
+            parent_result = subprocess.run(
+                ["git", "-C", str(kb_path), "cat-file", "-e", f"{commit_hash}~1:{f}"],
+                capture_output=True, check=False,
+            )
+            if parent_result.returncode != 0:
+                changes["added"].append(f.replace(".json", ""))
+            else:
+                changes["modified"].append(f.replace(".json", ""))
+
+        commits.append({
+            "hash": commit_hash[:7],
+            "author": author,
+            "message": message,
+            "changes": changes,
+        })
+
+    if not commits:
+        return None
+
+    from datetime import date
+    changelog = {
+        "date": date.today().isoformat(),
+        "commits": commits,
+    }
+    # Save to .changelog/
+    changelog_file = changelog_dir / f"{changelog['date']}.json"
+    import json
+    changelog_file.write_text(json.dumps(changelog, indent=2), encoding="utf-8")
+    return changelog
+
+
+def load_changelogs(kb_path: Path, days: int = 7) -> list[dict]:
+    """Load changelog entries from the last N days."""
+    changelog_dir = kb_path / ".changelog"
+    if not changelog_dir.exists():
+        return []
+
+    from datetime import date, timedelta
+    cutoff = date.today() - timedelta(days=days)
+    import json
+
+    changelogs = []
+    for f in sorted(changelog_dir.glob("*.json"), reverse=True):
+        try:
+            data = json.loads(f.read_text(encoding="utf-8"))
+            entry_date = date.fromisoformat(data.get("date", ""))
+            if entry_date >= cutoff:
+                changelogs.append(data)
+        except (json.JSONDecodeError, ValueError):
+            pass
+    return changelogs
+
+
+def load_module_changelog(kb_path: Path, module_key: str) -> list[dict]:
+    """Load changelog entries for a specific module (category/id)."""
+    changelog_dir = kb_path / ".changelog"
+    if not changelog_dir.exists():
+        return []
+
+    import json
+    entries = []
+    for f in sorted(changelog_dir.glob("*.json"), reverse=True):
+        try:
+            data = json.loads(f.read_text(encoding="utf-8"))
+            for commit in data.get("commits", []):
+                all_changes = []
+                for kind in ("added", "modified", "deleted"):
+                    all_changes.extend(commit["changes"].get(kind, []))
+                if module_key in all_changes:
+                    entries.append({
+                        "date": data["date"],
+                        "hash": commit["hash"],
+                        "author": commit["author"],
+                        "message": commit["message"],
+                    })
+        except (json.JSONDecodeError, ValueError):
+            pass
+    return entries
+
+
+def sanitize_config(config: Config) -> Config:
+    """Return a copy of config with all api_key values replaced by '<LOCAL>' placeholder."""
+    sanitized = config.model_copy(deep=True)
+    for provider in sanitized.llm_providers.values():
+        if provider.api_key:
+            provider.api_key = "<LOCAL>"
+    return sanitized
 
 
 def save_index(index: Index, kb_path: Path) -> None:
@@ -452,6 +591,35 @@ def list_staging(staging_path: Path) -> List[Module]:
         except Exception:
             pass
     return modules
+
+
+def save_staging_meta(meta: StagingMeta, staging_path: Path) -> None:
+    _atomic_write(staging_path / f"{meta.module_id}.meta.json", meta.model_dump_json(indent=2))
+
+
+def load_staging_meta(module_id: str, staging_path: Path) -> StagingMeta | None:
+    path = staging_path / f"{module_id}.meta.json"
+    if not path.exists():
+        return None
+    return StagingMeta.model_validate_json(path.read_text(encoding="utf-8"))
+
+
+def delete_staging_meta(module_id: str, staging_path: Path) -> None:
+    path = staging_path / f"{module_id}.meta.json"
+    if path.exists():
+        path.unlink()
+
+
+def list_staging_meta(staging_path: Path) -> List[StagingMeta]:
+    if not staging_path.exists():
+        return []
+    metas = []
+    for json_file in staging_path.glob("*.meta.json"):
+        try:
+            metas.append(StagingMeta.model_validate_json(json_file.read_text(encoding="utf-8")))
+        except Exception:
+            pass
+    return metas
 
 
 def approve_from_staging(module_id: str, staging_path: Path, kb_path: Path) -> None:

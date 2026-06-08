@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -22,14 +23,20 @@ from knowledge_manager.schemas import (
 from knowledge_manager.storage import (
     approve_from_staging,
     delete_module,
+    delete_staging_meta,
     list_modules,
     list_staging,
+    list_staging_meta,
+    load_from_staging,
     load_index,
     load_module,
     load_search_events,
+    load_staging_meta,
     rebuild_index,
+    sanitize_config,
     save_index,
     save_module,
+    save_staging_meta,
     save_to_staging,
     search_modules,
 )
@@ -121,6 +128,17 @@ def init(path: Optional[Path]) -> None:
 
     kb.mkdir(parents=True, exist_ok=True)
     _staging_path(kb).mkdir(exist_ok=True)
+
+    # Write .gitignore template
+    gitignore = kb / ".gitignore"
+    gitignore.write_text(
+        "# Knowledge Manager — local and sensitive files\n"
+        ".staging/\n"
+        ".telemetry/\n"
+        "config.local.json\n",
+        encoding="utf-8",
+    )
+
     overview = (
         "A curated knowledge base of our team's technical methodology — "
         "architecture decisions, implementation patterns, operational practices, "
@@ -259,6 +277,60 @@ def show(ctx: click.Context, module_id: str, category: str) -> None:
         click.echo(f"Error: module not found: {category}/{module_id}", err=True)
         raise click.Abort()
     click.echo(module.model_dump_json(indent=2))
+
+
+# --- deprecate / archive ---
+
+
+@cli.command()
+@click.argument("module_ref")
+@click.option("--reason", default="", help="Reason for deprecation")
+@click.pass_context
+def deprecate(ctx: click.Context, module_ref: str, reason: str) -> None:
+    """Mark a module as deprecated. Usage: km deprecate category/module-id"""
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    parts = module_ref.split("/", 1)
+    if len(parts) != 2:
+        click.echo("Error: Use format 'category/module-id'", err=True)
+        raise click.Abort()
+    category, module_id = parts
+
+    module = load_module(module_id, category, kb)
+    if module is None:
+        click.echo(f"Module not found: {module_ref}", err=True)
+        raise click.Abort()
+
+    module.metadata.status = "deprecated"
+    save_module(module, kb)
+    rebuild_index(kb)
+    click.echo(f"Deprecated: {module_ref}" + (f" — {reason}" if reason else ""))
+
+
+@cli.command()
+@click.argument("module_ref")
+@click.pass_context
+def archive(ctx: click.Context, module_ref: str) -> None:
+    """Archive a module (hidden from default search). Usage: km archive category/module-id"""
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    parts = module_ref.split("/", 1)
+    if len(parts) != 2:
+        click.echo("Error: Use format 'category/module-id'", err=True)
+        raise click.Abort()
+    category, module_id = parts
+
+    module = load_module(module_id, category, kb)
+    if module is None:
+        click.echo(f"Module not found: {module_ref}", err=True)
+        raise click.Abort()
+
+    module.metadata.status = "archived"
+    save_module(module, kb)
+    rebuild_index(kb)
+    click.echo(f"Archived: {module_ref}")
 
 
 # --- stale ---
@@ -415,15 +487,20 @@ def add(ctx: click.Context, file: Path, category: str) -> None:
     click.echo(f"Extracted {len(modules)} module(s) into staging")
 
 
-# --- review (interactive) ---
+# --- review (interactive + subcommands) ---
 
-@cli.command()
+@cli.group(invoke_without_command=True)
 @click.pass_context
 def review(ctx: click.Context) -> None:
-    """Review staged modules interactively (a=approve, r=reject, s=skip)."""
+    """Review staged modules. Run without subcommand for interactive mode."""
+    if ctx.invoked_subcommand is not None:
+        return
+
     kb = ctx.obj["kb_path"]
     _require_kb(kb)
     staging = _staging_path(kb)
+    from knowledge_manager.storage import save_staging_meta
+    from knowledge_manager.schemas import StagingMeta
 
     pending = list_staging(staging)
     if not pending:
@@ -431,7 +508,14 @@ def review(ctx: click.Context) -> None:
         return
 
     for i, module in enumerate(pending, 1):
+        # Load or create metadata
+        meta = load_staging_meta(module.id, staging)
+        if meta is None:
+            meta = StagingMeta(module_id=module.id)
+
         console.print(f"\n[bold cyan]Module {i}/{len(pending)}[/bold cyan]")
+        if meta.status != "pending":
+            console.print(f"[dim]Status: {meta.status} ({meta.approval_count()} approval(s))[/dim]")
         console.print(f"[bold]Category:[/bold] {module.category}")
         console.print(f"[bold]ID:[/bold] {module.id}")
         console.print(f"[bold]Title:[/bold] {module.title}")
@@ -442,15 +526,169 @@ def review(ctx: click.Context) -> None:
         action = Prompt.ask("Action", choices=["a", "r", "s"], default="a")
 
         if action == "a":
+            meta.status = "approved"
+            save_staging_meta(meta, staging)
             approve_from_staging(module.id, staging, kb)
+            delete_staging_meta(module.id, staging)
             console.print("[green]Approved[/green]")
         elif action == "r":
             (staging / f"{module.id}.json").unlink()
+            delete_staging_meta(module.id, staging)
             console.print("[red]Rejected[/red]")
         else:
             console.print("[yellow]Skipped[/yellow]")
 
     rebuild_index(kb)
+
+
+@review.command("list")
+@click.pass_context
+def review_list(ctx: click.Context) -> None:
+    """List all staged modules with review status."""
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+    staging = _staging_path(kb)
+    pending = list_staging(staging)
+
+    if not pending:
+        click.echo("No staged modules.")
+        return
+
+    table = Table(title="Staged Modules")
+    table.add_column("Module")
+    table.add_column("Status")
+    table.add_column("Approvals")
+    table.add_column("Submitted By")
+    for m in pending:
+        meta = load_staging_meta(m.id, staging)
+        status = meta.status if meta else "pending"
+        approvals = str(meta.approval_count()) if meta else "0"
+        submitted_by = meta.submitted_by if meta else "-"
+        table.add_row(f"{m.category}/{m.id}", status, approvals, submitted_by)
+    console.print(table)
+
+
+@review.command("show")
+@click.argument("module_id")
+@click.pass_context
+def review_show(ctx: click.Context, module_id: str) -> None:
+    """Show a staged module and its review history."""
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+    staging = _staging_path(kb)
+
+    module = load_from_staging(module_id, staging)
+    if module is None:
+        click.echo(f"Module not found in staging: {module_id}", err=True)
+        raise click.Abort()
+
+    meta = load_staging_meta(module_id, staging)
+
+    console.print(f"[bold]Module:[/bold] {module.category}/{module.id}")
+    console.print(f"[bold]Title:[/bold] {module.title}")
+    console.print(f"[bold]Summary:[/bold] {module.summary}")
+    if meta:
+        console.print(f"[bold]Status:[/bold] {meta.status}")
+        console.print(f"[bold]Submitted by:[/bold] {meta.submitted_by or 'unknown'}")
+        console.print(f"[bold]Submitted at:[/bold] {meta.submitted_at}")
+        if meta.reviews:
+            console.print(f"\n[bold]Reviews ({len(meta.reviews)}):[/bold]")
+            for r in meta.reviews:
+                action_color = "green" if r.action == "approved" else "red"
+                console.print(f"  [{action_color}]{r.action}[/{action_color}] by {r.reviewer} at {r.timestamp}")
+                if r.comment:
+                    console.print(f"    {r.comment}")
+    console.print(f"\n[bold]Content:[/bold]")
+    console.print(module.model_dump_json(indent=2))
+
+
+@review.command("approve")
+@click.argument("module_id")
+@click.option("--comment", "-m", default="", help="Approval comment")
+@click.pass_context
+def review_approve(ctx: click.Context, module_id: str, comment: str) -> None:
+    """Approve a staged module for inclusion in the KB."""
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+    staging = _staging_path(kb)
+    from knowledge_manager.schemas import ReviewRecord
+
+    module = load_from_staging(module_id, staging)
+    if module is None:
+        click.echo(f"Module not found in staging: {module_id}", err=True)
+        raise click.Abort()
+
+    meta = load_staging_meta(module_id, staging)
+    if meta is None:
+        meta = StagingMeta(module_id=module_id)
+
+    meta.reviews.append(ReviewRecord(reviewer="cli", action="approved", comment=comment))
+    meta.status = "approved" if meta.approval_count() >= 1 else meta.status
+
+    cfg = _load_config(kb)
+    required = cfg.review.required_approvals
+    if meta.approval_count() >= required:
+        approve_from_staging(module_id, staging, kb)
+        delete_staging_meta(module_id, staging)
+        rebuild_index(kb)
+        click.echo(f"Approved and merged: {module_id} ({meta.approval_count()} approval(s))")
+    else:
+        save_staging_meta(meta, staging)
+        click.echo(f"Approved: {module_id} ({meta.approval_count()}/{required} approvals needed)")
+
+
+@review.command("request-changes")
+@click.argument("module_id")
+@click.option("--comment", "-m", required=True, help="Reason for changes requested")
+@click.pass_context
+def review_request_changes(ctx: click.Context, module_id: str, comment: str) -> None:
+    """Request changes on a staged module."""
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+    staging = _staging_path(kb)
+    from knowledge_manager.schemas import ReviewRecord
+
+    module = load_from_staging(module_id, staging)
+    if module is None:
+        click.echo(f"Module not found in staging: {module_id}", err=True)
+        raise click.Abort()
+
+    meta = load_staging_meta(module_id, staging)
+    if meta is None:
+        meta = StagingMeta(module_id=module_id)
+
+    meta.reviews.append(ReviewRecord(reviewer="cli", action="changes-requested", comment=comment))
+    meta.status = "changes-requested"
+    save_staging_meta(meta, staging)
+    click.echo(f"Changes requested for {module_id}: {comment}")
+
+
+@review.command("my-submissions")
+@click.pass_context
+def review_my_submissions(ctx: click.Context) -> None:
+    """Show your submitted staging modules and their review status."""
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+    staging = _staging_path(kb)
+
+    metas = list_staging_meta(staging)
+    if not metas:
+        click.echo("No staged modules.")
+        return
+
+    table = Table(title="My Submissions")
+    table.add_column("Module")
+    table.add_column("Status")
+    table.add_column("Approvals")
+    table.add_column("Submitted At")
+    for meta in sorted(metas, key=lambda m: m.submitted_at, reverse=True):
+        table.add_row(
+            meta.module_id,
+            meta.status,
+            str(meta.approval_count()),
+            meta.submitted_at.strftime("%Y-%m-%d %H:%M"),
+        )
+    console.print(table)
 
 
 # --- serve (MCP) ---
@@ -465,6 +703,188 @@ def serve(ctx: click.Context) -> None:
     _require_kb(kb)
     server = create_server(kb)
     asyncio.run(server.run_stdio_async())
+
+
+# --- Git collaboration commands ---
+
+
+def _run_git(kb_path: Path, *args: str, capture: bool = True) -> subprocess.CompletedProcess:
+    """Run a git command in the given KB directory."""
+    cmd = ["git", "-C", str(kb_path)] + list(args)
+    try:
+        return subprocess.run(cmd, capture_output=capture, text=True, check=False)
+    except FileNotFoundError:
+        raise click.ClickException("Git is not installed or not on PATH. Install git to use remote KB features.")
+
+
+@cli.command()
+@click.argument("url")
+@click.option("--path", "-p", type=click.Path(path_type=Path), default=None, help="Local path for the cloned KB")
+def clone(url: str, path: Path | None) -> None:
+    """Clone a remote knowledge base from a Git URL."""
+    local_path = path or Path(url.rsplit("/", 1)[-1].replace(".git", ""))
+    if local_path.exists():
+        click.echo(f"Error: Path already exists: {local_path}", err=True)
+        raise click.Abort()
+
+    click.echo(f"Cloning {url} into {local_path}...")
+    result = subprocess.run(["git", "clone", url, str(local_path)], capture_output=True, text=True, check=False)
+    if result.returncode != 0:
+        click.echo(f"Error: git clone failed:\n{result.stderr.strip()}", err=True)
+        raise click.Abort()
+
+    if not (local_path / "index.json").exists():
+        click.echo(f"Warning: Cloned repository does not contain index.json. It may not be a valid KM knowledge base.", err=True)
+
+    click.echo(f"Cloned knowledge base to {local_path.absolute()}")
+
+
+@cli.command()
+@click.pass_context
+def pull(ctx: click.Context) -> None:
+    """Pull latest changes from the remote repository."""
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    staging = _staging_path(kb)
+    if staging.exists() and list(staging.glob("*.json")):
+        click.echo("Warning: You have uncommitted staged modules. Review them before pulling to avoid conflicts.", err=True)
+
+    click.echo("Pulling latest changes...")
+    result = _run_git(kb, "pull", "--rebase", "origin")
+    if result.returncode != 0:
+        click.echo(f"Error: pull failed:\n{result.stderr.strip()}", err=True)
+        raise click.Abort()
+
+    click.echo(result.stdout.strip() or "Already up to date.")
+    rebuild_index(kb)
+    from knowledge_manager.storage import generate_changelog
+    generate_changelog(kb)
+    click.echo("Index rebuilt.")
+
+
+@cli.command()
+@click.pass_context
+def push(ctx: click.Context) -> None:
+    """Push local changes to the remote repository."""
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    # Check if behind remote
+    fetch_result = _run_git(kb, "fetch", "origin")
+    if fetch_result.returncode != 0:
+        click.echo("Warning: Could not fetch from remote. Continuing anyway...")
+
+    behind_check = _run_git(kb, "rev-list", "--count", "HEAD..origin/main")
+    if behind_check.returncode == 0:
+        behind_count = behind_check.stdout.strip()
+        if behind_count and behind_count != "0":
+            click.echo(f"Error: Local is {behind_count} commit(s) behind remote. Run 'km pull' first.", err=True)
+            raise click.Abort()
+
+    # Sanitize config before commit
+    cfg = _load_config(kb)
+    sanitized = sanitize_config(cfg)
+    if sanitized != cfg:
+        _save_config(kb, sanitized)
+
+    # Stage all and commit
+    _run_git(kb, "add", "-A")
+    _run_git(kb, "commit", "-m", "km push: update knowledge modules", "--allow-empty")
+    click.echo("Pushing to remote...")
+    result = _run_git(kb, "push", "origin")
+    if result.returncode != 0:
+        click.echo(f"Error: push failed:\n{result.stderr.strip()}", err=True)
+        raise click.Abort()
+
+    click.echo(result.stdout.strip() or "Push complete.")
+    from knowledge_manager.storage import generate_changelog
+    generate_changelog(kb)
+    # Restore config with real keys
+    _save_config(kb, cfg)
+
+
+@cli.command()
+@click.pass_context
+def status(ctx: click.Context) -> None:
+    """Show local changes compared to the remote."""
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    _run_git(kb, "fetch", "origin")
+    diff_result = _run_git(kb, "diff", "--name-status", "origin/main")
+    if diff_result.stdout.strip():
+        modules = {"added": [], "modified": [], "deleted": []}
+        for line in diff_result.stdout.strip().split("\n"):
+            if not line:
+                continue
+            parts = line.split("\t", 1)
+            status_code = parts[0]
+            filepath = parts[1] if len(parts) > 1 else ""
+            if filepath.endswith(".json") and filepath != "index.json" and filepath != "config.json":
+                if status_code.startswith("A"):
+                    modules["added"].append(filepath)
+                elif status_code.startswith("M"):
+                    modules["modified"].append(filepath)
+                elif status_code.startswith("D"):
+                    modules["deleted"].append(filepath)
+
+        click.echo(f"Added: {len(modules['added'])} module(s)")
+        for m in modules["added"]:
+            click.echo(f"  + {m}")
+        click.echo(f"Modified: {len(modules['modified'])} module(s)")
+        for m in modules["modified"]:
+            click.echo(f"  ~ {m}")
+        click.echo(f"Deleted: {len(modules['deleted'])} module(s)")
+        for m in modules["deleted"]:
+            click.echo(f"  - {m}")
+    else:
+        click.echo("No changes compared to remote.")
+
+    # Also show ahead/behind
+    ahead = _run_git(kb, "rev-list", "--count", "origin/main..HEAD")
+    behind = _run_git(kb, "rev-list", "--count", "HEAD..origin/main")
+    if ahead.stdout.strip() and ahead.stdout.strip() != "0":
+        click.echo(f"Local ahead by {ahead.stdout.strip()} commit(s).")
+    if behind.stdout.strip() and behind.stdout.strip() != "0":
+        click.echo(f"Local behind by {behind.stdout.strip()} commit(s).")
+
+
+@cli.command()
+@click.argument("module_ref")
+@click.pass_context
+def diff(ctx: click.Context, module_ref: str) -> None:
+    """Show module differences between local and remote."""
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    # Parse module_ref as category/id
+    parts = module_ref.split("/", 1)
+    if len(parts) != 2:
+        click.echo("Error: Use format 'category/module-id'", err=True)
+        raise click.Abort()
+    category, module_id = parts
+    module_path = f"{category}/{module_id}.json"
+
+    # Get remote version
+    remote_result = _run_git(kb, "show", f"origin/main:{module_path}")
+    if remote_result.returncode != 0:
+        click.echo(f"Module not found in remote: {module_path}")
+    else:
+        click.echo(f"--- Remote: {module_path}")
+        click.echo(remote_result.stdout[:500])
+
+    # Get local version
+    local_file = kb / module_path
+    if local_file.exists():
+        click.echo(f"\n+++ Local: {module_path}")
+        click.echo(local_file.read_text(encoding="utf-8")[:500])
+    else:
+        click.echo(f"\n+++ Local: {module_path} (deleted)")
+
+    if remote_result.returncode == 0 and local_file.exists():
+        if remote_result.stdout.strip() == local_file.read_text(encoding="utf-8").strip():
+            click.echo("\nNo differences.")
 
 
 # --- telemetry subcommands ---
