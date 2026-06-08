@@ -74,6 +74,7 @@ class Index(BaseModel):
     version: str = "1.0"
     description: str = ""
     categories: Dict[str, IndexCategory] = Field(default_factory=dict)
+    graph: Dict[str, List[str]] = Field(default_factory=dict)
     stats: IndexStats = Field(default_factory=IndexStats)
     updated_at: datetime = Field(default_factory=utc_now)
 
@@ -92,6 +93,11 @@ class Index(BaseModel):
         existing_ids = [m.id for m in cat.modules]
         if summary.id not in existing_ids:
             cat.modules.append(summary)
+        module_key = f"{module.category}/{module.id}"
+        if module.metadata.related_modules:
+            self.graph[module_key] = list(module.metadata.related_modules)
+        elif module_key in self.graph:
+            del self.graph[module_key]
         self._refresh_stats()
 
     def remove_module(self, module_id: str, category: str) -> bool:
@@ -101,7 +107,13 @@ class Index(BaseModel):
         original_len = len(cat.modules)
         cat.modules = [m for m in cat.modules if m.id != module_id]
         self._refresh_stats()
-        return len(cat.modules) < original_len
+        removed = len(cat.modules) < original_len
+        if removed:
+            module_key = f"{category}/{module_id}"
+            self.graph.pop(module_key, None)
+            for key in self.graph:
+                self.graph[key] = [r for r in self.graph[key] if r != module_key]
+        return removed
 
     def _refresh_stats(self) -> None:
         total_modules = sum(len(c.modules) for c in self.categories.values())

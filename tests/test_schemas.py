@@ -91,3 +91,48 @@ def test_extraction_config_auto_categorize_explicit():
     from knowledge_manager.schemas import ExtractionConfig
     cfg = ExtractionConfig(auto_categorize=True)
     assert cfg.auto_categorize is True
+
+
+def test_index_graph_field_defaults_empty():
+    index = Index()
+    assert index.graph == {}
+
+
+def test_index_graph_is_built_from_related_modules():
+    from knowledge_manager.schemas import ExtractionConfig
+    index = Index()
+    m1 = Module(
+        id="jwt", category="auth",
+        title="JWT Tokens Module",
+        summary="Handling JSON Web Tokens for authentication",
+        content=ModuleContent(overview="A JWT overview for testing", details="Detailed JWT notes for testing graph build"),
+        metadata=ModuleMetadata(tags=["auth"], related_modules=["auth/oauth-flow"])
+    )
+    m2 = Module(
+        id="oauth-flow", category="auth",
+        title="OAuth 2.0 Flow Module",
+        summary="Implementing OAuth 2.0 authorization flow",
+        content=ModuleContent(overview="OAuth overview for testing", details="Detailed OAuth notes for testing graph build"),
+        metadata=ModuleMetadata(tags=["auth"], related_modules=["auth/jwt", "api/rate-limit"])
+    )
+    index.add_module(m1)
+    index.add_module(m2)
+    assert "auth/jwt" in index.graph
+    assert "auth/oauth-flow" in index.graph["auth/jwt"]
+    assert "auth/jwt" in index.graph["auth/oauth-flow"]
+    assert "api/rate-limit" in index.graph["auth/oauth-flow"]
+
+
+def test_index_graph_cleaned_on_remove_module():
+    index = Index()
+    m1 = Module(
+        id="jwt", category="auth",
+        title="JWT Tokens Module",
+        summary="Handling JSON Web Tokens",
+        content=ModuleContent(overview="Overview text for testing", details="Detailed notes for testing graph removal"),
+        metadata=ModuleMetadata(tags=["auth"], related_modules=["auth/oauth-flow"])
+    )
+    index.add_module(m1)
+    assert "auth/jwt" in index.graph
+    index.remove_module("jwt", "auth")
+    assert "auth/jwt" not in index.graph

@@ -320,3 +320,182 @@ def test_search_modules_exact_ranks_above_stem(kb_path):
     assert ids[0] == "validate-guide"
     assert "jwt" in ids
     assert ids.index("validate-guide") < ids.index("jwt")
+
+
+def test_search_modules_bm25_breaks_heuristic_ties(kb_path):
+    """When two modules have same heuristic score and quality, BM25 differentiates."""
+    # Two modules that both match "cache" exactly in title — same heuristic, same quality
+    save_module(Module(
+        id="cache-basic", category="performance",
+        title="Cache strategies",
+        summary="Basic caching patterns",
+        content=ModuleContent(
+            overview="Cache is a simple key-value store.",
+            details="Cache frequently accessed data. Cache invalidation is hard. Cache everything you can. Cache makes things fast.",
+        ),
+        metadata=ModuleMetadata(tags=["cache", "performance"]),
+    ), kb_path)
+    save_module(Module(
+        id="cache-advanced", category="performance",
+        title="Cache strategies advanced",
+        summary="Advanced caching patterns",
+        content=ModuleContent(
+            overview="A brief overview of cache strategies.",
+            details="Short description of the module content for testing.",
+        ),
+        metadata=ModuleMetadata(tags=["cache"]),
+    ), kb_path)
+
+    results = search_modules("cache", kb_path)
+    ids = [m.id for m in results]
+
+    assert "cache-basic" in ids
+    assert "cache-advanced" in ids
+    # cache-basic has "cache" many times → higher BM25, should rank first
+    assert ids[0] == "cache-basic", f"BM25 should favor higher term frequency, got {ids}"
+
+
+def test_search_modules_graph_expansion_returns_neighbors(kb_path):
+    """Graph expansion: modules referenced via related_modules appear in results."""
+    save_module(Module(
+        id="jwt", category="auth",
+        title="JWT signing and validation",
+        summary="Issuing and validating JSON Web Tokens with RS256",
+        content=ModuleContent(
+            overview="A JWT is a compact token signed with RS256.",
+            details="Signing uses an RSA private key; gateways validate via JWKS.",
+        ),
+        metadata=ModuleMetadata(tags=["jwt"], related_modules=["auth/oauth-flow"]),
+    ), kb_path)
+    save_module(Module(
+        id="oauth-flow", category="auth",
+        title="OAuth 2.0 authorization code flow",
+        summary="OAuth 2.0 authorization flow setup and configuration",
+        content=ModuleContent(
+            overview="OAuth 2.0 is an authorization framework that enables apps to obtain limited access.",
+            details="The authorization code flow involves exchanging an authorization code for an access token.",
+        ),
+        metadata=ModuleMetadata(tags=["oauth"]),
+    ), kb_path)
+
+    results = search_modules("JWT", kb_path)
+    ids = [m.id for m in results]
+
+    # jwt matches directly; oauth-flow should appear via graph expansion
+    assert "jwt" in ids
+    assert "oauth-flow" in ids
+
+
+def test_search_modules_graph_expansion_scores_lower_than_direct(kb_path):
+    """Direct matches should always rank above graph-expanded neighbors."""
+    save_module(Module(
+        id="jwt", category="auth",
+        title="JWT signing and validation",
+        summary="Issuing and validating JSON Web Tokens with RS256",
+        content=ModuleContent(
+            overview="A JWT is a compact token signed with RS256.",
+            details="Signing uses an RSA private key; gateways validate via JWKS.",
+        ),
+        metadata=ModuleMetadata(tags=["jwt"], related_modules=["auth/oauth-flow"]),
+    ), kb_path)
+    save_module(Module(
+        id="oauth-flow", category="auth",
+        title="OAuth 2.0 authorization code flow",
+        summary="JWT is used in OAuth for access tokens",
+        content=ModuleContent(
+            overview="OAuth uses JWT tokens for access and refresh token exchange.",
+            details="This module covers implementation patterns for JWT-based access tokens in OAuth flows.",
+        ),
+        metadata=ModuleMetadata(tags=["oauth", "jwt"]),
+    ), kb_path)
+
+    # Both modules match "JWT" — oauth-flow has JWT in summary (stem match)
+    # jwt has "JWT" in title (exact match). jwt should also have oauth-flow as neighbor.
+    results = search_modules("JWT", kb_path)
+    ids = [m.id for m in results]
+
+    assert ids[0] == "jwt", "Direct title match should rank above stem match + graph expansion"
+
+
+def test_search_modules_graph_expansion_is_one_hop_only(kb_path):
+    """Graph expansion should only be 1-hop — 2-hop neighbors should not appear."""
+    # A → B → C chain; query matches only A; B should appear (1-hop), C should not (2-hop)
+    save_module(Module(
+        id="mod-a", category="general",
+        title="Xylophone framework architecture",
+        summary="The xylophone framework is for testing hop limits",
+        content=ModuleContent(
+            overview="Xylophone is the only entry point for this test.",
+            details="Xylophone provides unique capabilities for testing graph expansion limits.",
+        ),
+        metadata=ModuleMetadata(tags=["xylophone", "chain"], related_modules=["general/mod-b"]),
+    ), kb_path)
+    save_module(Module(
+        id="mod-b", category="general",
+        title="Bridge module between layers",
+        summary="Intermediate linking module for hop testing",
+        content=ModuleContent(
+            overview="This bridge module connects different parts of the system.",
+            details="The bridge module should only appear through graph expansion, not direct matching.",
+        ),
+        metadata=ModuleMetadata(tags=["chain"], related_modules=["general/mod-c"]),
+    ), kb_path)
+    save_module(Module(
+        id="mod-c", category="general",
+        title="Terminal module at end of chain",
+        summary="Final destination that should be unreachable",
+        content=ModuleContent(
+            overview="This terminal module should never appear in search results.",
+            details="Two hops away from the entry point, this module must be excluded.",
+        ),
+        metadata=ModuleMetadata(tags=["chain"]),
+    ), kb_path)
+
+    results = search_modules("xylophone", kb_path)
+    ids = [m.id for m in results]
+
+    assert "mod-a" in ids, "Direct match should appear"
+    assert "mod-b" in ids, "1-hop neighbor should appear via graph expansion"
+    assert "mod-c" not in ids, "2-hop neighbor should NOT appear"
+
+
+def test_search_modules_confidence_weights_high_above_low(kb_path):
+    """High confidence modules should rank above low confidence when heuristic equal."""
+    save_module(Module(
+        id="conf-high", category="general",
+        title="Confidence testing module",
+        summary="Testing confidence weighting",
+        content=ModuleContent(
+            overview="This module tests high confidence ranking.",
+            details="High confidence modules should appear before low confidence ones with the same score.",
+        ),
+        metadata=ModuleMetadata(tags=["test"], confidence="high"),
+    ), kb_path)
+    save_module(Module(
+        id="conf-medium", category="general",
+        title="Confidence testing module medium",
+        summary="Testing confidence weighting",
+        content=ModuleContent(
+            overview="This module tests medium confidence ranking.",
+            details="Medium confidence module for testing confidence weighting in search results.",
+        ),
+        metadata=ModuleMetadata(tags=["test"], confidence="medium"),
+    ), kb_path)
+    save_module(Module(
+        id="conf-low", category="general",
+        title="Confidence testing module low",
+        summary="Testing confidence weighting",
+        content=ModuleContent(
+            overview="This module tests low confidence ranking.",
+            details="Low confidence module for testing confidence weighting in search results.",
+        ),
+        metadata=ModuleMetadata(tags=["test"], confidence="low"),
+    ), kb_path)
+
+    results = search_modules("confidence", kb_path)
+    ids = [m.id for m in results]
+
+    assert len(ids) == 3
+    assert ids[0] == "conf-high"
+    assert ids[1] == "conf-medium"
+    assert ids[2] == "conf-low"

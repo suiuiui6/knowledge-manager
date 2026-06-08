@@ -1,9 +1,10 @@
 import json
+import math
 import os
 import re
 import tempfile
 from pathlib import Path
-from typing import Any, List, Mapping, Optional, cast
+from typing import Any, Dict, List, Mapping, Optional, cast
 
 from snowballstemmer import stemmer as _snowball_stemmer  # type: ignore[import-untyped]
 
@@ -18,9 +19,32 @@ _QUALITY_EXACT = 3
 _QUALITY_STEM = 2
 _QUALITY_PARTIAL = 1
 
+# BM25 parameters
+_BM25_K1 = 1.2
+_BM25_B = 0.75
+
+# Graph expansion discount (applied to heuristic score of triggering module)
+_EXPANSION_DISCOUNT = 0.4
+
+# Confidence multiplier
+_CONFIDENCE_WEIGHT = {"high": 1.0, "medium": 0.85, "low": 0.7}
+
 
 def _stem(word: str) -> str:
     return cast(str, _EN_STEMMER.stemWord(word.lower()))
+
+
+def _module_full_text(module: Module) -> str:
+    return " ".join([
+        module.title,
+        " ".join(module.metadata.tags),
+        module.summary,
+        module.content.overview,
+        module.content.details,
+        module.content.examples,
+        module.content.references,
+        module.content.caveats,
+    ])
 
 
 def _field_stems(text: str) -> set[str]:
@@ -68,10 +92,81 @@ def list_modules(kb_path: Path) -> List[Module]:
     return modules
 
 
+def _bm25_scores(query: str, modules: List[Module]) -> Dict[str, float]:
+    """Compute BM25 scores for modules given a query string.
+
+    Returns a dict mapping module.id to BM25 score. Built from scratch each call
+    for simplicity — acceptable for small-to-medium knowledge bases.
+    """
+    if not modules or not query.strip():
+        return {}
+
+    query_stems = [_stem(w) for w in _WORD_RE.findall(query.lower())]
+    if not query_stems:
+        return {}
+
+    doc_tfs: List[Dict[str, int]] = []
+    doc_ids: List[str] = []
+    df: Dict[str, int] = {}
+    doc_lengths: List[int] = []
+
+    for module in modules:
+        text = _module_full_text(module)
+        words = [w.lower() for w in _WORD_RE.findall(text)]
+        stemmed = [_stem(w) for w in words]
+
+        tf: Dict[str, int] = {}
+        for s in stemmed:
+            tf[s] = tf.get(s, 0) + 1
+
+        doc_tfs.append(tf)
+        doc_ids.append(module.id)
+        doc_lengths.append(len(stemmed))
+
+        for term in set(stemmed):
+            df[term] = df.get(term, 0) + 1
+
+    N = len(modules)
+    total_len = sum(doc_lengths)
+    if total_len == 0:
+        return {}
+    avgdl = total_len / N
+
+    scores: Dict[str, float] = {}
+    for i, tf_map in enumerate(doc_tfs):
+        score = 0.0
+        dl = doc_lengths[i]
+        for term in query_stems:
+            df_t = df.get(term, 0)
+            if df_t == 0:
+                continue
+            idf = math.log((N - df_t + 0.5) / (df_t + 0.5) + 1)
+            tf = tf_map.get(term, 0)
+            if tf == 0:
+                continue
+            score += (
+                idf
+                * (tf * (_BM25_K1 + 1))
+                / (tf + _BM25_K1 * (1 - _BM25_B + _BM25_B * dl / avgdl))
+            )
+        scores[doc_ids[i]] = score
+
+    return scores
+
+
 def search_modules(query: str, kb_path: Path, category: str | None = None) -> List[Module]:
     terms = query.lower().split()
     if not terms:
         return []
+
+    all_modules = list_modules(kb_path)
+    bm25 = _bm25_scores(query, all_modules)
+
+    # Build adjacency graph from module metadata (always fresh, no index dependency)
+    graph: Dict[str, List[str]] = {}
+    for m in all_modules:
+        if m.metadata.related_modules:
+            graph[f"{m.category}/{m.id}"] = list(m.metadata.related_modules)
 
     def score_term(
         term: str,
@@ -106,8 +201,8 @@ def search_modules(query: str, kb_path: Path, category: str | None = None) -> Li
         partial = re.compile(re.escape(term), re.IGNORECASE) if len(term) < 5 else None
         patterns.append((term, word_boundary, partial))
 
-    scored: List[tuple[int, int, Module]] = []
-    for module in list_modules(kb_path):
+    scored: List[tuple[float, float, int, Module]] = []
+    for module in all_modules:
         fields: dict[str, str | list[str]] = {
             "title": module.title,
             "tag": module.metadata.tags,
@@ -129,14 +224,43 @@ def search_modules(query: str, kb_path: Path, category: str | None = None) -> Li
             best_quality = max(best_quality, quality)
 
         if score > 0:
-            scored.append((score, best_quality, module))
+            scored.append((bm25.get(module.id, 0.0), score, best_quality, module))
+
+    # 1-hop graph expansion: add related modules with discounted scores
+    direct_matches = list(scored)
+    direct_ids = {m.id for _, _, _, m in direct_matches}
+    for bm25_score, heur_score, _, trigger_module in direct_matches:
+        module_key = f"{trigger_module.category}/{trigger_module.id}"
+        for neighbor_ref in graph.get(module_key, []):
+            parts = neighbor_ref.split("/", 1)
+            if len(parts) != 2:
+                continue
+            n_cat, n_id = parts
+            if n_id in direct_ids:
+                continue
+            neighbor = load_module(n_id, n_cat, kb_path)
+            if neighbor is None:
+                continue
+            expanded_heuristic = heur_score * _EXPANSION_DISCOUNT
+            expanded_bm25 = bm25.get(n_id, 0.0)
+            scored.append((expanded_bm25, expanded_heuristic, 0, neighbor))
+            direct_ids.add(n_id)
 
     # Filter by category if specified
     if category is not None:
-        scored = [(s, q, m) for s, q, m in scored if m.category == category]
+        scored = [(b, s, q, m) for b, s, q, m in scored if m.category == category]
 
-    scored.sort(key=lambda item: (item[0], item[1]), reverse=True)
-    return [module for _, _, module in scored]
+    # Primary: confidence-weighted heuristic score. Secondary: match quality.
+    # Tertiary: BM25 (tf-idf with length normalization).
+    scored.sort(
+        key=lambda item: (
+            item[1] * _CONFIDENCE_WEIGHT.get(item[3].metadata.confidence, 0.85),
+            item[2],
+            item[0],
+        ),
+        reverse=True,
+    )
+    return [module for _, _, _, module in scored]
 
 
 def save_index(index: Index, kb_path: Path) -> None:

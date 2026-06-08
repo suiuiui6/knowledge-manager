@@ -306,6 +306,20 @@ def test_cli_review_empty_staging(cli_runner, initialized_kb):
     assert "No" in result.output or "no" in result.output.lower()
 
 
+def test_cli_search_shows_confidence_badges(cli_runner, initialized_kb):
+    save_module(Module(
+        id="conf-high", category="general",
+        title="High confidence module",
+        summary="A module with high confidence rating",
+        content=ModuleContent(overview="High confidence overview text", details="High confidence details for testing badges in CLI"),
+        metadata=ModuleMetadata(tags=["test"], confidence="high"),
+    ), initialized_kb)
+    rebuild_index(initialized_kb)
+    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "search", "confidence"])
+    assert result.exit_code == 0
+    assert "[high]" in result.output
+
+
 def test_init_creates_meaningful_description():
     runner = CliRunner()
     with runner.isolated_filesystem():

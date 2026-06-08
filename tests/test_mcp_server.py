@@ -88,3 +88,42 @@ async def test_tool_list_categories(server, kb_path):
     result = await server.call_tool("list_categories", {})
     content = result[0].text if hasattr(result[0], "text") else str(result[0])
     assert "auth" in content
+
+
+@pytest.mark.asyncio
+async def test_tool_expand_module_returns_module_and_neighbors(server, kb_path):
+    from knowledge_manager.schemas import ModuleMetadata
+    main = Module(
+        id="jwt", category="auth",
+        title="JWT tokens",
+        summary="Handling JSON Web Tokens for auth",
+        content=ModuleContent(
+            overview="A JWT overview for testing expand",
+            details="Detailed JWT notes for testing expand tool behavior",
+        ),
+        metadata=ModuleMetadata(tags=["auth"], related_modules=["auth/oauth-flow"]),
+    )
+    neighbor = Module(
+        id="oauth-flow", category="auth",
+        title="OAuth 2.0 flow",
+        summary="OAuth 2.0 authorization flow setup",
+        content=ModuleContent(
+            overview="OAuth overview for expand testing",
+            details="Detailed OAuth notes for testing expand tool behavior",
+        ),
+        metadata=ModuleMetadata(tags=["oauth"]),
+    )
+    save_module(main, kb_path)
+    save_module(neighbor, kb_path)
+
+    result = await server.call_tool("expand_module", {"module_id": "jwt", "category": "auth"})
+    content = result[0].text if hasattr(result[0], "text") else str(result[0])
+    assert "jwt" in content
+    assert "oauth-flow" in content
+
+
+@pytest.mark.asyncio
+async def test_tool_expand_module_not_found(server, kb_path):
+    result = await server.call_tool("expand_module", {"module_id": "missing", "category": "auth"})
+    content = result[0].text if hasattr(result[0], "text") else str(result[0])
+    assert "not found" in content.lower()

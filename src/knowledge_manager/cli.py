@@ -200,7 +200,10 @@ def search(ctx: click.Context, query: str) -> None:
         return
 
     for m in results:
-        click.echo(f"{m.category}/{m.id} — {m.title}")
+        conf_badge = {"high": "[high]", "medium": "[med]", "low": "[low]"}.get(
+            m.metadata.confidence, ""
+        )
+        click.echo(f"{m.category}/{m.id} {conf_badge} — {m.title}")
         click.echo(f"  {m.summary}")
 
 

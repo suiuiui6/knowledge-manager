@@ -72,4 +72,37 @@ def create_server(kb_path: Path, cache: ModuleCache | None = None) -> FastMCP:
         ]
         return json.dumps(result, indent=2)
 
+    @mcp.tool(name="expand_module")
+    def expand_module_tool(module_id: str, category: str) -> str:
+        """Load a module and its directly related neighbor modules (1-hop graph expansion)."""
+        module = load_module(module_id, category, kb_path)
+        if module is None:
+            return json.dumps({"error": f"Module not found: {module_id} in category {category}"})
+
+        neighbors = []
+        for ref in module.metadata.related_modules:
+            parts = ref.split("/", 1)
+            if len(parts) != 2:
+                continue
+            n = load_module(parts[1], parts[0], kb_path)
+            if n is not None:
+                neighbors.append({
+                    "id": n.id,
+                    "category": n.category,
+                    "title": n.title,
+                    "summary": n.summary,
+                    "confidence": n.metadata.confidence,
+                })
+
+        return json.dumps({
+            "module": {
+                "id": module.id,
+                "category": module.category,
+                "title": module.title,
+                "summary": module.summary,
+                "confidence": module.metadata.confidence,
+            },
+            "neighbors": neighbors,
+        }, indent=2)
+
     return mcp
