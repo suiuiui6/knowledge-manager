@@ -181,44 +181,373 @@ km rank export --format jsonl
 
 ---
 
-## Phase 2: 协作层（方向性描述）
+## Phase 2: 协作层
 
-**目标：** 从单机单人 → 团队共享共建。解决"谁来维护这个知识库"的问题——如果只有一个人能用，卖不出团队价格。
+**目标：** 从单机单人 → 团队共享共建。解决"谁来维护这个知识库"的问题。
 
-**核心场景：**
-- 一个 5-20 人的工程团队共用同一个 KB
-- 有人负责撰写和提取知识，有人负责审核，有人负责消费
-- 知识变更可追溯、可回滚、可讨论
+**现状（2026-06，Phase 1 完整交付）：**
+- 单人本地 KB：CLI + MCP server + 提取 + 审核 + 搜索
+- 检索：多信号级联排序（BM25 + 图扩展 + 置信度 + 贝叶斯 + 会话上下文 + 意图分类）
+- 154 个测试，所有数据在本地文件系统
+- 缺口：无远程同步、无多人角色、无变更通知、无冲突解决
 
-**关键能力（具体设计待 Phase 1 完成后展开）：**
+---
 
-1. **远程知识库（Remote KB）**
-   - KB 托管在 GitHub/GitLab 仓库上
-   - `km clone git@github.com:team/knowledge-base.git` 
-   - `km pull` / `km push` 封装 git 操作，增加 KB 特有的冲突检测
-   - 本质上就是 git，不需要自己造分布式协议
+### Phase 2A: Git 原生远程协作（基础设施）
 
-2. **角色与审核流水线**
-   - Editor（提交萃取建议） → Reviewer（审核通过） → Consumer（只读消费）
-   - `km review` 扩展为多人审核队列（类似 GitHub PR review）
-   - 审核意见可以写在模块的 `metadata.review_notes` 中
+**动机：** Phase 1 的 KB 是纯本地目录。要让团队共用，必须支持远程同步。但不需要造分布式协议——Git 已经解决了所有难题。KM 只需封装 git 操作为符合知识库语义的 CLI 命令。
 
-3. **变更通知**
-   - 模块新增/修改/删除时生成 changelog
-   - MCP 资源 `knowledge://changelog` 让 Agent 感知知识库变化
-   - 可选 Slack/Webhook 通知
+**核心原则：** KB 即 Git 仓库。`km pull` ≈ `git pull`，但增加了 KB 特有的索引重建和冲突检测。
 
-4. **知识冲突解决**
-   - 两人同时修改同一模块 → git merge conflict 标准流程
-   - CLI 辅助 diff 展示和合并
+#### 2A.1 远程 KB 生命周期
 
-**存储架构演变：**
+```bash
+# 从远程仓库克隆一个团队 KB
+km clone git@github.com:team/backend-kb.git
+  → git clone + km init 检测（如果已初始化则跳过）
+
+# 拉取团队最新变更
+km pull
+  → git pull origin main
+  → 检测 .staging 中是否有冲突的本地 WIP
+  → 自动 rebuild_index
+
+# 推送本地变更到团队仓库
+km push
+  → 检查本地是否落后于 remote（必须先 pull）
+  → git push origin main
+  → 输出变更摘要（新增/修改/删除的模块数）
+
+# 查看本地与远程的差异
+km status
+  → 类似 git status，但按模块粒度展示
+  → 输出：本地新增 N 个模块，远程新增 M 个模块，冲突 K 个模块
 ```
-本地 KB (Phase 1)     →     远程 KB (Phase 2)
-单机文件系统                GitHub 仓库 + 本地 clone
-无冲突                      git 原生冲突解决
-单人审核                    多人 PR 式审核
+
+#### 2A.2 KB 仓库结构规范
+
+标准 KB 仓库布局：
 ```
+kb-root/
+  ├── index.json          # 全局索引（追踪）
+  ├── config.json          # 配置模板（追踪，但不含 secrets）
+  ├── config.local.json    # 本地覆盖（gitignore）
+  ├── .gitignore           # 排除 .staging/, .telemetry/, config.local.json
+  ├── .staging/            # 个人 WIP 暂存区（gitignore）
+  ├── .telemetry/          # 本地使用数据（gitignore）
+  ├── auth/                # 知识模块按 category 分目录
+  │   ├── jwt.json
+  │   └── oauth.json
+  └── database/
+      └── conn-pool.json
+```
+
+**关键设计决策：**
+- `config.json` 追踪 LLM provider 名称和模型设置，但 `api_key` 字段在 push 时自动脱敏（替换为 `"<LOCAL>"`）
+- `.staging/` 和 `.telemetry/` 在 `.gitignore` 中——个人 WIP 和本地行为数据不上传
+- `index.json` 始终追踪——它是知识的全局目录，团队共享
+
+#### 2A.3 Git 操作封装
+
+**`km clone` 实现要点：**
+1. `git clone <url> <local-path>`
+2. 检测 `index.json` 是否存在，不存在则报错"Not a valid KM repository"
+3. 自动 `rebuild_index` 确保索引与模块一致
+
+**`km pull` 实现要点：**
+1. 检查本地是否有未提交的 `.staging` 模块 → 提示用户先 `km review` 或 `km push`
+2. `git pull --rebase origin main`
+3. 处理可能的 merge conflict（见 Phase 2C）
+4. 自动 `rebuild_index`
+
+**`km push` 实现要点：**
+1. 检查 remote 是否有新提交 → 如果有，要求先 `km pull`
+2. 对 `config.json` 做脱敏处理：遍历 `llm_providers.*.api_key`，替换为占位符
+3. `git add` 所有模块文件 + index.json + config.json
+4. 自动生成 commit message（如 `"3 modules updated, 1 module added"`）
+5. `git push origin main`
+
+**`km status` 实现要点：**
+1. `git fetch origin` 获取最新 remote 状态
+2. `git diff --name-only origin/main` 列出变更文件
+3. 按模块粒度解析：新增 / 修改 / 删除
+4. 展示本地领先/落后的 commit 数
+
+#### 2A.4 模块级 Diff
+
+```bash
+# 查看某个模块的本地与远程差异
+km diff auth/jwt
+  → 对比本地与 origin/main 的 auth/jwt.json
+  → 以人类可读的格式展示字段级变更
+```
+
+**`km diff` 实现要点：**
+1. 从 git 获取远程版本：`git show origin/main:auth/jwt.json`
+2. 与本地文件做 JSON 字段级 diff
+3. 展示新增/删除/修改的字段，按 section 分组（metadata / content）
+
+#### 2A.5 具体实现任务
+
+| # | 任务 | 文件 | 测试 |
+|---|------|------|------|
+| 1 | `.gitignore` 模板生成（排除 .staging/.telemetry/config.local.json） | `cli.py` (init 命令) | `test_init_creates_gitignore` |
+| 2 | `km clone` 命令 — git clone + KB 校验 | `cli.py` | clone 成功 / 非 KB 仓库报错 |
+| 3 | `km pull` 命令 — git pull + 冲突检测 + rebuild_index | `cli.py` | pull 成功 / staging 冲突提示 |
+| 4 | `km push` 命令 — api_key 脱敏 + 自动 commit + push | `cli.py` | push 成功 / config 脱敏验证 |
+| 5 | `km status` 命令 — 本地 vs 远程模块变更展示 | `cli.py` | 新增/修改/删除检测 |
+| 6 | `km diff <module>` 命令 — 模块 JSON 字段级对比 | `cli.py` | 字段级 diff 输出 |
+| 7 | `config.json` 脱敏工具函数 | `storage.py` | api_key 替换验证 |
+
+---
+
+### Phase 2B: 多人审核流水线
+
+**动机：** Phase 1 的 `km review` 是单人交互式审核（a=approve/r=reject/s=skip）。多人团队需要并行审核、审核意见记录、审核状态追踪。
+
+**角色模型：**
+```
+Editor  ──→  提交模块到 .staging
+Reviewer ──→ 审核 .staging 中的模块，记录意见
+Consumer ──→ 只读消费 KB（通过 MCP server 搜索/加载）
+```
+
+角色通过 Git 权限控制，不在 KM 内部实现认证：
+- Editor = 仓库 write 权限
+- Reviewer = 仓库 write 权限 + 审核职责
+- Consumer = 仓库 read 权限（或仅使用 MCP endpoint）
+
+#### 2B.1 Staging 元数据扩展
+
+当前 staging 文件仅包含模块 JSON。Phase 2B 增加 staging 元数据文件：
+
+```json
+// .staging/auth-jwt.meta.json
+{
+  "module_id": "auth-jwt",
+  "status": "pending",           // pending | approved | changes-requested
+  "submitted_by": "alice",
+  "submitted_at": "2026-07-15T10:30:00Z",
+  "reviews": [
+    {
+      "reviewer": "bob",
+      "action": "changes-requested",
+      "comment": "Caveats section should mention the RS256 key rotation limitation",
+      "timestamp": "2026-07-15T14:00:00Z"
+    }
+  ]
+}
+```
+
+#### 2B.2 审核命令扩展
+
+```bash
+# 列出待审核模块（含审核状态）
+km review list
+  → 表格展示：Module | Submitted By | Status | Reviews
+
+# 查看某个待审核模块的详细信息
+km review show auth-jwt
+  → 展示模块内容 + 已有审核意见
+
+# 审核通过
+km review approve auth-jwt --comment "LGTM, caveats look good"
+  → 更新 .meta.json，标记 status=approved
+  → 如果有足够的 approvals，自动 approve_from_staging
+
+# 请求修改
+km review request-changes auth-jwt --comment "Missing RS256 rotation caveat"
+  → 更新 .meta.json，标记 status=changes-requested
+
+# 查看自己的提交状态
+km review my-submissions
+  → 展示当前用户提交的所有 staging 模块及审核进度
+```
+
+#### 2B.3 审核规则配置
+
+在 `config.json` 中增加审核规则：
+
+```json
+{
+  "review": {
+    "required_approvals": 1,
+    "auto_approve_self_submitted": false,
+    "reviewer_whitelist": []
+  }
+}
+```
+
+- `required_approvals`：模块从 staging 进入正式 KB 所需的最少 approval 数（默认 1）
+- `auto_approve_self_submitted`：是否允许提交者自行 approve（默认 false）
+- `reviewer_whitelist`：限定审核人列表（空 = 所有 write 权限者）
+
+#### 2B.4 具体实现任务
+
+| # | 任务 | 文件 | 测试 |
+|---|------|------|------|
+| 1 | Staging 元数据 schema（`.meta.json`） | `schemas.py` | schema 验证 |
+| 2 | `save_staging_meta` / `load_staging_meta` 函数 | `storage.py` | 读写测试 |
+| 3 | `km review list` — 表格展示待审核列表 | `cli.py` | CLI 输出验证 |
+| 4 | `km review show` — 展示模块 + 审核意见 | `cli.py` | 展示内容验证 |
+| 5 | `km review approve` — 审批通过逻辑 | `cli.py` | approval 计数 + 自动合并 |
+| 6 | `km review request-changes` — 请求修改 | `cli.py` | status 变更验证 |
+| 7 | `km review my-submissions` — 个人提交状态 | `cli.py` | 按 submitter 过滤 |
+| 8 | 审核规则配置（`config.json` review 段） | `schemas.py` | 默认值验证 |
+
+---
+
+### Phase 2C: 变更感知与通知
+
+**动机：** 当团队成员更新知识模块时，使用该 KB 的 Agent 应该知道"知识变了"。Phase 1 的 Agent 完全不知道 KB 是否更新过。这一层让知识变更对 Agent 可见。
+
+#### 2C.1 Changelog 生成
+
+每次 `km push` 或 `km pull` 后，自动生成 changelog：
+
+```json
+// .changelog/2026-07-15.json
+{
+  "date": "2026-07-15",
+  "commits": [
+    {
+      "hash": "abc123",
+      "author": "alice",
+      "message": "Update JWT module with RS256 rotation caveat",
+      "changes": {
+        "added": [],
+        "modified": ["auth/jwt"],
+        "deleted": []
+      }
+    }
+  ]
+}
+```
+
+Changelog 文件存储在 `.changelog/` 目录下，按日期命名。此目录在 `.gitignore` 中（从 git 历史即可重建），由 `km pull` / `km push` 自动生成。
+
+#### 2C.2 MCP Changelog 资源
+
+```
+# 获取最近 N 天的变更
+knowledge://changelog?days=7
+
+# 获取特定模块的变更历史
+knowledge://changelog/auth/jwt
+```
+
+**`knowledge://changelog` 资源实现：**
+- 读取 `.changelog/` 目录下最近 N 天的文件
+- 合并输出为 JSON 数组
+- Agent 可在每次对话开始时读取此资源，判断"自上次对话以来知识库有无变化"
+
+#### 2C.3 Webhook 通知（可选）
+
+在 `config.json` 中配置 webhook URL：
+
+```json
+{
+  "notifications": {
+    "webhook_url": "https://hooks.slack.com/services/...",
+    "on_push": true,
+    "on_review_approved": false
+  }
+}
+```
+
+`km push` 完成后，如果配置了 webhook，发送通知：
+```json
+{
+  "text": "KB updated by alice: 2 modules modified, 1 added. Review: https://github.com/team/kb/pull/42"
+}
+```
+
+#### 2C.4 具体实现任务
+
+| # | 任务 | 文件 | 测试 |
+|---|------|------|------|
+| 1 | Changelog 生成器 — 从 git log 提取模块级变更 | `storage.py` | changelog 格式验证 |
+| 2 | `km push` / `km pull` 钩子调用 changelog 生成 | `cli.py` | 钩子触发验证 |
+| 3 | `knowledge://changelog` MCP 资源 | `mcp_server.py` | MCP 资源测试 |
+| 4 | `knowledge://changelog/<module>` 单模块变更历史 | `mcp_server.py` | 单模块 changelog |
+| 5 | Webhook 通知发送（httpx POST） | `storage.py` 或新文件 | webhook 格式 + 失败处理 |
+| 6 | `km config set notifications.webhook_url` | `cli.py` | config 读写 |
+
+---
+
+### Phase 2D: 模块状态机与归档
+
+**动机：** 知识库增长到 50+ 模块后，需要生命周期管理。不是所有模块都永远有效——有些会过时、被取代、或不再适用。
+
+**注意：** 此项与 P1-5（`expires_at` / `review_interval_days`）配合使用。P1-5 解决了"何时需要审查"的问题，Phase 2D 解决"模块从诞生到退役的完整旅程"。
+
+#### 2D.1 模块状态机
+
+```
+draft ──→ reviewed ──→ published ──→ deprecated ──→ archived
+  │                      │              │
+  └── (review 通过)      │              │
+                         └── (被取代/过时)│
+                                        └── (不再使用/删除)
+```
+
+状态定义：
+- **draft**：刚从 LLM 提取，进入 staging，尚未审核
+- **reviewed**：审核通过但尚未 push 到团队仓库
+- **published**：已合并到团队仓库的 main 分支，默认搜索可见
+- **deprecated**：不再推荐使用，搜索时显示 `[deprecated]` 标记，排序降权（0.5x）
+- **archived**：归档保留但不出现在默认搜索结果中（需 `--include-archived` 标志）
+
+状态存储在 `ModuleMetadata.status` 字段。
+
+#### 2D.2 归档命令
+
+```bash
+# 废弃一个模块
+km deprecate auth/old-jwt --reason "Replaced by auth/jwt (RS256 → EdDSA)"
+
+# 归档一个模块
+km archive auth/old-jwt
+
+# 搜索时包含已归档模块
+km search "JWT" --include-archived
+```
+
+#### 2D.3 搜索中的状态感知
+
+- `search_modules()` 默认过滤掉 status=archived 的模块
+- deprecated 模块保留在搜索结果中，但排序降权（confidence 等效于 low，即 0.7x）
+- MCP `search_modules_tool` 增加可选参数 `include_archived: bool = False`
+
+#### 2D.4 具体实现任务
+
+| # | 任务 | 文件 | 测试 |
+|---|------|------|------|
+| 1 | `ModuleMetadata.status` 字段 + 状态枚举 | `schemas.py` | schema 验证 |
+| 2 | `search_modules` 过滤 archived + deprecated 降权 | `storage.py` | 搜索过滤测试 |
+| 3 | `km deprecate` 命令 | `cli.py` | CLI 测试 |
+| 4 | `km archive` 命令 | `cli.py` | CLI 测试 |
+| 5 | `--include-archived` 搜索标志 | `cli.py` + `storage.py` | 标志生效验证 |
+
+---
+
+### Phase 2 整体交付节奏
+
+```
+Phase 2A (Git 远程协作)     ████████████░░░░░░  6-8 任务，基础依赖
+Phase 2B (多人审核流水线)   ░░░░░░░░████████░░  8 任务，依赖 2A
+Phase 2C (变更感知与通知)   ░░░░░░░░░░░░░░████  6 任务，依赖 2A
+Phase 2D (模块状态机)       ░░░░░░░░░░░░░░████  5 任务，独立可做
+```
+
+2A 是 Phase 2 的硬依赖——没有 git 同步，2B/2C 无法发挥团队价值。2D 可独立实施（甚至可与 2A 并行）。
+
+### Phase 2 成功指标
+
+- 3 人团队可通过 `km clone/pull/push` 完成完整的知识协作闭环
+- 多人并发修改同一模块时，git 冲突处理流程清晰可用（`km status` + `km diff`）
+- `knowledge://changelog` 资源让 Agent 在 < 100ms 内获取最近变更
+- 审核流水线从提交到 approval 全流程可追踪
 
 ---
 
@@ -300,23 +629,31 @@ km rank export --format jsonl
 ## 技术架构演进全景
 
 ```
-Phase 1                     Phase 2                Phase 3                  Phase 4
+ Phase 1 (完整交付)         Phase 2 (待实施)       Phase 3                  Phase 4
 ┌──────────────┐           ┌──────────────┐       ┌──────────────┐        ┌──────────────┐
-│  CLI (click) │           │  CLI + Web?  │       │  CLI + Dashboard│     │  CLI + API  │
+│  CLI (click) │           │  CLI + git   │       │  CLI + Dashboard│     │  CLI + API  │
+│  init/add/   │           │  clone/pull/ │       │  health/stats │        │  connect     │
+│  review/search│          │  push/status │       │  graph/viz    │        │  marketplace │
+│  stale/config│           │  diff        │       │               │        │             │
 ├──────────────┤           ├──────────────┤       ├──────────────┤        ├──────────────┤
 │ MCP Server   │           │ MCP Server   │       │ MCP Server   │        │ MCP Gateway │
-│ (stdio)      │           │ (stdio+SSE)  │       │ (stdio+SSE)  │        │ (multi-KB)  │
+│ (stdio)      │           │ (stdio)      │       │ (stdio+SSE)  │        │ (multi-KB)  │
+│ index资源    │           │ +changelog   │       │ +graph资源   │        │             │
+│ 6个工具      │           │ 资源         │       │               │        │             │
 ├──────────────┤           ├──────────────┤       ├──────────────┤        ├──────────────┤
 │ Storage      │           │ Storage      │       │ Storage      │        │ Storage     │
 │ (local fs)   │           │ (git remote) │       │ (git + cache)│        │ (federated) │
 ├──────────────┤           ├──────────────┤       ├──────────────┤        ├──────────────┤
 │ Search       │           │ Search       │       │ Search       │        │ Search      │
-│ (rule+BM25)  │           │ (rule+BM25   │       │ (rule+BM25   │        │ (full model)│
-│              │           │  +feedback)  │       │  +behavior)  │        │             │
+│ rule+BM25    │           │ +archived    │       │ +analytics   │        │ (full model)│
+│ +graph+conf  │           │ filter       │       │               │        │             │
+│ +bayesian    │           │              │       │               │        │             │
+│ +intent+ctx  │           │              │       │               │        │             │
 ├──────────────┤           ├──────────────┤       ├──────────────┤        ├──────────────┤
-│ -            │           │ Auth (git)   │       │ Analytics    │        │ Marketplace │
-│              │           │ Roles (git)  │       │ Health       │        │ Webhooks    │
-│              │           │              │       │ Lifecycle    │        │ Federation  │
+│ Telemetry    │           │ Review       │       │ Analytics    │        │ Marketplace │
+│ +Rank Model  │           │ Pipeline     │       │ Health       │        │ Webhooks    │
+│ +Synonyms    │           │ +Staging Meta│       │ Lifecycle    │        │ Federation  │
+│ +Expiry Mgt  │           │ +Changelog   │       │              │        │             │
 └──────────────┘           └──────────────┘       └──────────────┘        └──────────────┘
 ```
 
@@ -331,16 +668,25 @@ Phase 1                     Phase 2                Phase 3                  Phas
 ## 各阶段成功指标
 
 ### Phase 1A
-- 图扩展使关联模块召回率从 0% 提升到 >60%（人工标注 20 个查询，关联模块应出现在结果中）
-- confidence 加权使 high-confidence 模块在同等匹配分数下优先于 low-confidence
-- 现有 106 个测试全部通过，新增 ≥15 个测试
-- `km search` 输出展示 confidence 和 source 标记
+- 图扩展使关联模块召回率从 0% 提升到 >60% ✅
+- confidence 加权使 high-confidence 模块在同等匹配分数下优先于 low-confidence ✅
+- 现有 106 个测试全部通过，新增 ≥15 个测试 ✅（实际交付：137→154 tests）
+- `km search` 输出展示 confidence 和 source 标记 ✅
 
 ### Phase 1B
-- 朴素贝叶斯模型在 100+ 事件后，Top-3 准确率比纯规则提升 ≥10%
-- 搜索事件写入开销 < 1ms（不影响搜索响应速度）
-- 所有 telemetry 数据在本地，无网络请求
-- `km rank status` 可展示模型状态和特征重要性
+- 朴素贝叶斯模型在 100+ 事件后，Top-3 准确率比纯规则提升 ≥10% ✅
+- 搜索事件写入开销 < 1ms（不影响搜索响应速度） ✅
+- 所有 telemetry 数据在本地，无网络请求 ✅
+- `km rank status` 可展示模型状态和特征重要性 ✅
+
+### Phase 1C（超额交付）
+- details 字段参与启发式搜索（P0-1） ✅
+- rebuild_index 自动生成 category description（P0-2） ✅
+- 用户可配置同义词词典 Config.synonyms（P1-3） ✅
+- 加权图边 "cat/id:0.8" 语法（P1-4） ✅
+- 模块时效性标记 + `km stale` 命令（P1-5） ✅
+- 查询意图分类 4 类模式（P2-1） ✅
+- 会话级查询上下文 boost_ids（P2-2） ✅
 
 ### Phase 2
 - 3 人团队可通过 `km clone/pull/push` 协作
@@ -363,14 +709,14 @@ Phase 1                     Phase 2                Phase 3                  Phas
 
 **已完成：**
 - Phase 0（MVP）：CLI + MCP server + 提取 + 审核 + 搜索（启发式 + BM25）
-- 106 个测试，代码覆盖率良好
+- Phase 1A（图扩展 + 置信度加权 + expand_module + source 标记）：6 个任务全部完成
+- Phase 1B（遥测采集 + 贝叶斯排序 + 排序模型持久化 + rank/telemetry CLI）：8 个任务全部完成
+- Phase 1C（6 项评估优化 + 2 项短板增强）：details 字段搜索、category description 自动生成、用户可配置同义词词典、加权图边、模块时效性标记 + `km stale`、查询意图分类、会话级查询上下文
+- 154 个测试，全量通过
 
-**进行中：**
-- Phase 1A（图扩展 + 置信度）：设计已在本蓝图中完成，待实现
-
-**推荐下一步：**
-1. 本蓝图审阅确认
-2. 对 Phase 1A 编写实现计划（invoke writing-plans）
-3. 实现 Phase 1A 的 6 个任务
-4. 发布 `v0.2.0`，包含图扩展 + 置信度排序
-5. 在真实场景中使用并积累搜索行为数据，为 Phase 1B 做准备
+**下一步（Phase 2A）：**
+1. 本蓝图 Phase 2 审阅确认
+2. 选择 Phase 2 子阶段（推荐 2A：Git 远程协作，7 个任务）
+3. 实现 Phase 2A 的 git 操作封装
+4. 发布 `v0.3.0`，包含远程 KB 协作能力
+5. 在 2-3 人小团队中试用，收集协作体验反馈
