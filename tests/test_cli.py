@@ -204,7 +204,7 @@ def test_cli_add_extracts_to_staging(cli_runner, initialized_kb, tmp_path):
 
     assert result.exit_code == 0, result.output
     assert "Extracted" in result.output or "extracted" in result.output.lower()
-    staging_files = list((initialized_kb / ".staging").glob("*.json"))
+    staging_files = [f for f in (initialized_kb / ".staging").glob("*.json") if not f.name.endswith(".meta.json")]
     assert len(staging_files) == 1
 
 

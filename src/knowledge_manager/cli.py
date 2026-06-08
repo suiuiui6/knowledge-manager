@@ -481,8 +481,11 @@ def add(ctx: click.Context, file: Path, category: str) -> None:
     staging = _staging_path(kb)
     staging.mkdir(exist_ok=True)
     logger.info("Saving %s module(s) to staging", len(modules))
+    from knowledge_manager.schemas import StagingMeta
     for m in modules:
         save_to_staging(m, staging)
+        meta = StagingMeta(module_id=m.id, submitted_by=_git_user_name(kb))
+        save_staging_meta(meta, staging)
 
     click.echo(f"Extracted {len(modules)} module(s) into staging")
 
@@ -622,7 +625,7 @@ def review_approve(ctx: click.Context, module_id: str, comment: str) -> None:
     if meta is None:
         meta = StagingMeta(module_id=module_id)
 
-    meta.reviews.append(ReviewRecord(reviewer="cli", action="approved", comment=comment))
+    meta.reviews.append(ReviewRecord(reviewer=_git_user_name(kb), action="approved", comment=comment))
     meta.status = "approved" if meta.approval_count() >= 1 else meta.status
 
     cfg = _load_config(kb)
@@ -657,7 +660,7 @@ def review_request_changes(ctx: click.Context, module_id: str, comment: str) -> 
     if meta is None:
         meta = StagingMeta(module_id=module_id)
 
-    meta.reviews.append(ReviewRecord(reviewer="cli", action="changes-requested", comment=comment))
+    meta.reviews.append(ReviewRecord(reviewer=_git_user_name(kb), action="changes-requested", comment=comment))
     meta.status = "changes-requested"
     save_staging_meta(meta, staging)
     click.echo(f"Changes requested for {module_id}: {comment}")
@@ -706,6 +709,15 @@ def serve(ctx: click.Context) -> None:
 
 
 # --- Git collaboration commands ---
+
+
+def _git_user_name(kb_path: Path) -> str:
+    """Get the git user.name for the KB repo. Falls back to 'unknown'."""
+    result = subprocess.run(
+        ["git", "-C", str(kb_path), "config", "user.name"],
+        capture_output=True, text=True, check=False,
+    )
+    return result.stdout.strip() if result.returncode == 0 and result.stdout.strip() else "unknown"
 
 
 def _run_git(kb_path: Path, *args: str, capture: bool = True) -> subprocess.CompletedProcess:
@@ -788,9 +800,33 @@ def push(ctx: click.Context) -> None:
     if sanitized != cfg:
         _save_config(kb, sanitized)
 
+    # Count module changes for commit message
+    diff_stat = _run_git(kb, "diff", "--name-status", "origin/main")
+    added, modified, deleted = 0, 0, 0
+    for line in diff_stat.stdout.strip().split("\n"):
+        if not line or not line.endswith(".json"):
+            continue
+        parts = line.split("\t", 1)
+        status_code = parts[0] if parts else ""
+        if status_code.startswith("A"):
+            added += 1
+        elif status_code.startswith("M"):
+            modified += 1
+        elif status_code.startswith("D"):
+            deleted += 1
+
+    msg_parts = []
+    if modified:
+        msg_parts.append(f"{modified} module(s) updated")
+    if added:
+        msg_parts.append(f"{added} added")
+    if deleted:
+        msg_parts.append(f"{deleted} deleted")
+    commit_msg = ", ".join(msg_parts) if msg_parts else "km push"
+
     # Stage all and commit
     _run_git(kb, "add", "-A")
-    _run_git(kb, "commit", "-m", "km push: update knowledge modules", "--allow-empty")
+    _run_git(kb, "commit", "-m", commit_msg, "--allow-empty")
     click.echo("Pushing to remote...")
     result = _run_git(kb, "push", "origin")
     if result.returncode != 0:
@@ -800,6 +836,19 @@ def push(ctx: click.Context) -> None:
     click.echo(result.stdout.strip() or "Push complete.")
     from knowledge_manager.storage import generate_changelog
     generate_changelog(kb)
+
+    # Send webhook notification if configured
+    notif_cfg = cfg.notifications
+    if notif_cfg.webhook_url and notif_cfg.on_push:
+        try:
+            import httpx
+            payload = {
+                "text": f"KB updated by {_git_user_name(kb)}: {commit_msg}.",
+            }
+            httpx.post(notif_cfg.webhook_url, json=payload, timeout=10)
+        except Exception:
+            pass  # Webhook failures are non-critical
+
     # Restore config with real keys
     _save_config(kb, cfg)
 
@@ -850,11 +899,60 @@ def status(ctx: click.Context) -> None:
         click.echo(f"Local behind by {behind.stdout.strip()} commit(s).")
 
 
+def _json_diff_sections(remote_data: dict, local_data: dict) -> list[str]:
+    """Compare two module dicts and return a list of human-readable diff lines."""
+    lines: list[str] = []
+    sections = ["title", "summary", "category", "id", "content", "metadata"]
+
+    for section in sections:
+        remote_val = remote_data.get(section)
+        local_val = local_data.get(section)
+
+        if remote_val == local_val:
+            continue
+
+        if isinstance(remote_val, dict) and isinstance(local_val, dict):
+            # Nested dict: compare field by field
+            all_keys = set(remote_val.keys()) | set(local_val.keys())
+            section_diffs = []
+            for key in sorted(all_keys):
+                rv = remote_val.get(key, "")
+                lv = local_val.get(key, "")
+                if rv != lv:
+                    if key not in remote_val:
+                        section_diffs.append(f"    + {key}: <added>")
+                    elif key not in local_val:
+                        section_diffs.append(f"    - {key}: <removed>")
+                    else:
+                        section_diffs.append(f"    ~ {key}")
+                        if isinstance(rv, str) and isinstance(lv, str) and len(rv) < 200 and len(lv) < 200:
+                            section_diffs.append(f"      - {rv[:100]}")
+                            section_diffs.append(f"      + {lv[:100]}")
+            if section_diffs:
+                lines.append(f"  [{section}]")
+                lines.extend(section_diffs)
+        elif isinstance(remote_val, list) and isinstance(local_val, list):
+            if set(remote_val) != set(local_val):
+                lines.append(f"  [{section}]")
+                added_items = set(local_val) - set(remote_val)
+                removed_items = set(remote_val) - set(local_val)
+                for item in sorted(added_items):
+                    lines.append(f"    + {item}")
+                for item in sorted(removed_items):
+                    lines.append(f"    - {item}")
+        else:
+            lines.append(f"  [{section}]")
+            lines.append(f"    - {remote_val}")
+            lines.append(f"    + {local_val}")
+
+    return lines
+
+
 @cli.command()
 @click.argument("module_ref")
 @click.pass_context
 def diff(ctx: click.Context, module_ref: str) -> None:
-    """Show module differences between local and remote."""
+    """Show module differences between local and remote (field-level JSON diff)."""
     kb = ctx.obj["kb_path"]
     _require_kb(kb)
 
@@ -868,23 +966,54 @@ def diff(ctx: click.Context, module_ref: str) -> None:
 
     # Get remote version
     remote_result = _run_git(kb, "show", f"origin/main:{module_path}")
-    if remote_result.returncode != 0:
-        click.echo(f"Module not found in remote: {module_path}")
+    remote_data = None
+    if remote_result.returncode == 0:
+        try:
+            remote_data = json.loads(remote_result.stdout)
+        except json.JSONDecodeError:
+            click.echo("Warning: Could not parse remote JSON.")
     else:
-        click.echo(f"--- Remote: {module_path}")
-        click.echo(remote_result.stdout[:500])
+        click.echo(f"Module not found in remote: {module_path}")
 
     # Get local version
     local_file = kb / module_path
+    local_data = None
     if local_file.exists():
-        click.echo(f"\n+++ Local: {module_path}")
-        click.echo(local_file.read_text(encoding="utf-8")[:500])
+        try:
+            local_data = json.loads(local_file.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            click.echo("Warning: Could not parse local JSON.")
     else:
-        click.echo(f"\n+++ Local: {module_path} (deleted)")
+        click.echo(f"Module deleted locally: {module_path}")
 
-    if remote_result.returncode == 0 and local_file.exists():
-        if remote_result.stdout.strip() == local_file.read_text(encoding="utf-8").strip():
-            click.echo("\nNo differences.")
+    if remote_data is None and local_data is None:
+        return
+
+    if remote_data is None:
+        click.echo(f"Module {module_ref} is new (not in remote).")
+        return
+
+    if local_data is None:
+        click.echo(f"Module {module_ref} was deleted locally.")
+        return
+
+    diffs = _json_diff_sections(remote_data, local_data)
+    if not diffs:
+        click.echo(f"No differences in {module_ref}.")
+        return
+
+    click.echo(f"Changes in {module_ref}:")
+    for line in diffs:
+        if line.startswith("  [") and line.endswith("]"):
+            console.print(f"\n[bold]{line.strip()}[/bold]")
+        elif line.startswith("    +"):
+            console.print(f"[green]{line}[/green]")
+        elif line.startswith("    -"):
+            console.print(f"[red]{line}[/red]")
+        elif line.startswith("    ~"):
+            console.print(f"[yellow]{line}[/yellow]")
+        else:
+            click.echo(line)
 
 
 # --- telemetry subcommands ---

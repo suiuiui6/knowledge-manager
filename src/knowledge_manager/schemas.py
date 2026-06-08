@@ -179,6 +179,12 @@ class ReviewConfig(BaseModel):
     reviewer_whitelist: List[str] = Field(default_factory=list)
 
 
+class NotificationsConfig(BaseModel):
+    webhook_url: str = ""
+    on_push: bool = True
+    on_review_approved: bool = False
+
+
 class Config(BaseModel):
     llm_providers: Dict[str, LLMProviderConfig] = Field(default_factory=dict)
     extraction: ExtractionConfig = Field(default_factory=ExtractionConfig)
@@ -186,6 +192,7 @@ class Config(BaseModel):
     telemetry: TelemetryConfig = Field(default_factory=TelemetryConfig)
     synonyms: Dict[str, List[str]] = Field(default_factory=dict)
     review: ReviewConfig = Field(default_factory=ReviewConfig)
+    notifications: NotificationsConfig = Field(default_factory=NotificationsConfig)
 
     def get_default_provider(self) -> Tuple[str, LLMProviderConfig]:
         for name, provider in self.llm_providers.items():
