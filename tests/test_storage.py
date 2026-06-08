@@ -430,7 +430,7 @@ def test_search_modules_graph_expansion_is_one_hop_only(kb_path):
             overview="Xylophone is the only entry point for this test.",
             details="Xylophone provides unique capabilities for testing graph expansion limits.",
         ),
-        metadata=ModuleMetadata(tags=["xylophone", "chain"], related_modules=["general/mod-b"]),
+        metadata=ModuleMetadata(tags=["xylophone", "hop-source"], related_modules=["general/mod-b"]),
     ), kb_path)
     save_module(Module(
         id="mod-b", category="general",
@@ -440,17 +440,17 @@ def test_search_modules_graph_expansion_is_one_hop_only(kb_path):
             overview="This bridge module connects different parts of the system.",
             details="The bridge module should only appear through graph expansion, not direct matching.",
         ),
-        metadata=ModuleMetadata(tags=["chain"], related_modules=["general/mod-c"]),
+        metadata=ModuleMetadata(tags=["hop-mid"], related_modules=["general/mod-c"]),
     ), kb_path)
     save_module(Module(
         id="mod-c", category="general",
-        title="Terminal module at end of chain",
+        title="Terminal module at end of path",
         summary="Final destination that should be unreachable",
         content=ModuleContent(
             overview="This terminal module should never appear in search results.",
             details="Two hops away from the entry point, this module must be excluded.",
         ),
-        metadata=ModuleMetadata(tags=["chain"]),
+        metadata=ModuleMetadata(tags=["hop-end"]),
     ), kb_path)
 
     results = search_modules("xylophone", kb_path)

@@ -161,13 +161,32 @@ def _bm25_scores(query: str, modules: List[Module]) -> Dict[str, float]:
     return scores
 
 
-def search_modules(query: str, kb_path: Path, category: str | None = None) -> List[SearchResult]:
+def search_modules(query: str, kb_path: Path, category: str | None = None, limit: int = 15) -> List[SearchResult]:
     terms = query.lower().split()
     if not terms:
         return []
 
     all_modules = list_modules(kb_path)
     bm25 = _bm25_scores(query, all_modules)
+
+    # Build tag synonym map from co-occurring tags across all modules
+    tag_synonyms: Dict[str, set[str]] = {}
+    for m in all_modules:
+        tag_words = set()
+        for tag in m.metadata.tags:
+            tag_words.update(_WORD_RE.findall(tag.lower()))
+        for tw in tag_words:
+            if tw not in tag_synonyms:
+                tag_synonyms[tw] = set()
+            tag_synonyms[tw].update(tag_words - {tw})
+
+    # Expand query with tag synonyms (weight=0.5 discount)
+    synonym_terms: Dict[str, float] = {}
+    for term in terms:
+        if term in tag_synonyms:
+            for syn in tag_synonyms[term]:
+                if syn not in terms and syn not in synonym_terms:
+                    synonym_terms[syn] = 0.3
 
     # Build adjacency graph from module metadata (always fresh, no index dependency)
     graph: Dict[str, List[str]] = {}
@@ -206,7 +225,11 @@ def search_modules(query: str, kb_path: Path, category: str | None = None) -> Li
     for term in terms:
         word_boundary = re.compile(rf"\b{re.escape(term)}\b", re.IGNORECASE)
         partial = re.compile(re.escape(term), re.IGNORECASE) if len(term) < 5 else None
-        patterns.append((term, word_boundary, partial))
+        patterns.append((term, word_boundary, partial, 1.0))
+    for syn, weight in synonym_terms.items():
+        word_boundary = re.compile(rf"\b{re.escape(syn)}\b", re.IGNORECASE)
+        partial = re.compile(re.escape(syn), re.IGNORECASE) if len(syn) < 5 else None
+        patterns.append((syn, word_boundary, partial, weight))
 
     scored: List[tuple[float, float, int, Module, str]] = []
     for module in all_modules:
@@ -225,9 +248,9 @@ def search_modules(query: str, kb_path: Path, category: str | None = None) -> Li
         score = 0
         best_quality = 0
 
-        for term, word_pattern, partial_pattern in patterns:
+        for term, word_pattern, partial_pattern, weight in patterns:
             term_score, quality = score_term(term, fields, field_stems, word_pattern, partial_pattern)
-            score += term_score
+            score += int(term_score * weight)
             best_quality = max(best_quality, quality)
 
         if score > 0:
@@ -289,7 +312,7 @@ def search_modules(query: str, kb_path: Path, category: str | None = None) -> Li
     result_ids = [f"{r.module.category}/{r.module.id}" for r in results[:20]]
     record_search_event(query, result_ids, kb_path)
 
-    return results
+    return results[:limit]
 
 
 def save_index(index: Index, kb_path: Path) -> None:

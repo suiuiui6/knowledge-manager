@@ -76,6 +76,8 @@ async def test_tool_search_modules(server, kb_path):
     assert "auth-jwt" in raw
     assert '"source": "direct"' in raw
     assert '"confidence": "medium"' in raw
+    assert '"caveats"' in raw
+    assert '"related_modules"' in raw
 
 
 @pytest.mark.asyncio
@@ -129,3 +131,37 @@ async def test_tool_expand_module_not_found(server, kb_path):
     result = await server.call_tool("expand_module", {"module_id": "missing", "category": "auth"})
     content = result[0].text if hasattr(result[0], "text") else str(result[0])
     assert "not found" in content.lower()
+
+
+@pytest.mark.asyncio
+async def test_tool_deep_search_returns_full_content(server, kb_path):
+    from knowledge_manager.schemas import ModuleMetadata
+    main = Module(
+        id="auth-jwt", category="auth",
+        title="JWT authentication module",
+        summary="How JWT tokens work in our system",
+        content=ModuleContent(
+            overview="JWT tokens are used for stateless authentication in our system.",
+            details="Tokens are signed with RS256 and expire after 24 hours by default.",
+        ),
+        metadata=ModuleMetadata(tags=["jwt"], related_modules=["auth/oauth-flow"]),
+    )
+    neighbor = Module(
+        id="oauth-flow", category="auth",
+        title="OAuth flow module",
+        summary="OAuth authorization flow details",
+        content=ModuleContent(
+            overview="OAuth 2.0 flow for authentication delegation.",
+            details="OAuth authorization code flow with PKCE extension for secure exchange.",
+        ),
+        metadata=ModuleMetadata(tags=["oauth"]),
+    )
+    save_module(main, kb_path)
+    save_module(neighbor, kb_path)
+
+    result = await server.call_tool("deep_search", {"query": "JWT authentication"})
+    content = result[0].text if hasattr(result[0], "text") else str(result[0])
+    assert "auth-jwt" in content
+    assert "details" in content  # Full content loaded
+    assert "neighbors" in content  # Graph expanded
+    assert "oauth-flow" in content  # Neighbor included
