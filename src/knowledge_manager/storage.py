@@ -1,14 +1,16 @@
+import hashlib
 import json
 import math
 import os
 import re
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, NamedTuple, Optional, cast
 
 from snowballstemmer import stemmer as _snowball_stemmer  # type: ignore[import-untyped]
 
-from knowledge_manager.schemas import Index, Module
+from knowledge_manager.schemas import Config, Index, Module
 
 
 _FIELD_WEIGHTS = {"title": 5, "tag": 3, "summary": 2, "overview": 1}
@@ -255,17 +257,39 @@ def search_modules(query: str, kb_path: Path, category: str | None = None) -> Li
     if category is not None:
         scored = [(b, s, q, m, src) for b, s, q, m, src in scored if m.category == category]
 
+    # Compute Bayesian priors from historical telemetry (if available)
+    priors = compute_bayesian_priors(kb_path)
+    query_stems = [_stem(t) for t in terms]
+
+    def _bayesian_bonus(module: Module) -> float:
+        """Average P(module_id | query_term) across all query terms."""
+        module_key = f"{module.category}/{module.id}"
+        total = 0.0
+        count = 0
+        for term in query_stems:
+            if term in priors and module_key in priors[term]:
+                total += priors[term][module_key]
+                count += 1
+        return total / count if count > 0 else 0.0
+
     # Primary: confidence-weighted heuristic score. Secondary: match quality.
-    # Tertiary: BM25 (tf-idf with length normalization).
+    # Tertiary: Bayesian prior (learned from usage). Fourth: BM25.
     scored.sort(
         key=lambda item: (
             item[1] * _CONFIDENCE_WEIGHT.get(item[3].metadata.confidence, 0.85),
             item[2],
+            _bayesian_bonus(item[3]),
             item[0],
         ),
         reverse=True,
     )
-    return [SearchResult(module, source) for _, _, _, module, source in scored]
+    results = [SearchResult(module, source) for _, _, _, module, source in scored]
+
+    # Record search event for future learning
+    result_ids = [f"{r.module.category}/{r.module.id}" for r in results[:20]]
+    record_search_event(query, result_ids, kb_path)
+
+    return results
 
 
 def save_index(index: Index, kb_path: Path) -> None:
@@ -317,3 +341,158 @@ def approve_from_staging(module_id: str, staging_path: Path, kb_path: Path) -> N
         raise FileNotFoundError(f"Staging module not found: {module_id}")
     save_module(module, kb_path)
     (staging_path / f"{module_id}.json").unlink()
+
+
+# --- Telemetry & Bayesian ranking ---
+
+_BAYESIAN_SMOOTHING = 0.5
+
+
+def _telemetry_dir(kb_path: Path) -> Path:
+    return kb_path / ".telemetry"
+
+
+def _load_config_safe(kb_path: Path) -> Optional[Config]:
+    cfg_path = kb_path / "config.json"
+    if not cfg_path.exists():
+        return None
+    try:
+        return Config.model_validate_json(cfg_path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+
+def _telemetry_enabled(kb_path: Path, config: Config | None = None) -> bool:
+    if config is None:
+        config = _load_config_safe(kb_path)
+    if config is None:
+        return True
+    return config.telemetry.enabled
+
+
+def _hash_query(query: str) -> str:
+    return hashlib.sha256(query.encode("utf-8")).hexdigest()
+
+
+def record_search_event(
+    query: str, results_shown: List[str], kb_path: Path, config: Config | None = None
+) -> None:
+    """Record a search event for telemetry. Skips if telemetry is disabled."""
+    if not _telemetry_enabled(kb_path, config):
+        return
+    tdir = _telemetry_dir(kb_path)
+    tdir.mkdir(parents=True, exist_ok=True)
+    query_stems = [_stem(w) for w in _WORD_RE.findall(query.lower())]
+    event = {
+        "type": "search",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "query_hash": _hash_query(query),
+        "query_terms": query_stems,
+        "results_shown": results_shown,
+    }
+    with open(tdir / "search_events.jsonl", "a", encoding="utf-8") as f:
+        f.write(json.dumps(event, ensure_ascii=False) + "\n")
+
+
+def record_load_event(
+    module_id: str, category: str, kb_path: Path, config: Config | None = None
+) -> None:
+    """Record a module load event for telemetry. Skips if telemetry is disabled."""
+    if not _telemetry_enabled(kb_path, config):
+        return
+    tdir = _telemetry_dir(kb_path)
+    tdir.mkdir(parents=True, exist_ok=True)
+    event = {
+        "type": "load",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "module_id": module_id,
+        "category": category,
+    }
+    with open(tdir / "search_events.jsonl", "a", encoding="utf-8") as f:
+        f.write(json.dumps(event, ensure_ascii=False) + "\n")
+
+
+def load_search_events(kb_path: Path) -> List[dict]:
+    """Load all telemetry events from disk."""
+    tdir = _telemetry_dir(kb_path)
+    events_file = tdir / "search_events.jsonl"
+    if not events_file.exists():
+        return []
+    events = []
+    for line in events_file.read_text(encoding="utf-8").strip().split("\n"):
+        if line:
+            try:
+                events.append(json.loads(line))
+            except json.JSONDecodeError:
+                pass
+    return events
+
+
+def compute_bayesian_priors(kb_path: Path) -> Dict[str, Dict[str, float]]:
+    """Compute P(module_id | query_term) priors from historical search→load events.
+
+    Returns a dict mapping stemmed query terms to {module_key: probability} dicts.
+    Uses time-window matching: a load confirms the most recent prior search whose
+    results contained the loaded module.
+    """
+    events = load_search_events(kb_path)
+    if not events:
+        return {}
+
+    searches: List[dict] = []
+    loads: List[dict] = []
+    for e in events:
+        if e.get("type") == "search":
+            searches.append(e)
+        elif e.get("type") == "load":
+            loads.append(e)
+
+    if not searches or not loads:
+        return {}
+
+    # Collect all unique module keys for smoothing
+    all_module_keys: set[str] = set()
+    for s in searches:
+        all_module_keys.update(s.get("results_shown", []))
+    for l in loads:
+        all_module_keys.add(f"{l['category']}/{l['module_id']}")
+
+    # Count: for each load, find the most recent prior search containing that module
+    #   term → module_key → positive_count
+    #   term → total_search_count
+    term_positive: Dict[str, Dict[str, int]] = {}
+    term_total: Dict[str, int] = {}
+
+    for load in loads:
+        module_key = f"{load['category']}/{load['module_id']}"
+        load_ts = load["timestamp"]
+        best_search = None
+        for s in searches:
+            if s["timestamp"] < load_ts and module_key in s.get("results_shown", []):
+                if best_search is None or s["timestamp"] > best_search["timestamp"]:
+                    best_search = s
+        if best_search is None:
+            continue
+        for term in best_search.get("query_terms", []):
+            if term not in term_positive:
+                term_positive[term] = {}
+                term_total[term] = 0
+            term_positive[term][module_key] = term_positive[term].get(module_key, 0) + 1
+
+    # Count total searches per term
+    for s in searches:
+        for term in s.get("query_terms", []):
+            term_total[term] = term_total.get(term, 0) + 1
+
+    # Compute smoothed probabilities
+    num_modules = len(all_module_keys) if all_module_keys else 1
+    priors: Dict[str, Dict[str, float]] = {}
+    for term, total in term_total.items():
+        priors[term] = {}
+        positives = term_positive.get(term, {})
+        for mk in all_module_keys:
+            count = positives.get(mk, 0)
+            priors[term][mk] = (count + _BAYESIAN_SMOOTHING) / (total + _BAYESIAN_SMOOTHING * num_modules)
+
+    return priors
+

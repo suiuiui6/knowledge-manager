@@ -343,6 +343,29 @@ def test_cli_search_shows_related_source_badge(cli_runner, initialized_kb):
     assert "[related]" in result.output
 
 
+def test_cli_telemetry_status(cli_runner, initialized_kb):
+    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "telemetry", "status"])
+    assert result.exit_code == 0
+    assert "Telemetry" in result.output
+
+
+def test_cli_telemetry_disable_enable(cli_runner, initialized_kb):
+    # Disable
+    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "telemetry", "disable"])
+    assert result.exit_code == 0
+    assert "disabled" in result.output.lower()
+    # Enable
+    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "telemetry", "enable"])
+    assert result.exit_code == 0
+    assert "enabled" in result.output.lower()
+
+
+def test_cli_rank_status(cli_runner, initialized_kb):
+    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "rank", "status"])
+    assert result.exit_code == 0
+    assert "Model" in result.output
+
+
 def test_init_creates_meaningful_description():
     runner = CliRunner()
     with runner.isolated_filesystem():

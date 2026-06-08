@@ -8,6 +8,8 @@ from knowledge_manager.storage import (
     save_index, load_index, rebuild_index,
     save_to_staging, list_staging, load_from_staging, approve_from_staging,
     _stem, search_modules,
+    record_search_event, record_load_event, load_search_events,
+    compute_bayesian_priors,
 )
 
 
@@ -499,3 +501,95 @@ def test_search_modules_confidence_weights_high_above_low(kb_path):
     assert ids[0] == "conf-high"
     assert ids[1] == "conf-medium"
     assert ids[2] == "conf-low"
+
+
+# --- Telemetry & Bayesian ranking tests ---
+
+
+def test_record_search_event_writes_jsonl(kb_path):
+    record_search_event("JWT authentication", ["auth/jwt", "auth/oauth-flow"], kb_path)
+    events_file = kb_path / ".telemetry" / "search_events.jsonl"
+    assert events_file.exists()
+    lines = events_file.read_text().strip().split("\n")
+    assert len(lines) == 1
+    event = json.loads(lines[0])
+    assert event["type"] == "search"
+    assert event["query_hash"] is not None
+    assert len(event["query_hash"]) == 64  # SHA256 hex
+    assert event["query_hash"] != "JWT authentication"  # hashed, not raw
+    assert "query_terms" in event
+    assert len(event["query_terms"]) > 0  # stemmed terms stored for Bayesian
+    assert event["results_shown"] == ["auth/jwt", "auth/oauth-flow"]
+
+
+def test_record_load_event_writes_jsonl(kb_path):
+    record_load_event("jwt", "auth", kb_path)
+    events_file = kb_path / ".telemetry" / "search_events.jsonl"
+    assert events_file.exists()
+    lines = events_file.read_text().strip().split("\n")
+    assert len(lines) == 1
+    event = json.loads(lines[0])
+    assert event["type"] == "load"
+    assert event["module_id"] == "jwt"
+    assert event["category"] == "auth"
+
+
+def test_load_search_events_returns_all_events(kb_path):
+    record_search_event("query one", ["mod-a"], kb_path)
+    record_load_event("mod-a", "cat", kb_path)
+    record_search_event("query two", ["mod-b"], kb_path)
+    events = load_search_events(kb_path)
+    assert len(events) == 3
+
+
+def test_load_search_events_empty_dir_returns_empty(kb_path):
+    events = load_search_events(kb_path)
+    assert events == []
+
+
+def test_record_search_event_skips_when_disabled(kb_path):
+    from knowledge_manager.schemas import Config
+    kb_path.mkdir(parents=True, exist_ok=True)
+    cfg = Config(telemetry={"enabled": False})
+    cfg_path = kb_path / "config.json"
+    cfg_path.write_text(cfg.model_dump_json())
+    record_search_event("test", ["mod"], kb_path, cfg)
+    assert not (kb_path / ".telemetry" / "search_events.jsonl").exists()
+
+
+def test_compute_bayesian_priors_basic(kb_path):
+    # Simulate: "jwt auth" search → jwt loaded; "oauth flow" search → oauth loaded
+    record_search_event("jwt auth", ["auth/jwt", "auth/oauth"], kb_path)
+    record_load_event("jwt", "auth", kb_path)
+    record_search_event("oauth flow", ["auth/oauth"], kb_path)
+    record_load_event("oauth", "auth", kb_path)
+
+    priors = compute_bayesian_priors(kb_path)
+
+    # P(jwt | "jwt") should be > 0
+    assert "jwt" in priors, "Should have prior for query term 'jwt'"
+    assert "auth/jwt" in priors["jwt"], "Module jwt should appear in term 'jwt' prior"
+    assert priors["jwt"]["auth/jwt"] > 0
+
+
+def test_compute_bayesian_priors_empty_returns_empty(kb_path):
+    priors = compute_bayesian_priors(kb_path)
+    assert priors == {}
+
+
+def test_compute_bayesian_priors_smoothing(kb_path):
+    # One search that showed 2 modules, only 1 of which was loaded
+    record_search_event("smoothing test query", ["auth/jwt", "auth/other"], kb_path)
+    record_load_event("jwt", "auth", kb_path)
+
+    priors = compute_bayesian_priors(kb_path)
+
+    # The stemmed query terms should have priors
+    assert "smooth" in priors  # stem of "smoothing"
+    assert "test" in priors
+    assert "queri" in priors  # stem of "query"
+    # jwt was loaded → higher probability
+    assert priors["smooth"]["auth/jwt"] > 0
+    # Smoothing ensures probability is < 1.0 (other module gets some mass too)
+    assert priors["smooth"]["auth/jwt"] < 1.0
+    assert priors["smooth"]["auth/other"] > 0  # gets smoothing mass

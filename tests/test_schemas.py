@@ -136,3 +136,22 @@ def test_index_graph_cleaned_on_remove_module():
     assert "auth/jwt" in index.graph
     index.remove_module("jwt", "auth")
     assert "auth/jwt" not in index.graph
+
+
+def test_telemetry_config_defaults():
+    from knowledge_manager.schemas import TelemetryConfig
+    cfg = TelemetryConfig()
+    assert cfg.enabled is True
+
+
+def test_telemetry_config_disabled():
+    from knowledge_manager.schemas import TelemetryConfig
+    cfg = TelemetryConfig(enabled=False)
+    assert cfg.enabled is False
+
+
+def test_config_includes_telemetry():
+    from knowledge_manager.schemas import Config, TelemetryConfig
+    cfg = Config()
+    assert cfg.telemetry is not None
+    assert cfg.telemetry.enabled is True

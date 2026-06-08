@@ -148,10 +148,15 @@ class CacheConfig(BaseModel):
     max_modules: int = 50
 
 
+class TelemetryConfig(BaseModel):
+    enabled: bool = True
+
+
 class Config(BaseModel):
     llm_providers: Dict[str, LLMProviderConfig] = Field(default_factory=dict)
     extraction: ExtractionConfig = Field(default_factory=ExtractionConfig)
     cache: CacheConfig = Field(default_factory=CacheConfig)
+    telemetry: TelemetryConfig = Field(default_factory=TelemetryConfig)
 
     def get_default_provider(self) -> Tuple[str, LLMProviderConfig]:
         for name, provider in self.llm_providers.items():

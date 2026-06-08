@@ -25,6 +25,7 @@ from knowledge_manager.storage import (
     list_staging,
     load_index,
     load_module,
+    load_search_events,
     rebuild_index,
     save_index,
     save_module,
@@ -424,6 +425,111 @@ def serve(ctx: click.Context) -> None:
     _require_kb(kb)
     server = create_server(kb)
     asyncio.run(server.run_stdio_async())
+
+
+# --- telemetry subcommands ---
+
+
+@cli.group()
+def telemetry() -> None:
+    """Manage usage telemetry for relevance feedback."""
+
+
+@telemetry.command("status")
+@click.pass_context
+def telemetry_status(ctx: click.Context) -> None:
+    """Show telemetry status and event counts."""
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+    cfg = _load_config(kb)
+    enabled = cfg.telemetry.enabled
+    click.echo(f"Telemetry: {'enabled' if enabled else 'disabled'}")
+    events = load_search_events(kb)
+    search_count = sum(1 for e in events if e.get("type") == "search")
+    load_count = sum(1 for e in events if e.get("type") == "load")
+    click.echo(f"Search events: {search_count}")
+    click.echo(f"Load events: {load_count}")
+    click.echo(f"Total events: {len(events)}")
+    if search_count >= 100:
+        click.echo("Ranking model: bayesian (active)")
+    elif search_count > 0:
+        click.echo(f"Ranking model: bayesian (warming up, {100 - search_count} searches needed)")
+    else:
+        click.echo("Ranking model: rule_only (no usage data yet)")
+
+
+@telemetry.command("disable")
+@click.pass_context
+def telemetry_disable(ctx: click.Context) -> None:
+    """Disable telemetry collection."""
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+    cfg = _load_config(kb)
+    cfg.telemetry.enabled = False
+    _save_config(kb, cfg)
+    click.echo("Telemetry disabled.")
+
+
+@telemetry.command("enable")
+@click.pass_context
+def telemetry_enable(ctx: click.Context) -> None:
+    """Enable telemetry collection."""
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+    cfg = _load_config(kb)
+    cfg.telemetry.enabled = True
+    _save_config(kb, cfg)
+    click.echo("Telemetry enabled.")
+
+
+@telemetry.command("export")
+@click.pass_context
+def telemetry_export(ctx: click.Context) -> None:
+    """Export anonymized telemetry data (query hashes only, no raw terms)."""
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+    events = load_search_events(kb)
+    # Strip query_terms for privacy; keep only query_hash
+    sanitized = []
+    for e in events:
+        s = {
+            "type": e.get("type"),
+            "timestamp": e.get("timestamp"),
+            "query_hash": e.get("query_hash"),
+            "results_shown": e.get("results_shown"),
+        }
+        if e.get("type") == "load":
+            s["module_id"] = e.get("module_id")
+            s["category"] = e.get("category")
+        sanitized.append(s)
+    click.echo(json.dumps(sanitized, indent=2))
+
+
+# --- rank subcommands ---
+
+
+@cli.group()
+def rank() -> None:
+    """Inspect and manage the relevance ranking model."""
+
+
+@rank.command("status")
+@click.pass_context
+def rank_status(ctx: click.Context) -> None:
+    """Show ranking model status and feature weights."""
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+    events = load_search_events(kb)
+    search_count = sum(1 for e in events if e.get("type") == "search")
+    load_count = sum(1 for e in events if e.get("type") == "load")
+    click.echo(f"Model: {'bayesian' if search_count >= 100 else 'rule_only' if search_count == 0 else 'bayesian (warming up)'}")
+    click.echo(f"Search events: {search_count}")
+    click.echo(f"Load events: {load_count}")
+    click.echo("Features (in order):")
+    click.echo("  1. heuristic_score * confidence_weight")
+    click.echo("  2. match_quality")
+    click.echo("  3. bayesian_prior")
+    click.echo("  4. bm25_score")
 
 
 if __name__ == "__main__":

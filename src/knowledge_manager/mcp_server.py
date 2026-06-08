@@ -4,7 +4,7 @@ from pathlib import Path
 from mcp.server.fastmcp import FastMCP
 
 from knowledge_manager.cache import ModuleCache
-from knowledge_manager.storage import load_index, load_module, search_modules
+from knowledge_manager.storage import load_index, load_module, record_load_event, search_modules
 
 
 def create_server(kb_path: Path, cache: ModuleCache | None = None) -> FastMCP:
@@ -37,6 +37,7 @@ def create_server(kb_path: Path, cache: ModuleCache | None = None) -> FastMCP:
             return f"Module not found: {module_id} in category {category}"
 
         cache.put(module)
+        record_load_event(module_id, category, kb_path)
         return module.model_dump_json(indent=2)
 
     @mcp.tool(name="search_modules")
