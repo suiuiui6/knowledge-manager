@@ -155,3 +155,28 @@ def test_config_includes_telemetry():
     cfg = Config()
     assert cfg.telemetry is not None
     assert cfg.telemetry.enabled is True
+
+
+def test_metadata_supports_expiry():
+    from datetime import datetime, timezone
+    from knowledge_manager.schemas import ModuleMetadata
+
+    now = datetime.now(timezone.utc)
+    meta = ModuleMetadata(expires_at=now, review_interval_days=90)
+    assert meta.expires_at == now
+    assert meta.review_interval_days == 90
+
+    # Defaults
+    meta2 = ModuleMetadata()
+    assert meta2.expires_at is None
+    assert meta2.review_interval_days is None
+
+
+def test_config_supports_synonyms():
+    from knowledge_manager.schemas import Config
+    cfg = Config(synonyms={"token": ["jwt", "bearer"]})
+    assert cfg.synonyms == {"token": ["jwt", "bearer"]}
+
+    # Default
+    cfg2 = Config()
+    assert cfg2.synonyms == {}

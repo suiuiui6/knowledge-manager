@@ -13,7 +13,7 @@ from snowballstemmer import stemmer as _snowball_stemmer  # type: ignore[import-
 from knowledge_manager.schemas import Config, Index, Module
 
 
-_FIELD_WEIGHTS = {"title": 5, "tag": 3, "summary": 2, "overview": 1}
+_FIELD_WEIGHTS = {"title": 5, "tag": 3, "summary": 2, "overview": 1, "details": 1}
 _WORD_RE = re.compile(r"\w+")
 _EN_STEMMER: Any = _snowball_stemmer("english")
 
@@ -180,13 +180,21 @@ def search_modules(query: str, kb_path: Path, category: str | None = None, limit
                 tag_synonyms[tw] = set()
             tag_synonyms[tw].update(tag_words - {tw})
 
-    # Expand query with tag synonyms (weight=0.5 discount)
+    # Load user-configured synonyms from config
+    cfg = _load_config_safe(kb_path)
+    user_synonyms: Dict[str, List[str]] = cfg.synonyms if cfg else {}
+
+    # Expand query with tag synonyms (0.3 weight) and user synonyms (0.5 weight)
     synonym_terms: Dict[str, float] = {}
     for term in terms:
         if term in tag_synonyms:
             for syn in tag_synonyms[term]:
                 if syn not in terms and syn not in synonym_terms:
                     synonym_terms[syn] = 0.3
+        if term in user_synonyms:
+            for syn in user_synonyms[term]:
+                if syn not in terms and syn not in synonym_terms:
+                    synonym_terms[syn] = 0.5
 
     # Build adjacency graph from module metadata (always fresh, no index dependency)
     graph: Dict[str, List[str]] = {}
@@ -201,19 +209,19 @@ def search_modules(query: str, kb_path: Path, category: str | None = None, limit
         word_pattern: re.Pattern[str],
         partial_pattern: re.Pattern[str] | None,
     ) -> tuple[int, int]:
-        for field_name in ("title", "tag", "summary", "overview"):
+        for field_name in ("title", "tag", "summary", "overview", "details"):
             field_value = fields[field_name]
             values = field_value if isinstance(field_value, list) else [field_value]
             if any(word_pattern.search(value) for value in values):
                 return _FIELD_WEIGHTS[field_name], _QUALITY_EXACT
 
         term_stem = _stem(term)
-        for field_name in ("title", "tag", "summary", "overview"):
+        for field_name in ("title", "tag", "summary", "overview", "details"):
             if term_stem in field_stems[field_name]:
                 return _FIELD_WEIGHTS[field_name], _QUALITY_STEM
 
         if partial_pattern is not None:
-            for field_name in ("title", "tag", "summary", "overview"):
+            for field_name in ("title", "tag", "summary", "overview", "details"):
                 field_value = fields[field_name]
                 values = field_value if isinstance(field_value, list) else [field_value]
                 if any(partial_pattern.search(value) for value in values):
@@ -238,12 +246,14 @@ def search_modules(query: str, kb_path: Path, category: str | None = None, limit
             "tag": module.metadata.tags,
             "summary": module.summary,
             "overview": module.content.overview,
+            "details": module.content.details,
         }
         field_stems = {
             "title": _field_stems(module.title),
             "tag": {_stem(tag) for tag in module.metadata.tags},
             "summary": _field_stems(module.summary),
             "overview": _field_stems(module.content.overview),
+            "details": _field_stems(module.content.details),
         }
         score = 0
         best_quality = 0
@@ -262,7 +272,17 @@ def search_modules(query: str, kb_path: Path, category: str | None = None, limit
     for bm25_score, heur_score, _, trigger_module, _ in direct_matches:
         module_key = f"{trigger_module.category}/{trigger_module.id}"
         for neighbor_ref in graph.get(module_key, []):
-            parts = neighbor_ref.split("/", 1)
+            # Parse optional edge weight: "category/id:0.8" → weight=0.8 (default 1.0)
+            edge_weight = 1.0
+            raw_ref = neighbor_ref
+            if ":" in raw_ref:
+                ref_part, weight_str = raw_ref.rsplit(":", 1)
+                try:
+                    edge_weight = float(weight_str)
+                    raw_ref = ref_part
+                except ValueError:
+                    pass
+            parts = raw_ref.split("/", 1)
             if len(parts) != 2:
                 continue
             n_cat, n_id = parts
@@ -271,7 +291,7 @@ def search_modules(query: str, kb_path: Path, category: str | None = None, limit
             neighbor = load_module(n_id, n_cat, kb_path)
             if neighbor is None:
                 continue
-            expanded_heuristic = heur_score * _EXPANSION_DISCOUNT
+            expanded_heuristic = heur_score * _EXPANSION_DISCOUNT * edge_weight
             expanded_bm25 = bm25.get(n_id, 0.0)
             scored.append((expanded_bm25, expanded_heuristic, 0, neighbor, "related"))
             direct_ids.add(n_id)
@@ -331,6 +351,19 @@ def rebuild_index(kb_path: Path) -> Index:
     index.categories.clear()
     for module in list_modules(kb_path):
         index.add_module(module)
+    # Auto-generate descriptions for categories that lack one
+    for cat_name, cat in index.categories.items():
+        if cat.description:
+            continue
+        all_tags: set[str] = set()
+        titles: list[str] = []
+        for m in cat.modules:
+            all_tags.update(m.tags)
+            titles.append(m.title)
+        parts = [f"Topics: {', '.join(sorted(all_tags)[:8])}"]
+        if titles:
+            parts.append(f"Modules include: {'; '.join(titles[:5])}")
+        cat.description = ". ".join(parts)
     save_index(index, kb_path)
     return index
 

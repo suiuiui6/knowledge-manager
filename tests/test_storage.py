@@ -96,6 +96,36 @@ def test_list_modules(kb_path):
     assert ids == {"mod-a", "mod-b", "mod-c"}
 
 
+def test_rebuild_index_auto_generates_category_descriptions(kb_path):
+    save_module(Module(
+        id="jwt", category="auth",
+        title="JWT signing and validation",
+        summary="Issuing and validating JSON Web Tokens with RS256",
+        content=ModuleContent(overview="JWT auth overview text", details="JWT auth details for testing auto descriptions"),
+        metadata=ModuleMetadata(tags=["jwt", "authentication", "rs256"]),
+    ), kb_path)
+    save_module(Module(
+        id="oauth", category="auth",
+        title="OAuth 2.0 flow",
+        summary="OAuth 2.0 authorization flow setup",
+        content=ModuleContent(overview="OAuth overview for desc testing", details="OAuth details for testing auto description generation in rebuild."),
+        metadata=ModuleMetadata(tags=["oauth", "authentication"]),
+    ), kb_path)
+    save_module(Module(
+        id="conn-pool", category="database",
+        title="Database connection pooling",
+        summary="Sizing and lifecycle of database connection pools",
+        content=ModuleContent(overview="Pool overview for desc test", details="Pool details for testing auto category descriptions on rebuild index."),
+        metadata=ModuleMetadata(tags=["postgres", "performance"]),
+    ), kb_path)
+
+    index = rebuild_index(kb_path)
+    assert index.categories["auth"].description != ""
+    assert "authentication" in index.categories["auth"].description.lower()
+    assert index.categories["database"].description != ""
+    assert "postgres" in index.categories["database"].description.lower()
+
+
 def test_save_and_load_index(kb_path):
     index = Index(description="Test KB")
     save_index(index, kb_path)
@@ -503,7 +533,94 @@ def test_search_modules_confidence_weights_high_above_low(kb_path):
     assert ids[2] == "conf-low"
 
 
+def test_search_modules_matches_in_details_field(kb_path):
+    """Query terms in details (but not title/tags/summary/overview) should still match."""
+    save_module(Module(
+        id="surface-mod", category="general",
+        title="Generic module title",
+        summary="A very generic summary with nothing specific",
+        content=ModuleContent(
+            overview="This overview is also extremely generic and says nothing interesting.",
+            details="The real content is here. We use xylophone-pattern for all distributed coordination tasks.",
+        ),
+    ), kb_path)
+
+    results = search_modules("xylophone", kb_path)
+    assert len(results) == 1, "Should find module via details field match"
+    assert results[0].module.id == "surface-mod"
+
+
 # --- Telemetry & Bayesian ranking tests ---
+
+
+def test_search_modules_user_synonym_expansion(kb_path):
+    """User-configured synonyms should expand query terms for matching."""
+    from knowledge_manager.schemas import Config
+
+    save_module(Module(
+        id="jwt", category="auth",
+        title="JWT signing and validation",
+        summary="Issuing and validating JSON Web Tokens with RS256",
+        content=ModuleContent(
+            overview="JWT is used for stateless authentication in our system.",
+            details="Tokens are signed with RS256 and expire after 24 hours.",
+        ),
+    ), kb_path)
+
+    # Query "bearer" — module has no "bearer" in any field, so no match without synonym
+    results_no_syn = search_modules("bearer", kb_path)
+    assert len(results_no_syn) == 0, "Without synonym, 'bearer' should not match JWT module"
+
+    cfg = Config(synonyms={"bearer": ["jwt"]})
+    cfg_path = kb_path / "config.json"
+    cfg_path.write_text(cfg.model_dump_json())
+
+    results = search_modules("bearer", kb_path)
+    assert len(results) > 0, "With user synonym bearer→jwt, should find JWT module"
+    assert results[0].module.id == "jwt"
+
+
+def test_search_modules_weighted_graph_edges(kb_path):
+    """Graph edges with weight annotations should rank higher-weight neighbors first."""
+    # Module A matches the query; B and C are neighbors with different weights
+    save_module(Module(
+        id="mod-a", category="general",
+        title="Xylophone query module",
+        summary="This is the entry module for weighted graph edge testing",
+        content=ModuleContent(
+            overview="Xylophone is the primary entry point for this weighted edge test.",
+            details="Xylophone testing details for weighted graph expansion edge testing.",
+        ),
+        metadata=ModuleMetadata(tags=["xylophone"], related_modules=["general/mod-b:0.9", "general/mod-c:0.1"]),
+    ), kb_path)
+    save_module(Module(
+        id="mod-b", category="general",
+        title="High weight neighbor module",
+        summary="This module has a high edge weight from mod-a",
+        content=ModuleContent(
+            overview="High weight module should rank above low weight module.",
+            details="Testing weighted graph edges — this module should appear before mod-c.",
+        ),
+    ), kb_path)
+    save_module(Module(
+        id="mod-c", category="general",
+        title="Low weight neighbor module",
+        summary="This module has a low edge weight from mod-a",
+        content=ModuleContent(
+            overview="Low weight module should rank below high weight module.",
+            details="Testing weighted graph edges — this module should appear after mod-b.",
+        ),
+    ), kb_path)
+
+    results = search_modules("xylophone", kb_path)
+    ids = [r.module.id for r in results]
+
+    assert "mod-a" in ids, "Direct match should appear"
+    assert "mod-b" in ids, "High-weight neighbor should appear"
+    assert "mod-c" in ids, "Low-weight neighbor should appear"
+    # High-weight neighbor should rank before low-weight neighbor
+    assert ids.index("mod-b") < ids.index("mod-c"), \
+        f"High-weight neighbor mod-b should rank before low-weight mod-c, got {ids}"
 
 
 def test_record_search_event_writes_jsonl(kb_path):

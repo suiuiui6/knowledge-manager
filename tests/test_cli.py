@@ -372,6 +372,62 @@ def test_cli_rank_retrain(cli_runner, initialized_kb):
     assert "retrain" in result.output.lower() or "model" in result.output.lower()
 
 
+def test_cli_stale_shows_expired_module(cli_runner, initialized_kb):
+    from datetime import datetime, timedelta, timezone
+    yesterday = datetime.now(timezone.utc) - timedelta(days=1)
+    save_module(Module(
+        id="expired-mod", category="general",
+        title="Expired module",
+        summary="This module has already expired",
+        content=ModuleContent(
+            overview="Overview for expired module that should show in stale list.",
+            details="Details for expired module — this module is past its expiry date.",
+        ),
+        metadata=ModuleMetadata(
+            tags=["test"],
+            expires_at=yesterday,
+        ),
+    ), initialized_kb)
+    rebuild_index(initialized_kb)
+
+    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "stale"])
+    assert result.exit_code == 0
+    assert "expired-mod" in result.output
+
+
+def test_cli_stale_shows_review_due_module(cli_runner, initialized_kb):
+    from datetime import datetime, timedelta, timezone
+    old_date = datetime.now(timezone.utc) - timedelta(days=40)
+    save_module(Module(
+        id="review-mod", category="general",
+        title="Module due for review",
+        summary="This module was updated long ago and should be reviewed",
+        content=ModuleContent(
+            overview="Overview for module that needs review based on interval.",
+            details="Details for review due module for testing stale command.",
+        ),
+        metadata=ModuleMetadata(
+            tags=["test"],
+            review_interval_days=30,
+        ),
+        updated_at=old_date,
+    ), initialized_kb)
+    rebuild_index(initialized_kb)
+
+    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "stale"])
+    assert result.exit_code == 0
+    assert "review-mod" in result.output
+
+
+def test_cli_stale_empty_when_none_stale(cli_runner, initialized_kb):
+    save_module(make_module("fresh-mod", "general"), initialized_kb)
+    rebuild_index(initialized_kb)
+
+    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "stale"])
+    assert result.exit_code == 0
+    assert "No stale modules" in result.output
+
+
 def test_init_creates_meaningful_description():
     runner = CliRunner()
     with runner.isolated_filesystem():

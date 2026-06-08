@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -258,6 +259,45 @@ def show(ctx: click.Context, module_id: str, category: str) -> None:
         click.echo(f"Error: module not found: {category}/{module_id}", err=True)
         raise click.Abort()
     click.echo(module.model_dump_json(indent=2))
+
+
+# --- stale ---
+
+
+@cli.command()
+@click.pass_context
+def stale(ctx: click.Context) -> None:
+    """List modules that are expired or due for review."""
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    now = datetime.now(timezone.utc)
+    modules = list_modules(kb)
+    stale_modules: list[tuple[str, str, str, str]] = []  # (category, id, title, reason)
+
+    for m in modules:
+        reason = ""
+        if m.metadata.expires_at is not None and m.metadata.expires_at < now:
+            reason = f"Expired {m.metadata.expires_at.strftime('%Y-%m-%d')}"
+        elif m.metadata.review_interval_days is not None:
+            age = (now - m.updated_at).days
+            if age > m.metadata.review_interval_days:
+                reason = f"Due for review ({age}d since update, interval={m.metadata.review_interval_days}d)"
+        if reason:
+            stale_modules.append((m.category, m.id, m.title, reason))
+
+    if not stale_modules:
+        click.echo("No stale modules found.")
+        return
+
+    table = Table(title="Stale Modules")
+    table.add_column("Category")
+    table.add_column("ID")
+    table.add_column("Title")
+    table.add_column("Reason")
+    for cat, mid, title, reason in sorted(stale_modules, key=lambda x: (x[0], x[1])):
+        table.add_row(cat, mid, title, reason)
+    console.print(table)
 
 
 # --- config subcommands ---

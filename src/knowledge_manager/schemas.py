@@ -22,6 +22,8 @@ class ModuleMetadata(BaseModel):
     related_modules: List[str] = Field(default_factory=list)
     confidence: Literal["high", "medium", "low"] = "medium"
     source: str = Field(default="")
+    expires_at: Optional[datetime] = None
+    review_interval_days: Optional[int] = None
 
 
 class Module(BaseModel):
@@ -157,6 +159,7 @@ class Config(BaseModel):
     extraction: ExtractionConfig = Field(default_factory=ExtractionConfig)
     cache: CacheConfig = Field(default_factory=CacheConfig)
     telemetry: TelemetryConfig = Field(default_factory=TelemetryConfig)
+    synonyms: Dict[str, List[str]] = Field(default_factory=dict)
 
     def get_default_provider(self) -> Tuple[str, LLMProviderConfig]:
         for name, provider in self.llm_providers.items():
