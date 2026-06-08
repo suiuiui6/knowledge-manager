@@ -178,7 +178,7 @@ def test_search_modules_uses_word_boundaries(kb_path):
     # Both should be found, but conn-pool should rank higher due to word boundary match
     _kb_with_signals(kb_path)
     results = search_modules("auth", kb_path)
-    ids = [m.id for m in results]
+    ids = [r.module.id for r in results]
 
     # Both modules should be found
     assert "conn-pool" in ids, "Should find conn-pool via word boundary match"
@@ -193,7 +193,7 @@ def test_search_modules_ranks_title_above_overview(kb_path):
     # conn-pool matches "auth" in overview (weight 1). jwt should rank first.
     _kb_with_signals(kb_path)
     results = search_modules("signing auth", kb_path)
-    ids = [m.id for m in results]
+    ids = [r.module.id for r in results]
     assert ids[0] == "jwt"
     assert ids == ["jwt", "conn-pool"]
 
@@ -208,7 +208,7 @@ def test_search_modules_case_insensitive(kb_path):
     _kb_with_signals(kb_path)
     lower = search_modules("jwt", kb_path)
     upper = search_modules("JWT", kb_path)
-    assert [m.id for m in lower] == [m.id for m in upper]
+    assert [r.module.id for r in lower] == [r.module.id for r in upper]
 
 
 def test_search_modules_short_term_partial_match(kb_path):
@@ -220,7 +220,7 @@ def test_search_modules_short_term_partial_match(kb_path):
     assert len(results) > 0, "Short term 'auth' should return results via partial matching"
 
     # Should find the jwt module (has "authentication" tag)
-    ids = [m.id for m in results]
+    ids = [r.module.id for r in results]
     assert "jwt" in ids, "Should find jwt module with 'authentication' tag"
 
 
@@ -245,7 +245,7 @@ def test_search_modules_short_term_lower_score(kb_path):
     results = search_modules("auth", kb_path)
 
     # The exact match should rank higher than partial matches
-    assert results[0].id == "auth-exact", "Exact word boundary match should rank first"
+    assert results[0].module.id == "auth-exact", "Exact word boundary match should rank first"
 
 
 
@@ -262,7 +262,7 @@ def test_stem_reduces_morphological_variants():
 def test_search_modules_with_category_filter(kb_path):
     _kb_with_signals(kb_path)
     results = search_modules("auth", kb_path, category="auth")
-    ids = [m.id for m in results]
+    ids = [r.module.id for r in results]
     assert "jwt" in ids
     assert "conn-pool" not in ids, "conn-pool is in database category, should be filtered out"
 
@@ -276,7 +276,7 @@ def test_search_modules_with_nonexistent_category(kb_path):
 def test_search_modules_without_category_filter_returns_all(kb_path):
     _kb_with_signals(kb_path)
     results = search_modules("auth", kb_path)
-    ids = [m.id for m in results]
+    ids = [r.module.id for r in results]
     assert "jwt" in ids
     assert "conn-pool" in ids
 
@@ -285,7 +285,7 @@ def test_search_modules_stem_matches_long_term(kb_path):
     _kb_with_signals(kb_path)
 
     results = search_modules("validate", kb_path)
-    ids = [m.id for m in results]
+    ids = [r.module.id for r in results]
 
     assert "jwt" in ids
 
@@ -295,7 +295,7 @@ def test_search_modules_stem_matches_pooling_query(kb_path):
     _kb_with_signals(kb_path)
 
     results = search_modules("pooling", kb_path)
-    ids = [m.id for m in results]
+    ids = [r.module.id for r in results]
 
     assert "conn-pool" in ids
 
@@ -315,7 +315,7 @@ def test_search_modules_exact_ranks_above_stem(kb_path):
     ), kb_path)
 
     results = search_modules("validate", kb_path)
-    ids = [m.id for m in results]
+    ids = [r.module.id for r in results]
 
     assert ids[0] == "validate-guide"
     assert "jwt" in ids
@@ -347,7 +347,7 @@ def test_search_modules_bm25_breaks_heuristic_ties(kb_path):
     ), kb_path)
 
     results = search_modules("cache", kb_path)
-    ids = [m.id for m in results]
+    ids = [r.module.id for r in results]
 
     assert "cache-basic" in ids
     assert "cache-advanced" in ids
@@ -379,7 +379,7 @@ def test_search_modules_graph_expansion_returns_neighbors(kb_path):
     ), kb_path)
 
     results = search_modules("JWT", kb_path)
-    ids = [m.id for m in results]
+    ids = [r.module.id for r in results]
 
     # jwt matches directly; oauth-flow should appear via graph expansion
     assert "jwt" in ids
@@ -412,7 +412,7 @@ def test_search_modules_graph_expansion_scores_lower_than_direct(kb_path):
     # Both modules match "JWT" — oauth-flow has JWT in summary (stem match)
     # jwt has "JWT" in title (exact match). jwt should also have oauth-flow as neighbor.
     results = search_modules("JWT", kb_path)
-    ids = [m.id for m in results]
+    ids = [r.module.id for r in results]
 
     assert ids[0] == "jwt", "Direct title match should rank above stem match + graph expansion"
 
@@ -452,7 +452,7 @@ def test_search_modules_graph_expansion_is_one_hop_only(kb_path):
     ), kb_path)
 
     results = search_modules("xylophone", kb_path)
-    ids = [m.id for m in results]
+    ids = [r.module.id for r in results]
 
     assert "mod-a" in ids, "Direct match should appear"
     assert "mod-b" in ids, "1-hop neighbor should appear via graph expansion"
@@ -493,7 +493,7 @@ def test_search_modules_confidence_weights_high_above_low(kb_path):
     ), kb_path)
 
     results = search_modules("confidence", kb_path)
-    ids = [m.id for m in results]
+    ids = [r.module.id for r in results]
 
     assert len(ids) == 3
     assert ids[0] == "conf-high"

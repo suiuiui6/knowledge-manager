@@ -72,8 +72,10 @@ async def test_tool_search_modules(server, kb_path):
     save_module(make_module("db-conn", "database"), kb_path)
 
     result = await server.call_tool("search_modules", {"query": "JWT authentication"})
-    content = result[0].text if hasattr(result[0], "text") else str(result[0])
-    assert "auth-jwt" in content
+    raw = result[0].text if hasattr(result[0], "text") else str(result[0])
+    assert "auth-jwt" in raw
+    assert '"source": "direct"' in raw
+    assert '"confidence": "medium"' in raw
 
 
 @pytest.mark.asyncio

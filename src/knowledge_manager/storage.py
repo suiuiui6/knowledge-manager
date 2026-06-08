@@ -4,7 +4,7 @@ import os
 import re
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Optional, cast
+from typing import Any, Dict, List, Mapping, NamedTuple, Optional, cast
 
 from snowballstemmer import stemmer as _snowball_stemmer  # type: ignore[import-untyped]
 
@@ -92,6 +92,11 @@ def list_modules(kb_path: Path) -> List[Module]:
     return modules
 
 
+class SearchResult(NamedTuple):
+    module: Module
+    source: str  # "direct" or "related"
+
+
 def _bm25_scores(query: str, modules: List[Module]) -> Dict[str, float]:
     """Compute BM25 scores for modules given a query string.
 
@@ -154,7 +159,7 @@ def _bm25_scores(query: str, modules: List[Module]) -> Dict[str, float]:
     return scores
 
 
-def search_modules(query: str, kb_path: Path, category: str | None = None) -> List[Module]:
+def search_modules(query: str, kb_path: Path, category: str | None = None) -> List[SearchResult]:
     terms = query.lower().split()
     if not terms:
         return []
@@ -201,7 +206,7 @@ def search_modules(query: str, kb_path: Path, category: str | None = None) -> Li
         partial = re.compile(re.escape(term), re.IGNORECASE) if len(term) < 5 else None
         patterns.append((term, word_boundary, partial))
 
-    scored: List[tuple[float, float, int, Module]] = []
+    scored: List[tuple[float, float, int, Module, str]] = []
     for module in all_modules:
         fields: dict[str, str | list[str]] = {
             "title": module.title,
@@ -224,12 +229,12 @@ def search_modules(query: str, kb_path: Path, category: str | None = None) -> Li
             best_quality = max(best_quality, quality)
 
         if score > 0:
-            scored.append((bm25.get(module.id, 0.0), score, best_quality, module))
+            scored.append((bm25.get(module.id, 0.0), score, best_quality, module, "direct"))
 
     # 1-hop graph expansion: add related modules with discounted scores
     direct_matches = list(scored)
-    direct_ids = {m.id for _, _, _, m in direct_matches}
-    for bm25_score, heur_score, _, trigger_module in direct_matches:
+    direct_ids = {m.id for _, _, _, m, _ in direct_matches}
+    for bm25_score, heur_score, _, trigger_module, _ in direct_matches:
         module_key = f"{trigger_module.category}/{trigger_module.id}"
         for neighbor_ref in graph.get(module_key, []):
             parts = neighbor_ref.split("/", 1)
@@ -243,12 +248,12 @@ def search_modules(query: str, kb_path: Path, category: str | None = None) -> Li
                 continue
             expanded_heuristic = heur_score * _EXPANSION_DISCOUNT
             expanded_bm25 = bm25.get(n_id, 0.0)
-            scored.append((expanded_bm25, expanded_heuristic, 0, neighbor))
+            scored.append((expanded_bm25, expanded_heuristic, 0, neighbor, "related"))
             direct_ids.add(n_id)
 
     # Filter by category if specified
     if category is not None:
-        scored = [(b, s, q, m) for b, s, q, m in scored if m.category == category]
+        scored = [(b, s, q, m, src) for b, s, q, m, src in scored if m.category == category]
 
     # Primary: confidence-weighted heuristic score. Secondary: match quality.
     # Tertiary: BM25 (tf-idf with length normalization).
@@ -260,7 +265,7 @@ def search_modules(query: str, kb_path: Path, category: str | None = None) -> Li
         ),
         reverse=True,
     )
-    return [module for _, _, _, module in scored]
+    return [SearchResult(module, source) for _, _, _, module, source in scored]
 
 
 def save_index(index: Index, kb_path: Path) -> None:

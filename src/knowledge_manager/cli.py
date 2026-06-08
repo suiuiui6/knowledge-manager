@@ -199,12 +199,13 @@ def search(ctx: click.Context, query: str) -> None:
         click.echo("No matches.")
         return
 
-    for m in results:
+    for r in results:
         conf_badge = {"high": "[high]", "medium": "[med]", "low": "[low]"}.get(
-            m.metadata.confidence, ""
+            r.module.metadata.confidence, ""
         )
-        click.echo(f"{m.category}/{m.id} {conf_badge} — {m.title}")
-        click.echo(f"  {m.summary}")
+        src_badge = "" if r.source == "direct" else " [related]"
+        click.echo(f"{r.module.category}/{r.module.id}{src_badge} {conf_badge} — {r.module.title}")
+        click.echo(f"  {r.module.summary}")
 
 
 @cli.command()

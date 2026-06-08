@@ -46,13 +46,15 @@ def create_server(kb_path: Path, cache: ModuleCache | None = None) -> FastMCP:
         Optionally filter by category."""
         results = [
             {
-                "id": m.id,
-                "category": m.category,
-                "title": m.title,
-                "summary": m.summary,
-                "tags": m.metadata.tags,
+                "id": r.module.id,
+                "category": r.module.category,
+                "title": r.module.title,
+                "summary": r.module.summary,
+                "tags": r.module.metadata.tags,
+                "confidence": r.module.metadata.confidence,
+                "source": r.source,
             }
-            for m in search_modules(query, kb_path, category if category else None)
+            for r in search_modules(query, kb_path, category if category else None)
         ]
         return json.dumps(results, indent=2)
 

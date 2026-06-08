@@ -320,6 +320,29 @@ def test_cli_search_shows_confidence_badges(cli_runner, initialized_kb):
     assert "[high]" in result.output
 
 
+def test_cli_search_shows_related_source_badge(cli_runner, initialized_kb):
+    save_module(Module(
+        id="graph-direct", category="general",
+        title="Direct match module",
+        summary="This module matches the query directly",
+        content=ModuleContent(overview="Direct match overview for testing.", details="Direct match details for testing source badges in CLI."),
+        metadata=ModuleMetadata(tags=["graph"], related_modules=["general/graph-neighbor"]),
+    ), initialized_kb)
+    save_module(Module(
+        id="graph-neighbor", category="general",
+        title="Neighbor module title",
+        summary="Neighbor module for graph expansion",
+        content=ModuleContent(overview="Neighbor overview for graph expansion testing.", details="Neighbor details for testing graph expansion source badges in CLI search."),
+        metadata=ModuleMetadata(tags=["graph"]),
+    ), initialized_kb)
+    rebuild_index(initialized_kb)
+    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "search", "Direct match"])
+    assert result.exit_code == 0
+    assert "graph-direct" in result.output
+    assert "graph-neighbor" in result.output
+    assert "[related]" in result.output
+
+
 def test_init_creates_meaningful_description():
     runner = CliRunner()
     with runner.isolated_filesystem():
