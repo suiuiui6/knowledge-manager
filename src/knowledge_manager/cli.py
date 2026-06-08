@@ -532,5 +532,23 @@ def rank_status(ctx: click.Context) -> None:
     click.echo("  4. bm25_score")
 
 
+@rank.command("retrain")
+@click.pass_context
+def rank_retrain(ctx: click.Context) -> None:
+    """Force recomputation of the Bayesian ranking model from telemetry data."""
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+    import os as _os
+    cache_file = kb / ".telemetry" / "rank_model.json"
+    if cache_file.exists():
+        cache_file.unlink()
+        click.echo("Ranking model cache cleared.")
+    else:
+        click.echo("No cached model to clear.")
+    events = load_search_events(kb)
+    search_count = sum(1 for e in events if e.get("type") == "search")
+    click.echo(f"Model will retrain from {search_count} search events on next query.")
+
+
 if __name__ == "__main__":
     cli()

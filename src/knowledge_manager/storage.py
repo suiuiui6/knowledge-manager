@@ -428,6 +428,33 @@ def load_search_events(kb_path: Path) -> List[dict]:
     return events
 
 
+def save_rank_model(priors: Dict[str, Dict[str, float]], event_count: int, kb_path: Path) -> None:
+    """Persist computed Bayesian priors to disk for fast reload."""
+    tdir = _telemetry_dir(kb_path)
+    tdir.mkdir(parents=True, exist_ok=True)
+    model = {
+        "event_count": event_count,
+        "smoothing": _BAYESIAN_SMOOTHING,
+        "priors": priors,
+    }
+    with open(tdir / "rank_model.json", "w", encoding="utf-8") as f:
+        json.dump(model, f, indent=2)
+
+
+def load_rank_model(kb_path: Path, expected_event_count: int) -> Dict[str, Dict[str, float]] | None:
+    """Load cached Bayesian priors if event count matches (i.e., cache is fresh)."""
+    model_file = _telemetry_dir(kb_path) / "rank_model.json"
+    if not model_file.exists():
+        return None
+    try:
+        model = json.loads(model_file.read_text(encoding="utf-8"))
+        if model.get("event_count") != expected_event_count:
+            return None
+        return model.get("priors", {})
+    except (json.JSONDecodeError, KeyError):
+        return None
+
+
 def compute_bayesian_priors(kb_path: Path) -> Dict[str, Dict[str, float]]:
     """Compute P(module_id | query_term) priors from historical search→load events.
 
@@ -438,6 +465,11 @@ def compute_bayesian_priors(kb_path: Path) -> Dict[str, Dict[str, float]]:
     events = load_search_events(kb_path)
     if not events:
         return {}
+
+    # Return cached priors if event count hasn't changed
+    cached = load_rank_model(kb_path, len(events))
+    if cached is not None:
+        return cached
 
     searches: List[dict] = []
     loads: List[dict] = []
@@ -494,5 +526,7 @@ def compute_bayesian_priors(kb_path: Path) -> Dict[str, Dict[str, float]]:
             count = positives.get(mk, 0)
             priors[term][mk] = (count + _BAYESIAN_SMOOTHING) / (total + _BAYESIAN_SMOOTHING * num_modules)
 
+    # Persist to disk cache
+    save_rank_model(priors, len(events), kb_path)
     return priors
 

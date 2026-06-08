@@ -9,7 +9,7 @@ from knowledge_manager.storage import (
     save_to_staging, list_staging, load_from_staging, approve_from_staging,
     _stem, search_modules,
     record_search_event, record_load_event, load_search_events,
-    compute_bayesian_priors,
+    compute_bayesian_priors, save_rank_model, load_rank_model,
 )
 
 
@@ -593,3 +593,37 @@ def test_compute_bayesian_priors_smoothing(kb_path):
     # Smoothing ensures probability is < 1.0 (other module gets some mass too)
     assert priors["smooth"]["auth/jwt"] < 1.0
     assert priors["smooth"]["auth/other"] > 0  # gets smoothing mass
+
+
+def test_save_and_load_rank_model(kb_path):
+    priors = {"test": {"auth/jwt": 0.75, "auth/other": 0.25}}
+    save_rank_model(priors, event_count=10, kb_path=kb_path)
+    loaded = load_rank_model(kb_path, expected_event_count=10)
+    assert loaded is not None
+    assert "test" in loaded
+    assert loaded["test"]["auth/jwt"] == 0.75
+
+
+def test_load_rank_model_stale_when_events_changed(kb_path):
+    priors = {"test": {"auth/jwt": 0.5}}
+    save_rank_model(priors, event_count=5, kb_path=kb_path)
+    loaded = load_rank_model(kb_path, expected_event_count=10)
+    assert loaded is None  # events changed, cache is stale
+
+
+def test_load_rank_model_missing_file_returns_none(kb_path):
+    assert load_rank_model(kb_path, expected_event_count=0) is None
+
+
+def test_compute_bayesian_priors_caches_to_disk(kb_path):
+    record_search_event("test query", ["auth/jwt"], kb_path)
+    record_load_event("jwt", "auth", kb_path)
+
+    # First call computes and saves
+    priors1 = compute_bayesian_priors(kb_path)
+    # Second call should load from cache (same event count)
+    priors2 = compute_bayesian_priors(kb_path)
+
+    assert priors1 == priors2
+    # Verify cache file was written
+    assert (kb_path / ".telemetry" / "rank_model.json").exists()

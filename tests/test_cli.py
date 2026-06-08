@@ -366,6 +366,12 @@ def test_cli_rank_status(cli_runner, initialized_kb):
     assert "Model" in result.output
 
 
+def test_cli_rank_retrain(cli_runner, initialized_kb):
+    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "rank", "retrain"])
+    assert result.exit_code == 0
+    assert "retrain" in result.output.lower() or "model" in result.output.lower()
+
+
 def test_init_creates_meaningful_description():
     runner = CliRunner()
     with runner.isolated_filesystem():
