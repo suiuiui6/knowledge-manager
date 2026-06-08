@@ -33,6 +33,9 @@ def create_server(kb_path: Path, cache: ModuleCache | None = None) -> FastMCP:
     if cache is None:
         cache = ModuleCache()
 
+    # Session-level tracking: recently loaded module IDs for query context boosting
+    _session_loaded: list[str] = []
+
     mcp = FastMCP("knowledge-manager")
 
     @mcp.resource("knowledge://index")
@@ -60,6 +63,13 @@ def create_server(kb_path: Path, cache: ModuleCache | None = None) -> FastMCP:
 
         cache.put(module)
         record_load_event(module_id, category, kb_path)
+        # Track for session-level query context boosting
+        module_key = f"{module.category}/{module.id}"
+        if module_key in _session_loaded:
+            _session_loaded.remove(module_key)
+        _session_loaded.append(module_key)
+        if len(_session_loaded) > 20:
+            _session_loaded.pop(0)
         return module.model_dump_json(indent=2)
 
     @mcp.tool(name="search_modules")
@@ -80,7 +90,7 @@ def create_server(kb_path: Path, cache: ModuleCache | None = None) -> FastMCP:
                 "related_modules": r.module.metadata.related_modules,
                 "snippet": _snippet(r.module.content.overview, query),
             }
-            for r in search_modules(query, kb_path, category if category else None)
+            for r in search_modules(query, kb_path, category if category else None, boost_ids=_session_loaded)
         ]
         return json.dumps(results, indent=2)
 
@@ -144,7 +154,7 @@ def create_server(kb_path: Path, cache: ModuleCache | None = None) -> FastMCP:
         each via graph expansion. Use when you need comprehensive knowledge without
         multiple round-trips.
         """
-        search_results = search_modules(query, kb_path, category if category else None, limit=3)
+        search_results = search_modules(query, kb_path, category if category else None, limit=3, boost_ids=_session_loaded)
         output = []
         for sr in search_results:
             full = load_module(sr.module.id, sr.module.category, kb_path)

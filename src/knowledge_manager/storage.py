@@ -13,7 +13,7 @@ from snowballstemmer import stemmer as _snowball_stemmer  # type: ignore[import-
 from knowledge_manager.schemas import Config, Index, Module
 
 
-_FIELD_WEIGHTS = {"title": 5, "tag": 3, "summary": 2, "overview": 1, "details": 1}
+_FIELD_WEIGHTS = {"title": 5, "tag": 3, "summary": 2, "overview": 1, "details": 1, "examples": 0, "caveats": 0}
 _WORD_RE = re.compile(r"\w+")
 _EN_STEMMER: Any = _snowball_stemmer("english")
 
@@ -31,9 +31,48 @@ _EXPANSION_DISCOUNT = 0.4
 # Confidence multiplier
 _CONFIDENCE_WEIGHT = {"high": 1.0, "medium": 0.85, "low": 0.7}
 
+# Intent-based field weight adjustments (added to base weights)
+_INTENT_ADJUSTMENTS: Dict[str, Dict[str, float]] = {
+    "how-to": {"examples": 5},
+    "decision-record": {"details": 4, "caveats": 4},
+    "reference": {"title": 2, "overview": 1},
+    "general": {},
+}
+
+# Intent classification patterns
+_INTENT_PATTERNS: Dict[str, List[str]] = {
+    "how-to": [
+        r"\bhow\s+(to|do|can|should|would|does|is|are)\b",
+        r"\bguide\b", r"\btutorial\b", r"\bexample\b", r"\bpattern\b",
+        r"\bimplement", r"\bset\s+up\b", r"\bconfigure\b", r"\bbuild\b",
+        r"\bcreate\b", r"\bdeploy\b", r"\bmigrate\b", r"\bdebug\b",
+    ],
+    "decision-record": [
+        r"\bwhy\b", r"\bdecision\b", r"\btradeoff\b", r"\btrade.off\b",
+        r"\barchitecture\b", r"\bchose\b", r"\bchosen\b", r"\bADR\b",
+        r"\balternative\b", r"\bapproach\b", r"\brationale\b",
+        r"\bvs\b", r"\bversus\b", r"\bcompared to\b",
+    ],
+    "reference": [
+        r"\bwhat is\b", r"\bdefinition\b", r"\bdefine\b", r"\bapi\b",
+        r"\bconfig\b", r"\bparameter\b", r"\bendpoint\b", r"\bschema\b",
+        r"\bsyntax\b", r"\breference\b", r"\bdocumentation\b",
+    ],
+}
+
 
 def _stem(word: str) -> str:
     return cast(str, _EN_STEMMER.stemWord(word.lower()))
+
+
+def _classify_intent(query: str) -> str:
+    """Classify query intent: 'how-to', 'reference', 'decision-record', or 'general'."""
+    q = query.lower()
+    scores: Dict[str, int] = {}
+    for intent, patterns in _INTENT_PATTERNS.items():
+        scores[intent] = sum(1 for p in patterns if re.search(p, q, re.IGNORECASE))
+    best = max(scores, key=scores.get)
+    return best if scores[best] > 0 else "general"
 
 
 def _module_full_text(module: Module) -> str:
@@ -161,7 +200,7 @@ def _bm25_scores(query: str, modules: List[Module]) -> Dict[str, float]:
     return scores
 
 
-def search_modules(query: str, kb_path: Path, category: str | None = None, limit: int = 15) -> List[SearchResult]:
+def search_modules(query: str, kb_path: Path, category: str | None = None, limit: int = 15, boost_ids: List[str] | None = None) -> List[SearchResult]:
     terms = query.lower().split()
     if not terms:
         return []
@@ -208,26 +247,40 @@ def search_modules(query: str, kb_path: Path, category: str | None = None, limit
         field_stems: Mapping[str, set[str]],
         word_pattern: re.Pattern[str],
         partial_pattern: re.Pattern[str] | None,
+        weights: Dict[str, float] | None = None,
     ) -> tuple[int, int]:
-        for field_name in ("title", "tag", "summary", "overview", "details"):
+        w = weights if weights is not None else _FIELD_WEIGHTS
+        field_names = list(w.keys())
+        for field_name in field_names:
+            if field_name not in fields:
+                continue
             field_value = fields[field_name]
             values = field_value if isinstance(field_value, list) else [field_value]
             if any(word_pattern.search(value) for value in values):
-                return _FIELD_WEIGHTS[field_name], _QUALITY_EXACT
+                return int(w[field_name]), _QUALITY_EXACT
 
         term_stem = _stem(term)
-        for field_name in ("title", "tag", "summary", "overview", "details"):
-            if term_stem in field_stems[field_name]:
-                return _FIELD_WEIGHTS[field_name], _QUALITY_STEM
+        for field_name in field_names:
+            if term_stem in field_stems.get(field_name, set()):
+                return int(w[field_name]), _QUALITY_STEM
 
         if partial_pattern is not None:
-            for field_name in ("title", "tag", "summary", "overview", "details"):
+            for field_name in field_names:
+                if field_name not in fields:
+                    continue
                 field_value = fields[field_name]
                 values = field_value if isinstance(field_value, list) else [field_value]
                 if any(partial_pattern.search(value) for value in values):
-                    return _FIELD_WEIGHTS[field_name] // 2, _QUALITY_PARTIAL
+                    return max(1, int(w[field_name]) // 2), _QUALITY_PARTIAL
 
         return 0, 0
+
+    # Classify query intent and compute adjusted field weights
+    intent = _classify_intent(query)
+    intent_adjustments = _INTENT_ADJUSTMENTS.get(intent, {})
+    effective_weights = dict(_FIELD_WEIGHTS)
+    for field, adj in intent_adjustments.items():
+        effective_weights[field] = effective_weights.get(field, 0) + adj
 
     patterns = []
     for term in terms:
@@ -247,6 +300,8 @@ def search_modules(query: str, kb_path: Path, category: str | None = None, limit
             "summary": module.summary,
             "overview": module.content.overview,
             "details": module.content.details,
+            "examples": module.content.examples,
+            "caveats": module.content.caveats,
         }
         field_stems = {
             "title": _field_stems(module.title),
@@ -254,12 +309,14 @@ def search_modules(query: str, kb_path: Path, category: str | None = None, limit
             "summary": _field_stems(module.summary),
             "overview": _field_stems(module.content.overview),
             "details": _field_stems(module.content.details),
+            "examples": _field_stems(module.content.examples),
+            "caveats": _field_stems(module.content.caveats),
         }
         score = 0
         best_quality = 0
 
         for term, word_pattern, partial_pattern, weight in patterns:
-            term_score, quality = score_term(term, fields, field_stems, word_pattern, partial_pattern)
+            term_score, quality = score_term(term, fields, field_stems, word_pattern, partial_pattern, effective_weights)
             score += int(term_score * weight)
             best_quality = max(best_quality, quality)
 
@@ -315,11 +372,17 @@ def search_modules(query: str, kb_path: Path, category: str | None = None, limit
                 count += 1
         return total / count if count > 0 else 0.0
 
-    # Primary: confidence-weighted heuristic score. Secondary: match quality.
-    # Tertiary: Bayesian prior (learned from usage). Fourth: BM25.
+    # Session boost: 1.2x multiplier for recently loaded modules in this session
+    boost_set = set(boost_ids) if boost_ids else set()
+
+    def _session_boost(module_id: str, heur_score: float) -> float:
+        return heur_score * 1.2 if module_id in boost_set else heur_score
+
+    # Primary: confidence-weighted heuristic score (with session boost).
+    # Secondary: match quality. Tertiary: Bayesian prior. Fourth: BM25.
     scored.sort(
         key=lambda item: (
-            item[1] * _CONFIDENCE_WEIGHT.get(item[3].metadata.confidence, 0.85),
+            _session_boost(item[3].id, item[1]) * _CONFIDENCE_WEIGHT.get(item[3].metadata.confidence, 0.85),
             item[2],
             _bayesian_bonus(item[3]),
             item[0],

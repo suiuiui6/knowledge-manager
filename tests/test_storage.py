@@ -623,6 +623,126 @@ def test_search_modules_weighted_graph_edges(kb_path):
         f"High-weight neighbor mod-b should rank before low-weight mod-c, got {ids}"
 
 
+# --- Intent classification tests ---
+
+
+def test_classify_intent_detects_how_to():
+    from knowledge_manager.storage import _classify_intent
+    assert _classify_intent("how to configure JWT signing") == "how-to"
+    assert _classify_intent("how do I set up OAuth flow") == "how-to"
+    assert _classify_intent("guide for database migration") == "how-to"
+    assert _classify_intent("implement caching pattern") == "how-to"
+
+
+def test_classify_intent_detects_decision_record():
+    from knowledge_manager.storage import _classify_intent
+    assert _classify_intent("why did we choose RS256") == "decision-record"
+    assert _classify_intent("tradeoff between Postgres and MySQL") == "decision-record"
+    assert _classify_intent("architecture decision for microservices") == "decision-record"
+    assert _classify_intent("ADR for authentication protocol") == "decision-record"
+
+
+def test_classify_intent_detects_reference():
+    from knowledge_manager.storage import _classify_intent
+    assert _classify_intent("what is the JWT signing algorithm") == "reference"
+    assert _classify_intent("API endpoint configuration") == "reference"
+    assert _classify_intent("database schema definition") == "reference"
+
+
+def test_classify_intent_defaults_to_general():
+    from knowledge_manager.storage import _classify_intent
+    assert _classify_intent("JWT authentication") == "general"
+    assert _classify_intent("Postgres connection pool") == "general"
+    assert _classify_intent("rate limiting") == "general"
+
+
+def test_search_modules_how_to_intent_boosts_examples(kb_path):
+    """How-to intent should boost modules with rich examples content."""
+    save_module(Module(
+        id="with-examples", category="general",
+        title="Xylophone configuration",
+        summary="Configuring the xylophone module",
+        content=ModuleContent(
+            overview="Configuration overview for the xylophone module.",
+            details="Step-by-step xylophone configuration details for testing.",
+            examples="Real xylophone configuration examples. Here is configure xylophone in practice.",
+        ),
+    ), kb_path)
+    save_module(Module(
+        id="no-examples", category="general",
+        title="Xylophone configuration reference",
+        summary="Reference for xylophone configuration",
+        content=ModuleContent(
+            overview="Xylophone is configured via environment variables.",
+            details="This module describes xylophone configuration at a high reference level.",
+            examples="",
+        ),
+    ), kb_path)
+
+    results = search_modules("how to configure xylophone", kb_path)
+    ids = [r.module.id for r in results]
+    assert ids[0] == "with-examples", f"How-to intent should boost examples, got {ids}"
+
+
+def test_search_modules_decision_intent_boosts_details(kb_path):
+    """Decision-record intent should boost modules with rich details and caveats."""
+    save_module(Module(
+        id="deep-details", category="general",
+        title="Xylophone architecture decision",
+        summary="Why we chose xylophone for our architecture",
+        content=ModuleContent(
+            overview="Architecture decision overview for xylophone.",
+            details="Comprehensive analysis of xylophone architecture. We evaluated three options. The tradeoff between latency and throughput was key. PostgreSQL was chosen because it offers the best balance.",
+            caveats="This xylophone decision assumes single-region deployment. Multi-region adds significant complexity.",
+        ),
+    ), kb_path)
+    save_module(Module(
+        id="shallow-details", category="general",
+        title="Xylophone architecture reference",
+        summary="Architecture reference overview for xylophone",
+        content=ModuleContent(
+            overview="Reference material for xylophone architecture details.",
+            details="Xylophone is a reference architecture pattern for distributed systems.",
+            caveats="",
+        ),
+    ), kb_path)
+
+    results = search_modules("why xylophone architecture decision tradeoff", kb_path)
+    ids = [r.module.id for r in results]
+    assert ids[0] == "deep-details", f"Decision intent should boost details+caveats, got {ids}"
+
+
+def test_search_modules_boost_ids_promotes_recently_loaded(kb_path):
+    """Modules in boost_ids should rank higher than similarly-scored modules."""
+    save_module(Module(
+        id="mod-a", category="general",
+        title="Database connection troubleshooting",
+        summary="How to troubleshoot database connections",
+        content=ModuleContent(
+            overview="Troubleshooting database connections is important.",
+            details="Database connection troubleshooting details for testing boost parameter.",
+        ),
+    ), kb_path)
+    save_module(Module(
+        id="mod-b", category="general",
+        title="Database connection pooling",
+        summary="Database connection pool configuration",
+        content=ModuleContent(
+            overview="Connection pooling for databases is essential.",
+            details="Database connection pooling configuration for testing boost parameter.",
+        ),
+    ), kb_path)
+
+    # Without boost, both match "database connection" equally in title
+    results = search_modules("database connection", kb_path)
+    ids = [r.module.id for r in results]
+
+    # With boost on mod-b, it should rank first
+    results_boosted = search_modules("database connection", kb_path, boost_ids=["mod-b"])
+    boosted_ids = [r.module.id for r in results_boosted]
+    assert boosted_ids[0] == "mod-b", f"Boost should promote mod-b, got {boosted_ids}"
+
+
 def test_record_search_event_writes_jsonl(kb_path):
     record_search_event("JWT authentication", ["auth/jwt", "auth/oauth-flow"], kb_path)
     events_file = kb_path / ".telemetry" / "search_events.jsonl"

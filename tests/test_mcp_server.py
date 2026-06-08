@@ -165,3 +165,43 @@ async def test_tool_deep_search_returns_full_content(server, kb_path):
     assert "details" in content  # Full content loaded
     assert "neighbors" in content  # Graph expanded
     assert "oauth-flow" in content  # Neighbor included
+
+
+@pytest.mark.asyncio
+async def test_session_context_boosts_recently_loaded(server, kb_path):
+    """Loading a module should boost it in subsequent searches within the session."""
+    save_module(Module(
+        id="mod-a", category="general",
+        title="Zanzibar quick reference",
+        summary="Quick reference for zanzibar topic",
+        content=ModuleContent(
+            overview="Zanzibar overview for session boost comparison.",
+            details="Zanzibar details for mod-a — this module covers the basics.",
+        ),
+    ), kb_path)
+    save_module(Module(
+        id="mod-b", category="general",
+        title="Zanzibar deep dive",
+        summary="In-depth zanzibar module with details",
+        content=ModuleContent(
+            overview="Zanzibar overview for session boost testing.",
+            details="Zanzibar details for mod-b — provides comprehensive coverage.",
+        ),
+    ), kb_path)
+
+    # Load mod-b first
+    await server.call_tool("load_module", {"module_id": "mod-b", "category": "general"})
+
+    # Verify load succeeded
+    load_result = await server.call_tool("load_module", {"module_id": "mod-b", "category": "general"})
+    load_content = load_result[0].text if hasattr(load_result[0], "text") else str(load_result[0])
+    assert "mod-b" in load_content, f"Load should succeed, got: {load_content[:200]}"
+
+    # Search for a term both modules match — mod-b should rank first due to session boost
+    result = await server.call_tool("search_modules", {"query": "zanzibar"})
+    content = result[0].text if hasattr(result[0], "text") else str(result[0])
+    assert "mod-b" in content, f"Search should find mod-b, got: {content[:300]}"
+    assert "mod-a" in content, f"Search should find mod-a, got: {content[:300]}"
+    # mod-b should appear before mod-a (session boost applied after loading mod-b)
+    assert content.index("mod-b") < content.index("mod-a"), \
+        f"Session boost should rank loaded mod-b before mod-a"
