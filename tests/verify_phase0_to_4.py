@@ -108,15 +108,19 @@ print("\n=== Phase 1A: Graph + Confidence ===")
 m1 = make_mod("p1a-core", "auth")
 m1.metadata.confidence = "high"
 m1.metadata.related_modules = ["db/p1a-neighbor"]
+# Give the core module a unique title so we can search for it specifically
+m1.title = "GraphExpansionCore UniqueTerm"
 save_module(m1, kb)
 m2 = make_mod("p1a-neighbor", "db")
 m2.metadata.confidence = "low"
+# Give neighbor a title that won't match the unique core search term
 m2.title = "Database Neighbor Module"
+m2.summary = "Unrelated summary text for neighbor"
 save_module(m2, kb)
 rebuild_index(kb)
 
-# Search for exactly p1a-core — only p1a-core matches directly, neighbor comes via expansion
-results = search_modules("p1a-core", kb)
+# Search for the unique term — only the core matches directly, neighbor via expansion
+results = search_modules("GraphExpansionCore", kb)
 direct_found = any(r.module.id == "p1a-core" and r.source == "direct" for r in results)
 related_found = any(r.module.id == "p1a-neighbor" and r.source == "related" for r in results)
 check("graph expansion: direct match source=direct", direct_found)
