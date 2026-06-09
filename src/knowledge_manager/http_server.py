@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from pathlib import Path
 
 import json
@@ -183,6 +184,190 @@ def create_app(kb_path: Path) -> FastAPI:
             ],
             "took_ms": 0,
         }
+
+    # ── Write endpoints (M6) ──
+
+    @app.post("/api/modules")
+    def api_module_create(body: dict):
+        from knowledge_manager.schemas import Module, ModuleContent, ModuleMetadata
+
+        try:
+            module = Module(
+                id=body["id"],
+                category=body["category"],
+                title=body["title"],
+                summary=body["summary"],
+                content=ModuleContent(**body.get("content", {"overview": "", "details": ""})),
+                metadata=ModuleMetadata(**body.get("metadata", {})),
+            )
+        except Exception as e:
+            raise HTTPException(422, str(e))
+
+        submit_to_staging = body.get("submit_to_staging", True)
+        if submit_to_staging:
+            from knowledge_manager.storage import save_to_staging, save_staging_meta
+            from knowledge_manager.schemas import StagingMeta
+
+            staging = kb_path / ".staging"
+            staging.mkdir(exist_ok=True)
+            save_to_staging(module, staging)
+            save_staging_meta(StagingMeta(module_id=module.id, submitted_by="web-ui"), staging)
+            return {"id": module.id, "category": module.category, "status": "staged", "review_required": True}
+
+        from knowledge_manager.storage import save_module, rebuild_index
+        save_module(module, kb_path)
+        rebuild_index(kb_path)
+        return module.model_dump()
+
+    @app.put("/api/modules/{cat}/{mod_id}")
+    def api_module_update(cat: str, mod_id: str, body: dict):
+        module = load_module(mod_id, cat, kb_path)
+        if module is None:
+            raise HTTPException(404, f"Module not found: {cat}/{mod_id}")
+
+        for field in ("title", "summary"):
+            if field in body:
+                setattr(module, field, body[field])
+        if "content" in body:
+            for k, v in body["content"].items():
+                if hasattr(module.content, k) and v:
+                    setattr(module.content, k, v)
+        if "metadata" in body:
+            for k, v in body["metadata"].items():
+                if hasattr(module.metadata, k):
+                    setattr(module.metadata, k, v)
+            module.updated_at = datetime.now(timezone.utc)
+
+        from knowledge_manager.storage import save_module, rebuild_index
+        save_module(module, kb_path)
+        rebuild_index(kb_path)
+        return module.model_dump()
+
+    @app.delete("/api/modules/{cat}/{mod_id}")
+    def api_module_delete(cat: str, mod_id: str):
+        from knowledge_manager.storage import delete_module, load_index, save_index
+
+        if not delete_module(mod_id, cat, kb_path):
+            raise HTTPException(404, f"Module not found: {cat}/{mod_id}")
+        index = load_index(kb_path)
+        if index:
+            index.remove_module(mod_id, cat)
+            save_index(index, kb_path)
+        return {"deleted": f"{cat}/{mod_id}"}
+
+    # ── Staging API (M6) ──
+
+    @app.get("/api/staging")
+    def api_staging_list():
+        from knowledge_manager.storage import list_staging, load_staging_meta
+
+        staging = kb_path / ".staging"
+        items = []
+        for m in list_staging(staging):
+            meta = load_staging_meta(m.id, staging)
+            cfg = _load_config()
+            required = cfg.review.required_approvals if cfg else 1
+            items.append({
+                "module_id": m.id,
+                "status": meta.status if meta else "pending",
+                "submitted_by": meta.submitted_by if meta else "",
+                "submitted_at": meta.submitted_at.isoformat() if meta and meta.submitted_at else "",
+                "approvals": meta.approval_count() if meta else 0,
+                "required_approvals": required,
+                "module_summary": m.summary,
+                "preview": {"title": m.title, "category": m.category, "tags": m.metadata.tags},
+            })
+        return {"items": items}
+
+    @app.post("/api/staging/{module_id}/approve")
+    def api_staging_approve(module_id: str, body: dict | None = None):
+        from knowledge_manager.storage import (
+            approve_from_staging, load_staging_meta, list_staging,
+            save_staging_meta, rebuild_index,
+        )
+        from knowledge_manager.schemas import ReviewRecord, StagingMeta
+
+        staging = kb_path / ".staging"
+        meta = load_staging_meta(module_id, staging)
+        if meta is None:
+            meta = StagingMeta(module_id=module_id)
+
+        comment = (body or {}).get("comment", "")
+        user = (body or {}).get("reviewer", "web-ui")
+        meta.reviews.append(ReviewRecord(reviewer=user, action="approved", comment=comment))
+
+        cfg = _load_config()
+        required = cfg.review.required_approvals if cfg else 1
+        if meta.approval_count() >= required:
+            approve_from_staging(module_id, staging, kb_path)
+            rebuild_index(kb_path)
+            return {"status": "merged", "approvals": meta.approval_count()}
+        save_staging_meta(meta, staging)
+        return {"status": "pending", "approvals": meta.approval_count(), "required": required}
+
+    @app.post("/api/staging/{module_id}/reject")
+    def api_staging_reject(module_id: str, body: dict | None = None):
+        from knowledge_manager.storage import load_staging_meta, save_staging_meta
+        from knowledge_manager.schemas import ReviewRecord, StagingMeta
+
+        staging = kb_path / ".staging"
+        meta = load_staging_meta(module_id, staging)
+        if meta is None:
+            meta = StagingMeta(module_id=module_id)
+
+        comment = (body or {}).get("comment", "No reason given")
+        user = (body or {}).get("reviewer", "web-ui")
+        meta.reviews.append(ReviewRecord(reviewer=user, action="changes-requested", comment=comment))
+        meta.status = "changes-requested"
+        save_staging_meta(meta, staging)
+        return {"status": "changes-requested", "module_id": module_id}
+
+    # ── Tree mutation (M6) ──
+
+    @app.put("/api/tree")
+    def api_tree_update(body: dict):
+        from knowledge_manager.storage import load_index, save_index, save_tree
+
+        action = body.get("action")
+        node_id = body.get("node_id", "")
+        new_parent = body.get("new_parent", "")
+        position = body.get("position", 0)
+
+        index = load_index(kb_path)
+        if index is None or index.tree is None:
+            raise HTTPException(404, "No tree structure found. Build it with km tree build --llm first.")
+
+        tree = index.tree
+        if action == "move" and node_id and new_parent:
+            node, old_parent = _find_node_and_parent(tree, node_id)
+            new_parent_node = _find_node_by_id(tree, new_parent)
+            if node and new_parent_node:
+                if old_parent:
+                    old_parent.children = [c for c in old_parent.children if c.id != node.id]
+                new_parent_node.children.insert(position, node)
+                save_tree(tree, kb_path)
+
+        return {"status": "updated"}
+
+    def _find_node_and_parent(root, target_id: str):
+        def _search(node, parent):
+            if node.id == target_id:
+                return node, parent
+            for child in node.children:
+                found, p = _search(child, node)
+                if found:
+                    return found, p
+            return None, None
+        return _search(root, None)
+
+    def _find_node_by_id(root, target_id: str):
+        if root.id == target_id:
+            return root
+        for child in root.children:
+            found = _find_node_by_id(child, target_id)
+            if found:
+                return found
+        return None
 
     # ── Chat (M2) ──
 
