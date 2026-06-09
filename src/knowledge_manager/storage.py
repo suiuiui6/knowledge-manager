@@ -1525,3 +1525,87 @@ def load_federation(kb_path: Path) -> dict:
             "search_default": ns_cfg.search_default,
         }
     return namespaces
+
+
+# ── M1: Knowledge tree functions ──
+
+
+def get_tree(kb_path: Path) -> "TreeNode":
+    from knowledge_manager.schemas import TreeNode, TreeNodeType
+
+    index = load_index(kb_path)
+    if index is None:
+        return TreeNode(id="root", type=TreeNodeType.ROOT, title="Empty KB")
+    tree_val = getattr(index, "tree", None)
+    if tree_val is not None:
+        return tree_val
+    return _build_tree_from_categories(index)
+
+
+def get_subtree(cat: str, mod_id: str, kb_path: Path) -> "TreeNode | None":
+    from knowledge_manager.schemas import TreeNode, TreeNodeType
+
+    module = load_module(mod_id, cat, kb_path)
+    if module is None:
+        return None
+    node = TreeNode(
+        id=f"{cat}/{mod_id}",
+        type=TreeNodeType.MODULE,
+        title=module.title,
+        summary=module.summary,
+        path=f"{cat}/{mod_id}",
+        confidence=module.metadata.confidence,
+        status=module.metadata.status,
+        tags=module.metadata.tags,
+    )
+    for ref in module.metadata.related_modules:
+        parts = ref.split("/", 1)
+        if len(parts) == 2:
+            related = load_module(parts[1], parts[0], kb_path)
+            if related:
+                node.children.append(TreeNode(
+                    id=ref,
+                    type=TreeNodeType.MODULE,
+                    title=related.title,
+                    summary=related.summary,
+                    path=ref,
+                    confidence=related.metadata.confidence,
+                    status=related.metadata.status,
+                    tags=related.metadata.tags,
+                ))
+    return node
+
+
+def _build_tree_from_categories(index: "Index") -> "TreeNode":
+    from knowledge_manager.schemas import TreeNode, TreeNodeType
+
+    stats = index.stats
+    root = TreeNode(
+        id="root",
+        type=TreeNodeType.ROOT,
+        title="Knowledge Base",
+        summary=f"{stats.total_modules} modules across {stats.categories} categories",
+    )
+    for cat_name, cat in index.categories.items():
+        cat_node = TreeNode(
+            id=cat_name,
+            type=TreeNodeType.CATEGORY,
+            title=cat_name,
+            summary=cat.description,
+            path=cat_name,
+            module_count=len(cat.modules),
+            word_count=sum(m.word_count for m in cat.modules),
+        )
+        for mod in cat.modules:
+            cat_node.children.append(TreeNode(
+                id=f"{cat_name}/{mod.id}",
+                type=TreeNodeType.MODULE,
+                title=mod.title,
+                summary=mod.summary,
+                path=f"{cat_name}/{mod.id}",
+                tags=mod.tags,
+            ))
+        root.children.append(cat_node)
+    root.module_count = stats.total_modules
+    root.word_count = stats.total_words
+    return root

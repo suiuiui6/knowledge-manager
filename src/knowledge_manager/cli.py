@@ -1070,15 +1070,42 @@ def review_my_submissions(ctx: click.Context) -> None:
 # --- serve (MCP) ---
 
 @cli.command()
+@click.option("--ui", is_flag=True, help="Start MCP + Web UI (FastAPI on localhost:8420)")
+@click.option("--host", default="127.0.0.1", help="Host to bind the Web UI server")
+@click.option("--port", default=8420, type=int, help="Port for the Web UI server")
 @click.pass_context
-def serve(ctx: click.Context) -> None:
-    """Run the MCP server over stdio."""
-    from knowledge_manager.mcp_server import create_server
-
+def serve(ctx: click.Context, ui: bool, host: str, port: int) -> None:
+    """Run the MCP server over stdio. Use --ui for MCP + Web UI mode."""
     kb = ctx.obj["kb_path"]
     _require_kb(kb)
-    server = create_server(kb)
-    asyncio.run(server.run_stdio_async())
+
+    if ui:
+        import uvicorn
+        from knowledge_manager.http_server import create_app
+
+        app = create_app(kb)
+        console.print(f"[bold]Knowledge Manager Web UI[/bold]")
+        console.print(f"  MCP: stdio (available)")
+        console.print(f"  Web UI: http://{host}:{port}")
+        console.print(f"  Fallback UI: http://{host}:{port}/ui/fallback")
+        # Run MCP in background thread, FastAPI in main thread
+        import threading
+        from knowledge_manager.mcp_server import create_server as create_mcp
+
+        mcp_server = create_mcp(kb)
+
+        def run_mcp():
+            asyncio.run(mcp_server.run_stdio_async())
+
+        mcp_thread = threading.Thread(target=run_mcp, daemon=True)
+        mcp_thread.start()
+
+        uvicorn.run(app, host=host, port=port, log_level="info")
+    else:
+        from knowledge_manager.mcp_server import create_server
+
+        server = create_server(kb)
+        asyncio.run(server.run_stdio_async())
 
 
 # --- Platform connector commands (Phase 4A) ---

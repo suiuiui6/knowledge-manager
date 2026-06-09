@@ -81,6 +81,7 @@ class Index(BaseModel):
     graph: Dict[str, List[str]] = Field(default_factory=dict)
     stats: IndexStats = Field(default_factory=IndexStats)
     updated_at: datetime = Field(default_factory=utc_now)
+    tree: Optional[Any] = None
 
     def add_module(self, module: Module) -> None:
         if module.category not in self.categories:
@@ -186,6 +187,10 @@ class NotificationsConfig(BaseModel):
     on_review_approved: bool = False
 
 
+class UIConfig(BaseModel):
+    enabled: bool = False
+
+
 class Config(BaseModel):
     llm_providers: Dict[str, LLMProviderConfig] = Field(default_factory=dict)
     extraction: ExtractionConfig = Field(default_factory=ExtractionConfig)
@@ -197,6 +202,7 @@ class Config(BaseModel):
     federation: "FederationConfig" = Field(default_factory=lambda: FederationConfig())
     webhooks: "WebhookConfig" = Field(default_factory=lambda: WebhookConfig())
     marketplace: "MarketplaceConfig" = Field(default_factory=lambda: MarketplaceConfig())
+    ui: UIConfig = Field(default_factory=UIConfig)
 
     def get_default_provider(self) -> Tuple[str, LLMProviderConfig]:
         for name, provider in self.llm_providers.items():
@@ -440,5 +446,59 @@ class MarketplaceConfig(BaseModel):
     sanitize_patterns: List[str] = Field(default_factory=list)
 
 
-# Resolve forward references for Config's new Phase 4 fields
+# ── M1: Web UI + knowledge tree schemas ──
+
+
+class TreeNodeType(str, Enum):
+    ROOT = "root"
+    CATEGORY = "category"
+    MODULE = "module"
+    SECTION = "section"
+
+
+class TreeNode(BaseModel):
+    id: str
+    type: TreeNodeType
+    title: str
+    summary: str = ""
+    path: str = ""
+    page_range: Optional[tuple[int, int]] = None
+    children: list["TreeNode"] = Field(default_factory=list)
+    module_count: int = 0
+    word_count: int = 0
+    confidence: Optional[str] = None
+    status: Optional[str] = None
+    tags: list[str] = Field(default_factory=list)
+
+
+class GraphNode(BaseModel):
+    id: str
+    label: str
+    category: str = ""
+    status: str = "published"
+    in_degree: int = 0
+    out_degree: int = 0
+
+
+class GraphEdge(BaseModel):
+    source: str
+    target: str
+    weight: float = 1.0
+
+
+class GraphData(BaseModel):
+    nodes: list[GraphNode] = Field(default_factory=list)
+    edges: list[GraphEdge] = Field(default_factory=list)
+    stats: Optional[dict] = None
+
+
+class PaginatedResponse(BaseModel):
+    items: list[dict] = Field(default_factory=list)
+    total: int = 0
+    page: int = 1
+    limit: int = 50
+    pages: int = 0
+
+
+# Resolve forward references
 Config.model_rebuild()
