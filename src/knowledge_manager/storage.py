@@ -1538,6 +1538,12 @@ def get_tree(kb_path: Path) -> "TreeNode":
         return TreeNode(id="root", type=TreeNodeType.ROOT, title="Empty KB")
     tree_val = getattr(index, "tree", None)
     if tree_val is not None:
+        if isinstance(tree_val, dict):
+            from knowledge_manager.schemas import TreeNode as TN
+            try:
+                return TN.model_validate(tree_val)
+            except Exception:
+                pass
         return tree_val
     return _build_tree_from_categories(index)
 
@@ -1609,3 +1615,33 @@ def _build_tree_from_categories(index: "Index") -> "TreeNode":
     root.module_count = stats.total_modules
     root.word_count = stats.total_words
     return root
+
+
+def save_tree(tree: "TreeNode", kb_path: Path) -> None:
+    from knowledge_manager.schemas import TreeNode as TNode
+
+    index = load_index(kb_path)
+    if index is None:
+        index = _create_empty_index()
+    index.tree = tree
+    save_index(index, kb_path)
+
+
+def find_modules_under(node: "TreeNode") -> list[str]:
+    from knowledge_manager.schemas import TreeNodeType
+
+    keys: list[str] = []
+
+    def _collect(n: "TreeNode") -> None:
+        if n.type == TreeNodeType.MODULE:
+            keys.append(n.path or n.id)
+        for child in n.children:
+            _collect(child)
+
+    _collect(node)
+    return keys
+
+
+def _create_empty_index() -> "Index":
+    from knowledge_manager.schemas import Index
+    return Index(description="")

@@ -1153,6 +1153,161 @@ def chat(ctx: click.Context, mode: str) -> None:
             history = history[-20:]
 
 
+# --- tree (M3) ---
+
+
+@cli.group()
+def tree() -> None:
+    """Manage and navigate the knowledge tree."""
+
+
+@tree.command("show")
+@click.argument("path", required=False, default="")
+@click.pass_context
+def tree_show(ctx: click.Context, path: str) -> None:
+    """Show the knowledge tree. Optionally filter to a specific path."""
+    from knowledge_manager.storage import get_tree, get_subtree
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    if path:
+        parts = path.split("/", 1)
+        if len(parts) == 2:
+            node = get_subtree(parts[0], parts[1], kb)
+        else:
+            node = get_tree(kb)
+            for child in node.children:
+                if child.id == path or child.path == path:
+                    node = child
+                    break
+            else:
+                node = None
+        if node is None:
+            click.echo(f"No tree node found at: {path}")
+            return
+    else:
+        node = get_tree(kb)
+
+    def _print_node(n, indent: int = 0) -> None:
+        prefix = "  " * indent
+        icon = {"root": "", "category": "+", "module": "*", "section": "-"}.get(n.type.value if hasattr(n.type, 'value') else str(n.type), "?")
+        name = n.path or n.id
+        extra = ""
+        if n.module_count:
+            extra = f" ({n.module_count} modules, {n.word_count} words)"
+        if hasattr(n, 'confidence') and n.confidence:
+            extra += f" [{n.confidence}]"
+        if hasattr(n, 'status') and n.status and n.status != "published":
+            extra += f" [{n.status}]"
+        click.echo(f"{prefix}{icon} {n.title}  {extra}")
+        for child in n.children:
+            _print_node(child, indent + 1)
+
+    _print_node(node)
+
+
+@tree.command("build")
+@click.option("--llm", is_flag=True, help="Use LLM to organize the tree structure")
+@click.option("--from-md", is_flag=True, help="Build tree from Markdown file headings")
+@click.pass_context
+def tree_build(ctx: click.Context, llm: bool, from_md: bool) -> None:
+    """Build or rebuild the knowledge tree."""
+    from knowledge_manager.storage import save_tree, get_tree, load_index, rebuild_index
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    if llm:
+        from knowledge_manager.llm_clients import create_client
+        from knowledge_manager.tree_builder import build_tree_from_llm
+        from knowledge_manager.storage import list_modules
+
+        cfg = _load_config(kb)
+        try:
+            provider_name, provider_cfg = cfg.get_default_provider()
+        except ValueError:
+            click.echo("[red]No LLM provider configured.[/red]")
+            return
+
+        llm_client = create_client(provider_name, provider_cfg)
+        modules = list_modules(kb)
+        if not modules:
+            click.echo("No modules found. Add modules first.")
+            return
+
+        console.print("[dim]LLM is organizing the knowledge tree...[/dim]")
+        new_tree = asyncio.run(build_tree_from_llm(modules, llm_client))
+        save_tree(new_tree, kb)
+        console.print(f"[green]Tree built with {len(new_tree.children)} top-level groups.[/green]")
+
+    elif from_md:
+        from knowledge_manager.tree_builder import rebuild_tree_from_files
+
+        new_tree = rebuild_tree_from_files(kb)
+        if new_tree is None:
+            click.echo("No .md files found. Run M5 first to generate Markdown files.")
+            return
+        save_tree(new_tree, kb)
+        console.print(f"[green]Tree rebuilt from Markdown headings.[/green]")
+
+    else:
+        # Default: rebuild from categories
+        rebuild_index(kb)
+        click.echo("[green]Tree rebuilt from categories.[/green]")
+
+
+@tree.command("navigate")
+@click.argument("query")
+@click.pass_context
+def tree_navigate(ctx: click.Context, query: str) -> None:
+    """Navigate the knowledge tree to find the best module for a query."""
+    from knowledge_manager.storage import get_tree, load_module
+    from knowledge_manager.tree_navigator import TreeNavigator
+    from knowledge_manager.llm_clients import create_client
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    tree_root = get_tree(kb)
+    if not tree_root.children:
+        click.echo("Tree is empty. Build it first with 'km tree build'.")
+        return
+
+    cfg = _load_config(kb)
+    try:
+        provider_name, provider_cfg = cfg.get_default_provider()
+    except ValueError:
+        click.echo("[red]No LLM provider configured.[/red]")
+        return
+
+    llm_client = create_client(provider_name, provider_cfg)
+    navigator = TreeNavigator(tree_root, llm_client)
+
+    console.print(f"[bold]Navigating:[/bold] {query}\n")
+
+    async def _run():
+        result = await navigator.navigate(query)
+        console.print(f"[bold]Path taken:[/bold]")
+        for s in result.path:
+            action_icon = {"drill": "↓", "explore": "→", "load": "✓", "backtrack": "←", "done": "★"}.get(s.action, s.action)
+            console.print(f"  {action_icon} [{s.node_title}] — {s.reasoning[:80]}")
+
+        if result.final_module_key:
+            console.print(f"\n[bold green]Best match:[/bold green] {result.final_module_key} ({result.final_title})")
+            console.print(f"  Confidence: {result.confidence:.2f}")
+            # Load the module
+            parts = result.final_module_key.split("/", 1)
+            if len(parts) == 2:
+                mod = load_module(parts[1], parts[0], kb)
+                if mod:
+                    console.print(f"  Summary: {mod.summary[:200]}")
+        else:
+            console.print("\n[yellow]No clear match found.[/yellow]")
+
+    asyncio.run(_run())
+
+
 # --- serve (MCP) ---
 
 @cli.command()

@@ -217,6 +217,27 @@ class ChatPipeline:
     async def _tree_recall(self, query: str, intent: str) -> list[dict]:
         if not self.tree_index:
             return []
+        from knowledge_manager.tree_navigator import TreeNavigator
+
+        navigator = TreeNavigator(self.tree_index, self.llm)
+        try:
+            result = await navigator.navigate(query)
+            if result.final_module_key:
+                parts = result.final_module_key.split("/", 1)
+                if len(parts) == 2:
+                    mod = load_module(parts[1], parts[0], self.kb_path)
+                    if mod:
+                        return [{
+                            "key": result.final_module_key,
+                            "title": result.final_title or mod.title,
+                            "summary": result.final_summary or mod.summary,
+                            "confidence": mod.metadata.confidence,
+                            "source": "tree",
+                            "module": mod,
+                            "navigation_confidence": result.confidence,
+                        }]
+        except Exception:
+            logger.debug("Tree navigation failed, skipping tree recall")
         return []
 
     async def _vector_recall(self, query: str) -> list[dict]:
