@@ -1513,6 +1513,214 @@ def _apply_auto_fix(issue, kb_path: Path, CT) -> None:
     rebuild_index(kb_path)
 
 
+# --- memory (M8) ---
+
+
+@cli.group()
+def memory() -> None:
+    """Manage spaced repetition memory cards."""
+
+
+@memory.command("init")
+@click.pass_context
+def memory_init(ctx: click.Context) -> None:
+    """Generate memory cards from high-value knowledge modules."""
+    from knowledge_manager.memory import CardGenerator, save_cards
+    from knowledge_manager.llm_clients import create_client
+    from knowledge_manager.storage import list_modules
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    cfg = _load_config(kb)
+    try:
+        provider_name, provider_cfg = cfg.get_default_provider()
+    except ValueError:
+        console.print("[red]No LLM provider configured.[/red]")
+        return
+
+    llm_client = create_client(provider_name, provider_cfg)
+    generator = CardGenerator(llm_client)
+    modules = list_modules(kb)
+    selected = CardGenerator.select_modules(modules, max_modules=30)
+    console.print(f"Selected {len(selected)} high-value modules. Generating cards...")
+
+    all_cards = []
+    for i, mod in enumerate(selected):
+        console.print(f"  [{i+1}/{len(selected)}] {mod.title}")
+        cards = asyncio.run(generator.generate_cards(mod, max_cards=2))
+        all_cards.extend(cards)
+
+    save_cards(all_cards, kb)
+    console.print(f"[green]Generated {len(all_cards)} memory cards.[/green]")
+
+
+@memory.command("today")
+@click.pass_context
+def memory_today(ctx: click.Context) -> None:
+    """Review memory cards due today."""
+    from knowledge_manager.memory import FSRSScheduler, load_cards, save_cards, ReviewGrade
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    scheduler = FSRSScheduler()
+    cards = load_cards(kb)
+    due = scheduler.get_due_cards(cards, limit=10)
+
+    if not due:
+        console.print("[green]No cards due today. Well done![/green]")
+        return
+
+    console.print(f"[bold]{len(due)} card(s) due:[/bold]\n")
+    for i, card in enumerate(due, 1):
+        console.print(f"[bold]Card {i}:[/bold] {card.front}")
+        Prompt.ask("Press Enter to reveal answer", default="")
+        console.print(f"[green]{card.back}[/green]")
+        console.print(f"  Source: {card.module_key}")
+
+        grade_str = Prompt.ask("Grade", choices=["1", "2", "3", "4"], default="3")
+        grade_map = {"1": "Again", "2": "Hard", "3": "Good", "4": "Easy"}
+        grade = ReviewGrade(int(grade_str))
+        scheduler.schedule(card, grade)
+        console.print(f"  → {grade_map[grade_str]}, next review: {card.next_review_at.strftime('%Y-%m-%d') if card.next_review_at else 'unknown'}\n")
+
+    save_cards(cards, kb)
+
+
+@memory.command("stats")
+@click.pass_context
+def memory_stats(ctx: click.Context) -> None:
+    """Show memory statistics."""
+    from knowledge_manager.memory import load_cards, MemoryStats
+    from datetime import datetime, timedelta, timezone
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+    cards = load_cards(kb)
+    now = datetime.now(timezone.utc)
+    due_today = sum(1 for c in cards if c.next_review_at and c.next_review_at <= now)
+    due_week = sum(1 for c in cards if c.next_review_at and c.next_review_at <= now + timedelta(days=7))
+
+    console.print(f"Total cards: {len(cards)}")
+    console.print(f"Due today: {due_today}")
+    console.print(f"Due this week: {due_week}")
+    if cards:
+        avg_grade = sum(c.total_grade_sum / max(c.review_count, 1) for c in cards if c.review_count > 0) / max(len([c for c in cards if c.review_count > 0]), 1)
+        console.print(f"Average grade: {avg_grade:.1f}/4")
+
+
+# --- watch (M9) ---
+
+
+@cli.group()
+def watch() -> None:
+    """Manage automated knowledge source monitoring."""
+
+
+@watch.command("add")
+@click.argument("source_type", type=click.Choice(["local", "doc_dir"]))
+@click.option("--path", "-p", required=True, help="Path to monitor")
+@click.option("--category", "-c", default="", help="Target category for extracted modules")
+@click.pass_context
+def watch_add(ctx: click.Context, source_type: str, path: str, category: str) -> None:
+    """Add a watch source."""
+    from knowledge_manager.watch_scheduler import WatchScheduler
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    scheduler = WatchScheduler(kb)
+    scheduler.add_source(source_type, {"path": path, "patterns": ["*.md", "*.txt"]}, category)
+    console.print(f"[green]Added {source_type} watch source: {path}[/green]")
+
+
+@watch.command("list")
+@click.pass_context
+def watch_list(ctx: click.Context) -> None:
+    """List all watch sources."""
+    from knowledge_manager.watch_scheduler import WatchScheduler
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    scheduler = WatchScheduler(kb)
+    scheduler.load_config()
+    status = scheduler.get_status()
+    if status["sources"] == 0:
+        console.print("No watch sources configured.")
+        return
+    for sid, detail in status["sources_detail"].items():
+        console.print(f"  {sid}: type={detail['type']}")
+
+
+@watch.command("run")
+@click.option("--now", is_flag=True, help="Run all sources immediately")
+@click.pass_context
+def watch_run(ctx: click.Context, now: bool) -> None:
+    """Poll all watch sources."""
+    from knowledge_manager.watch_scheduler import WatchScheduler
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    scheduler = WatchScheduler(kb)
+    scheduler.load_config()
+    if scheduler.sources:
+        events = asyncio.run(scheduler.poll_all())
+        for e in events:
+            console.print(f"  {e.source_id}: found {e.items_found}, generated {e.modules_generated} modules")
+    else:
+        console.print("No sources configured.")
+
+
+# --- vector (M10) ---
+
+
+@cli.group()
+def vector() -> None:
+    """Manage optional vector search index."""
+
+
+@vector.command("rebuild")
+@click.pass_context
+def vector_rebuild(ctx: click.Context) -> None:
+    """Rebuild the vector search index."""
+    from knowledge_manager.vector_index import VectorIndex
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    vi = VectorIndex(kb)
+    console.print("[dim]Building vector index...[/dim]")
+
+    def progress(i, total):
+        console.print(f"  Embedding {i}/{total}...")
+
+    asyncio.run(vi.rebuild(on_progress=progress))
+    console.print(f"[green]Index built: {len(vi.module_keys)} modules[/green]")
+
+
+@vector.command("status")
+@click.pass_context
+def vector_status(ctx: click.Context) -> None:
+    """Show vector index status."""
+    from knowledge_manager.vector_index import VectorIndex
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    vi = VectorIndex(kb)
+    try:
+        vi._load_from_cache()
+    except Exception:
+        pass
+    if vi.embeddings is not None:
+        console.print(f"Index: {len(vi.module_keys)} modules, dimension={vi.embeddings.shape[1]}")
+    else:
+        console.print("No index built. Run 'km vector rebuild'.")
+
+
 # --- serve (MCP) ---
 
 @cli.command()
