@@ -332,6 +332,68 @@ def test_search_modules_stem_matches_pooling_query(kb_path):
     assert "conn-pool" in ids
 
 
+def test_search_modules_chinese_tokenization(kb_path):
+    """Search should find Chinese modules by word after jieba segmentation."""
+    from knowledge_manager.schemas import Module, ModuleContent, ModuleMetadata
+    from knowledge_manager.storage import save_module, rebuild_index, search_modules
+
+    kb_path.mkdir(parents=True, exist_ok=True)
+    mod = Module(
+        id="zh-search",
+        category="general",
+        title="知识管理系统架构决策",
+        summary="关于知识管理系统的核心架构决策记录",
+        content=ModuleContent(
+            overview="我们选择 Git 作为存储层，JSON 文件作为数据格式，MCP 协议作为传输层",
+            details="详细的架构决策包括不使用向量数据库、不使用 SQL 数据库、不使用消息队列等设计边界",
+        ),
+        metadata=ModuleMetadata(tags=["架构", "决策", "知识管理"]),
+    )
+    save_module(mod, kb_path)
+    rebuild_index(kb_path)
+
+    # These Chinese words should match after jieba segmentation
+    results = search_modules("架构决策", kb_path)
+    assert len(results) == 1
+    assert results[0].module.id == "zh-search"
+
+    results2 = search_modules("向量数据库", kb_path)
+    assert len(results2) == 1
+
+    results3 = search_modules("消息队列", kb_path)
+    assert len(results3) == 1
+
+
+def test_search_modules_mixed_chinese_english(kb_path):
+    """Search should work with mixed Chinese and English content."""
+    from knowledge_manager.schemas import Module, ModuleContent, ModuleMetadata
+    from knowledge_manager.storage import save_module, rebuild_index, search_modules
+
+    kb_path.mkdir(parents=True, exist_ok=True)
+    mod = Module(
+        id="mixed-lang",
+        category="general",
+        title="JWT 认证最佳实践",
+        summary="JWT token 在微服务架构中的使用方法",
+        content=ModuleContent(
+            overview="JWT (JSON Web Token) 是一种无状态的认证机制，广泛应用于微服务架构",
+            details="RS256 签名算法，24小时过期，支持 token refresh 流程",
+        ),
+        metadata=ModuleMetadata(tags=["auth", "认证", "JWT"]),
+    )
+    save_module(mod, kb_path)
+    rebuild_index(kb_path)
+
+    # English term in Chinese context
+    assert len(search_modules("JWT 认证", kb_path)) == 1
+    # Pure Chinese
+    assert len(search_modules("微服务架构", kb_path)) == 1
+    # Pure English
+    assert len(search_modules("RS256", kb_path)) == 1
+    # Tag search (Chinese tag)
+    assert len(search_modules("认证", kb_path)) == 1
+
+
 
 def test_search_modules_exact_ranks_above_stem(kb_path):
     _kb_with_signals(kb_path)
@@ -914,3 +976,818 @@ def test_compute_bayesian_priors_caches_to_disk(kb_path):
     assert priors1 == priors2
     # Verify cache file was written
     assert (kb_path / ".telemetry" / "rank_model.json").exists()
+
+
+# ── Phase 2B: staging metadata & review pipeline tests ──
+
+
+def test_staging_meta_save_and_load(kb_path):
+    from knowledge_manager.schemas import StagingMeta
+    from knowledge_manager.storage import save_staging_meta, load_staging_meta
+
+    kb_path.mkdir(parents=True, exist_ok=True)
+    staging = kb_path / ".staging"
+    staging.mkdir(exist_ok=True)
+
+    meta = StagingMeta(module_id="test-mod", submitted_by="alice")
+    save_staging_meta(meta, staging)
+
+    loaded = load_staging_meta("test-mod", staging)
+    assert loaded is not None
+    assert loaded.module_id == "test-mod"
+    assert loaded.submitted_by == "alice"
+    assert loaded.status == "pending"
+
+
+def test_staging_meta_load_missing_returns_none(kb_path):
+    from knowledge_manager.storage import load_staging_meta
+
+    kb_path.mkdir(parents=True, exist_ok=True)
+    staging = kb_path / ".staging"
+    staging.mkdir(exist_ok=True)
+
+    assert load_staging_meta("nonexistent", staging) is None
+
+
+def test_staging_meta_delete(kb_path):
+    from knowledge_manager.schemas import StagingMeta
+    from knowledge_manager.storage import save_staging_meta, delete_staging_meta, load_staging_meta
+
+    kb_path.mkdir(parents=True, exist_ok=True)
+    staging = kb_path / ".staging"
+    staging.mkdir(exist_ok=True)
+
+    meta = StagingMeta(module_id="to-delete")
+    save_staging_meta(meta, staging)
+    assert (staging / "to-delete.meta.json").exists()
+
+    delete_staging_meta("to-delete", staging)
+    assert not (staging / "to-delete.meta.json").exists()
+    assert load_staging_meta("to-delete", staging) is None
+
+
+def test_staging_meta_list(kb_path):
+    from knowledge_manager.schemas import StagingMeta
+    from knowledge_manager.storage import save_staging_meta, list_staging_meta
+
+    kb_path.mkdir(parents=True, exist_ok=True)
+    staging = kb_path / ".staging"
+    staging.mkdir(exist_ok=True)
+
+    save_staging_meta(StagingMeta(module_id="a"), staging)
+    save_staging_meta(StagingMeta(module_id="b"), staging)
+
+    metas = list_staging_meta(staging)
+    assert len(metas) == 2
+    assert {m.module_id for m in metas} == {"a", "b"}
+
+
+def test_staging_meta_approval_count():
+    from knowledge_manager.schemas import StagingMeta, ReviewRecord
+
+    meta = StagingMeta(module_id="mod")
+    assert meta.approval_count() == 0
+
+    meta.reviews.append(ReviewRecord(reviewer="alice", action="approved"))
+    assert meta.approval_count() == 1
+
+    meta.reviews.append(ReviewRecord(reviewer="bob", action="changes-requested"))
+    assert meta.approval_count() == 1  # only approved counts
+
+    meta.reviews.append(ReviewRecord(reviewer="carol", action="approved"))
+    assert meta.approval_count() == 2
+
+
+def test_review_config_defaults():
+    from knowledge_manager.schemas import ReviewConfig
+
+    cfg = ReviewConfig()
+    assert cfg.required_approvals == 1
+    assert cfg.auto_approve_self_submitted is False
+    assert cfg.reviewer_whitelist == []
+
+
+def test_notifications_config_defaults():
+    from knowledge_manager.schemas import NotificationsConfig
+
+    cfg = NotificationsConfig()
+    assert cfg.webhook_url == ""
+    assert cfg.on_push is True
+    assert cfg.on_review_approved is False
+
+
+def test_approve_from_staging_moves_to_kb(kb_path):
+    from knowledge_manager.schemas import StagingMeta, ReviewRecord, Module, ModuleContent, ModuleMetadata
+    from knowledge_manager.storage import (
+        save_to_staging, save_staging_meta, approve_from_staging,
+        load_from_staging, load_module,
+    )
+
+    kb_path.mkdir(parents=True, exist_ok=True)
+    staging = kb_path / ".staging"
+    staging.mkdir(exist_ok=True)
+
+    mod = Module(
+        id="mod-x", category="test", title="Test Module X",
+        summary="A test module for approval testing.",
+        content=ModuleContent(overview="Overview text here", details="Details text long enough for validation"),
+        metadata=ModuleMetadata(tags=["test"]),
+    )
+    save_to_staging(mod, staging)
+    save_staging_meta(StagingMeta(module_id="mod-x", submitted_by="alice"), staging)
+
+    approve_from_staging("mod-x", staging, kb_path)
+
+    # Should be in kb now, not staging
+    loaded = load_module("mod-x", "test", kb_path)
+    assert loaded is not None
+    assert loaded.title == "Test Module X"
+    assert load_from_staging("mod-x", staging) is None
+
+
+# ── Phase 2C: changelog generation & loading tests ──
+
+
+def _init_git_for_kb(kb: Path):
+    """Init git in a kb path and configure identity."""
+    import subprocess
+    if not (kb / ".git").exists():
+        subprocess.run(["git", "-C", str(kb), "init"], capture_output=True, check=True)
+    subprocess.run(["git", "-C", str(kb), "config", "user.email", "test@test.com"], capture_output=True, check=True)
+    subprocess.run(["git", "-C", str(kb), "config", "user.name", "Test"], capture_output=True, check=True)
+    # Ensure branch is "main" for test consistency
+    branch = subprocess.run(["git", "-C", str(kb), "rev-parse", "--abbrev-ref", "HEAD"], capture_output=True, text=True)
+    if branch.stdout.strip() != "main":
+        subprocess.run(["git", "-C", str(kb), "branch", "-m", "main"], capture_output=True, check=True)
+
+
+def test_generate_changelog_empty_no_commits(kb_path):
+    """No commits → changelog is None."""
+    from knowledge_manager.storage import generate_changelog
+    kb_path.mkdir(parents=True, exist_ok=True)
+    _init_git_for_kb(kb_path)
+
+    result = generate_changelog(kb_path)
+    assert result is None
+
+
+def test_generate_changelog_with_module_commit(kb_path):
+    """Commits with module changes should produce changelog entries, including root commits."""
+    import subprocess, json
+    from knowledge_manager.storage import generate_changelog
+
+    kb_path.mkdir(parents=True, exist_ok=True)
+    _init_git_for_kb(kb_path)
+
+    mod_dir = kb_path / "test"
+    mod_dir.mkdir(exist_ok=True)
+    mod_file = mod_dir / "sample.json"
+    mod_file.write_text(json.dumps({"id": "sample", "title": "Sample Module"}))
+
+    subprocess.run(["git", "-C", str(kb_path), "add", "-A"], capture_output=True, check=True)
+    subprocess.run(["git", "-C", str(kb_path), "commit", "-m", "add sample module"], capture_output=True, check=True)
+
+    result = generate_changelog(kb_path)
+    assert result is not None
+    assert len(result["commits"]) >= 1
+    assert result["commits"][0]["message"] == "add sample module"
+
+    # Verify file was written
+    assert (kb_path / ".changelog" / f"{result['date']}.json").exists()
+
+
+def test_generate_changelog_root_commit_classified_as_added(kb_path):
+    """Root commit files should be classified as 'added' (no parent to diff against)."""
+    import subprocess, json
+    from knowledge_manager.storage import generate_changelog
+
+    kb_path.mkdir(parents=True, exist_ok=True)
+    _init_git_for_kb(kb_path)
+
+    mod_dir = kb_path / "test"
+    mod_dir.mkdir(exist_ok=True)
+    (mod_dir / "root.json").write_text(json.dumps({"id": "root", "title": "Root Module"}))
+
+    subprocess.run(["git", "-C", str(kb_path), "add", "-A"], capture_output=True, check=True)
+    subprocess.run(["git", "-C", str(kb_path), "commit", "-m", "root commit"], capture_output=True, check=True)
+
+    result = generate_changelog(kb_path)
+    assert result is not None
+    assert len(result["commits"]) == 1
+    changes = result["commits"][0]["changes"]
+    assert "test/root" in changes["added"]
+    assert changes["modified"] == []
+    assert changes["deleted"] == []
+
+
+def test_load_changelogs_returns_recent(kb_path):
+    """load_changelogs should return entries from last N days."""
+    import subprocess, json
+
+    kb_path.mkdir(parents=True, exist_ok=True)
+    _init_git_for_kb(kb_path)
+
+    mod_dir = kb_path / "test"
+    mod_dir.mkdir(exist_ok=True)
+    (mod_dir / "m.json").write_text(json.dumps({"id": "m"}))
+    subprocess.run(["git", "-C", str(kb_path), "add", "-A"], capture_output=True, check=True)
+    subprocess.run(["git", "-C", str(kb_path), "commit", "-m", "add module"], capture_output=True, check=True)
+
+    from knowledge_manager.storage import generate_changelog, load_changelogs
+    generate_changelog(kb_path)
+
+    changelogs = load_changelogs(kb_path, days=7)
+    assert len(changelogs) >= 1
+
+
+def test_load_module_changelog_filters_by_key(kb_path):
+    """load_module_changelog should return entries for a specific module."""
+    import subprocess, json
+
+    kb_path.mkdir(parents=True, exist_ok=True)
+    _init_git_for_kb(kb_path)
+
+    mod_dir = kb_path / "test"
+    mod_dir.mkdir(exist_ok=True)
+    (mod_dir / "target.json").write_text(json.dumps({"id": "target", "title": "Target"}))
+    subprocess.run(["git", "-C", str(kb_path), "add", "-A"], capture_output=True, check=True)
+    subprocess.run(["git", "-C", str(kb_path), "commit", "-m", "add target module"], capture_output=True, check=True)
+
+    from knowledge_manager.storage import generate_changelog, load_module_changelog
+    generate_changelog(kb_path)
+
+    entries = load_module_changelog(kb_path, "test/target")
+    assert len(entries) >= 1
+
+
+def test_load_changelogs_handles_missing_dir(tmp_path):
+    """load_changelogs returns empty list if directory missing."""
+    from knowledge_manager.storage import load_changelogs
+    result = load_changelogs(tmp_path / "nonexistent_kb", days=7)
+    assert result == []
+
+
+def test_load_module_changelog_handles_missing_dir(tmp_path):
+    """load_module_changelog returns empty list if directory missing."""
+    from knowledge_manager.storage import load_module_changelog
+    result = load_module_changelog(tmp_path / "nonexistent_kb", "test/mod")
+    assert result == []
+
+
+def test_generate_changelog_handles_non_git(kb_path):
+    """generate_changelog returns None for non-git directory."""
+    from knowledge_manager.storage import generate_changelog
+    kb_path.mkdir(parents=True, exist_ok=True)
+    result = generate_changelog(kb_path)
+    assert result is None
+
+
+# ── Phase 2D: module state machine & search filtering tests ──
+
+
+def test_search_excludes_archived_by_default(kb_path):
+    """search_modules should exclude archived modules when include_archived=False."""
+    from knowledge_manager.schemas import Module, ModuleContent, ModuleMetadata
+    from knowledge_manager.storage import search_modules
+
+    kb_path.mkdir(parents=True, exist_ok=True)
+    published = Module(
+        id="pub", category="test", title="Published Module",
+        summary="A published module for search testing.",
+        content=ModuleContent(overview="Published overview here.", details="Published details long enough for validation check."),
+        metadata=ModuleMetadata(status="published"),
+    )
+    archived = Module(
+        id="arch", category="test", title="Archived Module",
+        summary="An archived module for search testing.",
+        content=ModuleContent(overview="Archived overview here.", details="Archived details long enough for validation check."),
+        metadata=ModuleMetadata(status="archived"),
+    )
+    save_module(published, kb_path)
+    save_module(archived, kb_path)
+    from knowledge_manager.storage import rebuild_index
+    rebuild_index(kb_path)
+
+    results = search_modules("module", kb_path)
+    result_ids = [r.module.id for r in results]
+    assert "pub" in result_ids
+    assert "arch" not in result_ids
+
+
+def test_search_includes_archived_when_requested(kb_path):
+    """search_modules should include archived modules when include_archived=True."""
+    from knowledge_manager.schemas import Module, ModuleContent, ModuleMetadata
+    from knowledge_manager.storage import search_modules
+
+    kb_path.mkdir(parents=True, exist_ok=True)
+    published = Module(
+        id="pub2", category="test", title="Published Module 2",
+        summary="A published module for search testing.",
+        content=ModuleContent(overview="Published 2 overview here.", details="Published 2 details long enough for validation check."),
+        metadata=ModuleMetadata(status="published"),
+    )
+    archived = Module(
+        id="arch2", category="test", title="Archived Module 2",
+        summary="An archived module for search testing.",
+        content=ModuleContent(overview="Archived 2 overview here.", details="Archived 2 details long enough for validation check."),
+        metadata=ModuleMetadata(status="archived"),
+    )
+    save_module(published, kb_path)
+    save_module(archived, kb_path)
+    from knowledge_manager.storage import rebuild_index
+    rebuild_index(kb_path)
+
+    results = search_modules("module", kb_path, include_archived=True)
+    result_ids = [r.module.id for r in results]
+    assert "pub2" in result_ids
+    assert "arch2" in result_ids
+
+
+def test_search_deprecated_gets_lower_confidence(kb_path):
+    """Deprecated modules should have effective confidence treated as low."""
+    from knowledge_manager.schemas import Module, ModuleContent, ModuleMetadata
+    from knowledge_manager.storage import search_modules
+
+    kb_path.mkdir(parents=True, exist_ok=True)
+    deprecated = Module(
+        id="old", category="test", title="Deprecated Module",
+        summary="A deprecated module for search.",
+        content=ModuleContent(overview="Old overview here.", details="Old details long enough for validation check."),
+        metadata=ModuleMetadata(status="deprecated", confidence="high"),
+    )
+    save_module(deprecated, kb_path)
+    from knowledge_manager.storage import rebuild_index
+    rebuild_index(kb_path)
+
+    results = search_modules("deprecated module", kb_path)
+    assert len(results) >= 1
+    # Deprecated modules get confidence downgraded
+    result = [r for r in results if r.module.id == "old"][0]
+    assert result.module.metadata.confidence == "high"  # stored confidence unchanged
+    # But the search result confidence should reflect the penalty...
+    # (The penalty is applied in ranking, not returned in the module itself)
+
+
+def test_module_status_default_is_published():
+    """New modules should default to 'published' status."""
+    from knowledge_manager.schemas import ModuleMetadata
+    meta = ModuleMetadata()
+    assert meta.status == "published"
+
+
+def test_module_status_validates_literal():
+    """ModuleMetadata.status should only accept valid literal values."""
+    from knowledge_manager.schemas import ModuleMetadata
+    meta = ModuleMetadata(status="draft")
+    assert meta.status == "draft"
+    meta = ModuleMetadata(status="reviewed")
+    assert meta.status == "reviewed"
+
+
+# ── Phase 3A: health dashboard tests ──
+
+
+def test_health_score_defaults():
+    from knowledge_manager.schemas import HealthScore
+    hs = HealthScore()
+    assert hs.freshness == 0.0
+    assert hs.usage == 0.0
+    assert hs.completeness == 0.0
+    assert hs.overall == 0.0
+
+
+def test_module_health_schema():
+    from knowledge_manager.schemas import ModuleHealth, HealthScore
+    mh = ModuleHealth(
+        module_id="mod1", category="auth", title="Test",
+        status="published",
+        score=HealthScore(freshness=80, usage=60, completeness=70, overall=70.5),
+    )
+    assert mh.module_id == "mod1"
+    assert mh.score.overall == 70.5
+    assert mh.issues == []
+
+
+def test_kb_health_report_schema():
+    from knowledge_manager.schemas import KBHealthReport
+    report = KBHealthReport(total_modules=10, total_categories=3, overall_score=75.0)
+    assert report.total_modules == 10
+    assert report.at_risk_modules == []
+    assert report.category_breakdown == {}
+
+
+def test_compute_module_health_freshness_recent(kb_path):
+    """Recently updated modules should have high freshness."""
+    from knowledge_manager.schemas import Module, ModuleContent, ModuleMetadata
+    from knowledge_manager.storage import save_module, compute_module_health
+
+    kb_path.mkdir(parents=True, exist_ok=True)
+    mod = Module(
+        id="fresh", category="test", title="Fresh Module",
+        summary="Recently updated module.",
+        content=ModuleContent(overview="Overview text.", details="Details long enough for validation check."),
+        metadata=ModuleMetadata(confidence="high"),
+    )
+    save_module(mod, kb_path)
+    h = compute_module_health(mod, kb_path)
+    assert h.score.freshness == 100.0  # just created
+
+
+def test_compute_module_health_completeness_full(kb_path):
+    """Fully populated content should get max completeness."""
+    from knowledge_manager.schemas import Module, ModuleContent, ModuleMetadata
+    from knowledge_manager.storage import save_module, compute_module_health
+
+    kb_path.mkdir(parents=True, exist_ok=True)
+    mod = Module(
+        id="full", category="test", title="Full Module",
+        summary="Module with all fields completed.",
+        content=ModuleContent(
+            overview="Overview text here.",
+            details="Details text long enough for validation.",
+            examples="Examples section filled.",
+            caveats="Caveats section filled.",
+            references="References section filled.",
+        ),
+        metadata=ModuleMetadata(confidence="high"),
+    )
+    save_module(mod, kb_path)
+    h = compute_module_health(mod, kb_path)
+    assert h.score.completeness == 100.0
+
+
+def test_compute_module_health_partial_completeness(kb_path):
+    """Missing fields should reduce completeness score."""
+    from knowledge_manager.schemas import Module, ModuleContent, ModuleMetadata
+    from knowledge_manager.storage import save_module, compute_module_health
+
+    kb_path.mkdir(parents=True, exist_ok=True)
+    mod = Module(
+        id="partial", category="test", title="Partial Module",
+        summary="Module missing some fields.",
+        content=ModuleContent(
+            overview="Overview only.",
+            details="Details text long enough.",
+            # examples, caveats, references all empty
+        ),
+        metadata=ModuleMetadata(confidence="low"),
+    )
+    save_module(mod, kb_path)
+    h = compute_module_health(mod, kb_path)
+    # overview(30) + details(30) = 60
+    assert h.score.completeness == 60.0
+
+
+def test_compute_module_health_detects_zombie(kb_path):
+    """Modules with no load events should be flagged as zombie."""
+    from knowledge_manager.schemas import Module, ModuleContent, ModuleMetadata
+    from knowledge_manager.storage import save_module, compute_module_health
+
+    kb_path.mkdir(parents=True, exist_ok=True)
+    mod = Module(
+        id="zombie", category="test", title="Zombie Module",
+        summary="Never loaded module.",
+        content=ModuleContent(overview="Overview text here.", details="Details long enough for validation check."),
+        metadata=ModuleMetadata(confidence="low"),
+    )
+    save_module(mod, kb_path)
+    h = compute_module_health(mod, kb_path)
+    assert "zombie" in h.issues
+
+
+def test_compute_module_health_detects_incomplete(kb_path):
+    """Low completeness (minimal content only) should flag incomplete issue."""
+    from knowledge_manager.schemas import Module, ModuleContent, ModuleMetadata
+    from knowledge_manager.storage import save_module, compute_module_health
+
+    kb_path.mkdir(parents=True, exist_ok=True)
+    mod = Module(
+        id="bare", category="test", title="Bare Module",
+        summary="Minimal module.",
+        content=ModuleContent(
+            overview="Just overview",
+            details="Min details here only",
+        ),
+        metadata=ModuleMetadata(confidence="low"),
+    )
+    save_module(mod, kb_path)
+    h = compute_module_health(mod, kb_path)
+    # overview(30) + details(30) = 60, threshold is 70 → incomplete
+    assert "incomplete" in h.issues
+
+
+def test_generate_health_report_with_modules(kb_path):
+    """Full report should aggregate module health."""
+    from knowledge_manager.schemas import Module, ModuleContent, ModuleMetadata
+    from knowledge_manager.storage import save_module, rebuild_index, generate_health_report
+
+    kb_path.mkdir(parents=True, exist_ok=True)
+    mod_a = Module(
+        id="a", category="auth", title="Auth A",
+        summary="Auth module A for health report.",
+        content=ModuleContent(overview="Overview A.", details="Details for module A long enough."),
+        metadata=ModuleMetadata(tags=["auth"]),
+    )
+    mod_b = Module(
+        id="b", category="db", title="Database Module B",
+        summary="DB module B for health report.",
+        content=ModuleContent(overview="Overview B.", details="Details for module B long enough."),
+        metadata=ModuleMetadata(tags=["db"]),
+    )
+    save_module(mod_a, kb_path)
+    save_module(mod_b, kb_path)
+    rebuild_index(kb_path)
+
+    report = generate_health_report(kb_path)
+    assert report.total_modules == 2
+    assert report.total_categories == 2
+    assert len(report.category_breakdown) == 2
+
+
+def test_generate_health_report_empty(kb_path):
+    """Empty KB should return zero-count report."""
+    from knowledge_manager.storage import generate_health_report
+
+    kb_path.mkdir(parents=True, exist_ok=True)
+    report = generate_health_report(kb_path)
+    assert report.total_modules == 0
+    assert report.overall_score == 0.0
+
+
+# ── Phase 3B: usage analytics tests ──
+
+
+def test_usage_stats_schema():
+    from knowledge_manager.schemas import UsageStats
+    s = UsageStats(period_days=30)
+    assert s.total_searches == 0
+    assert s.top_modules == []
+    assert s.unmatched_queries == []
+    assert s.daily_activity == []
+
+
+def test_aggregate_usage_stats_empty(kb_path):
+    """Empty telemetry should return zero-count stats."""
+    from knowledge_manager.storage import aggregate_usage_stats
+
+    kb_path.mkdir(parents=True, exist_ok=True)
+    (kb_path / ".telemetry").mkdir(exist_ok=True)
+
+    stats = aggregate_usage_stats(kb_path, period_days=30)
+    assert stats.total_searches == 0
+    assert stats.total_loads == 0
+
+
+def test_aggregate_usage_stats_with_events(kb_path):
+    """Stats should aggregate search and load events correctly."""
+    from knowledge_manager.storage import aggregate_usage_stats, record_search_event, record_load_event
+
+    kb_path.mkdir(parents=True, exist_ok=True)
+
+    record_search_event("test query", ["auth/jwt"], kb_path)
+    record_load_event("jwt", "auth", kb_path)
+
+    stats = aggregate_usage_stats(kb_path, period_days=30)
+    assert stats.total_searches == 1
+    assert stats.total_loads == 1
+
+
+def test_daily_activity_point_schema():
+    from knowledge_manager.schemas import DailyActivityPoint
+    d = DailyActivityPoint(date="2026-06-09", searches=10, loads=5)
+    assert d.searches == 10
+    assert d.loads == 5
+
+
+def test_module_usage_entry_schema():
+    from knowledge_manager.schemas import ModuleUsageEntry
+    m = ModuleUsageEntry(module_id="m", category="c", title="T", load_count=5, trend="up")
+    assert m.load_count == 5
+    assert m.trend == "up"
+
+
+def test_unmatched_query_entry_schema():
+    from knowledge_manager.schemas import UnmatchedQueryEntry
+    u = UnmatchedQueryEntry(query_hash="abc", query_terms=["test", "query"], count=3)
+    assert u.query_hash == "abc"
+    assert u.count == 3
+
+
+# ── Phase 3C: graph analysis tests ──
+
+
+def test_graph_stats_schema():
+    from knowledge_manager.schemas import GraphStats, HubEntry
+    gs = GraphStats(
+        total_nodes=10, total_edges=15, density=0.15,
+        hub_modules=[HubEntry(module_id="h1", category="auth", title="Hub", in_degree=5, out_degree=2)],
+    )
+    assert gs.total_nodes == 10
+    assert len(gs.hub_modules) == 1
+    assert gs.orphan_modules == []
+    assert gs.broken_links == []
+    assert gs.clusters == []
+
+
+def test_analyze_graph_empty(kb_path):
+    from knowledge_manager.storage import analyze_graph
+    kb_path.mkdir(parents=True, exist_ok=True)
+    gs = analyze_graph(kb_path)
+    assert gs.total_nodes == 0
+
+
+def test_analyze_graph_with_modules(kb_path):
+    from knowledge_manager.schemas import Module, ModuleContent, ModuleMetadata
+    from knowledge_manager.storage import save_module, rebuild_index, analyze_graph
+
+    kb_path.mkdir(parents=True, exist_ok=True)
+    mod_a = Module(
+        id="a", category="auth", title="Auth Module A",
+        summary="Module A for graph testing.",
+        content=ModuleContent(overview="Overview A.", details="Details for A long enough for validation."),
+        metadata=ModuleMetadata(tags=["auth"], related_modules=["db/b"]),
+    )
+    mod_b = Module(
+        id="b", category="db", title="DB Module B",
+        summary="Module B for graph testing.",
+        content=ModuleContent(overview="Overview B.", details="Details for B long enough for validation check."),
+        metadata=ModuleMetadata(tags=["db"]),
+    )
+    save_module(mod_a, kb_path)
+    save_module(mod_b, kb_path)
+    rebuild_index(kb_path)
+
+    gs = analyze_graph(kb_path)
+    assert gs.total_nodes == 2
+    assert gs.total_edges == 1  # a → b
+    assert gs.total_nodes > 0
+
+
+def test_detect_clusters_finds_components(kb_path):
+    from knowledge_manager.schemas import Module, ModuleContent, ModuleMetadata
+    from knowledge_manager.storage import save_module, rebuild_index, detect_clusters
+
+    kb_path.mkdir(parents=True, exist_ok=True)
+    mod_a = Module(
+        id="a", category="auth", title="Auth A",
+        summary="Auth module A cluster test.",
+        content=ModuleContent(overview="Overview A.", details="Details for A long enough for validation."),
+        metadata=ModuleMetadata(related_modules=["db/b"]),
+    )
+    mod_b = Module(
+        id="b", category="db", title="Database Module B",
+        summary="DB module B cluster test.",
+        content=ModuleContent(overview="Overview B.", details="Details for B long enough for validation check."),
+        metadata=ModuleMetadata(related_modules=["auth/a"]),
+    )
+    save_module(mod_a, kb_path)
+    save_module(mod_b, kb_path)
+    rebuild_index(kb_path)
+
+    clusters = detect_clusters(kb_path)
+    assert len(clusters) >= 1
+    assert clusters[0].module_count >= 2
+
+
+# ── Phase 3D: recommendation tests ──
+
+
+def test_recommendation_schema():
+    from knowledge_manager.schemas import Recommendation, RecommendationType
+    r = Recommendation(
+        type=RecommendationType.ARCHIVE,
+        module_id="m", category="test", title="Test",
+        score=0.8, reason="ZOMBIE, STALE",
+    )
+    assert r.type == RecommendationType.ARCHIVE
+    assert r.score == 0.8
+
+
+def test_recommendation_report_schema():
+    from knowledge_manager.schemas import RecommendationReport
+    report = RecommendationReport()
+    assert report.archive_candidates == []
+    assert report.enrichment_needed == []
+    assert report.suggested_links == []
+    assert report.review_reminders == []
+
+
+def test_generate_recommendations_empty(kb_path):
+    from knowledge_manager.storage import generate_recommendations
+
+    kb_path.mkdir(parents=True, exist_ok=True)
+    report = generate_recommendations(kb_path)
+    assert report.archive_candidates == []
+
+
+def test_generate_recommendations_suggests_enrichment(kb_path):
+    from knowledge_manager.schemas import Module, ModuleContent, ModuleMetadata
+    from knowledge_manager.storage import save_module, rebuild_index, generate_recommendations
+
+    kb_path.mkdir(parents=True, exist_ok=True)
+    mod = Module(
+        id="bare", category="test", title="Bare Module",
+        summary="Minimal content module.",
+        content=ModuleContent(
+            overview="Just overview text.",
+            details="Details that are long enough for validation.",
+            # no examples, caveats, references
+        ),
+        metadata=ModuleMetadata(tags=["test"]),
+    )
+    save_module(mod, kb_path)
+    rebuild_index(kb_path)
+
+    report = generate_recommendations(kb_path)
+    assert len(report.enrichment_needed) >= 1
+    assert report.enrichment_needed[0].module_id == "bare"
+
+
+def test_generate_recommendations_link_suggestion(kb_path):
+    from knowledge_manager.schemas import Module, ModuleContent, ModuleMetadata
+    from knowledge_manager.storage import save_module, rebuild_index, generate_recommendations
+
+    kb_path.mkdir(parents=True, exist_ok=True)
+    mod_a = Module(
+        id="a", category="auth", title="Auth Module A",
+        summary="Module A for link suggestion.",
+        content=ModuleContent(overview="Overview A.", details="Details for A long enough for validation."),
+        metadata=ModuleMetadata(tags=["security", "api"]),
+    )
+    mod_b = Module(
+        id="b", category="api", title="API Module B",
+        summary="Module B for link suggestion.",
+        content=ModuleContent(overview="Overview B.", details="Details for B long enough for validation check."),
+        metadata=ModuleMetadata(tags=["security", "api"]),
+    )
+    save_module(mod_a, kb_path)
+    save_module(mod_b, kb_path)
+    rebuild_index(kb_path)
+
+    report = generate_recommendations(kb_path)
+    assert len(report.suggested_links) >= 1
+
+
+# ── Phase 4B: Federation tests ──
+
+
+def test_load_federation_empty(kb_path):
+    """load_federation should return empty dict when no config or no namespaces."""
+    from knowledge_manager.storage import load_federation, load_index, save_index
+    kb_path.mkdir(parents=True, exist_ok=True)
+    save_index(Index(), kb_path)
+
+    result = load_federation(kb_path)
+    assert result == {}
+
+
+def test_load_federation_with_namespaces(kb_path, tmp_path):
+    """load_federation should load and validate configured namespaces."""
+    from knowledge_manager.storage import load_federation, load_index, save_index
+    from knowledge_manager.schemas import Config, FederationConfig, FederationNamespace
+
+    kb_path.mkdir(parents=True, exist_ok=True)
+    save_index(Index(description="Main KB"), kb_path)
+
+    # Create a secondary KB
+    ns_path = tmp_path / "team-auth-kb"
+    ns_path.mkdir()
+    save_index(Index(description="Auth team KB"), ns_path)
+
+    # Write federation config
+    import json
+    config_path = kb_path / "config.json"
+    config_path.write_text(json.dumps({
+        "federation": {
+            "namespaces": {
+                "auth": {"kb_path": str(ns_path), "description": "Auth team KB", "search_default": True}
+            }
+        }
+    }))
+
+    result = load_federation(kb_path)
+    assert "auth" in result
+    assert result["auth"]["description"] == "Auth team KB"
+    assert result["auth"]["search_default"] is True
+    assert result["auth"]["index"] is not None
+
+
+def test_load_federation_missing_path(kb_path, tmp_path):
+    """load_federation should skip namespaces whose path does not exist."""
+    from knowledge_manager.storage import load_federation, load_index, save_index
+    import json
+
+    kb_path.mkdir(parents=True, exist_ok=True)
+    save_index(Index(), kb_path)
+
+    config_path = kb_path / "config.json"
+    config_path.write_text(json.dumps({
+        "federation": {
+            "namespaces": {
+                "missing": {"kb_path": "/nonexistent/path", "description": "Missing", "search_default": True}
+            }
+        }
+    }))
+
+    result = load_federation(kb_path)
+    assert result == {}

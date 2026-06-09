@@ -16,6 +16,7 @@ from knowledge_manager.schemas import Config, Index, Module, StagingMeta
 _FIELD_WEIGHTS = {"title": 5, "tag": 3, "summary": 2, "overview": 1, "details": 1, "examples": 0, "caveats": 0}
 _WORD_RE = re.compile(r"\w+")
 _EN_STEMMER: Any = _snowball_stemmer("english")
+_CJK_RE = re.compile(r"[一-鿿㐀-䶿豈-﫿]")
 
 _QUALITY_EXACT = 3
 _QUALITY_STEM = 2
@@ -62,6 +63,13 @@ _INTENT_PATTERNS: Dict[str, List[str]] = {
 
 
 def _stem(word: str) -> str:
+    """Stem/tokenize a word. Chinese text is segmented with jieba; English uses snowball."""
+    if _CJK_RE.search(word):
+        try:
+            import jieba
+            return " ".join(jieba.cut(word))
+        except ImportError:
+            return word.lower()
     return cast(str, _EN_STEMMER.stemWord(word.lower()))
 
 
@@ -89,7 +97,12 @@ def _module_full_text(module: Module) -> str:
 
 
 def _field_stems(text: str) -> set[str]:
-    return {_stem(word) for word in _WORD_RE.findall(text)}
+    stems: set[str] = set()
+    for word in _WORD_RE.findall(text):
+        stemmed = _stem(word)
+        # _stem may return space-separated tokens for Chinese text
+        stems.update(stemmed.split())
+    return stems
 
 
 def _atomic_write(path: Path, data: str) -> None:
@@ -101,7 +114,12 @@ def _atomic_write(path: Path, data: str) -> None:
 
 def save_module(module: Module, kb_path: Path) -> None:
     path = module.to_file_path(kb_path)
+    existed = path.exists()
     _atomic_write(path, module.model_dump_json(indent=2))
+    # Emit webhook event
+    event = "module.updated" if existed else "module.created"
+    from knowledge_manager.webhooks import emit_event
+    emit_event(kb_path, event, module.id, module.category, {"title": module.title})
 
 
 def load_module(module_id: str, category: str, kb_path: Path) -> Optional[Module]:
@@ -116,6 +134,8 @@ def delete_module(module_id: str, category: str, kb_path: Path) -> bool:
     if not path.exists():
         return False
     path.unlink()
+    from knowledge_manager.webhooks import emit_event
+    emit_event(kb_path, "module.deleted", module_id, category)
     return True
 
 
@@ -147,7 +167,9 @@ def _bm25_scores(query: str, modules: List[Module]) -> Dict[str, float]:
     if not modules or not query.strip():
         return {}
 
-    query_stems = [_stem(w) for w in _WORD_RE.findall(query.lower())]
+    query_stems: List[str] = []
+    for w in _WORD_RE.findall(query.lower()):
+        query_stems.extend(_stem(w).split())
     if not query_stems:
         return {}
 
@@ -159,7 +181,9 @@ def _bm25_scores(query: str, modules: List[Module]) -> Dict[str, float]:
     for module in modules:
         text = _module_full_text(module)
         words = [w.lower() for w in _WORD_RE.findall(text)]
-        stemmed = [_stem(w) for w in words]
+        stemmed: List[str] = []
+        for w in words:
+            stemmed.extend(_stem(w).split())
 
         tf: Dict[str, int] = {}
         for s in stemmed:
@@ -201,7 +225,14 @@ def _bm25_scores(query: str, modules: List[Module]) -> Dict[str, float]:
 
 
 def search_modules(query: str, kb_path: Path, category: str | None = None, limit: int = 15, boost_ids: List[str] | None = None, include_archived: bool = False) -> List[SearchResult]:
-    terms = query.lower().split()
+    terms: list[str] = []
+    for w in _WORD_RE.findall(query.lower()):
+        if _CJK_RE.search(w):
+            # Chinese: segment with jieba into individual word tokens
+            terms.extend(_stem(w).split())
+        else:
+            # English: keep raw word for exact boundary matching
+            terms.append(w.lower())
     if not terms:
         return []
 
@@ -261,9 +292,10 @@ def search_modules(query: str, kb_path: Path, category: str | None = None, limit
             if any(word_pattern.search(value) for value in values):
                 return int(w[field_name]), _QUALITY_EXACT
 
-        term_stem = _stem(term)
+        term_stems = _stem(term).split()
         for field_name in field_names:
-            if term_stem in field_stems.get(field_name, set()):
+            f_stems = field_stems.get(field_name, set())
+            if term_stems and all(ts in f_stems for ts in term_stems):
                 return int(w[field_name]), _QUALITY_STEM
 
         if partial_pattern is not None:
@@ -307,7 +339,7 @@ def search_modules(query: str, kb_path: Path, category: str | None = None, limit
         }
         field_stems = {
             "title": _field_stems(module.title),
-            "tag": {_stem(tag) for tag in module.metadata.tags},
+            "tag": {s for tag in module.metadata.tags for s in _stem(tag).split()},
             "summary": _field_stems(module.summary),
             "overview": _field_stems(module.content.overview),
             "details": _field_stems(module.content.details),
@@ -361,7 +393,9 @@ def search_modules(query: str, kb_path: Path, category: str | None = None, limit
 
     # Compute Bayesian priors from historical telemetry (if available)
     priors = compute_bayesian_priors(kb_path)
-    query_stems = [_stem(t) for t in terms]
+    query_stems = []
+    for t in terms:
+        query_stems.extend(_stem(t).split())
 
     def _bayesian_bonus(module: Module) -> float:
         """Average P(module_id | query_term) across all query terms."""
@@ -435,12 +469,13 @@ def generate_changelog(kb_path: Path) -> dict | None:
             continue
         commit_hash, author, message = parts
 
-        # Get changed files
-        diff_result = subprocess.run(
-            ["git", "-C", str(kb_path), "diff-tree", "--no-commit-id", "--name-only", "-r", commit_hash],
+        # Get changed files — use git show (handles root commits, where
+        # diff-tree returns nothing because there is no parent to diff against)
+        show_result = subprocess.run(
+            ["git", "-C", str(kb_path), "show", "--name-only", "--format=", commit_hash],
             capture_output=True, text=True, check=False,
         )
-        changed_files = [f for f in diff_result.stdout.strip().split("\n") if f.endswith(".json") and f not in ("index.json", "config.json")]
+        changed_files = [f for f in show_result.stdout.strip().split("\n") if f.endswith(".json") and f not in ("index.json", "config.json")]
 
         if not changed_files:
             continue
@@ -669,7 +704,9 @@ def record_search_event(
         return
     tdir = _telemetry_dir(kb_path)
     tdir.mkdir(parents=True, exist_ok=True)
-    query_stems = [_stem(w) for w in _WORD_RE.findall(query.lower())]
+    query_stems: List[str] = []
+    for w in _WORD_RE.findall(query.lower()):
+        query_stems.extend(_stem(w).split())
     event = {
         "type": "search",
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -817,3 +854,674 @@ def compute_bayesian_priors(kb_path: Path) -> Dict[str, Dict[str, float]]:
     save_rank_model(priors, len(events), kb_path)
     return priors
 
+
+# ── Phase 3A: Health scoring ──
+
+
+def _freshness_score(module: Any, now: datetime | None = None) -> float:
+    """Score module freshness based on days since update (0-100)."""
+    now = now or datetime.now(timezone.utc)
+    updated = module.updated_at
+    if updated.tzinfo is None:
+        updated = updated.replace(tzinfo=timezone.utc)
+    days = (now - updated).days
+
+    # Check expires_at first
+    if module.metadata.expires_at is not None:
+        exp = module.metadata.expires_at
+        if exp.tzinfo is None:
+            exp = exp.replace(tzinfo=timezone.utc)
+        if now >= exp:
+            return 0.0
+
+    # Check review_interval_days
+    if module.metadata.review_interval_days is not None:
+        if days > module.metadata.review_interval_days:
+            return 0.0
+
+    if days <= 30:
+        return 100.0
+    elif days <= 60:
+        return 75.0
+    elif days <= 90:
+        return 50.0
+    elif days <= 180:
+        return 25.0
+    else:
+        return 0.0
+
+
+def _usage_score(module_id: str, category: str, kb_path: Path) -> float:
+    """Score module usage based on recent load events (0-100)."""
+    from datetime import timedelta
+    events = load_search_events(kb_path)
+    now = datetime.now(timezone.utc)
+    cutoff_30 = now - timedelta(days=30)
+    cutoff_60 = now - timedelta(days=60)
+    cutoff_90 = now - timedelta(days=90)
+
+    latest_load = None
+    load_count_30d = 0
+
+    for evt in events:
+        if evt.get("type") != "load":
+            continue
+        if evt.get("module_id") != module_id:
+            continue
+        if evt.get("category") != category:
+            continue
+        try:
+            ts = datetime.fromisoformat(evt["timestamp"])
+        except (ValueError, KeyError):
+            continue
+        if ts >= cutoff_30:
+            load_count_30d += 1
+        if latest_load is None or ts > latest_load:
+            latest_load = ts
+
+    if latest_load is None:
+        return 0.0
+
+    if latest_load >= cutoff_30:
+        return 100.0
+    elif latest_load >= cutoff_60:
+        return 70.0
+    elif latest_load >= cutoff_90:
+        return 40.0
+    else:
+        return 0.0
+
+
+def _load_count_30d(module_id: str, category: str, kb_path: Path) -> int:
+    """Count load events for a module in the last 30 days."""
+    from datetime import timedelta
+    events = load_search_events(kb_path)
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(days=30)
+    count = 0
+    for evt in events:
+        if evt.get("type") != "load":
+            continue
+        if evt.get("module_id") != module_id:
+            continue
+        if evt.get("category") != category:
+            continue
+        try:
+            ts = datetime.fromisoformat(evt["timestamp"])
+        except (ValueError, KeyError):
+            continue
+        if ts >= cutoff:
+            count += 1
+    return count
+
+
+def _last_load_time(module_id: str, category: str, kb_path: Path) -> datetime | None:
+    """Get the most recent load time for a module."""
+    events = load_search_events(kb_path)
+    latest = None
+    for evt in events:
+        if evt.get("type") != "load":
+            continue
+        if evt.get("module_id") != module_id:
+            continue
+        if evt.get("category") != category:
+            continue
+        try:
+            ts = datetime.fromisoformat(evt["timestamp"])
+        except (ValueError, KeyError):
+            continue
+        if latest is None or ts > latest:
+            latest = ts
+    return latest
+
+
+def _completeness_score(module: Any) -> float:
+    """Score module completeness based on content field population (0-100)."""
+    score = 0.0
+    c = module.content
+    if c.overview:
+        score += 30
+    if c.details and len(c.details) >= 20:
+        score += 30
+    if c.examples:
+        score += 20
+    if c.caveats:
+        score += 10
+    if c.references:
+        score += 10
+    return score
+
+
+def compute_module_health(module: Any, kb_path: Path) -> Any:
+    """Compute health score for a single module."""
+    from knowledge_manager.schemas import HealthScore, ModuleHealth
+
+    freshness = _freshness_score(module)
+    usage = _usage_score(module.id, module.category, kb_path)
+    completeness = _completeness_score(module)
+    overall = freshness * 0.35 + usage * 0.35 + completeness * 0.30
+
+    issues = []
+    if usage == 0:
+        issues.append("zombie")
+    if freshness == 0:
+        if module.metadata.expires_at and module.metadata.expires_at.replace(tzinfo=timezone.utc) <= datetime.now(timezone.utc):
+            issues.append("expired")
+        else:
+            issues.append("stale")
+    if completeness < 70:
+        issues.append("incomplete")
+
+    now = datetime.now(timezone.utc)
+    updated = module.updated_at
+    if updated.tzinfo is None:
+        updated = updated.replace(tzinfo=timezone.utc)
+    days_since_update = (now - updated).days
+
+    return ModuleHealth(
+        module_id=module.id,
+        category=module.category,
+        title=module.title,
+        status=module.metadata.status,
+        score=HealthScore(freshness=freshness, usage=usage, completeness=completeness, overall=round(overall, 1)),
+        issues=issues,
+        last_load=_last_load_time(module.id, module.category, kb_path),
+        load_count_30d=_load_count_30d(module.id, module.category, kb_path),
+        days_since_update=days_since_update,
+    )
+
+
+def generate_health_report(kb_path: Path) -> Any:
+    """Generate a full knowledge base health report."""
+    from knowledge_manager.schemas import KBHealthReport, CategoryHealth
+
+    index = load_index(kb_path)
+    if index is None:
+        return KBHealthReport()
+
+    all_health: list = []
+    category_scores: dict[str, list[float]] = {}
+    category_at_risk: dict[str, int] = {}
+
+    for cat_name, cat_data in index.categories.items():
+        category_scores[cat_name] = []
+        category_at_risk[cat_name] = 0
+        for mod_summary in cat_data.modules:
+            module = load_module(mod_summary.id, cat_name, kb_path)
+            if module is None:
+                continue
+            h = compute_module_health(module, kb_path)
+            all_health.append(h)
+            category_scores[cat_name].append(h.score.overall)
+            if h.score.overall < 40:
+                category_at_risk[cat_name] += 1
+
+    total_modules = len(all_health)
+    total_categories = len(index.categories)
+    overall_score = round(sum(h.score.overall for h in all_health) / total_modules, 1) if total_modules > 0 else 0.0
+
+    breakdown = {}
+    for cat_name in index.categories:
+        scores = category_scores.get(cat_name, [])
+        avg = round(sum(scores) / len(scores), 1) if scores else 0.0
+        breakdown[cat_name] = CategoryHealth(
+            name=cat_name,
+            total_modules=len(scores),
+            avg_score=avg,
+            at_risk_count=category_at_risk.get(cat_name, 0),
+        )
+
+    at_risk = sorted(
+        [h for h in all_health if h.score.overall < 40 or h.issues],
+        key=lambda h: h.score.overall,
+    )
+
+    return KBHealthReport(
+        total_modules=total_modules,
+        total_categories=total_categories,
+        overall_score=overall_score,
+        category_breakdown=breakdown,
+        at_risk_modules=at_risk,
+    )
+
+
+# ── Phase 3B: Usage analytics ──
+
+
+def aggregate_usage_stats(kb_path: Path, period_days: int = 30) -> Any:
+    """Aggregate usage statistics from telemetry events."""
+    from datetime import timedelta
+    from knowledge_manager.schemas import UsageStats, ModuleUsageEntry, UnmatchedQueryEntry, DailyActivityPoint
+
+    events = load_search_events(kb_path)
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(days=period_days)
+
+    # Filter events within period
+    period_events = []
+    for evt in events:
+        try:
+            ts = datetime.fromisoformat(evt["timestamp"])
+        except (ValueError, KeyError):
+            continue
+        if ts >= cutoff:
+            period_events.append(evt)
+
+    # Count searches and loads
+    searches = [e for e in period_events if e.get("type") == "search"]
+    loads = [e for e in period_events if e.get("type") == "load"]
+    total_searches = len(searches)
+    total_loads = len(loads)
+
+    # Conversion rate: searches that resulted in at least one load within 30s
+    sessions: dict[str, list[dict]] = {}
+    for e in period_events:
+        sid = e.get("session_id", "default")
+        sessions.setdefault(sid, []).append(e)
+
+    conversions = 0
+    for sid, evts in sessions.items():
+        search_times = [datetime.fromisoformat(e["timestamp"]) for e in evts if e.get("type") == "search"]
+        load_times = [datetime.fromisoformat(e["timestamp"]) for e in evts if e.get("type") == "load"]
+        for st in search_times:
+            for lt in load_times:
+                if timedelta(seconds=0) <= (lt - st) <= timedelta(seconds=30):
+                    conversions += 1
+                    break
+            else:
+                continue
+            break
+
+    conversion_rate = round(conversions / total_searches * 100, 1) if total_searches else 0.0
+    total_sessions = len(sessions)
+    avg_searches = round(total_searches / total_sessions, 1) if total_sessions else 0.0
+
+    # Top modules by load count
+    load_counts: dict[tuple[str, str], int] = {}
+    for e in loads:
+        mid = e.get("module_id", "")
+        cat = e.get("category", "")
+        if mid and cat:
+            key = (cat, mid)
+            load_counts[key] = load_counts.get(key, 0) + 1
+
+    top_modules = []
+    index = load_index(kb_path)
+    for (cat, mid), count in sorted(load_counts.items(), key=lambda x: -x[1])[:10]:
+        title = mid
+        if index and cat in index.categories:
+            for m in index.categories[cat].modules:
+                if m.id == mid:
+                    title = m.title
+                    break
+        top_modules.append(ModuleUsageEntry(module_id=mid, category=cat, title=title, load_count=count, trend="stable"))
+
+    # Unmatched queries (searches with no results shown)
+    unmatched: dict[str, tuple[list[str], int]] = {}
+    for e in searches:
+        results_shown = e.get("results_shown", [])
+        if not results_shown:
+            qhash = e.get("query_hash", "unknown")
+            terms = e.get("query_terms", [])
+            if qhash in unmatched:
+                unmatched[qhash] = (terms, unmatched[qhash][1] + 1)
+            else:
+                unmatched[qhash] = (terms, 1)
+
+    unmatched_queries = [
+        UnmatchedQueryEntry(query_hash=h, query_terms=t, count=c)
+        for h, (t, c) in sorted(unmatched.items(), key=lambda x: -x[1][1])[:5]
+    ]
+
+    # Daily activity
+    daily: dict[str, tuple[int, int]] = {}
+    for e in period_events:
+        try:
+            day = datetime.fromisoformat(e["timestamp"]).strftime("%Y-%m-%d")
+        except (ValueError, KeyError):
+            continue
+        if day not in daily:
+            daily[day] = (0, 0)
+        s, l = daily[day]
+        if e.get("type") == "search":
+            daily[day] = (s + 1, l)
+        elif e.get("type") == "load":
+            daily[day] = (s, l + 1)
+
+    daily_activity = [
+        DailyActivityPoint(date=d, searches=s, loads=l)
+        for d, (s, l) in sorted(daily.items())
+    ]
+
+    return UsageStats(
+        period_days=period_days,
+        total_searches=total_searches,
+        total_loads=total_loads,
+        conversion_rate=conversion_rate,
+        total_sessions=total_sessions,
+        avg_searches_per_session=avg_searches,
+        top_modules=top_modules,
+        unmatched_queries=unmatched_queries,
+        daily_activity=daily_activity,
+    )
+
+
+# ── Phase 3C: Graph analysis ──
+
+
+def analyze_graph(kb_path: Path) -> Any:
+    """Analyze the knowledge graph: hubs, orphans, broken links."""
+    from knowledge_manager.schemas import GraphStats, HubEntry, OrphanEntry, BrokenLinkEntry
+
+    index = load_index(kb_path)
+    if index is None:
+        return GraphStats()
+
+    graph = index.graph
+    # Build title lookup
+    titles: dict[str, str] = {}
+    all_modules: set[str] = set()
+    for cat_name, cat in index.categories.items():
+        for m in cat.modules:
+            key = f"{cat_name}/{m.id}"
+            all_modules.add(key)
+            titles[key] = m.title
+
+    total_nodes = len(all_modules)
+    total_edges = sum(len(targets) for targets in graph.values())
+
+    # In-degree calculation
+    in_degree: dict[str, int] = {m: 0 for m in all_modules}
+    for src, targets in graph.items():
+        for t in targets:
+            if t in in_degree:
+                in_degree[t] += 1
+
+    # Hub modules (top 5 by in-degree)
+    hubs = sorted(
+        [HubEntry(
+            module_id=k.split("/", 1)[1] if "/" in k else k,
+            category=k.split("/", 1)[0] if "/" in k else "",
+            title=titles.get(k, k),
+            in_degree=in_degree.get(k, 0),
+            out_degree=len(graph.get(k, [])),
+        ) for k in all_modules if in_degree.get(k, 0) > 0],
+        key=lambda h: -h.in_degree,
+    )[:5]
+
+    # Orphan modules (no in-degree and no out-degree in graph)
+    ok_keys: set[str] = set()
+    for k in all_modules:
+        if k in graph and graph[k]:
+            ok_keys.add(k)  # has outgoing edges
+    for targets in graph.values():
+        for t in targets:
+            if t in all_modules:
+                ok_keys.add(t)  # has incoming edges
+
+    orphans = sorted([
+        OrphanEntry(
+            module_id=k.split("/", 1)[1] if "/" in k else k,
+            category=k.split("/", 1)[0] if "/" in k else "",
+            title=titles.get(k, ""),
+            status="published",
+        ) for k in all_modules if k not in ok_keys
+    ], key=lambda o: o.module_id)
+
+    # Broken links
+    broken = []
+    for src, targets in graph.items():
+        for t in targets:
+            if t not in all_modules:
+                broken.append(BrokenLinkEntry(source=src, target=t, target_status="missing"))
+            else:
+                # Check if target is deprecated or archived
+                for cat_name, cat in index.categories.items():
+                    for m in cat.modules:
+                        mk = f"{cat_name}/{m.id}"
+                        if mk == t and m.tags:  # just get status via index lookup
+                            pass
+
+    # Check for deprecated/archived links
+    for cat_name, cat in index.categories.items():
+        for m in cat.modules:
+            mk = f"{cat_name}/{m.id}"
+            if mk in graph or any(mk in targets for targets in graph.values()):
+                mod = load_module(m.id, cat_name, kb_path)
+                if mod and mod.metadata.status in ("deprecated", "archived"):
+                    for src, targets in graph.items():
+                        if mk in targets and src in titles:
+                            broken.append(BrokenLinkEntry(
+                                source=src, target=mk,
+                                target_status=mod.metadata.status,
+                            ))
+
+    # Density
+    n = total_nodes
+    max_edges = n * (n - 1) if n > 1 else 1
+    density = round(total_edges / max_edges, 4)
+
+    return GraphStats(
+        total_nodes=total_nodes,
+        total_edges=total_edges,
+        density=density,
+        hub_modules=hubs,
+        orphan_modules=orphans,
+        broken_links=broken,
+        clusters=[],
+    )
+
+
+def detect_clusters(kb_path: Path) -> list[Any]:
+    """Detect connected components in the knowledge graph."""
+    from knowledge_manager.schemas import ClusterEntry
+
+    index = load_index(kb_path)
+    if index is None:
+        return []
+
+    graph = index.graph
+    all_nodes = set()
+    for cat_name, cat in index.categories.items():
+        for m in cat.modules:
+            all_nodes.add(f"{cat_name}/{m.id}")
+
+    # Build undirected adjacency
+    adj: dict[str, set[str]] = {n: set() for n in all_nodes}
+    for src, targets in graph.items():
+        if src not in adj:
+            adj[src] = set()
+        for t in targets:
+            if t in adj:
+                adj[src].add(t)
+                adj[t].add(src)
+
+    visited: set[str] = set()
+    clusters = []
+
+    def dfs(node: str, comp: list[str]):
+        visited.add(node)
+        comp.append(node)
+        for neighbor in adj.get(node, []):
+            if neighbor not in visited:
+                dfs(neighbor, comp)
+
+    for node in all_nodes:
+        if node not in visited:
+            comp: list[str] = []
+            dfs(node, comp)
+            if len(comp) >= 2:
+                # Derive label from shared tags or dominant category
+                categories = [n.split("/", 1)[0] for n in comp]
+                dominant = max(set(categories), key=categories.count) if categories else "general"
+                clusters.append(ClusterEntry(
+                    id=f"cluster-{len(clusters) + 1}",
+                    label=dominant,
+                    module_count=len(comp),
+                    modules=sorted(comp),
+                ))
+
+    return sorted(clusters, key=lambda c: -c.module_count)
+
+
+# ── Phase 3D: Recommendations ──
+
+
+def generate_recommendations(kb_path: Path) -> Any:
+    """Generate actionable recommendations for knowledge base improvement."""
+    from knowledge_manager.schemas import (
+        RecommendationReport, Recommendation, RecommendationType,
+    )
+
+    index = load_index(kb_path)
+    if index is None:
+        return RecommendationReport()
+
+    archive_candidates = []
+    enrichment_needed = []
+    suggested_links = []
+    review_reminders = []
+
+    now = datetime.now(timezone.utc)
+
+    # Build tag index for link suggestions
+    module_tags: dict[str, set[str]] = {}
+    for cat_name, cat in index.categories.items():
+        for m in cat.modules:
+            key = f"{cat_name}/{m.id}"
+            mod = load_module(m.id, cat_name, kb_path)
+            if mod:
+                module_tags[key] = set(mod.metadata.tags)
+
+    for cat_name, cat in index.categories.items():
+        for m in cat.modules:
+            key = f"{cat_name}/{m.id}"
+            mod = load_module(m.id, cat_name, kb_path)
+            if mod is None:
+                continue
+
+            h = compute_module_health(mod, kb_path)
+            status = mod.metadata.status
+
+            # Archive candidates
+            archive_score = 0.0
+            archive_reasons = []
+            if "zombie" in h.issues and h.score.overall < 20:
+                archive_score = 0.9
+                archive_reasons.append("ZOMBIE")
+            if h.score.usage == 0 and (h.days_since_update > 180):
+                archive_score = max(archive_score, 0.7)
+                archive_reasons.append(f"STALE ({h.days_since_update}d)")
+            if mod.metadata.expires_at and mod.metadata.expires_at.replace(tzinfo=timezone.utc) <= now:
+                archive_score = max(archive_score, 0.95)
+                archive_reasons.append("EXPIRED")
+            if h.score.overall < 20 and status != "archived":
+                archive_score = max(archive_score, 0.6)
+                archive_reasons.append("LOW_SCORE")
+
+            if archive_score > 0.5 and status not in ("archived", "deprecated"):
+                archive_candidates.append(Recommendation(
+                    type=RecommendationType.ARCHIVE,
+                    module_id=m.id, category=cat_name, title=m.title,
+                    score=archive_score,
+                    reason=", ".join(archive_reasons),
+                    detail={"health_score": h.score.overall, "issues": h.issues},
+                ))
+
+            # Enrichment suggestions
+            if h.score.completeness < 80:
+                missing = []
+                if not mod.content.examples:
+                    missing.append("examples")
+                if not mod.content.caveats:
+                    missing.append("caveats")
+                if not mod.content.references:
+                    missing.append("references")
+                if missing:
+                    enrichment_needed.append(Recommendation(
+                        type=RecommendationType.ENRICH,
+                        module_id=m.id, category=cat_name, title=m.title,
+                        score=round((80 - h.score.completeness) / 80, 2),
+                        reason=f"Missing: {', '.join(missing)}",
+                        detail={"missing_fields": missing},
+                    ))
+
+            # Review reminders
+            if mod.metadata.review_interval_days and h.days_since_update > mod.metadata.review_interval_days:
+                review_reminders.append(Recommendation(
+                    type=RecommendationType.REVIEW,
+                    module_id=m.id, category=cat_name, title=m.title,
+                    score=0.8,
+                    reason=f"review_interval ({mod.metadata.review_interval_days}d) expired",
+                    detail={"days_overdue": h.days_since_update - mod.metadata.review_interval_days},
+                ))
+
+    # Link suggestions — find modules with shared tags not already linked
+    existing_links: set[tuple[str, str]] = set()
+    for src, targets in index.graph.items():
+        for t in targets:
+            existing_links.add((src, t))
+            existing_links.add((t, src))
+
+    seen_pairs: set[tuple[str, str]] = set()
+    for k1, tags1 in module_tags.items():
+        for k2, tags2 in module_tags.items():
+            if k1 >= k2:
+                continue
+            pair = (k1, k2)
+            if pair in existing_links or pair in seen_pairs:
+                continue
+            shared = tags1 & tags2
+            if len(shared) >= 2:
+                seen_pairs.add(pair)
+                suggested_links.append(Recommendation(
+                    type=RecommendationType.LINK,
+                    module_id=k1, category="", title=f"{k1} ↔ {k2}",
+                    score=min(1.0, len(shared) / 5.0),
+                    reason=f"Shared tags: {', '.join(sorted(shared)[:3])}",
+                    detail={"module_a": k1, "module_b": k2, "shared_tags": sorted(shared)},
+                ))
+
+    suggested_links.sort(key=lambda r: -r.score)
+
+    return RecommendationReport(
+        archive_candidates=sorted(archive_candidates, key=lambda r: -r.score)[:10],
+        enrichment_needed=sorted(enrichment_needed, key=lambda r: -r.score)[:10],
+        suggested_links=suggested_links[:10],
+        review_reminders=sorted(review_reminders, key=lambda r: -r.score)[:5],
+    )
+
+
+# ── Phase 4B: Federation ──
+
+
+def load_federation(kb_path: Path) -> dict:
+    """Load and validate all federation namespace indices.
+
+    Returns a dict mapping namespace name → {index, path, description, search_default}.
+    Returns empty dict if no federation namespaces are configured.
+    """
+    import logging
+    _logger = logging.getLogger("knowledge_manager")
+
+    cfg = _load_config_safe(kb_path)
+    if cfg is None or not cfg.federation.namespaces:
+        return {}
+
+    namespaces: dict = {}
+    for ns_name, ns_cfg in cfg.federation.namespaces.items():
+        ns_path = (kb_path / ns_cfg.kb_path).resolve()
+        if not ns_path.exists():
+            _logger.warning("Federation namespace '%s': path %s does not exist, skipping", ns_name, ns_path)
+            continue
+        ns_index = load_index(ns_path)
+        if ns_index is None:
+            _logger.warning("Federation namespace '%s': no index.json at %s, skipping", ns_name, ns_path)
+            continue
+        namespaces[ns_name] = {
+            "index": ns_index,
+            "path": ns_path,
+            "description": ns_cfg.description,
+            "search_default": ns_cfg.search_default,
+        }
+    return namespaces
