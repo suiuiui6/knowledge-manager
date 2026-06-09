@@ -187,6 +187,42 @@ class NotificationsConfig(BaseModel):
     on_review_approved: bool = False
 
 
+# ── M7: Lint schemas ──
+
+
+class ContradictionType(str, Enum):
+    FACT = "fact"
+    DECISION = "decision"
+    TIMELINE = "timeline"
+    TERMINOLOGY = "terminology"
+    STALE_REFERENCE = "stale_ref"
+
+
+class Severity(str, Enum):
+    ERROR = "error"
+    WARNING = "warning"
+    INFO = "info"
+
+
+class ContradictionEvidence(BaseModel):
+    module_key: str
+    field: str = "content"
+    excerpt: str = ""
+    claim: str = ""
+
+
+class Contradiction(BaseModel):
+    id: str
+    type: ContradictionType
+    severity: Severity
+    modules: list[str] = Field(default_factory=list)
+    description: str = ""
+    evidence: list[ContradictionEvidence] = Field(default_factory=list)
+    suggestion: str = ""
+    auto_fixable: bool = False
+    auto_fix_description: str = ""
+
+
 # ── M4: Research schemas ──
 
 

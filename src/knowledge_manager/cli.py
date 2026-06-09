@@ -1421,6 +1421,98 @@ def export(ctx: click.Context, output_dir: Path) -> None:
     console.print(f"[green]Exported {count} modules to {output_dir}[/green]")
 
 
+# --- lint (M7) ---
+
+
+@cli.command()
+@click.option("--deep", is_flag=True, help="Full semantic contradiction detection (uses LLM)")
+@click.option("--fix", is_flag=True, help="Auto-fix fixable issues")
+@click.option("--module", "-m", default=None, help="Only check conflicts involving this module")
+@click.option("--format", "-f", "fmt", type=click.Choice(["table", "json"]), default="table")
+@click.pass_context
+def lint(ctx: click.Context, deep: bool, fix: bool, module: str | None, fmt: str) -> None:
+    """Check knowledge base for contradictions and structural issues."""
+    from knowledge_manager.linter import DeepLinter
+    from knowledge_manager.llm_clients import create_client
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    llm_client = None
+    if deep:
+        cfg = _load_config(kb)
+        try:
+            provider_name, provider_cfg = cfg.get_default_provider()
+        except ValueError:
+            console.print("[red]No LLM provider configured.[/red]")
+            return
+        llm_client = create_client(provider_name, provider_cfg)
+
+    linter = DeepLinter(kb, llm_client)
+    mode = "deep" if deep else "quick"
+
+    if deep:
+        console.print("[dim]Running deep semantic analysis...[/dim]")
+
+    issues = linter.lint_all(mode)
+
+    if module:
+        issues = [i for i in issues if module in i.modules]
+
+    if not issues:
+        console.print("[green]No issues found.[/green]")
+        return
+
+    if fmt == "json":
+        console.print(json.dumps([i.model_dump() for i in issues], indent=2, default=str))
+        return
+
+    sev_colors = {"error": "red", "warning": "yellow", "info": "dim"}
+    type_labels = {"fact": "Fact", "decision": "Decision", "timeline": "Timeline",
+                   "terminology": "Terminology", "stale_ref": "Stale Ref"}
+
+    for i, issue in enumerate(issues, 1):
+        sev = issue.severity.value if hasattr(issue.severity, 'value') else str(issue.severity)
+        color = sev_colors.get(sev, "white")
+        icon = {"error": "E", "warning": "W", "info": "I"}.get(sev, "?")
+        tlabel = type_labels.get(issue.type.value if hasattr(issue.type, 'value') else str(issue.type), issue.type)
+
+        console.print(f"\n[{color}][{icon}{i}] {tlabel} — {issue.description}[/{color}]")
+        console.print(f"  Modules: {', '.join(issue.modules[:3])}")
+        if issue.suggestion:
+            console.print(f"  Suggestion: {issue.suggestion}")
+
+        if fix and issue.auto_fixable:
+            from knowledge_manager.schemas import ContradictionType as CT
+            _apply_auto_fix(issue, kb, CT)
+
+    console.print(f"\n[bold]{len(issues)} issue(s) found.[/bold]")
+    if not deep:
+        console.print("[dim]Run 'km lint --deep' for semantic contradiction detection.[/dim]")
+
+
+def _apply_auto_fix(issue, kb_path: Path, CT) -> None:
+    from knowledge_manager.storage import load_module, save_module, rebuild_index
+
+    if issue.type != CT.STALE_REFERENCE or not issue.auto_fixable:
+        return
+
+    for module_key in issue.modules[:1]:
+        parts = module_key.split("/", 1)
+        if len(parts) != 2:
+            continue
+        mod = load_module(parts[1], parts[0], kb_path)
+        if mod is None:
+            continue
+        for ev in issue.evidence:
+            if ev.excerpt in mod.metadata.related_modules:
+                mod.metadata.related_modules.remove(ev.excerpt)
+                save_module(mod, kb_path)
+                console.print(f"  [green]Fixed: removed {ev.excerpt} from {module_key}[/green]")
+                break
+    rebuild_index(kb_path)
+
+
 # --- serve (MCP) ---
 
 @cli.command()

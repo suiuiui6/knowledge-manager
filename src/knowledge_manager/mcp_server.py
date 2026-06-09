@@ -346,6 +346,17 @@ def create_server(kb_path: Path, cache: ModuleCache | None = None, federation: d
             output.append(module_data)
         return json.dumps(output, indent=2)
 
+    # ── Lint resource (M7) ──
+
+    @mcp.resource("knowledge://lint")
+    def get_lint() -> str:
+        """Get knowledge base contradiction and structural issue report."""
+        from knowledge_manager.linter import DeepLinter
+
+        linter = DeepLinter(kb_path)
+        issues = linter.lint_all("quick")
+        return json.dumps([i.model_dump() for i in issues], indent=2, default=str)
+
     # ── Research tool (M4) ──
 
     @mcp.tool(name="research")
