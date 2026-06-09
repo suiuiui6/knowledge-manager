@@ -12,28 +12,35 @@ class ModuleCache:
         self._cache: OrderedDict[str, Module] = OrderedDict()
         self._lock = threading.Lock()
 
-    def get(self, module_id: str) -> Optional[Module]:
+    @staticmethod
+    def _make_key(module_id: str, namespace: str = "default") -> str:
+        return f"{namespace}:{module_id}"
+
+    def get(self, module_id: str, namespace: str = "default") -> Optional[Module]:
         if not self._enabled:
             return None
+        key = self._make_key(module_id, namespace)
         with self._lock:
-            if module_id not in self._cache:
+            if key not in self._cache:
                 return None
-            self._cache.move_to_end(module_id)
-            return self._cache[module_id]
+            self._cache.move_to_end(key)
+            return self._cache[key]
 
-    def put(self, module: Module) -> None:
+    def put(self, module: Module, namespace: str = "default") -> None:
         if not self._enabled:
             return
+        key = self._make_key(module.id, namespace)
         with self._lock:
-            if module.id in self._cache:
-                self._cache.move_to_end(module.id)
-            self._cache[module.id] = module
+            if key in self._cache:
+                self._cache.move_to_end(key)
+            self._cache[key] = module
             if len(self._cache) > self._max_size:
                 self._cache.popitem(last=False)
 
-    def invalidate(self, module_id: str) -> None:
+    def invalidate(self, module_id: str, namespace: str = "default") -> None:
+        key = self._make_key(module_id, namespace)
         with self._lock:
-            self._cache.pop(module_id, None)
+            self._cache.pop(key, None)
 
     def clear(self) -> None:
         with self._lock:

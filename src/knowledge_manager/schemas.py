@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
+from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Literal, Optional, Tuple
+from typing import Any, Dict, List, Literal, Optional, Tuple
 
 from pydantic import BaseModel, Field
 
@@ -193,6 +194,9 @@ class Config(BaseModel):
     synonyms: Dict[str, List[str]] = Field(default_factory=dict)
     review: ReviewConfig = Field(default_factory=ReviewConfig)
     notifications: NotificationsConfig = Field(default_factory=NotificationsConfig)
+    federation: "FederationConfig" = Field(default_factory=lambda: FederationConfig())
+    webhooks: "WebhookConfig" = Field(default_factory=lambda: WebhookConfig())
+    marketplace: "MarketplaceConfig" = Field(default_factory=lambda: MarketplaceConfig())
 
     def get_default_provider(self) -> Tuple[str, LLMProviderConfig]:
         for name, provider in self.llm_providers.items():
@@ -202,3 +206,239 @@ class Config(BaseModel):
             name = next(iter(self.llm_providers))
             return name, self.llm_providers[name]
         raise ValueError("No LLM providers configured")
+
+
+# ── Phase 3A: Health dashboard schemas ──
+
+
+class HealthScore(BaseModel):
+    freshness: float = 0.0       # 0-100
+    usage: float = 0.0           # 0-100
+    completeness: float = 0.0    # 0-100
+    overall: float = 0.0         # weighted 0-100
+
+
+class ModuleHealth(BaseModel):
+    module_id: str
+    category: str
+    title: str
+    status: str
+    score: HealthScore = Field(default_factory=HealthScore)
+    issues: List[str] = Field(default_factory=list)  # "zombie", "stale", "expired", "incomplete"
+    last_load: Optional[datetime] = None
+    load_count_30d: int = 0
+    days_since_update: int = 0
+
+
+class CategoryHealth(BaseModel):
+    name: str
+    total_modules: int
+    avg_score: float = 0.0
+    at_risk_count: int = 0
+
+
+class KBHealthReport(BaseModel):
+    generated_at: datetime = Field(default_factory=utc_now)
+    total_modules: int = 0
+    total_categories: int = 0
+    overall_score: float = 0.0
+    category_breakdown: Dict[str, CategoryHealth] = Field(default_factory=dict)
+    at_risk_modules: List[ModuleHealth] = Field(default_factory=list)
+
+
+# ── Phase 3B: Usage analytics schemas ──
+
+
+class ModuleUsageEntry(BaseModel):
+    module_id: str
+    category: str
+    title: str
+    load_count: int = 0
+    trend: str = "stable"  # "up", "down", "stable"
+
+
+class UnmatchedQueryEntry(BaseModel):
+    query_hash: str
+    query_terms: List[str] = Field(default_factory=list)
+    count: int = 0
+
+
+class DailyActivityPoint(BaseModel):
+    date: str
+    searches: int = 0
+    loads: int = 0
+
+
+class UsageStats(BaseModel):
+    period_days: int = 30
+    total_searches: int = 0
+    total_loads: int = 0
+    conversion_rate: float = 0.0
+    total_sessions: int = 0
+    avg_searches_per_session: float = 0.0
+    top_modules: List[ModuleUsageEntry] = Field(default_factory=list)
+    unmatched_queries: List[UnmatchedQueryEntry] = Field(default_factory=list)
+    daily_activity: List[DailyActivityPoint] = Field(default_factory=list)
+
+
+# ── Phase 3C: Graph analysis schemas ──
+
+
+class HubEntry(BaseModel):
+    module_id: str
+    category: str
+    title: str
+    in_degree: int = 0
+    out_degree: int = 0
+
+
+class OrphanEntry(BaseModel):
+    module_id: str
+    category: str
+    title: str
+    status: str = "published"
+
+
+class BrokenLinkEntry(BaseModel):
+    source: str  # "category/module_id"
+    target: str  # broken reference
+    target_status: str = "missing"  # "missing", "deprecated", "archived"
+
+
+class ClusterEntry(BaseModel):
+    id: str
+    label: str = ""
+    module_count: int = 0
+    modules: List[str] = Field(default_factory=list)
+
+
+class GraphStats(BaseModel):
+    total_nodes: int = 0
+    total_edges: int = 0
+    density: float = 0.0
+    hub_modules: List[HubEntry] = Field(default_factory=list)
+    orphan_modules: List[OrphanEntry] = Field(default_factory=list)
+    broken_links: List[BrokenLinkEntry] = Field(default_factory=list)
+    clusters: List[ClusterEntry] = Field(default_factory=list)
+
+
+# ── Phase 3D: Recommendation schemas ──
+
+
+class RecommendationType(str, Enum):
+    ARCHIVE = "archive"
+    ENRICH = "enrich"
+    LINK = "link"
+    REVIEW = "review"
+
+
+class Recommendation(BaseModel):
+    type: RecommendationType
+    module_id: str
+    category: str
+    title: str
+    score: float = 0.0       # 0-1, higher = stronger recommendation
+    reason: str = ""
+    detail: Dict[str, Any] = Field(default_factory=dict)
+
+
+class RecommendationReport(BaseModel):
+    generated_at: datetime = Field(default_factory=utc_now)
+    archive_candidates: List[Recommendation] = Field(default_factory=list)
+    enrichment_needed: List[Recommendation] = Field(default_factory=list)
+    suggested_links: List[Recommendation] = Field(default_factory=list)
+    review_reminders: List[Recommendation] = Field(default_factory=list)
+
+
+# ── Phase 4A: Platform connector schemas ──
+
+
+class PlatformConfig(BaseModel):
+    """Mapping from platform name to its MCP config path."""
+    name: str
+    config_path: str  # relative to home or cwd (e.g. "~/.claude/mcp.json")
+    description: str = ""
+
+
+# ── Phase 4B: Federation schemas ──
+
+
+class FederationNamespace(BaseModel):
+    kb_path: str
+    description: str = ""
+    search_default: bool = True
+
+
+class FederationConfig(BaseModel):
+    namespaces: Dict[str, FederationNamespace] = Field(default_factory=dict)
+
+
+# ── Phase 4C: Webhook schemas ──
+
+
+class WebhookRetryConfig(BaseModel):
+    max_attempts: int = 3
+    backoff_seconds: int = 30
+
+
+class WebhookEndpoint(BaseModel):
+    url: str
+    events: List[str] = Field(default_factory=list)  # empty = all events
+    headers: Dict[str, str] = Field(default_factory=dict)
+    secret: str = ""  # HMAC signing secret
+    retry: WebhookRetryConfig = Field(default_factory=WebhookRetryConfig)
+
+
+class WebhookEvent(BaseModel):
+    event: str  # "module.created", "module.deprecated", etc.
+    timestamp: datetime = Field(default_factory=utc_now)
+    kb_path: str = ""
+    kb_name: str = ""
+    module_id: str = ""
+    category: str = ""
+    data: Dict[str, Any] = Field(default_factory=dict)
+
+
+class WebhookConfig(BaseModel):
+    enabled: bool = False
+    endpoints: List[WebhookEndpoint] = Field(default_factory=list)
+
+
+# ── Phase 4D: Marketplace schemas ──
+
+
+class MarketplaceModule(BaseModel):
+    id: str
+    category: str
+    title: str
+    summary: str
+    tags: List[str] = Field(default_factory=list)
+    confidence: str = "medium"
+    author: str = "community"
+    version: str = "1.0.0"
+    downloads: int = 0
+    rating: float = 0.0
+    ratings_count: int = 0
+    updated_at: datetime = Field(default_factory=utc_now)
+    dependencies: List[str] = Field(default_factory=list)
+
+
+class MarketplaceIndex(BaseModel):
+    version: str = "1.0"
+    modules: Dict[str, MarketplaceModule] = Field(default_factory=dict)
+    last_updated: datetime = Field(default_factory=utc_now)
+
+
+class InstallPlan(BaseModel):
+    modules: List[MarketplaceModule] = Field(default_factory=list)
+    target_category: str = ""
+    dependencies_installed: List[str] = Field(default_factory=list)
+
+
+class MarketplaceConfig(BaseModel):
+    index_url: str = "https://github.com/knowledge-manager/marketplace"
+    sanitize_patterns: List[str] = Field(default_factory=list)
+
+
+# Resolve forward references for Config's new Phase 4 fields
+Config.model_rebuild()
