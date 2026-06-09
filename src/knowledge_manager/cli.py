@@ -92,7 +92,7 @@ def _require_kb(kb_path: Path) -> None:
 
 
 @click.group()
-@click.version_option("0.1.0", prog_name="km")
+@click.version_option("0.5.0", prog_name="km")
 @click.option(
     "--kb-path",
     type=click.Path(path_type=Path),
@@ -207,13 +207,14 @@ def stats(ctx: click.Context) -> None:
 
 @cli.command()
 @click.argument("query")
+@click.option("--include-archived", is_flag=True, help="Include archived modules in search results")
 @click.pass_context
-def search(ctx: click.Context, query: str) -> None:
+def search(ctx: click.Context, query: str, include_archived: bool = False) -> None:
     """Search modules by keyword."""
     kb = ctx.obj["kb_path"]
     _require_kb(kb)
 
-    results = search_modules(query, kb)
+    results = search_modules(query, kb, include_archived=include_archived)
 
     if not results:
         click.echo("No matches.")
@@ -305,6 +306,8 @@ def deprecate(ctx: click.Context, module_ref: str, reason: str) -> None:
     module.metadata.status = "deprecated"
     save_module(module, kb)
     rebuild_index(kb)
+    from knowledge_manager.webhooks import emit_event
+    emit_event(kb, "module.deprecated", module_id, category, {"reason": reason})
     click.echo(f"Deprecated: {module_ref}" + (f" — {reason}" if reason else ""))
 
 
@@ -330,6 +333,8 @@ def archive(ctx: click.Context, module_ref: str) -> None:
     module.metadata.status = "archived"
     save_module(module, kb)
     rebuild_index(kb)
+    from knowledge_manager.webhooks import emit_event
+    emit_event(kb, "module.archived", module_id, category)
     click.echo(f"Archived: {module_ref}")
 
 
@@ -436,6 +441,372 @@ def config_list(ctx: click.Context) -> None:
     _require_kb(kb)
     cfg = _load_config(kb)
     click.echo(cfg.model_dump_json(indent=2))
+
+
+# --- health ---
+
+
+@cli.command()
+@click.option("--module", "-m", default=None, help="Show health for a specific module (category/id)")
+@click.option("--category", "-c", default=None, help="Filter by category")
+@click.option("--at-risk", is_flag=True, help="Only show modules needing attention")
+@click.option("--format", "-f", "fmt", type=click.Choice(["table", "json"]), default="table", help="Output format")
+@click.pass_context
+def health(ctx: click.Context, module: str | None, category: str | None, at_risk: bool, fmt: str) -> None:
+    """Show knowledge base health report."""
+    from knowledge_manager.storage import compute_module_health, generate_health_report, load_module
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    if module:
+        # Single module detail
+        parts = module.split("/", 1)
+        if len(parts) != 2:
+            click.echo("Error: Use format 'category/module-id'", err=True)
+            raise click.Abort()
+        mod = load_module(parts[1], parts[0], kb)
+        if mod is None:
+            click.echo(f"Module not found: {module}", err=True)
+            raise click.Abort()
+        h = compute_module_health(mod, kb)
+
+        if fmt == "json":
+            click.echo(h.model_dump_json(indent=2))
+            return
+
+        console.print(f"\n[bold]Module Health: {h.module_id}[/bold]")
+        table = Table(title="")
+        table.add_column("Dimension", style="cyan")
+        table.add_column("Score", style="yellow")
+        table.add_column("Detail", style="dim")
+        table.add_row("Freshness", f"{h.score.freshness:.0f}", f"Updated {h.days_since_update}d ago")
+        table.add_row("Usage", f"{h.score.usage:.0f}",
+                      f"Loaded {h.load_count_30d}x (last: {h.last_load.strftime('%Y-%m-%d') if h.last_load else 'never'})")
+        table.add_row("Completeness", f"{h.score.completeness:.0f}", "")
+        issues_str = ", ".join(h.issues) if h.issues else "none"
+        status_icon = "✅ Healthy" if h.score.overall >= 60 else ("⚠️ At Risk" if h.score.overall >= 30 else "❌ Critical")
+        console.print(table)
+        console.print(f"\n[bold]Overall: {h.score.overall:.1f}/100  {status_icon}[/bold]")
+        if h.issues:
+            console.print(f"[dim]Issues: {issues_str}[/dim]")
+        return
+
+    report = generate_health_report(kb)
+
+    if fmt == "json":
+        click.echo(report.model_dump_json(indent=2))
+        return
+
+    if report.total_modules == 0:
+        click.echo("Knowledge base is empty. Add modules with 'km add'.")
+        return
+
+    if at_risk:
+        if not report.at_risk_modules:
+            click.echo("No modules at risk.")
+            return
+        console.print(f"\n[bold]⚠️  Modules Needing Attention[/bold]\n")
+        risk_table = Table(title="")
+        risk_table.add_column("Module")
+        risk_table.add_column("Issue")
+        risk_table.add_column("Score")
+        risk_table.add_column("Action")
+        for h in report.at_risk_modules:
+            if category and h.category != category:
+                continue
+            best_action = "review"
+            if "expired" in h.issues:
+                best_action = "archive"
+            elif "zombie" in h.issues and h.score.overall < 20:
+                best_action = "archive"
+            elif "stale" in h.issues:
+                best_action = "deprecate"
+            risk_table.add_row(
+                f"{h.category}/{h.module_id}",
+                h.issues[0] if h.issues else "-",
+                f"{h.score.overall:.1f}",
+                best_action,
+            )
+        console.print(risk_table)
+        return
+
+    console.print(f"\n[bold]Knowledge Base Health Report[/bold]")
+    console.print(f"{report.generated_at.strftime('%Y-%m-%d')} | {report.total_modules} modules | {report.total_categories} categories\n")
+
+    # Category breakdown
+    cat_table = Table(title="")
+    cat_table.add_column("Category")
+    cat_table.add_column("Total")
+    cat_table.add_column("Avg Score")
+    cat_table.add_column("At Risk")
+    for cat_name, ch in sorted(report.category_breakdown.items()):
+        risk_indicator = f"{ch.at_risk_count} ⚠️" if ch.at_risk_count > 0 else "0"
+        cat_table.add_row(cat_name, str(ch.total_modules), f"{ch.avg_score:.1f}", risk_indicator)
+    console.print(cat_table)
+
+    console.print(f"\n[bold]Overall Health Score: {report.overall_score:.1f}/100[/bold]")
+
+    if report.at_risk_modules:
+        console.print(f"\n[dim]{len(report.at_risk_modules)} module(s) at risk. Run [bold]km health --at-risk[/bold] for details.[/dim]")
+
+
+# --- usage ---
+
+
+@cli.command()
+@click.option("--period", "-p", type=click.Choice(["7d", "30d", "90d"]), default="30d", help="Time period for stats")
+@click.option("--format", "-f", "fmt", type=click.Choice(["table", "json"]), default="table", help="Output format")
+@click.pass_context
+def usage(ctx: click.Context, period: str, fmt: str) -> None:
+    """Show knowledge base usage analytics."""
+    from knowledge_manager.storage import aggregate_usage_stats
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    days = {"7d": 7, "30d": 30, "90d": 90}[period]
+    data = aggregate_usage_stats(kb, period_days=days)
+
+    if fmt == "json":
+        click.echo(data.model_dump_json(indent=2))
+        return
+
+    if data.total_searches == 0:
+        click.echo(f"No usage data for the last {period}. Start searching and loading modules.")
+        return
+
+    console.print(f"\n[bold]KB Usage Analytics[/bold] (last {period})")
+    console.print(f"\n Searches: {data.total_searches}   Loads: {data.total_loads}   Conversion: {data.conversion_rate}%")
+    console.print(f" Sessions: {data.total_sessions}   Avg searches/session: {data.avg_searches_per_session}")
+
+    if data.top_modules:
+        console.print(f"\n[bold] Top Modules[/bold] (by loads)")
+        top_table = Table(title="")
+        top_table.add_column("Module")
+        top_table.add_column("Loads")
+        max_loads = max(m.load_count for m in data.top_modules)
+        for m in data.top_modules:
+            bar_len = int(m.load_count / max_loads * 10) if max_loads > 0 else 0
+            spark = "█" * bar_len + "▌" if bar_len >= 1 else ""
+            top_table.add_row(f"{m.category}/{m.module_id}", f"{m.load_count} {spark}")
+        console.print(top_table)
+
+    if data.unmatched_queries:
+        console.print(f"\n[bold] Unmatched Queries[/bold] (top 5)")
+        uq_table = Table(title="")
+        uq_table.add_column("Query Theme")
+        uq_table.add_column("Count")
+        for uq in data.unmatched_queries:
+            theme = ", ".join(uq.query_terms[:3]) if uq.query_terms else uq.query_hash[:12]
+            uq_table.add_row(theme, str(uq.count))
+        console.print(uq_table)
+        console.print("[dim]  → These topics might need new modules.[/dim]")
+
+
+# --- graph ---
+
+
+@cli.command()
+@click.option("--export", "-e", "export_fmt", type=click.Choice(["mermaid", "dot", "json"]), default=None, help="Export format")
+@click.option("--format", "-f", "fmt", type=click.Choice(["table", "json"]), default="table", help="Output format")
+@click.pass_context
+def graph(ctx: click.Context, export_fmt: str | None, fmt: str) -> None:
+    """Analyze and visualize the knowledge graph."""
+    from knowledge_manager.storage import analyze_graph, detect_clusters
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    gs = analyze_graph(kb)
+    clusters = detect_clusters(kb)
+
+    if export_fmt == "json" or fmt == "json":
+        import json as _json
+        output = {
+            "stats": gs.model_dump(),
+            "clusters": [c.model_dump() for c in clusters],
+        }
+        click.echo(_json.dumps(output, indent=2))
+        return
+
+    if export_fmt == "mermaid":
+        lines = ["graph TD"]
+        index = load_index(kb)
+        if index:
+            for src, targets in index.graph.items():
+                src_label = src.replace("/", "_").replace("-", "_")
+                for t in targets:
+                    t_label = t.replace("/", "_").replace("-", "_")
+                    lines.append(f"  {src_label}[\"{src}\"] --> {t_label}[\"{t}\"]")
+        if len(lines) == 1:
+            lines.append("  empty[\"No connections\"]")
+        click.echo("\n".join(lines))
+        return
+
+    if export_fmt == "dot":
+        lines = ["digraph KB {", "  rankdir=LR;"]
+        index = load_index(kb)
+        if index:
+            for src, targets in index.graph.items():
+                src_id = src.replace("/", "_").replace("-", "_")
+                for t in targets:
+                    t_id = t.replace("/", "_").replace("-", "_")
+                    lines.append(f"  {src_id} -> {t_id};")
+        lines.append("}")
+        click.echo("\n".join(lines))
+        return
+
+    if gs.total_nodes == 0:
+        click.echo("No modules in knowledge base. Add modules with 'km add'.")
+        return
+
+    console.print(f"\n[bold]Knowledge Graph Overview[/bold]")
+    console.print(f"{gs.total_nodes} modules | {gs.total_edges} edges | density: {gs.density}")
+
+    if gs.hub_modules:
+        console.print(f"\n[bold] Top Hubs[/bold]")
+        hub_table = Table(title="")
+        hub_table.add_column("Module")
+        hub_table.add_column("Category")
+        hub_table.add_column("Inward")
+        for h in gs.hub_modules:
+            hub_table.add_row(h.module_id, h.category, str(h.in_degree))
+        console.print(hub_table)
+
+    if gs.orphan_modules:
+        console.print(f"\n[bold] Orphan Modules[/bold] ({len(gs.orphan_modules)})")
+        orphan_names = ", ".join(f"{o.category}/{o.module_id}" for o in gs.orphan_modules[:10])
+        if len(gs.orphan_modules) > 10:
+            orphan_names += f", ..."
+        console.print(f"  {orphan_names}")
+
+    if gs.broken_links:
+        console.print(f"\n[bold] Broken Links[/bold] ({len(gs.broken_links)})")
+        for bl in gs.broken_links[:10]:
+            console.print(f"  {bl.source} → {bl.target} ({bl.target_status})")
+
+    if clusters:
+        console.print(f"\n[bold] Clusters[/bold] ({len(clusters)})")
+        for c in clusters[:8]:
+            console.print(f"  • {c.id}: {c.label}/* ({c.module_count} modules)")
+
+
+# --- recommend ---
+
+
+@cli.command()
+@click.option("--type", "-t", "rec_type", type=click.Choice(["archive", "enrich", "links", "review"]), default=None, help="Filter by recommendation type")
+@click.option("--format", "-f", "fmt", type=click.Choice(["table", "json"]), default="table", help="Output format")
+@click.pass_context
+def recommend(ctx: click.Context, rec_type: str | None, fmt: str) -> None:
+    """Generate recommendations for KB improvement."""
+    from knowledge_manager.storage import generate_recommendations
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    report = generate_recommendations(kb)
+
+    if fmt == "json":
+        click.echo(report.model_dump_json(indent=2))
+        return
+
+    total = (
+        len(report.archive_candidates)
+        + len(report.enrichment_needed)
+        + len(report.suggested_links)
+        + len(report.review_reminders)
+    )
+    if total == 0:
+        click.echo("No recommendations — your knowledge base is in great shape!")
+        return
+
+    console.print(f"\n[bold] Recommendations[/bold]")
+
+    def _show_section(title: str, items, icon: str):
+        if not items:
+            return
+        if rec_type and rec_type not in title.lower():
+            return
+        console.print(f"\n[bold]{icon} {title}[/bold] ({len(items)})")
+        t = Table(title="")
+        t.add_column("Module")
+        t.add_column("Score")
+        t.add_column("Reason")
+        for r in items[:5]:
+            mod_ref = f"{r.category}/{r.module_id}" if r.category else r.module_id
+            t.add_row(mod_ref, f"{r.score:.2f}", r.reason)
+        console.print(t)
+
+    _show_section("Archive Candidates", report.archive_candidates, "📦")
+    _show_section("Needs Enrichment", report.enrichment_needed, "✏️")
+    _show_section("Suggested Links", report.suggested_links, "🔗")
+    _show_section("Review Reminders", report.review_reminders, "⏰")
+
+
+# --- apply ---
+
+
+@cli.command()
+@click.option("--type", "-t", "apply_type", type=click.Choice(["archive", "enrich", "links", "review"]), required=True, help="Type of recommendation to apply")
+@click.option("--module", "-m", "module_ref", default=None, help="Apply to a specific module (category/id)")
+@click.option("--dry-run", is_flag=True, help="Preview actions without executing")
+@click.option("--confirm", "-y", is_flag=True, help="Confirm each action interactively")
+@click.pass_context
+def apply(ctx: click.Context, apply_type: str, module_ref: str | None, dry_run: bool, confirm: bool) -> None:
+    """Apply recommendations in batch."""
+    from knowledge_manager.storage import generate_recommendations, load_module
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    report = generate_recommendations(kb)
+
+    type_map = {
+        "archive": report.archive_candidates,
+        "enrich": report.enrichment_needed,
+        "links": report.suggested_links,
+        "review": report.review_reminders,
+    }
+    candidates = type_map.get(apply_type, [])
+
+    if module_ref:
+        candidates = [r for r in candidates if f"{r.category}/{r.module_id}" == module_ref or r.module_id == module_ref]
+
+    if not candidates:
+        click.echo(f"No {apply_type} recommendations to apply.")
+        return
+
+    for r in candidates:
+        mod_ref = f"{r.category}/{r.module_id}" if r.category else r.module_id
+        if apply_type == "archive":
+            action = f"Archive {mod_ref}"
+            if dry_run:
+                click.echo(f"[DRY RUN] {action}: {r.reason}")
+            else:
+                if confirm:
+                    ans = Prompt.ask(f"{action}?", choices=["y", "n", "s"], default="y")
+                    if ans == "s":
+                        break
+                    elif ans == "n":
+                        continue
+                result = click.get_current_context().invoke(
+                    archive, module_ref=mod_ref,
+                )
+        elif apply_type == "enrich":
+            if dry_run:
+                missing = r.detail.get("missing_fields", [])
+                click.echo(f"[DRY RUN] Enrich {mod_ref}: add {', '.join(missing)}")
+            else:
+                click.echo(f"Enrich {mod_ref}: {r.reason}")
+                click.echo("  (manual — edit the module file to add missing fields)")
+
+    if dry_run:
+        click.echo(f"\n[dim]{len(candidates)} action(s) previewed. Run without --dry-run to execute.[/dim]")
+    else:
+        rebuild_index(kb)
+        click.echo(f"Applied {len(candidates)} {apply_type} action(s).")
 
 
 # --- add (extract to staging) ---
@@ -614,7 +985,7 @@ def review_approve(ctx: click.Context, module_id: str, comment: str) -> None:
     kb = ctx.obj["kb_path"]
     _require_kb(kb)
     staging = _staging_path(kb)
-    from knowledge_manager.schemas import ReviewRecord
+    from knowledge_manager.schemas import ReviewRecord, StagingMeta
 
     module = load_from_staging(module_id, staging)
     if module is None:
@@ -634,6 +1005,8 @@ def review_approve(ctx: click.Context, module_id: str, comment: str) -> None:
         approve_from_staging(module_id, staging, kb)
         delete_staging_meta(module_id, staging)
         rebuild_index(kb)
+        from knowledge_manager.webhooks import emit_event
+        emit_event(kb, "review.approved", module_id, module.category, {"reviewer": meta.reviews[-1].reviewer if meta.reviews else "", "approvals_count": meta.approval_count()})
         click.echo(f"Approved and merged: {module_id} ({meta.approval_count()} approval(s))")
     else:
         save_staging_meta(meta, staging)
@@ -649,7 +1022,7 @@ def review_request_changes(ctx: click.Context, module_id: str, comment: str) -> 
     kb = ctx.obj["kb_path"]
     _require_kb(kb)
     staging = _staging_path(kb)
-    from knowledge_manager.schemas import ReviewRecord
+    from knowledge_manager.schemas import ReviewRecord, StagingMeta
 
     module = load_from_staging(module_id, staging)
     if module is None:
@@ -706,6 +1079,75 @@ def serve(ctx: click.Context) -> None:
     _require_kb(kb)
     server = create_server(kb)
     asyncio.run(server.run_stdio_async())
+
+
+# --- Platform connector commands (Phase 4A) ---
+
+
+@cli.command()
+@click.option("--list", "-l", "list_platforms", is_flag=True, help="List available platforms")
+@click.option("--print", "-p", "print_config", is_flag=True, help="Print MCP config to stdout instead of writing")
+@click.option("--force", "-f", is_flag=True, help="Skip overwrite confirmation")
+@click.argument("platform", required=False)
+@click.pass_context
+def connect(ctx: click.Context, list_platforms: bool, print_config: bool, force: bool, platform: str | None) -> None:
+    """Generate MCP configuration for an Agent platform."""
+    from knowledge_manager.connect import (
+        PLATFORMS, build_mcp_entry, has_entry, resolve_config_path, write_mcp_config,
+    )
+
+    kb = ctx.obj["kb_path"]
+
+    if list_platforms:
+        for name, cfg in PLATFORMS.items():
+            click.echo(f"  {name:<16} {cfg.description}")
+        return
+
+    if platform is None:
+        click.echo("Error: specify a platform (e.g. 'claude-code') or use --list to see options.", err=True)
+        raise click.Abort()
+
+    try:
+        config_path = resolve_config_path(platform, kb)
+    except ValueError as e:
+        click.echo(f"Error: {e}", err=True)
+        raise click.Abort()
+
+    entry = build_mcp_entry(kb)
+
+    if print_config:
+        config = {"mcpServers": {"knowledge-manager": entry}}
+        click.echo(json.dumps(config, indent=2))
+        return
+
+    if has_entry(config_path) and not force:
+        if not click.confirm(f"knowledge-manager already configured in {config_path}. Overwrite?"):
+            click.echo("Cancelled.")
+            return
+
+    write_mcp_config(config_path, entry)
+    click.echo(f"Connected to {platform}. Restart your Agent to activate.")
+
+
+@cli.command()
+@click.argument("platform")
+@click.pass_context
+def disconnect(ctx: click.Context, platform: str) -> None:
+    """Remove knowledge-manager from a platform's MCP configuration."""
+    from knowledge_manager.connect import PLATFORMS, remove_mcp_entry, resolve_config_path
+
+    kb = ctx.obj["kb_path"]
+
+    try:
+        config_path = resolve_config_path(platform, kb)
+    except ValueError as e:
+        click.echo(f"Error: {e}", err=True)
+        raise click.Abort()
+
+    if remove_mcp_entry(config_path):
+        click.echo(f"Removed knowledge-manager from {config_path}")
+    else:
+        click.echo(f"No knowledge-manager entry found in {config_path}")
 
 
 # --- Git collaboration commands ---
@@ -1137,6 +1579,274 @@ def rank_retrain(ctx: click.Context) -> None:
     events = load_search_events(kb)
     search_count = sum(1 for e in events if e.get("type") == "search")
     click.echo(f"Model will retrain from {search_count} search events on next query.")
+
+
+# --- marketplace + install + publish (Phase 4D) ---
+
+
+@cli.group()
+def marketplace() -> None:
+    """Browse and install modules from the knowledge marketplace."""
+
+
+@marketplace.command("search")
+@click.argument("query")
+@click.pass_context
+def marketplace_search(ctx: click.Context, query: str) -> None:
+    """Search the knowledge marketplace for module templates."""
+    from knowledge_manager.marketplace import fetch_marketplace_index, search_marketplace
+
+    kb = ctx.obj["kb_path"]
+    cfg = _load_config(kb)
+    mp_url = cfg.marketplace.index_url
+
+    mp_index = fetch_marketplace_index(mp_url)
+    if mp_index is None:
+        click.echo(f"Could not reach marketplace at {mp_url}. Check your network or config.")
+        return
+
+    results = search_marketplace(query, mp_index)
+    if not results:
+        click.echo(f"No marketplace modules matching '{query}'.")
+        return
+
+    click.echo(f"\nMarketplace search results for '{query}':\n")
+    for mod in results[:10]:
+        click.echo(f"  {mod.category}/{mod.id}")
+        click.echo(f"    {mod.title}")
+        click.echo(f"    {mod.summary[:120]}...")
+        click.echo(f"    v{mod.version} | {mod.downloads} downloads | rating {mod.rating}/5")
+        click.echo()
+
+
+@marketplace.command("show")
+@click.argument("module_ref")
+@click.pass_context
+def marketplace_show(ctx: click.Context, module_ref: str) -> None:
+    """Show a marketplace module's full details."""
+    from knowledge_manager.marketplace import fetch_marketplace_index
+
+    kb = ctx.obj["kb_path"]
+    cfg = _load_config(kb)
+    mp_url = cfg.marketplace.index_url
+
+    mp_index = fetch_marketplace_index(mp_url)
+    if mp_index is None:
+        click.echo(f"Could not reach marketplace at {mp_url}.")
+        return
+
+    if module_ref not in mp_index.modules:
+        click.echo(f"Module '{module_ref}' not found in marketplace.")
+        return
+
+    mod = mp_index.modules[module_ref]
+    click.echo(f"\n  ID: {mod.category}/{mod.id}")
+    click.echo(f"  Title: {mod.title}")
+    click.echo(f"  Summary: {mod.summary}")
+    click.echo(f"  Version: {mod.version}")
+    click.echo(f"  Author: {mod.author}")
+    click.echo(f"  Confidence: {mod.confidence}")
+    click.echo(f"  Downloads: {mod.downloads}")
+    click.echo(f"  Rating: {mod.rating}/5 ({mod.ratings_count} ratings)")
+    if mod.tags:
+        click.echo(f"  Tags: {', '.join(mod.tags)}")
+    if mod.dependencies:
+        click.echo(f"  Dependencies: {', '.join(mod.dependencies)}")
+
+
+@cli.command()
+@click.argument("module_ref")
+@click.option("--yes", "-y", is_flag=True, help="Skip confirmation")
+@click.option("--category", "-c", default=None, help="Override target category")
+@click.pass_context
+def install(ctx: click.Context, module_ref: str, yes: bool, category: str | None) -> None:
+    """Install a module template from the knowledge marketplace into staging."""
+    from knowledge_manager.marketplace import install_from_marketplace
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    try:
+        plan = install_from_marketplace(module_ref, kb)
+    except RuntimeError as e:
+        click.echo(f"Error: {e}", err=True)
+        raise click.Abort()
+    except ValueError as e:
+        click.echo(f"Error: {e}", err=True)
+        raise click.Abort()
+
+    if category:
+        plan.target_category = category
+
+    click.echo(f"\nWill install {len(plan.modules)} module(s) into .staging/:\n")
+    for mod in plan.modules:
+        click.echo(f"  • {plan.target_category}/{mod.id} v{mod.version} — {mod.title}")
+    if plan.dependencies_installed:
+        click.echo(f"\n  Dependencies resolved: {', '.join(plan.dependencies_installed)}")
+
+    if not yes:
+        if not click.confirm("\nProceed with installation?"):
+            click.echo("Cancelled.")
+            return
+
+    from knowledge_manager.storage import rebuild_index
+    rebuild_index(kb)
+    click.echo(f"\nInstalled {len(plan.modules)} module(s) into staging. Review with 'km review'.")
+
+
+@cli.command()
+@click.argument("module_ref")
+@click.option("--dry-run", is_flag=True, help="Preview sanitized module without publishing")
+@click.pass_context
+def publish(ctx: click.Context, module_ref: str, dry_run: bool) -> None:
+    """Publish a local module to the knowledge marketplace."""
+    from knowledge_manager.marketplace import check_publish_gate, sanitize_module_text
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    parts = module_ref.split("/", 1)
+    if len(parts) != 2:
+        click.echo("Error: Use format 'category/module-id'", err=True)
+        raise click.Abort()
+    category, module_id = parts
+
+    from knowledge_manager.storage import load_module
+    mod = load_module(module_id, category, kb)
+    if mod is None:
+        click.echo(f"Module not found: {module_ref}", err=True)
+        raise click.Abort()
+
+    module_json = mod.model_dump_json(indent=2)
+
+    issues = check_publish_gate(module_json)
+    if issues:
+        click.echo("Publish gate checks failed:")
+        for issue in issues:
+            click.echo(f"  • {issue}")
+        raise click.Abort()
+
+    cfg = _load_config(kb)
+    patterns = cfg.marketplace.sanitize_patterns
+    if patterns:
+        sanitized = sanitize_module_text(module_json, patterns)
+    else:
+        sanitized = module_json
+
+    if dry_run:
+        click.echo("=== Sanitized module preview ===\n")
+        click.echo(sanitized)
+        click.echo(f"\nSanitization rules applied: {len(patterns)}")
+        return
+
+    click.echo(f"Module {module_ref} ready for publishing.")
+    click.echo("To publish, push this module to the marketplace repository.")
+    click.echo(f"Marketplace index URL: {cfg.marketplace.index_url}")
+
+
+# --- webhook subcommands (Phase 4C) ---
+
+
+@cli.group()
+def webhook() -> None:
+    """Manage knowledge base webhooks for event-driven automation."""
+
+
+@webhook.command("status")
+@click.pass_context
+def webhook_status(ctx: click.Context) -> None:
+    """Show webhook configuration and delivery status."""
+    from knowledge_manager.webhooks import _load_webhook_config, load_webhook_failures
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    wc = _load_webhook_config(kb)
+    if wc is None:
+        click.echo("Webhooks are not configured or disabled.")
+        return
+
+    failures = load_webhook_failures(kb)
+    failure_count = len(failures)
+
+    click.echo(f"Webhooks: enabled ({len(wc.endpoints)} endpoint(s))")
+    for i, ep in enumerate(wc.endpoints):
+        click.echo(f"\n  Endpoint {i}: {ep.url}")
+        click.echo(f"    Events: {', '.join(ep.events) if ep.events else 'all'}")
+        if ep.secret:
+            click.echo(f"    Signing: HMAC-SHA256 (secret configured)")
+    if failure_count > 0:
+        click.echo(f"\n  Failed deliveries (24h): {failure_count}")
+        click.echo(f"  Run 'km webhook retry' to retry.")
+
+
+@webhook.command("test")
+@click.option("--endpoint", "-e", "endpoint_idx", type=int, default=0, help="Index of the endpoint to test")
+@click.pass_context
+def webhook_test(ctx: click.Context, endpoint_idx: int) -> None:
+    """Send a test payload to a webhook endpoint."""
+    from knowledge_manager.webhooks import _load_webhook_config
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    wc = _load_webhook_config(kb)
+    if wc is None or not wc.endpoints:
+        click.echo("No webhook endpoints configured.")
+        return
+
+    if endpoint_idx >= len(wc.endpoints):
+        click.echo(f"Error: endpoint index {endpoint_idx} out of range (0-{len(wc.endpoints) - 1})", err=True)
+        raise click.Abort()
+
+    ep = wc.endpoints[endpoint_idx]
+    import json
+    test_payload = json.dumps({
+        "event": "test",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "kb_path": str(kb),
+        "message": "KM webhook test",
+    })
+
+    try:
+        import httpx
+        headers = dict(ep.headers)
+        if ep.secret:
+            from knowledge_manager.webhooks import _sign_payload
+            headers["X-KM-Signature"] = f"sha256={_sign_payload(test_payload, ep.secret)}"
+        resp = httpx.post(ep.url, content=test_payload, headers=headers, timeout=httpx.Timeout(10.0))
+        click.echo(f"Status: {resp.status_code}")
+        if resp.status_code < 400:
+            click.echo("Webhook test successful.")
+        else:
+            click.echo(f"Response: {resp.text[:500]}")
+    except ImportError:
+        click.echo("Error: httpx is not installed. Install it to use webhooks.", err=True)
+    except Exception as e:
+        click.echo(f"Error: {e}", err=True)
+
+
+@webhook.command("retry")
+@click.option("--since", default=None, help="Only retry failures since a date (e.g. 2026-07-14)")
+@click.pass_context
+def webhook_retry(ctx: click.Context, since: str | None) -> None:
+    """Retry failed webhook deliveries."""
+    from knowledge_manager.webhooks import retry_webhooks, load_webhook_failures
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    failures = load_webhook_failures(kb)
+    if not failures:
+        click.echo("No failed webhook deliveries to retry.")
+        return
+
+    click.echo(f"Retrying {len(failures)} failed delivery(s)...")
+    count = retry_webhooks(kb)
+    remaining = len(load_webhook_failures(kb))
+    click.echo(f"Retried successfully: {count}")
+    if remaining > 0:
+        click.echo(f"Still failing: {remaining} (max attempts reached or still unreachable)")
 
 
 if __name__ == "__main__":
