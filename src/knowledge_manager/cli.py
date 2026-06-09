@@ -1067,6 +1067,92 @@ def review_my_submissions(ctx: click.Context) -> None:
     console.print(table)
 
 
+# --- chat (M2) ---
+
+
+@cli.command()
+@click.option("--mode", type=click.Choice(["precise", "creative"]), default="precise", help="Chat mode")
+@click.pass_context
+def chat(ctx: click.Context, mode: str) -> None:
+    """Start interactive chat with the knowledge base."""
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    from knowledge_manager.chat import ChatPipeline
+    from knowledge_manager.llm_clients import create_client
+
+    cfg = _load_config(kb)
+    try:
+        provider_name, provider_cfg = cfg.get_default_provider()
+    except ValueError:
+        console.print("[red]No LLM provider configured. Run 'km config set llm_providers...' first.[/red]")
+        return
+
+    llm_client = create_client(provider_name, provider_cfg)
+    pipeline = ChatPipeline(kb, llm_client)
+
+    console.print(f"[bold]KM Chat[/bold] ({mode} mode). Type /quit to exit, /clear to reset.\n")
+    history: list[dict] = []
+
+    while True:
+        try:
+            query = Prompt.ask("[bold]You[/bold]")
+        except (KeyboardInterrupt, EOFError):
+            console.print("\nGoodbye!")
+            break
+
+        if not query.strip():
+            continue
+        if query.strip() == "/quit":
+            console.print("Goodbye!")
+            break
+        if query.strip() == "/clear":
+            history.clear()
+            console.print("[dim]History cleared.[/dim]")
+            continue
+
+        console.print()
+        answer_text = ""
+        sources = []
+        follow_ups = []
+
+        async def _run():
+            nonlocal answer_text, sources, follow_ups
+            async for event in pipeline.chat(query, history, mode):
+                if event.type == "status":
+                    console.print(f"[dim]{event.data.get('message', '')}[/dim]")
+                elif event.type == "token":
+                    answer_text += event.data["text"]
+                    console.print(event.data["text"], end="", highlight=False)
+                elif event.type == "citation":
+                    key = event.data["key"]
+                    if key not in [s["key"] for s in sources]:
+                        sources.append(event.data)
+                elif event.type == "done":
+                    follow_ups = event.data.get("follow_ups", [])
+                elif event.type == "error":
+                    console.print(f"\n[red]{event.data.get('message', 'Error')}[/red]")
+
+        asyncio.run(_run())
+        console.print("\n")
+
+        if sources:
+            console.print("[dim]References:[/dim]")
+            for s in sources:
+                console.print(f"  [dim][ref: {s['key']}] {s['title']}[/dim]")
+
+        if follow_ups:
+            console.print("\n[dim]Follow-up questions:[/dim]")
+            for i, q in enumerate(follow_ups, 1):
+                console.print(f"  [dim]{i}. {q}[/dim]")
+
+        console.print()
+        history.append({"role": "user", "content": query})
+        history.append({"role": "assistant", "content": answer_text})
+        if len(history) > 20:
+            history = history[-20:]
+
+
 # --- serve (MCP) ---
 
 @cli.command()

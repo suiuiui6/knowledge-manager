@@ -1,8 +1,12 @@
 from pathlib import Path
 
+import json
+from typing import AsyncIterator
+
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field
 
 from knowledge_manager.schemas import GraphData, GraphEdge, GraphNode, PaginatedResponse
 from knowledge_manager.storage import (
@@ -19,8 +23,23 @@ from knowledge_manager.storage import (
 )
 
 
+def _load_config_safe(kb_path: Path):
+    from knowledge_manager.schemas import Config
+
+    cfg_path = kb_path / "config.json"
+    if not cfg_path.exists():
+        return None
+    try:
+        return Config.model_validate_json(cfg_path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+
 def create_app(kb_path: Path) -> FastAPI:
     app = FastAPI(title="Knowledge Manager", version="0.5.0")
+
+    def _load_config():
+        return _load_config_safe(kb_path)
 
     ui_dist = Path(__file__).resolve().parent.parent.parent / "src" / "ui" / "dist"
 
@@ -157,6 +176,35 @@ def create_app(kb_path: Path) -> FastAPI:
             ],
             "took_ms": 0,
         }
+
+    # ── Chat (M2) ──
+
+    class ChatRequest(BaseModel):
+        query: str = Field(..., min_length=1)
+        history: list[dict] = Field(default_factory=list)
+        mode: str = Field(default="precise")
+
+    @app.post("/api/chat")
+    async def api_chat(body: ChatRequest):
+        from knowledge_manager.chat import ChatPipeline
+        from knowledge_manager.llm_clients import create_client
+
+        cfg = _load_config()
+        if not cfg or not cfg.llm_providers:
+            raise HTTPException(503, "No LLM provider configured")
+        provider_name, provider_cfg = cfg.get_default_provider()
+        llm_client = create_client(provider_name, provider_cfg)
+        pipeline = ChatPipeline(kb_path, llm_client)
+
+        async def event_stream() -> AsyncIterator[str]:
+            async for event in pipeline.chat(body.query, body.history, body.mode):
+                yield f"event: {event.type}\ndata: {json.dumps(event.data, ensure_ascii=False)}\n\n"
+
+        return StreamingResponse(
+            event_stream(),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
 
     # ── Graph ──
 
