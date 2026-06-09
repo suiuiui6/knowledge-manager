@@ -1,6 +1,28 @@
-# Layer 5: Engineering Rules — Phase 5 Construction
+# Layer 5: Engineering Rules — All Phases
 
-> 2026-06-09 | 覆盖: M1-M6 实现阶段 | 维护至 Phase 5 结束
+> 2026-06-09 | 覆盖: Phase 5 (M1-M6) 已完成, Phase 6 (M7-M10), Phase 7 (M11-M13)
+
+## Phase 5 考核结果
+
+| 规则 | Phase 5 执行情况 |
+|------|-----------------|
+| 仓库边界 | ✅ Python/前端/测试三大目录, 9新文件边界清晰 |
+| 里程碑隔离 | ✅ 每M独立模块, 无交叉污染 |
+| 向后兼容 | ✅ 426 tests 全程保持, 旧 index.json 可读 |
+| 密钥安全 | ✅ sanitize_config 在所有展示路径调用 |
+| 测试纪律 | ✅ 每M≥2单元, 每端点≥1集成, 新增6个测试文件 |
+| Git工作流 | ✅ feat/knowledge-manager-phase2 分支, 6次squash-friendly提交 |
+| 代码审查 | ✅ 无裸except:pass, 无未使用导入, 类型标注完整 |
+| 依赖管理 | ✅ 仅新增 fastapi/uvicorn/pyyaml, 无数据库/Redis |
+| 日志规范 | ✅ logger 使用正确, 无敏感信息泄露 |
+
+## Phase 6/7 补充规则 (不变更原有规则)
+
+- **M7-M8 均为独立模块**: 无外部依赖, 可并行开发
+- **M9 引入 apscheduler**: 需评估对启动时间的影响
+- **M10 引入 numpy**: 仅在此模块内使用, 不污染其他模块
+- **M11-M13 为可选插件**: 不增加核心依赖
+- 每完成一个 Phase 更新此文档的考核结果
 
 ## 1. 仓库边界
 

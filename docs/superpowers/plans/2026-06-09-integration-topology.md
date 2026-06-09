@@ -7,9 +7,21 @@
 | 输入 | 来源 | 关键内容 |
 |------|------|---------|
 | PRD | BLUEPRINT.md §总路线图 (L3572-3593) | 10大改进, 3个Phase, 13个里程碑 |
-| 现有代码 | `src/knowledge_manager/` (14文件) | schemas, storage, mcp_server, cli, extractor, llm_clients, cache, connect, marketplace, webhooks |
-| 现有测试 | `tests/` (12文件) | test_storage, test_schemas, test_cli, test_mcp_server, test_cache, test_llm, test_integration, test_connect, test_marketplace, test_webhooks |
+| 现有代码 | `src/knowledge_manager/` (23文件) | +chat, http_server, markdown, researcher, sync, tree_builder, tree_navigator, ui_fallback, wikilinks (Phase 5 完成) |
+| 现有测试 | `tests/` (18文件) | +test_chat, test_http_server, test_markdown, test_researcher, test_sync, test_tree |
 | 架构约束 | BLUEPRINT.md §不做的事 (L3597-3606) | 无数据库/向量数据库/独立Web进程/CRDT/SaaS |
+
+## Phase 5 完成状态 (2026-06-09)
+
+| M | 名称 | 代码 | 测试 | 规格 |
+|----|------|------|------|------|
+| M1 | Web UI 只读 | ✅ http_server, ui_fallback | ✅ 21 tests | m1-backend-api, m1-frontend |
+| M2 | 对话式搜索 | ✅ chat.py | ✅ 11 tests | m2-chat-search |
+| M3 | 知识树导航 | ✅ tree_builder, tree_navigator | ✅ 17 tests | m3-knowledge-tree |
+| M4 | Research-on-Miss | ✅ researcher.py | ✅ 17 tests | m4-research-on-miss |
+| M5 | Markdown+Obsidian | ✅ markdown, wikilinks, sync | ✅ 15 tests | m5-markdown-obsidian |
+| M6 | Web UI 编辑 | ✅ http_server (写端点) | ✅ 回归通过 | m6-ui-edit-review |
+| **Total** | | **9 new files, 5 modified** | **426 tests** | **6 spec docs** |
 
 ## 蓝图官方路线图 (BLUEPRINT L3572-3593)
 
@@ -144,6 +156,23 @@ def search_modules(query, kb_path, ...,
                    vector_index=None,     # M10
                    vector_weight=0.25):   # M10
 ```
+
+## Phase 6 规格 (智能层, 6个月)
+
+| M | 名称 | 规格文档 | 新文件 | 依赖 |
+|----|------|---------|--------|------|
+| M7 | 语义Lint | m7-semantic-lint | linter.py | 无 |
+| M8 | FSRS记忆 | m8-fsrs-memory | memory.py | 无 |
+| M9 | Watch监控 | m9-watch-service | watchers/, watch_scheduler.py | M4 |
+| M10 | 向量搜索 | m10-vector-search | vector_index.py | 无 |
+
+## Phase 7 规格 (生态层, 6个月)
+
+| M | 名称 | 规格文档 | 新文件 | 依赖 |
+|----|------|---------|--------|------|
+| M11 | 插件系统 | m11-plugin-system | plugin.py | 无 |
+| M12 | 多模态 | m12-multimodal | extractor增强 | M11 |
+| M13 | 企业功能 | m13-enterprise | auth/audit/rbac | M11 |
 
 ## 分期策略 (对齐蓝图官方路线图)
 
