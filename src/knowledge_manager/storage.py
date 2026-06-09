@@ -116,6 +116,12 @@ def save_module(module: Module, kb_path: Path) -> None:
     path = module.to_file_path(kb_path)
     existed = path.exists()
     _atomic_write(path, module.model_dump_json(indent=2))
+    # M5: also write Markdown
+    try:
+        from knowledge_manager.sync import MarkdownSync
+        MarkdownSync.sync_on_save(module, kb_path)
+    except Exception:
+        pass
     # Emit webhook event
     event = "module.updated" if existed else "module.created"
     from knowledge_manager.webhooks import emit_event

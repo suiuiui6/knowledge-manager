@@ -95,9 +95,10 @@ class TestModules:
         r = client.get("/api/modules/general/nonexistent")
         assert r.status_code == 404
 
-    def test_module_md_not_available(self, client):
+    def test_module_md_available(self, client):
         r = client.get("/api/modules/general/test-mod.md")
-        assert r.status_code == 501
+        assert r.status_code == 200
+        assert "text/markdown" in r.headers["content-type"]
 
 
 class TestSearch:

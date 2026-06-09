@@ -128,10 +128,17 @@ def create_app(kb_path: Path) -> FastAPI:
         # Handle .md suffix: strip and return 501 for M1
         if mod_id.endswith(".md"):
             real_id = mod_id[:-3]
-            # Verify the module exists first
+            md_path = kb_path / cat / f"{real_id}.md"
+            if md_path.exists():
+                from fastapi.responses import PlainTextResponse
+                return PlainTextResponse(md_path.read_text(encoding="utf-8"), media_type="text/markdown")
             if load_module(real_id, cat, kb_path) is None:
                 raise HTTPException(404, f"Module not found: {cat}/{real_id}")
-            raise HTTPException(501, "Markdown format not available yet. Use /api/modules/:cat/:id for JSON.")
+            # Module exists but no .md file yet — generate on the fly
+            module = load_module(real_id, cat, kb_path)
+            from knowledge_manager.markdown import render_markdown_module
+            from fastapi.responses import PlainTextResponse
+            return PlainTextResponse(render_markdown_module(module), media_type="text/markdown")
         module = load_module(mod_id, cat, kb_path)
         if module is None:
             raise HTTPException(404, f"Module not found: {cat}/{mod_id}")

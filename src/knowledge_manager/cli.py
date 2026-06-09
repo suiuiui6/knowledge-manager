@@ -1363,6 +1363,64 @@ def research(ctx: click.Context, query: str, depth: str, sources: tuple) -> None
         console.print(f"\n[dim]Sources: {', '.join(result.sources_used[:5])}[/dim]")
 
 
+# --- sync & export (M5) ---
+
+
+@cli.group()
+def sync() -> None:
+    """Check and manage JSON/Markdown synchronization."""
+
+
+@sync.command("check")
+@click.pass_context
+def sync_check(ctx: click.Context) -> None:
+    """Check for JSON/MD sync conflicts."""
+    from knowledge_manager.sync import MarkdownSync
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+    conflicts = MarkdownSync.sync_on_rebuild(kb)
+    if conflicts:
+        console.print(f"[red]{len(conflicts)} conflict(s) found:[/red]")
+        for c in conflicts:
+            console.print(f"  {c.path}: {c.error}")
+            console.print(f"    → {c.action_required}")
+    else:
+        console.print("[green]All modules in sync.[/green]")
+
+
+@sync.command("fix")
+@click.pass_context
+def sync_fix(ctx: click.Context) -> None:
+    """Auto-fix sync conflicts (MD→JSON takes precedence)."""
+    from knowledge_manager.sync import MarkdownSync
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+    conflicts = MarkdownSync.sync_on_rebuild(kb)
+    auto_fixed = 0
+    manual = 0
+    for c in conflicts:
+        if "Manually fix" in c.action_required:
+            manual += 1
+        else:
+            auto_fixed += 1
+    console.print(f"Auto-fixed: {auto_fixed}, needs manual: {manual}")
+
+
+@cli.command()
+@click.option("--obsidian", "-o", "output_dir", type=click.Path(path_type=Path), required=True)
+@click.pass_context
+def export(ctx: click.Context, output_dir: Path) -> None:
+    """Export knowledge base to Obsidian vault."""
+    from knowledge_manager.sync import MarkdownSync
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+    count = MarkdownSync.export_obsidian(kb, output_dir)
+    console.print(f"[green]Exported {count} modules to {output_dir}[/green]")
+
+
 # --- serve (MCP) ---
 
 @cli.command()
