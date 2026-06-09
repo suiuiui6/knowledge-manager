@@ -1,0 +1,21 @@
+{
+  "id": "design-boundaries",
+  "category": "architecture",
+  "title": "Design Boundaries: What KM Will Never Introduce",
+  "summary": "KM has explicit anti-goals that define its identity: no vector databases, no SQL, no web servers, no message queues. These boundaries keep the project small and focused.",
+  "created_at": "2026-06-09T00:00:00Z",
+  "updated_at": "2026-06-09T00:00:00Z",
+  "content": {
+    "overview": "KM is defined as much by what it refuses to add as by what it includes. Four technology categories are explicitly excluded from the design. These are not temporary omissions — they are deliberate boundaries that preserve the project's core value proposition: zero infrastructure, git-native, agent-first.",
+    "details": "1. NO VECTOR DATABASE OR EMBEDDING MODELS — KM is anti-RAG by design. Instead of chunking text into vector embeddings and doing cosine similarity search, KM stores structured JSON modules with explicit metadata (tags, related_modules, confidence). The search is symbolic (BM25 + rule-based heuristics + Bayesian priors), not semantic. This means: no embedding API costs, no vector index maintenance, no chunk boundary artifacts, no hallucination-prone retrieval.\n\n2. NO SQL DATABASE — JSON files + Git are the only persistence layer. This eliminates: ORM complexity, migration scripts, connection pooling, backup infrastructure, database administration. Tradeoff: no concurrent write safety beyond git's merge resolution.\n\n3. NO WEB SERVER — MCP stdio is the default transport. No HTTP routes, no middleware, no CORS, no session management. The LLM agent host spawns KM as a subprocess. Tradeoff: no browser-based UI, no REST API for non-Agent consumers.\n\n4. NO MESSAGE QUEUE — Async operations use file locks and atomic writes (os.replace). Webhook delivery is fire-and-forget with failure logging to JSONL. Tradeoff: no guaranteed delivery, no exactly-once semantics for webhooks.",
+    "examples": "These boundaries enable the project's key metrics:\n- Zero infrastructure to install (just pip install + git)\n- Zero services to monitor (no database, no queue, no server process)\n- Full audit trail via git log\n- Single command to deploy: `km init && km connect`",
+    "references": "See the blueprint document for the full architectural rationale. See Phase 4 success metrics which include '守住设计边界' as a pass criterion.",
+    "caveats": "These boundaries are appropriate for small-to-medium teams (3-50 people, <500 modules). If KM ever needs to scale beyond that, some boundaries may need revisiting — but any such change should be treated as a fundamental architectural decision with full tradeoff analysis."
+  },
+  "metadata": {
+    "tags": ["architecture", "design-decision", "anti-goals", "boundaries"],
+    "related_modules": ["architecture/git-native-storage", "architecture/mcp-protocol"],
+    "confidence": "high",
+    "status": "published"
+  }
+}

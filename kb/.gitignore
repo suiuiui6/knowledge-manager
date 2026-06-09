@@ -1,0 +1,4 @@
+# Knowledge Manager — local and sensitive files
+.staging/
+.telemetry/
+config.local.json

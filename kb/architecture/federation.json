@@ -1,0 +1,21 @@
+{
+  "id": "federation",
+  "category": "architecture",
+  "title": "Multi-KB Federation: Namespace Isolation for Team Knowledge",
+  "summary": "Multiple knowledge bases can be combined under a single MCP server with namespace prefixes. Each namespace has independent search, index, and health resources.",
+  "created_at": "2026-06-09T00:00:00Z",
+  "updated_at": "2026-06-09T00:00:00Z",
+  "content": {
+    "overview": "Federation allows a single MCP server to expose multiple knowledge bases under namespace prefixes. An agent connected to one server can search across auth-team KB, infra-team KB, and frontend-team KB without switching connections. Each namespace maintains isolation — same module ID in different namespaces won't collide.",
+    "details": "CONFIGURATION: Federation is declared in config.json under the federation key. Each namespace maps a name to a kb_path (relative to the main KB's path), a description, and a search_default flag.\n\nExample:\n{\n  \"federation\": {\n    \"namespaces\": {\n      \"auth\": {\"kb_path\": \"../team-auth-kb\", \"description\": \"Auth team KB\", \"search_default\": true},\n      \"infra\": {\"kb_path\": \"../team-infra-kb\", \"description\": \"Infra KB\", \"search_default\": false}\n    }\n  }\n}\n\nRESOURCES: Each namespace gets scoped resources — knowledge://auth/index, knowledge://auth/health, knowledge://auth/stats, knowledge://auth/changelog. The main KB is accessible via knowledge://index etc (namespace=default).\n\nTOOLS: All search/load/list/expand/deep_search tools accept an optional namespace parameter. New federated_search tool searches across multiple namespaces and returns results grouped by namespace.\n\nCACHE ISOLATION: ModuleCache keys include namespace prefix (namespace:module_id). Same module ID in different namespaces won't collide in cache.\n\nAUTO-DETECTION: The MCP server auto-detects federation from config.json. No --federation CLI flag needed.",
+    "examples": "Set up federation:\n1. Have multiple KB directories (e.g. team-auth-kb/, team-infra-kb/)\n2. In the main KB's config.json, add federation.namespaces entries\n3. Run km serve — namespaces are auto-loaded\n4. Agent calls federated_search('JWT', namespaces='auth,infra') to search across both",
+    "references": "See storage.py:load_federation() for the namespace loading logic. See mcp_server.py:create_server() for the federation resource registration. See cache.py:ModuleCache._make_key() for namespace-prefixed keys.",
+    "caveats": "Namespaces are loaded at server startup and cached in memory. If a namespace KB is updated (via git pull or module changes), the MCP server needs to be restarted to pick up changes. Federation only works with local file paths — remote KBs must be cloned first. The current implementation does not support recursive federation (a namespace KB cannot itself have federation namespaces)."
+  },
+  "metadata": {
+    "tags": ["architecture", "federation", "multi-kb", "namespace", "isolation"],
+    "related_modules": ["architecture/mcp-protocol", "architecture/git-native-storage"],
+    "confidence": "high",
+    "status": "published"
+  }
+}

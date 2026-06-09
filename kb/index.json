@@ -1,0 +1,160 @@
+{
+  "version": "1.0",
+  "description": "A curated knowledge base of our team's technical methodology — architecture decisions, implementation patterns, operational practices, and lessons learned. Each module captures HOW we approach a topic, not just what it means. Use the index to identify relevant modules, then load the ones you need. Prefer modules with higher confidence ratings. Cross-reference related modules when topics overlap.",
+  "categories": {
+    "architecture": {
+      "name": "architecture",
+      "description": "Topics: anti-goals, architecture, boundaries, design-decision, federation, git, integration, isolation. Modules include: Design Boundaries: What KM Will Never Introduce; Multi-KB Federation: Namespace Isolation for Team Knowledge; Git-Native Storage: Why JSON Files Over Databases; MCP Protocol: Why Stdio Over HTTP Server",
+      "modules": [
+        {
+          "id": "design-boundaries",
+          "category": "architecture",
+          "title": "Design Boundaries: What KM Will Never Introduce",
+          "summary": "KM has explicit anti-goals that define its identity: no vector databases, no SQL, no web servers, no message queues. These boundaries keep the project small and focused.",
+          "tags": [
+            "architecture",
+            "design-decision",
+            "anti-goals",
+            "boundaries"
+          ],
+          "word_count": 327
+        },
+        {
+          "id": "federation",
+          "category": "architecture",
+          "title": "Multi-KB Federation: Namespace Isolation for Team Knowledge",
+          "summary": "Multiple knowledge bases can be combined under a single MCP server with namespace prefixes. Each namespace has independent search, index, and health resources.",
+          "tags": [
+            "architecture",
+            "federation",
+            "multi-kb",
+            "namespace",
+            "isolation"
+          ],
+          "word_count": 294
+        },
+        {
+          "id": "git-native-storage",
+          "category": "architecture",
+          "title": "Git-Native Storage: Why JSON Files Over Databases",
+          "summary": "KM stores all knowledge as JSON files in a Git repository, using the file system as the database and Git for versioning, sync, and audit.",
+          "tags": [
+            "architecture",
+            "storage",
+            "git",
+            "json",
+            "design-decision"
+          ],
+          "word_count": 326
+        },
+        {
+          "id": "mcp-protocol",
+          "category": "architecture",
+          "title": "MCP Protocol: Why Stdio Over HTTP Server",
+          "summary": "KM exposes all functionality through the Model Context Protocol (MCP) over stdio, not a web server. LLM agents connect directly to the MCP server as a subprocess.",
+          "tags": [
+            "architecture",
+            "mcp",
+            "protocol",
+            "integration",
+            "design-decision"
+          ],
+          "word_count": 305
+        }
+      ]
+    },
+    "operations": {
+      "name": "operations",
+      "description": "Topics: archive, deprecate, lifecycle, operations, review, status. Modules include: Module Lifecycle: Draft → Published → Deprecated → Archived",
+      "modules": [
+        {
+          "id": "module-lifecycle",
+          "category": "operations",
+          "title": "Module Lifecycle: Draft → Published → Deprecated → Archived",
+          "summary": "Every knowledge module follows a five-state lifecycle with clear transitions, review gates, and search visibility rules at each stage.",
+          "tags": [
+            "operations",
+            "lifecycle",
+            "status",
+            "deprecate",
+            "archive",
+            "review"
+          ],
+          "word_count": 349
+        }
+      ]
+    },
+    "search": {
+      "name": "search",
+      "description": "Topics: bayesian, bm25, chinese, cjk, confidence, heuristic, i18n, jieba. Modules include: Chinese Word Segmentation: Jieba Integration for CJK Search; Search Ranking Pipeline: BM25 + Heuristic + Confidence + Bayesian",
+      "modules": [
+        {
+          "id": "chinese-segmentation",
+          "category": "search",
+          "title": "Chinese Word Segmentation: Jieba Integration for CJK Search",
+          "summary": "KM uses jieba for Chinese word segmentation, allowing Chinese queries to match Chinese module content with proper word boundaries instead of treating entire sentences as single tokens.",
+          "tags": [
+            "search",
+            "chinese",
+            "jieba",
+            "segmentation",
+            "cjk",
+            "i18n"
+          ],
+          "word_count": 360
+        },
+        {
+          "id": "ranking-pipeline",
+          "category": "search",
+          "title": "Search Ranking Pipeline: BM25 + Heuristic + Confidence + Bayesian",
+          "summary": "KM's search is a four-layer cascade: heuristic field-weighted scoring, confidence multiplier, Bayesian prior from telemetry, and BM25 for tie-breaking.",
+          "tags": [
+            "search",
+            "ranking",
+            "bm25",
+            "bayesian",
+            "heuristic",
+            "confidence"
+          ],
+          "word_count": 383
+        }
+      ]
+    }
+  },
+  "graph": {
+    "architecture/design-boundaries": [
+      "architecture/git-native-storage",
+      "architecture/mcp-protocol"
+    ],
+    "architecture/federation": [
+      "architecture/mcp-protocol",
+      "architecture/git-native-storage"
+    ],
+    "architecture/git-native-storage": [
+      "architecture/mcp-protocol",
+      "architecture/design-boundaries"
+    ],
+    "architecture/mcp-protocol": [
+      "architecture/git-native-storage",
+      "architecture/design-boundaries",
+      "architecture/federation"
+    ],
+    "operations/module-lifecycle": [
+      "architecture/git-native-storage"
+    ],
+    "search/chinese-segmentation": [
+      "search/ranking-pipeline"
+    ],
+    "search/ranking-pipeline": [
+      "architecture/git-native-storage",
+      "search/chinese-segmentation"
+    ]
+  },
+  "stats": {
+    "total_modules": 7,
+    "total_words": 2344,
+    "categories": 3,
+    "last_updated": "2026-06-09T05:09:34.596792Z"
+  },
+  "updated_at": "2026-06-09T05:09:34.596793Z"
+}

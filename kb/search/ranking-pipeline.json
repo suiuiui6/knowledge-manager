@@ -1,0 +1,21 @@
+{
+  "id": "ranking-pipeline",
+  "category": "search",
+  "title": "Search Ranking Pipeline: BM25 + Heuristic + Confidence + Bayesian",
+  "summary": "KM's search is a four-layer cascade: heuristic field-weighted scoring, confidence multiplier, Bayesian prior from telemetry, and BM25 for tie-breaking.",
+  "created_at": "2026-06-09T00:00:00Z",
+  "updated_at": "2026-06-09T00:00:00Z",
+  "content": {
+    "overview": "KM search is a multi-signal ranking system that combines four independent layers of relevance evidence. Each layer addresses a weakness of the previous layer. The result is a 95-point system that works well on small-to-medium knowledge bases without any vector embeddings.",
+    "details": "Layer 1 — Heuristic Field-Weighted Scoring: Each query term is matched against module fields with different weights. Title=5, Tag=3, Summary=2, Overview=1, Details=1. Match quality levels: exact word boundary (3pts), stem match (2pts), partial short-word match (1pt). Intent classification adjusts weights dynamically (how-to → +5 examples, decision-record → +4 details+caveats, reference → +2 title). User-configured synonyms (0.5 weight) and tag co-occurrence synonyms (0.3 weight) expand the query.\n\nLayer 2 — Confidence Weighting: Each module has a confidence field (high/medium/low). Multiplicative factor: high=1.0, medium=0.85, low=0.7. Deprecated modules are treated as low confidence regardless of their stored value.\n\nLayer 3 — Bayesian Prior: From historical search→load telemetry events, compute P(module | query_term) using Bayesian estimation with Laplace smoothing. The prior probability is the third sort key.\n\nLayer 4 — BM25: The classic probabilistic relevance model. Parameters: k1=1.2, b=0.75. BM25 is the fourth sort key — it primarily breaks ties when heuristic scores are equal.\n\nSession boost: Modules loaded in the current session get a 1.2x multiplier on their heuristic score.\n\nGraph expansion: After scoring direct matches, each direct match's related_modules are added with a 0.4x discount on heuristic score. This captures transitive relevance.",
+    "examples": "Query: 'JWT authentication best practices'\n1. Intent classified as 'how-to' → examples field gets +5 weight\n2. Module 'jwt-tokens' matches: title 'JWT' (5×3=15) + summary 'authentication' (2×3=6) = 21 base\n3. Confidence 'high' → 21 × 1.0 = 21\n4. Bayesian: P(jwt-tokens | jwt) = 0.42 → added as tertiary sort\n5. BM25: breaks any remaining ties\n6. Graph: jwt-tokens.related_modules includes 'api-rate-limiting' → added with 21 × 0.4 = 8.4",
+    "references": "See storage.py:search_modules() lines 223-407 for the full implementation. See storage.py:_FIELD_WEIGHTS for field weight constants. See storage.py:_bm25_scores() for the BM25 implementation.",
+    "caveats": "BM25 is recomputed from scratch on every search — acceptable for <200 modules but may slow down at larger scales. The heuristic field weights are tuned for English technical documentation; non-English content may need retuning. Bayesian priors require telemetry data (100+ search events for meaningful signal). The graph expansion is 1-hop only by design — multi-hop expansion would require a different architecture."
+  },
+  "metadata": {
+    "tags": ["search", "ranking", "bm25", "bayesian", "heuristic", "confidence"],
+    "related_modules": ["architecture/git-native-storage", "search/chinese-segmentation"],
+    "confidence": "high",
+    "status": "published"
+  }
+}

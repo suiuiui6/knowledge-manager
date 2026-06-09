@@ -1,0 +1,21 @@
+{
+  "id": "chinese-segmentation",
+  "category": "search",
+  "title": "Chinese Word Segmentation: Jieba Integration for CJK Search",
+  "summary": "KM uses jieba for Chinese word segmentation, allowing Chinese queries to match Chinese module content with proper word boundaries instead of treating entire sentences as single tokens.",
+  "created_at": "2026-06-09T00:00:00Z",
+  "updated_at": "2026-06-09T00:00:00Z",
+  "content": {
+    "overview": "English text has natural word boundaries (spaces), so the regex \\w+ correctly extracts individual words. Chinese text has no spaces between words — '知识管理系统' is three words ('知识', '管理', '系统') but \\w+ captures it as one token. This breaks word-boundary matching, stem matching, and BM25 for any Chinese content. The fix delegates Chinese tokenization to jieba while keeping snowballstemmer for English.",
+    "details": "IMPLEMENTATION: The _stem() function in storage.py now checks for CJK characters via a regex ([一-鿿㐀-䶿豈-﫿]). If found, it delegates to jieba.cut() which returns space-separated words. _field_stems() then splits this output into individual tokens. Query tokenization in record_search_event() does the same.\n\nCode change in _stem():\n- Old: return cast(str, _EN_STEMMER.stemWord(word.lower()))\n- New: check _CJK_RE.search(word) → if True, jieba.cut(word) → space-separated tokens; if False, snowballstemmer as before\n\nCode change in _field_stems():\n- Old: {_stem(word) for word in _WORD_RE.findall(text)}\n- New: split _stem() output on spaces, add each token individually\n\nCode change in record_search_event():\n- Old: [_stem(w) for w in _WORD_RE.findall(query.lower())]\n- New: flatten jieba output into individual tokens\n\nNO CHANGES NEEDED:\n- _WORD_RE (\\w+) still correctly captures CJK characters as 'word characters'\n- _bm25_scores() already handles space-separated tokens from _stem()\n- search_modules() already splits query on spaces\n- The snowballstemmer import is kept for English; it's a no-op on jieba output",
+    "examples": "Before jieba (broken):\n  Query '架构决策' → stemmed as ['架构决策'] (one token)\n  Module title '知识管理系统架构决策' → stemmed as ['知识管理系统架构决策'] (one token)\n  No match because the full strings differ.\n\nAfter jieba (working):\n  Query '架构决策' → jieba → '架构 决策' → tokens ['架构', '决策']\n  Module title '知识管理系统架构决策' → jieba → '知识 管理 系统 架构 决策' → tokens ['知识', '管理', '系统', '架构', '决策']\n  Match: '架构' and '决策' both found → high relevance score.",
+    "references": "See storage.py:_stem() for the jieba integration. See storage.py:_field_stems() for token splitting. See tests/test_storage.py:test_search_modules_chinese_tokenization for the test.",
+    "caveats": "jieba uses a dictionary-based approach. Specialized technical terms not in the default dictionary may not segment correctly. Users can add custom terms via jieba.add_word(). Chinese stemming is not applied (words are already atomic). Mixed Chinese-English content works correctly because jieba preserves English words as-is within Chinese text. jieba is required by pyproject.toml — if not installed, _stem() falls back to lowercasing the word (graceful degradation)."
+  },
+  "metadata": {
+    "tags": ["search", "chinese", "jieba", "segmentation", "cjk", "i18n"],
+    "related_modules": ["search/ranking-pipeline"],
+    "confidence": "high",
+    "status": "published"
+  }
+}

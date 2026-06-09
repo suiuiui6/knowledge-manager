@@ -1,0 +1,21 @@
+{
+  "id": "module-lifecycle",
+  "category": "operations",
+  "title": "Module Lifecycle: Draft → Published → Deprecated → Archived",
+  "summary": "Every knowledge module follows a five-state lifecycle with clear transitions, review gates, and search visibility rules at each stage.",
+  "created_at": "2026-06-09T00:00:00Z",
+  "updated_at": "2026-06-09T00:00:00Z",
+  "content": {
+    "overview": "KM modules are not static documents — they have a lifecycle. The five states (draft, reviewed, published, deprecated, archived) govern where a module appears, how it's ranked, and what operations are available on it. This state machine is enforced through CLI commands and the review pipeline.",
+    "details": "STATE TRANSITIONS:\n\ndraft → reviewed → published → deprecated → archived\n\n- draft: Module extracted by LLM or manually created, sitting in .staging/. Not yet in the main KB. Visible only via `km review`.\n- reviewed: Review approved but not yet pushed to shared repo. Still in staging but with approved status.\n- published: Merged into the main KB (approve_from_staging or direct save). Appears in default search results.\n- deprecated: Still searchable but marked [deprecated], confidence treated as 'low' (0.7x multiplier). Intended as a grace period before removal.\n- archived: Hidden from default search. Only appears with --include-archived flag. Module file is kept but effectively invisible.\n\nCLI COMMANDS:\n- km deprecate category/module-id [--reason] — sets status=deprecated\n- km archive category/module-id — sets status=archived\n- km search --include-archived — includes archived modules in results\n\nWEBHOOK EVENTS:\n- module.created — emitted when save_module() writes a new file\n- module.updated — emitted when save_module() overwrites an existing file\n- module.deprecated — emitted by km deprecate\n- module.archived — emitted by km archive\n- module.deleted — emitted by delete_module()\n- review.approved — emitted when approve_from_staging() merges to main KB",
+    "examples": "Typical lifecycle:\n1. km add design-doc.md -c architecture → extracts to .staging/ (draft)\n2. km review → interactively review, approve (reviewed)\n3. km push → publish to shared repo (published)\n4. Months later, module is outdated: km deprecate architecture/old-pattern --reason 'Replaced by new-pattern' (deprecated)\n5. After grace period: km archive architecture/old-pattern (archived)",
+    "references": "See cli.py:deprecate, cli.py:archive for the CLI commands. See storage.py:save_module for created/updated webhook events. See schemas.py:ModuleMetadata.status for the status field definition.",
+    "caveats": "Status changes are not automatically propagated to related_modules references. If you deprecate module A, modules that reference A in their related_modules won't be notified. Use km health and km recommend to detect stale references. Archived modules still occupy disk space — they are hidden, not deleted."
+  },
+  "metadata": {
+    "tags": ["operations", "lifecycle", "status", "deprecate", "archive", "review"],
+    "related_modules": ["architecture/git-native-storage"],
+    "confidence": "high",
+    "status": "published"
+  }
+}

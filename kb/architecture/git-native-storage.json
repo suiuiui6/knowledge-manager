@@ -1,0 +1,21 @@
+{
+  "id": "git-native-storage",
+  "category": "architecture",
+  "title": "Git-Native Storage: Why JSON Files Over Databases",
+  "summary": "KM stores all knowledge as JSON files in a Git repository, using the file system as the database and Git for versioning, sync, and audit.",
+  "created_at": "2026-06-09T00:00:00Z",
+  "updated_at": "2026-06-09T00:00:00Z",
+  "content": {
+    "overview": "Knowledge Manager deliberately avoids SQL databases, vector stores, and message queues. All data — modules, index, config, telemetry, changelogs — lives as JSON files on disk inside a Git repository. This is the single most important architectural decision in the project.",
+    "details": "Each knowledge module is a JSON file at {category}/{module_id}.json. The global index is index.json. Configuration is config.json. Telemetry events append to .telemetry/search_events.jsonl. Changelogs write to .changelog/{date}.json. Staging modules sit in .staging/. All of this is a standard Git repository. Module JSON files and index.json are tracked in Git. Staging, telemetry, and local config override are in .gitignore.\n\nAtomic writes use os.replace() — a POSIX atomic rename that prevents partial writes from corrupting data. This is critical on Windows where file locking behaves differently than Unix.\n\nThe index is rebuilt from on-disk modules via rebuild_index(), which scans all .json files, parses them as Module objects, and populates the in-memory Index structure. The index is a cache — the modules are the source of truth.\n\nGit provides: version history (git log shows every change), distributed sync (clone/pull/push), conflict resolution (merge conflicts on concurrent edits), and audit trail (git blame on every line). KM does not reinvent any of this.",
+    "examples": "Standard KB repository layout:\n\nkb-root/\n  index.json          # Global index (tracked in git)\n  config.json          # Config template (tracked, secrets sanitized)\n  config.local.json    # Local overrides (gitignored)\n  .gitignore           # Excludes .staging/, .telemetry/, config.local.json\n  .staging/            # Personal WIP staging (gitignored)\n  .telemetry/          # Local usage data (gitignored)\n  .changelog/          # Generated changelogs (gitignored)\n  auth/                # Modules by category\n    jwt.json\n    oauth.json\n  database/\n    conn-pool.json",
+    "references": "See storage.py:_atomic_write() for the atomic write implementation. See cli.py:init for .gitignore template generation. See design blueprint Phase 2A for the git collaboration workflow.",
+    "caveats": "JSON file storage works well up to ~500 modules. Beyond that, rebuild_index() may become slow as it parses every file. For large KBs, consider caching or incremental index updates. The git repository can grow large if modules contain substantial text content, but this is typically dwarfed by code repositories."
+  },
+  "metadata": {
+    "tags": ["architecture", "storage", "git", "json", "design-decision"],
+    "related_modules": ["architecture/mcp-protocol", "architecture/design-boundaries"],
+    "confidence": "high",
+    "status": "published"
+  }
+}
