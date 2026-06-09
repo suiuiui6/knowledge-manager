@@ -1308,6 +1308,61 @@ def tree_navigate(ctx: click.Context, query: str) -> None:
     asyncio.run(_run())
 
 
+# --- research (M4) ---
+
+
+@cli.command()
+@click.argument("query")
+@click.option("--depth", type=click.Choice(["shallow", "deep"]), default="shallow")
+@click.option("--source", "-s", "sources", multiple=True, help="Path to research source (repeatable)")
+@click.pass_context
+def research(ctx: click.Context, query: str, depth: str, sources: tuple) -> None:
+    """Research a topic and generate draft knowledge modules."""
+    from knowledge_manager.researcher import Researcher
+    from knowledge_manager.llm_clients import create_client
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    cfg = _load_config(kb)
+    try:
+        provider_name, provider_cfg = cfg.get_default_provider()
+    except ValueError:
+        console.print("[red]No LLM provider configured.[/red]")
+        return
+
+    llm_client = create_client(provider_name, provider_cfg)
+    rcfg = cfg.research
+
+    if sources:
+        from knowledge_manager.schemas import ResearchSource as RS
+        rcfg.sources = [
+            RS(type="doc_dir", path=s)
+            for s in sources
+        ]
+
+    researcher = Researcher(kb, rcfg, llm_client)
+
+    def progress(p):
+        icon = {"decompose": "Analyzing", "select": "Selecting", "search": "Searching",
+                "synthesize": "Synthesizing", "extract": "Extracting", "stage": "Staging"}
+        console.print(f"  [{icon.get(p.stage, p.stage)}] {p.message}")
+
+    console.print(f"[bold]Researching:[/bold] {query}\n")
+    result = asyncio.run(researcher.research(query, depth, on_progress=progress))
+
+    console.print(f"\n[bold green]Done[/bold green] ({result.took_ms}ms)")
+    if result.answer_synthesis:
+        console.print(f"\n[bold]Answer:[/bold]\n{result.answer_synthesis[:500]}")
+    if result.staged_ids:
+        console.print(f"\n[bold]Staged modules:[/bold]")
+        for sid in result.staged_ids:
+            console.print(f"  * {sid}")
+        console.print(f"\n[dim]Review with: km review[/dim]")
+    if result.sources_used:
+        console.print(f"\n[dim]Sources: {', '.join(result.sources_used[:5])}[/dim]")
+
+
 # --- serve (MCP) ---
 
 @cli.command()

@@ -346,6 +346,43 @@ def create_server(kb_path: Path, cache: ModuleCache | None = None, federation: d
             output.append(module_data)
         return json.dumps(output, indent=2)
 
+    # ── Research tool (M4) ──
+
+    @mcp.tool(name="research")
+    def research_tool(query: str, depth: str = "shallow") -> str:
+        """Research a topic when knowledge base has no relevant modules.
+
+        Args:
+            query: Research question
+            depth: \"shallow\" (fast) or \"deep\" (thorough)
+
+        Returns:
+            Research result with temporary answer and staged module list
+        """
+        from knowledge_manager.researcher import Researcher
+        from knowledge_manager.llm_clients import create_client
+
+        cfg = _load_config_safe(kb_path)
+        if cfg is None:
+            return json.dumps({"error": "No config found"})
+        try:
+            provider_name, provider_cfg = cfg.get_default_provider()
+        except ValueError:
+            return json.dumps({"error": "No LLM provider configured"})
+
+        llm_client = create_client(provider_name, provider_cfg)
+        researcher = Researcher(kb_path, cfg.research, llm_client)
+
+        result = asyncio.run(researcher.research(query, depth))
+        return json.dumps({
+            "query": result.query,
+            "temporary_answer": result.answer_synthesis[:500],
+            "staged_modules": result.staged_ids,
+            "sources_used": result.sources_used,
+            "took_ms": result.took_ms,
+            "hint": f"Use km review to review staged modules: {', '.join(result.staged_ids)}" if result.staged_ids else "",
+        }, indent=2)
+
     # ── Federation: federated_search tool ──
 
     if federation:

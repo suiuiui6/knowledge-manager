@@ -187,6 +187,27 @@ class NotificationsConfig(BaseModel):
     on_review_approved: bool = False
 
 
+# ── M4: Research schemas ──
+
+
+class ResearchSource(BaseModel):
+    type: Literal["code_repo", "doc_dir", "web_search", "api"]
+    path: str = ""
+    include_patterns: list[str] = Field(default_factory=list)
+    exclude_patterns: list[str] = Field(default_factory=list)
+    category_hint: str = ""
+
+
+class ResearchConfig(BaseModel):
+    enabled: bool = False
+    auto_approve_threshold: float = 0.85
+    sources: list[ResearchSource] = Field(default_factory=list)
+    default_depth: Literal["shallow", "deep"] = "shallow"
+    max_llm_calls_per_query: int = 8
+    max_total_tokens_per_query: int = 32000
+    auto_trigger: bool = False
+
+
 class UIConfig(BaseModel):
     enabled: bool = False
 
@@ -202,6 +223,7 @@ class Config(BaseModel):
     federation: "FederationConfig" = Field(default_factory=lambda: FederationConfig())
     webhooks: "WebhookConfig" = Field(default_factory=lambda: WebhookConfig())
     marketplace: "MarketplaceConfig" = Field(default_factory=lambda: MarketplaceConfig())
+    research: ResearchConfig = Field(default_factory=ResearchConfig)
     ui: UIConfig = Field(default_factory=UIConfig)
 
     def get_default_provider(self) -> Tuple[str, LLMProviderConfig]:
