@@ -4,8 +4,8 @@ from pathlib import Path
 import json
 from typing import AsyncIterator
 
-from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
+from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -477,6 +477,90 @@ def create_app(kb_path: Path) -> FastAPI:
         return report.model_dump()
 
     # ── UI entry ──
+
+    @app.post("/api/upload")
+    async def api_upload(file: UploadFile = File(...), category: str = Form(default="general"), mode: str = Form(default="auto")):
+        from knowledge_manager.extractor import Extractor
+        from knowledge_manager.llm_clients import create_client
+        from knowledge_manager.schemas import StagingMeta, ExtractionConfig
+
+        cfg = _load_config()
+        if cfg is None:
+            raise HTTPException(status_code=500, detail="No config found")
+
+        provider_name, provider_cfg = cfg.get_default_provider()
+        client = create_client(provider_name, provider_cfg)
+        extractor = Extractor(client, cfg.extraction)
+
+        content = await file.read()
+        filename = file.filename or "upload"
+        suffix = Path(filename).suffix.lower()
+
+        # Save to temp
+        tmp_dir = kb_path / ".tmp"
+        tmp_dir.mkdir(exist_ok=True)
+        tmp_path = tmp_dir / filename
+        tmp_path.write_bytes(content)
+
+        # Build existing categories for auto-categorize
+        existing_categories = ""
+        if cfg.extraction.auto_categorize:
+            index = load_index(kb_path)
+            if index is not None and index.categories:
+                existing_categories = json.dumps({
+                    name: cat.description for name, cat in index.categories.items()
+                })
+
+        # Detect mode
+        if mode == "auto":
+            if suffix in (".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"):
+                mode = "image"
+            elif suffix in (".txt", ".md", ".markdown", ".rst"):
+                mode = "text"
+            else:
+                mode = "text"
+
+        try:
+            if mode == "image":
+                modules = await extractor.extract_from_image(str(tmp_path), category, existing_categories)
+            else:
+                text = content.decode("utf-8", errors="replace")
+                modules = await extractor.extract(text, category, existing_categories)
+        except Exception as e:
+            tmp_path.unlink(missing_ok=True)
+            raise HTTPException(status_code=500, detail=f"Extraction failed: {e}")
+
+        # Save to staging
+        from knowledge_manager.storage import save_to_staging, save_staging_meta
+        staging = kb_path / ".staging"
+        staging.mkdir(exist_ok=True)
+
+        import subprocess as _sp
+        git_user = "web-upload"
+        try:
+            r = _sp.run(["git", "-C", str(kb_path), "config", "user.name"], capture_output=True, text=True)
+            if r.returncode == 0 and r.stdout.strip():
+                git_user = r.stdout.strip()
+        except Exception:
+            pass
+
+        for m in modules:
+            save_to_staging(m, staging)
+            meta = StagingMeta(module_id=m.id, submitted_by=git_user)
+            save_staging_meta(meta, staging)
+
+        tmp_path.unlink(missing_ok=True)
+
+        return JSONResponse({
+            "status": "ok",
+            "modules_extracted": len(modules),
+            "modules": [
+                {"id": m.id, "category": m.category, "title": m.title}
+                for m in modules
+            ],
+            "staged": True,
+            "filename": filename,
+        })
 
     @app.get("/ui", response_class=HTMLResponse)
     def ui_entry():

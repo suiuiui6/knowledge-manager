@@ -438,4 +438,125 @@ def create_server(kb_path: Path, cache: ModuleCache | None = None, federation: d
                 output["results"][ns_name + "_count"] = len(output["results"][ns_name])
             return json.dumps(output, indent=2)
 
+    # ── Write Tools (P0) ──
+
+    @mcp.tool(name="create_module")
+    def create_module_tool(title: str, content: str, category: str = "general",
+                           summary: str = "", tags: str = "", confidence: str = "medium") -> str:
+        """Create a new knowledge module and stage it for review.
+
+        Args:
+            title: Module title (5+ chars)
+            content: Main content body (overview/details combined)
+            category: Category name (existing or new)
+            summary: One-line summary (auto-generated if empty)
+            tags: Comma-separated tags
+            confidence: high/medium/low
+        """
+        from knowledge_manager.schemas import Module, ModuleContent, ModuleMetadata, StagingMeta
+        from knowledge_manager.storage import save_to_staging, save_staging_meta
+
+        if len(title) < 5:
+            return json.dumps({"error": "Title must be at least 5 characters"})
+        if len(content) < 20:
+            return json.dumps({"error": "Content must be at least 20 characters"})
+        if confidence not in ("high", "medium", "low"):
+            confidence = "medium"
+
+        import re as _re
+        mod_id = _re.sub(r"[^a-z0-9-]", "", title.lower().replace(" ", "-"))[:50]
+
+        module = Module(
+            id=mod_id,
+            category=category,
+            title=title,
+            summary=summary or title,
+            content=ModuleContent(
+                overview=content[:200],
+                details=content,
+            ),
+            metadata=ModuleMetadata(
+                tags=[t.strip() for t in tags.split(",") if t.strip()],
+                confidence=confidence,
+                status="draft",
+            ),
+        )
+
+        staging = kb_path / ".staging"
+        staging.mkdir(exist_ok=True)
+        save_to_staging(module, staging)
+        meta = StagingMeta(module_id=mod_id, submitted_by="mcp-agent")
+        save_staging_meta(meta, staging)
+
+        return json.dumps({
+            "status": "staged",
+            "module_id": mod_id,
+            "category": category,
+            "title": title,
+            "hint": f"Module staged for review. Use km review approve {category}/{mod_id} to publish.",
+        }, indent=2)
+
+    @mcp.tool(name="update_module")
+    def update_module_tool(module_id: str, category: str, title: str = "",
+                           content: str = "", summary: str = "",
+                           tags: str = "", confidence: str = "") -> str:
+        """Update an existing module's fields. Only specified fields are changed.
+
+        Args:
+            module_id: Module ID to update
+            category: Module's category
+            title: New title (empty = no change)
+            content: New content (empty = no change)
+            summary: New summary (empty = no change)
+            tags: New comma-separated tags (empty = no change)
+            confidence: New confidence level (empty = no change)
+        """
+        from knowledge_manager.storage import load_module, save_module
+
+        mod = load_module(module_id, category, kb_path)
+        if mod is None:
+            return json.dumps({"error": f"Module not found: {category}/{module_id}"})
+
+        if title and len(title) >= 5:
+            mod.title = title
+        if summary:
+            mod.summary = summary
+        if content and len(content) >= 20:
+            mod.content.details = content
+        if tags:
+            mod.metadata.tags = [t.strip() for t in tags.split(",") if t.strip()]
+        if confidence in ("high", "medium", "low"):
+            mod.metadata.confidence = confidence
+
+        save_module(mod, category, kb_path)
+        return json.dumps({
+            "status": "updated",
+            "module_id": module_id,
+            "category": category,
+            "title": mod.title,
+        }, indent=2)
+
+    @mcp.tool(name="delete_module")
+    def delete_module_tool(module_id: str, category: str) -> str:
+        """Archive a module (soft delete). Archived modules are hidden from search by default.
+
+        Args:
+            module_id: Module ID to archive
+            category: Module's category
+        """
+        from knowledge_manager.storage import load_module, save_module
+
+        mod = load_module(module_id, category, kb_path)
+        if mod is None:
+            return json.dumps({"error": f"Module not found: {category}/{module_id}"})
+
+        mod.metadata.status = "archived"
+        save_module(mod, category, kb_path)
+        return json.dumps({
+            "status": "archived",
+            "module_id": module_id,
+            "category": category,
+            "hint": "Module archived. Use include_archived=true in search to find it.",
+        }, indent=2)
+
     return mcp

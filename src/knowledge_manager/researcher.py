@@ -151,6 +151,8 @@ Return ONLY a JSON array of strings. Example: ["sub-question 1", "sub-question 2
             return await self._search_code_repo(query, source)
         elif source.type == "doc_dir":
             return await self._search_doc_dir(query, source)
+        elif source.type == "web":
+            return await self._search_web(query, source)
         else:
             return SourceResult(source_label=f"{source.type}:{source.path}")
 
@@ -212,6 +214,35 @@ Return ONLY a JSON array of strings. Example: ["sub-question 1", "sub-question 2
                 break
 
         return SourceResult(source_label=f"doc_dir:{source.path}", chunks=chunks, total_found=len(chunks))
+
+    async def _search_web(self, query: str, source: ResearchSource) -> SourceResult:
+        chunks = []
+        try:
+            import httpx
+            search_url = source.config.get("search_url", "https://html.duckduckgo.com/html/")
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(
+                    search_url,
+                    params={"q": query},
+                    timeout=15,
+                    headers={"User-Agent": "knowledge-manager/0.5.1"},
+                )
+                if resp.status_code == 200:
+                    # Extract text from HTML results
+                    import re as _re
+                    text = _re.sub(r"<[^>]+>", " ", resp.text)
+                    text = _re.sub(r"\s+", " ", text)
+                    # Split into ~500 char chunks
+                    for i in range(0, min(len(text), 3000), 500):
+                        chunks.append(text[i:i+500])
+        except Exception as e:
+            logger.warning("Web search failed for %s: %s", query, e)
+
+        return SourceResult(
+            source_label=f"web:{query[:40]}",
+            chunks=chunks if chunks else [f"No web results for: {query}"],
+            total_found=len(chunks),
+        )
 
     async def _extract_code_keywords(self, query: str) -> list[str]:
         prompt = f"""Extract 3-5 code search keywords from this query.

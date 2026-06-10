@@ -1645,8 +1645,9 @@ def watch() -> None:
 @click.argument("source_type", type=click.Choice(["local", "doc_dir"]))
 @click.option("--path", "-p", required=True, help="Path to monitor")
 @click.option("--category", "-c", default="", help="Target category for extracted modules")
+@click.option("--auto-extract", is_flag=True, help="Automatically extract modules from new files")
 @click.pass_context
-def watch_add(ctx: click.Context, source_type: str, path: str, category: str) -> None:
+def watch_add(ctx: click.Context, source_type: str, path: str, category: str, auto_extract: bool) -> None:
     """Add a watch source."""
     from knowledge_manager.watch_scheduler import WatchScheduler
 
@@ -1654,8 +1655,13 @@ def watch_add(ctx: click.Context, source_type: str, path: str, category: str) ->
     _require_kb(kb)
 
     scheduler = WatchScheduler(kb)
-    scheduler.add_source(source_type, {"path": path, "patterns": ["*.md", "*.txt"]}, category)
-    console.print(f"[green]Added {source_type} watch source: {path}[/green]")
+    scheduler.add_source(source_type, {
+        "path": path,
+        "patterns": ["*.md", "*.txt"],
+        "auto_extract": auto_extract,
+    }, category)
+    flag = " (auto-extract)" if auto_extract else ""
+    console.print(f"[green]Added {source_type} watch source: {path}{flag}[/green]")
 
 
 @watch.command("list")
@@ -1681,13 +1687,17 @@ def watch_list(ctx: click.Context) -> None:
 @click.option("--now", is_flag=True, help="Run all sources immediately")
 @click.pass_context
 def watch_run(ctx: click.Context, now: bool) -> None:
-    """Poll all watch sources."""
+    """Poll all watch sources. Sources with auto_extract will extract modules."""
     from knowledge_manager.watch_scheduler import WatchScheduler
 
     kb = ctx.obj["kb_path"]
     _require_kb(kb)
 
-    scheduler = WatchScheduler(kb)
+    cfg = _load_config(kb)
+    provider_name, provider_cfg = cfg.get_default_provider()
+    llm_client = create_client(provider_name, provider_cfg)
+
+    scheduler = WatchScheduler(kb, llm_client=llm_client)
     scheduler.load_config()
     if scheduler.sources:
         events = asyncio.run(scheduler.poll_all())

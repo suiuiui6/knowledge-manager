@@ -5,6 +5,7 @@ FALLBACK_HTML = """<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>KM — Knowledge Manager</title>
 <script src="https://cdn.jsdelivr.net/npm/htmx.org@1.9/dist/htmx.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape@3.30/dist/cytoscape.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -137,6 +138,53 @@ FALLBACK_HTML = """<!DOCTYPE html>
     letter-spacing: 0.12em;
     color: var(--text-tertiary);
     font-weight: 500;
+  }
+
+  /* ── Drop Zone ── */
+  .km-dropzone {
+    margin: 0 12px 16px;
+    border: 2px dashed var(--border-visible);
+    border-radius: var(--radius-md);
+    padding: 16px 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: var(--bg-surface);
+  }
+  .km-dropzone:hover, .km-dropzone.drag-over {
+    border-color: var(--accent-amber);
+    background: rgba(224,168,58,0.05);
+  }
+  .km-dropzone-icon {
+    font-size: 1.5rem;
+    margin-bottom: 4px;
+  }
+  .km-dropzone-text {
+    font-size: 0.72rem;
+    color: var(--text-tertiary);
+    line-height: 1.4;
+  }
+  .km-dropzone-text strong { color: var(--accent-amber); }
+  .km-toast {
+    position: fixed;
+    top: 20px; right: 20px;
+    z-index: 9999;
+    max-width: 360px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-visible);
+    border-radius: var(--radius-md);
+    padding: 14px 18px;
+    box-shadow: var(--shadow-elevated);
+    animation: km-slide-in 0.25s ease;
+    font-size: 0.85rem;
+  }
+  .km-toast.success { border-left: 3px solid var(--accent-green); }
+  .km-toast.error { border-left: 3px solid var(--accent-red); }
+  .km-toast-title { font-weight: 600; margin-bottom: 4px; }
+  .km-toast-detail { font-size: 0.75rem; color: var(--text-secondary); }
+  @keyframes km-slide-in {
+    from { opacity: 0; transform: translateX(40px); }
+    to { opacity: 1; transform: translateX(0); }
   }
 
   /* ── Tree ── */
@@ -624,10 +672,15 @@ FALLBACK_HTML = """<!DOCTYPE html>
       <a href="#" hx-get="/api/stats" hx-target="#main-content" hx-swap="innerHTML" onclick="setActive(this)">Stats</a>
       <a href="#" hx-get="/api/health" hx-target="#main-content" hx-swap="innerHTML" onclick="setActive(this)">Health</a>
       <a href="#" hx-get="/api/recommendations" hx-target="#main-content" hx-swap="innerHTML" onclick="setActive(this)">Recs</a>
+      <a href="#" onclick="setActive(this);renderGraph()">Graph</a>
     </nav>
   </header>
 
   <aside class="km-sidebar">
+    <div class="km-dropzone" id="km-dropzone">
+      <div class="km-dropzone-icon">📂</div>
+      <div class="km-dropzone-text">Drop <strong>.md .txt .png</strong><br>to auto-extract</div>
+    </div>
     <div class="km-sidebar-header">Knowledge Tree</div>
     <div id="sidebar-tree" class="km-tree">
       <div class="km-loading">Loading</div>
@@ -642,6 +695,87 @@ FALLBACK_HTML = """<!DOCTYPE html>
 </div>
 
 <script>
+  // ── Drop zone ──
+  (function setupDropZone() {
+    var dz = document.getElementById('km-dropzone');
+    if (!dz) return;
+
+    ['dragenter', 'dragover'].forEach(function(evt) {
+      dz.addEventListener(evt, function(e) { e.preventDefault(); dz.classList.add('drag-over'); });
+    });
+    ['dragleave', 'drop'].forEach(function(evt) {
+      dz.addEventListener(evt, function(e) { e.preventDefault(); dz.classList.remove('drag-over'); });
+    });
+
+    dz.addEventListener('drop', function(e) {
+      var files = e.dataTransfer.files;
+      for (var i = 0; i < files.length; i++) {
+        uploadFile(files[i]);
+      }
+    });
+
+    dz.addEventListener('click', function() {
+      var input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.md,.txt,.png,.jpg,.jpeg,.gif,.webp';
+      input.multiple = true;
+      input.onchange = function() {
+        for (var i = 0; i < input.files.length; i++) {
+          uploadFile(input.files[i]);
+        }
+      };
+      input.click();
+    });
+  })();
+
+  function uploadFile(file) {
+    var formData = new FormData();
+    formData.append('file', file);
+    formData.append('category', 'general');
+    formData.append('mode', 'auto');
+
+    showToast('info', 'Extracting...', 'Analyzing ' + file.name);
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/upload');
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        var data = JSON.parse(xhr.responseText);
+        var mods = data.modules || [];
+        var titles = mods.map(function(m) { return m.title; }).join(', ');
+        showToast('success', 'Extracted ' + mods.length + ' module(s)',
+          file.name + ' → ' + (titles || 'staging'));
+        // Reload tree after 2s
+        setTimeout(function() {
+          var tx = new XMLHttpRequest();
+          tx.open('GET', '/api/tree');
+          tx.onload = function() {
+            if (tx.status === 200) {
+              document.getElementById('sidebar-tree').innerHTML = renderTree(JSON.parse(tx.responseText));
+            }
+          };
+          tx.send();
+        }, 2000);
+      } else {
+        showToast('error', 'Extraction failed', file.name + ': ' + xhr.status);
+      }
+    };
+    xhr.onerror = function() {
+      showToast('error', 'Upload failed', 'Could not reach server');
+    };
+    xhr.send(formData);
+  }
+
+  function showToast(type, title, detail) {
+    var toast = document.createElement('div');
+    toast.className = 'km-toast ' + type;
+    toast.innerHTML = '<div class="km-toast-title">' + esc(title) + '</div>'
+      + '<div class="km-toast-detail">' + esc(detail || '') + '</div>';
+    document.body.appendChild(toast);
+    setTimeout(function() { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; }, 4000);
+    setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 4500);
+  }
+
   var activeEl = null;
 
   function setActive(el) {
@@ -966,6 +1100,80 @@ FALLBACK_HTML = """<!DOCTYPE html>
   function esc(s) {
     if (typeof s !== 'string') return s;
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  // ── Knowledge Graph ──
+  var cyInstance = null;
+
+  function renderGraph() {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', '/api/graph');
+    xhr.onload = function() {
+      if (xhr.status !== 200) return;
+      var data = JSON.parse(xhr.responseText);
+      var container = document.getElementById('main-content');
+      container.innerHTML = '<div id="km-graph" style="width:100%;height:calc(100vh - 100px);border-radius:var(--radius-md);overflow:hidden;background:var(--bg-card);border:1px solid var(--border-subtle)"></div>';
+
+      if (cyInstance) cyInstance.destroy();
+
+      cyInstance = cytoscape({
+        container: document.getElementById('km-graph'),
+        elements: {
+          nodes: (data.nodes || []).map(function(n) {
+            return {
+              data: { id: n.id, label: n.title || n.id, category: n.category || '', type: n.type || 'module' }
+            };
+          }),
+          edges: (data.edges || []).map(function(e) {
+            return { data: { source: e.source, target: e.target } };
+          })
+        },
+        style: [
+          { selector: 'node', style: {
+            'label': 'data(label)',
+            'text-valign': 'center',
+            'text-halign': 'center',
+            'font-size': '10px',
+            'font-family': 'var(--font-body)',
+            'color': '#e2e6f0',
+            'background-color': '#4a90d9',
+            'width': 'mapData(degree, 1, 10, 24, 48)',
+            'height': 'mapData(degree, 1, 10, 24, 48)',
+            'border-width': 2,
+            'border-color': '#0b0d18',
+            'text-wrap': 'wrap',
+            'text-max-width': 100
+          }},
+          { selector: 'edge', style: {
+            'width': 1,
+            'line-color': 'rgba(255,255,255,0.08)',
+            'curve-style': 'bezier',
+            'target-arrow-color': 'rgba(255,255,255,0.15)',
+            'target-arrow-shape': 'triangle'
+          }},
+          { selector: ':selected', style: {
+            'border-color': '#e0a83a',
+            'border-width': 3
+          }}
+        ],
+        layout: { name: 'cose', animate: true, nodeRepulsion: 4000, idealEdgeLength: 80 },
+        wheelSensitivity: 0.3
+      });
+
+      // Click to load module
+      cyInstance.on('tap', 'node', function(evt) {
+        var node = evt.target;
+        var id = node.data('id');
+        var cat = node.data('category');
+        if (cat && id) loadModule(cat + '/' + id);
+      });
+
+      // Compute degree for sizing
+      cyInstance.nodes().forEach(function(n) {
+        n.data('degree', n.degree(true));
+      });
+    };
+    xhr.send();
   }
 </script>
 </body>

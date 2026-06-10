@@ -172,6 +172,110 @@ class TreeNavigator:
             for child in node.children:
                 self._render_node(child, max_depth, current_depth + 1, lines)
 
+    async def navigate_beam(self, query: str, beam_width: int = 3, max_depth: int = 3) -> NavigationResult:
+        """Beam search: explore multiple branches in parallel, keep top-k.
+
+        Unlike greedy navigate(), this evaluates all children at each level,
+        scores them for relevance, and keeps the best `beam_width` paths.
+        """
+        steps: list[NavigationStep] = []
+        candidates: list[tuple[TreeNode, float]] = [(self.tree_root, 1.0)]
+        best_module: TreeNode | None = None
+        best_module_score = 0.0
+
+        for depth in range(max_depth):
+            # Gather all children of all current candidates
+            all_children: list[tuple[TreeNode, TreeNode, float]] = []  # (child, parent, parent_score)
+            for parent, parent_score in candidates:
+                for child in parent.children:
+                    all_children.append((child, parent, parent_score))
+
+            if not all_children:
+                break
+
+            # Score each child
+            scored: list[tuple[TreeNode, float, str]] = []
+            for child, parent, parent_score in all_children:
+                kw_score = self._relevance_score(child, query)
+                combined = 0.4 * parent_score + 0.6 * kw_score
+                reasoning = f"keyword_rel={kw_score:.2f}, parent_score={parent_score:.2f}"
+                scored.append((child, combined, reasoning))
+
+            # If we're at module level and found good matches, track best
+            for child, score, _ in scored:
+                if child.type == TreeNodeType.MODULE and score > best_module_score:
+                    best_module_score = score
+                    best_module = child
+
+            # Keep top-k
+            scored.sort(key=lambda x: x[1], reverse=True)
+            candidates = [(node, score) for node, score, _ in scored[:beam_width]]
+
+            steps.append(NavigationStep(
+                step=depth + 1, action="beam_expand",
+                node_id=candidates[0][0].id if candidates else "none",
+                node_title=f"evaluated {len(all_children)} nodes, kept {len(candidates)}",
+                reasoning=f"top: {', '.join(f'{n.title}({s:.2f})' for n, s in candidates[:3])}",
+                candidates=[n.id for n, _ in candidates],
+            ))
+
+        if best_module:
+            return NavigationResult(
+                query=query, path=steps,
+                final_module_key=best_module.path or best_module.id,
+                final_title=best_module.title,
+                final_summary=best_module.summary,
+                alternatives=[n.id for n, _ in candidates],
+                confidence=best_module_score,
+            )
+
+        # Fallback to best leaf
+        best = self._find_best_leaf(self.tree_root, query)
+        if best and best.type == TreeNodeType.MODULE:
+            return NavigationResult(
+                query=query, path=steps,
+                final_module_key=best.path or best.id,
+                final_title=best.title,
+                final_summary=best.summary,
+                confidence=0.3,
+            )
+        return NavigationResult(query=query, path=steps, confidence=0.1)
+
+    def _relevance_score(self, node: TreeNode, query: str) -> float:
+        """Score node relevance to query using multi-field keyword matching."""
+        query_lower = query.lower()
+        query_terms = query_lower.split()
+        score = 0.0
+
+        title_lower = node.title.lower()
+        summary_lower = node.summary.lower()
+
+        # Title matches
+        if query_lower in title_lower:
+            score += 5.0
+        for term in query_terms:
+            if term in title_lower:
+                score += 1.5
+
+        # Summary matches
+        if query_lower in summary_lower:
+            score += 3.0
+        for term in query_terms:
+            if len(term) > 3 and term in summary_lower:
+                score += 0.8
+
+        # Tag matches
+        if node.tags:
+            for tag in node.tags:
+                if query_lower in tag.lower() or tag.lower() in query_lower:
+                    score += 2.0
+
+        # Module type bonus (modules are leaf answers)
+        if node.type == TreeNodeType.MODULE:
+            score *= 1.2
+
+        return min(score, 10.0)
+
     def _find_best_leaf(self, node: TreeNode, query: str) -> TreeNode | None:
         query_lower = query.lower()
         best: TreeNode | None = None

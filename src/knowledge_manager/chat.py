@@ -221,29 +221,43 @@ class ChatPipeline:
 
         navigator = TreeNavigator(self.tree_index, self.llm)
         try:
-            result = await navigator.navigate(query)
-            if result.final_module_key:
-                parts = result.final_module_key.split("/", 1)
-                if len(parts) == 2:
-                    mod = load_module(parts[1], parts[0], self.kb_path)
-                    if mod:
-                        return [{
-                            "key": result.final_module_key,
-                            "title": result.final_title or mod.title,
-                            "summary": result.final_summary or mod.summary,
-                            "confidence": mod.metadata.confidence,
-                            "source": "tree",
-                            "module": mod,
-                            "navigation_confidence": result.confidence,
-                        }]
+            result = await navigator.navigate_beam(query, beam_width=3, max_depth=3)
         except Exception:
-            logger.debug("Tree navigation failed, skipping tree recall")
+            logger.debug("Beam navigation failed, falling back to greedy", exc_info=True)
+            try:
+                result = await navigator.navigate(query)
+            except Exception:
+                logger.debug("Tree navigation failed, skipping tree recall")
+                return []
+
+        if result.final_module_key:
+            parts = result.final_module_key.split("/", 1)
+            if len(parts) == 2:
+                mod = load_module(parts[1], parts[0], self.kb_path)
+                if mod:
+                    return [{
+                        "key": result.final_module_key,
+                        "title": result.final_title or mod.title,
+                        "summary": result.final_summary or mod.summary,
+                        "confidence": mod.metadata.confidence,
+                        "source": "tree",
+                        "module": mod,
+                        "navigation_confidence": result.confidence,
+                    }]
         return []
 
     async def _vector_recall(self, query: str) -> list[dict]:
         if not self.vector_index:
             return []
-        return []
+        try:
+            results = self.vector_index.search(query, top_k=20)
+        except Exception:
+            logger.warning("Vector recall failed", exc_info=True)
+            return []
+        return [
+            {"key": key, "score": float(score), "source": "vector"}
+            for key, score in results
+        ]
 
     def _rrf_fuse(
         self,
@@ -279,12 +293,28 @@ class ChatPipeline:
         sorted_keys = sorted(scores, key=scores.get, reverse=True)
         return [ranks[k] for k in sorted_keys if k in ranks]
 
-    def _build_system_prompt(self, modules: list[dict], intent: str) -> str:
+    def _build_system_prompt(self, modules: list[dict], intent: str, max_tokens: int = 8000) -> str:
+        base_prompt = SYSTEM_PROMPT.replace("{module_context}", "")
+        base_tokens = self._estimate_tokens(base_prompt)
+        budget = max(1000, max_tokens - base_tokens)
+
         lines = []
+        used = 0
         for m in modules:
-            lines.append(f"- [{m['key']}] {m['title']}: {m['summary'][:200]}")
+            snippet = m.get("snippet") or m["summary"][:200]
+            line = f"- [{m['key']}] {m['title']}: {snippet}"
+            line_tokens = self._estimate_tokens(line)
+            if used + line_tokens > budget:
+                break
+            lines.append(line)
+            used += line_tokens
+
         module_context = "\n".join(lines) if lines else "No relevant modules found in the knowledge base."
         return SYSTEM_PROMPT.format(module_context=module_context)
+
+    @staticmethod
+    def _estimate_tokens(text: str) -> int:
+        return len(text) // 3
 
     async def _stream_llm(self, system: str, user: str, temperature: float = 0.3) -> AsyncIterator[str]:
         try:
@@ -332,18 +362,41 @@ class ChatPipeline:
                 yield "Sorry, I couldn't generate a response. Please try again."
 
     def _detect_citation(self, chunk: str, modules: list[dict]) -> Optional[str]:
+        chunk_lower = chunk.lower()
+        best = None
+        best_score = 0
         for m in modules:
             key = m["key"]
-            if key in chunk:
+            title = m.get("title", "")
+            # Direct key mention is strongest
+            if key.replace("/", " ") in chunk_lower or key in chunk:
                 return key
-        return None
+            # Check title words overlap
+            title_words = set(title.lower().split()) & {w for w in chunk_lower.split() if len(w) > 3}
+            score = len(title_words)
+            if score > best_score and score >= 3:
+                best_score = score
+                best = key
+        return best
 
     def _collect_citations(self, response: str, modules: list[dict]) -> set[str]:
         cited = set()
+        response_lower = response.lower()
         for m in modules:
             key = m["key"]
+            title = m.get("title", "").lower()
+            summary = m.get("summary", "").lower()
+            # Match key, or significant title/summary n-gram overlap
             if key in response:
                 cited.add(key)
+                continue
+            # Check if title words cluster in response (3+ consecutive words)
+            title_significant = [w for w in title.split() if len(w) > 3]
+            for i in range(len(title_significant) - 2):
+                trigram = " ".join(title_significant[i:i+3])
+                if trigram in response_lower:
+                    cited.add(key)
+                    break
         return cited
 
     async def _generate_follow_ups(self, query: str, response: str) -> list[str]:

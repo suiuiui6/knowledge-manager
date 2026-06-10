@@ -96,13 +96,40 @@ class WatchScheduler:
             return {"items_found": 0, "modules_generated": 0}
 
         patterns = source.config.get("patterns", ["*.md", "*.txt"])
+        auto_extract = source.config.get("auto_extract", False)
         items_found = 0
+        modules_generated = 0
+        cutoff = datetime.now().timestamp() - 3600
+
+        new_files = []
         for pat in patterns:
             for f in watch_path.rglob(pat):
-                if f.stat().st_mtime > (datetime.now().timestamp() - 3600):
+                if f.stat().st_mtime > cutoff:
+                    new_files.append(f)
                     items_found += 1
 
-        return {"items_found": items_found, "modules_generated": 0, "cursor": str(datetime.now().timestamp())}
+        if auto_extract and new_files and self.llm:
+            from knowledge_manager.extractor import Extractor
+            from knowledge_manager.schemas import ExtractionConfig, StagingMeta
+            from knowledge_manager.storage import save_to_staging, save_staging_meta
+
+            extractor = Extractor(self.llm, ExtractionConfig())
+            staging = self.kb_path / ".staging"
+            staging.mkdir(exist_ok=True)
+
+            for f in new_files[:10]:  # cap at 10 files per poll
+                try:
+                    text = f.read_text(encoding="utf-8", errors="replace")
+                    modules = await extractor.extract(text, source.category or "general")
+                    for m in modules:
+                        save_to_staging(m, staging)
+                        meta = StagingMeta(module_id=m.id, submitted_by="watch")
+                        save_staging_meta(meta, staging)
+                        modules_generated += 1
+                except Exception as e:
+                    logger.warning("Auto-extract failed for %s: %s", f, e)
+
+        return {"items_found": items_found, "modules_generated": modules_generated, "cursor": str(datetime.now().timestamp())}
 
     async def _poll_doc_dir(self, source: WatchSource) -> dict:
         watch_path = Path(source.config.get("path", ""))
