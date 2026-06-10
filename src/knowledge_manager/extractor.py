@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+from pathlib import Path
 from typing import List
 
 from knowledge_manager.llm_clients import BaseLLMClient
@@ -44,6 +45,73 @@ Guidelines:
 - Prefer OUR specific way over general theory. "We use RS256 because..." not "JWT is a standard that..."
 - Fill examples, references, caveats when the source provides real content. Don't invent.
 - If the source is thin, extract the best actionable knowledge you can — don't pad.
+"""
+
+IMAGE_PROMPT = """\
+Analyze this image and extract structured, methodology-focused knowledge modules.
+
+Treat the image as a source of architecture/design/process knowledge. For diagrams: identify components, data flows, technology choices, and architectural decisions. For screenshots: extract the workflow or pattern shown. For other images: describe what methodology or decision is captured.
+
+Category: {category}
+
+Return a JSON array (no markdown, no explanation) of up to {max_modules} modules in the same format as standard extraction:
+{{
+  "category": "kebab-case-category-name",
+  "id": "kebab-case-id",
+  "title": "Concise title (5+ chars)",
+  "summary": "One sentence capturing the insight (10-500 chars)",
+  "content": {{
+    "overview": "What this image shows and why it matters. (10+ chars)",
+    "details": "Specific components, flows, technologies, or decisions visible. (20+ chars)",
+    "examples": "Notable details: labels, annotations, version numbers. Omit if none. (0+ chars)",
+    "references": "Related systems or docs this connects to. Omit if none. (0+ chars)",
+    "caveats": "Ambiguities or context missing from the image. Omit if none. (0+ chars)"
+  }},
+  "metadata": {{
+    "tags": ["tag1", "tag2"],
+    "confidence": "high|medium|low"
+  }}
+}}
+"""
+
+REPO_PROMPT = """\
+Analyze this code repository structure and extract structured knowledge modules about its architecture, patterns, and decisions.
+
+Repository: {repo_name}
+Directory structure:
+```
+{dir_tree}
+```
+
+Key files:
+{key_files}
+
+Category: {category}
+
+Return a JSON array (no markdown, no explanation) of up to {max_modules} modules covering:
+- Architecture overview (component structure, tech stack)
+- Key design patterns and decisions
+- Data flow or API structure
+- Infrastructure and deployment approach
+- Notable tooling or conventions
+
+Each module follows the standard format. Extract actionable methodology, not code dumps.
+"""
+
+MEETING_PROMPT = """\
+Analyze these meeting notes and extract structured knowledge modules. Focus on:
+
+1. **Architecture decisions** — record as decision-record type with rationale
+2. **Action items** — extract as draft modules with clear owners
+3. **Risks identified** — update relevant modules' caveats with these risks
+4. **Technical insights** — any methodology or pattern discussed
+
+Category: {category}
+
+Raw notes:
+{text}
+
+Return a JSON array (no markdown, no explanation) of up to {max_modules} modules in the standard extraction format.
 """
 
 
@@ -243,3 +311,146 @@ class Extractor:
             return items
 
         return None
+
+    async def extract_from_image(self, image_path: str, category: str, existing_categories: str = "") -> list:
+        max_modules = self.config.max_modules_per_extraction
+        prompt = IMAGE_PROMPT.format(category=category, max_modules=max_modules)
+
+        try:
+            raw = await self.llm.complete_vision(prompt, image_path)
+        except NotImplementedError:
+            logger.warning("Vision not supported by current LLM provider; falling back to filename-only extraction")
+            text = f"Image file: {Path(image_path).name}\nPath: {image_path}"
+            return await self.extract(text, category, existing_categories)
+        except Exception:
+            logger.exception("Vision extraction failed for %s", image_path)
+            return []
+
+        return self._parse_modules(raw, category)
+
+    def extract_from_repo(self, repo_path: str, category: str, existing_categories: str = "") -> list:
+        import asyncio as _asyncio
+        return _asyncio.run(self._extract_from_repo_async(repo_path, category, existing_categories))
+
+    async def _extract_from_repo_async(self, repo_path: str, category: str, existing_categories: str = "") -> list:
+        root = Path(repo_path)
+        if not root.exists():
+            logger.warning("Repo path does not exist: %s", repo_path)
+            return []
+
+        max_modules = self.config.max_modules_per_extraction
+        dir_tree = self._render_dir_tree(root)
+        key_files = self._read_key_files(root)
+
+        prompt = REPO_PROMPT.format(
+            repo_name=root.name,
+            dir_tree=dir_tree,
+            key_files=key_files,
+            category=category,
+            max_modules=max_modules,
+        )
+
+        raw = await self.llm.complete(prompt)
+        return self._parse_modules(raw, category)
+
+    def extract_from_meeting(self, text: str, category: str, existing_categories: str = "") -> list:
+        import asyncio as _asyncio
+        return _asyncio.run(self._extract_from_meeting_async(text, category, existing_categories))
+
+    async def _extract_from_meeting_async(self, text: str, category: str, existing_categories: str = "") -> list:
+        max_modules = self.config.max_modules_per_extraction
+        prompt = MEETING_PROMPT.format(category=category, text=text, max_modules=max_modules)
+
+        raw = await self.llm.complete(prompt)
+        modules = self._parse_modules(raw, category)
+
+        for m in modules:
+            if "decision" in prompt.lower() or "决定" in text:
+                m.metadata.tags.append("decision-record")
+                if m.metadata.confidence == "medium":
+                    m.metadata.confidence = "high"
+
+        return modules
+
+    def _parse_modules(self, raw: str, category: str) -> list:
+        raw = _strip_markdown_json(raw)
+        try:
+            items = json.loads(raw)
+        except json.JSONDecodeError:
+            return []
+        if not isinstance(items, list):
+            return []
+
+        modules = []
+        for item in items[: self.config.max_modules_per_extraction]:
+            try:
+                content_data = item.get("content", {})
+                for key in content_data:
+                    val = content_data[key]
+                    if val is None:
+                        content_data[key] = ""
+                    elif isinstance(val, list):
+                        content_data[key] = ", ".join(str(v) for v in val)
+                meta_data = item.get("metadata", {})
+                llm_category = item.get("category") if self.config.auto_categorize else None
+                m = Module(
+                    id=item["id"],
+                    category=llm_category or category,
+                    title=item["title"],
+                    summary=item["summary"],
+                    content=ModuleContent(**content_data),
+                    metadata=ModuleMetadata(**meta_data),
+                )
+                modules.append(m)
+            except Exception:
+                logger.warning("Failed to parse multimodal module item", exc_info=True)
+        return modules
+
+    @staticmethod
+    def _render_dir_tree(root: Path, max_depth: int = 3, max_files: int = 80) -> str:
+        lines = []
+        count = 0
+        for path in sorted(root.rglob("*")):
+            if count >= max_files:
+                lines.append("... (truncated)")
+                break
+            if path.name.startswith(".") and path.name not in (".git", ".github", ".env.example"):
+                continue
+            if any(p.startswith(".") for p in path.parts):
+                if ".git" not in path.parts and ".github" not in path.parts:
+                    continue
+            rel = path.relative_to(root)
+            depth = len(rel.parts)
+            if depth > max_depth:
+                continue
+            prefix = "  " * (depth - 1) + ("├── " if depth > 0 else "")
+            name = rel.name + ("/" if path.is_dir() else "")
+            lines.append(f"{prefix}{name}")
+            count += 1
+        return "\n".join(lines)
+
+    @staticmethod
+    def _read_key_files(root: Path, max_bytes: int = 6000) -> str:
+        key_patterns = [
+            "README*", "ARCHITECTURE*", "ARCH*", "CONTRIBUTING*",
+            "pyproject.toml", "Cargo.toml", "package.json", "go.mod",
+            "Makefile", "docker-compose*", "Dockerfile*",
+            "config*", "*.yaml", "*.yml",
+        ]
+        import fnmatch
+        parts = []
+        total = 0
+        for pattern in key_patterns:
+            for f in sorted(root.rglob(pattern)):
+                if f.is_dir() or f.suffix in (".pyc", ".lock", ".svg", ".png"):
+                    continue
+                try:
+                    content = f.read_text(encoding="utf-8", errors="ignore")[:2000]
+                    rel = f.relative_to(root)
+                    parts.append(f"\n=== {rel} ===\n{content}")
+                    total += len(content)
+                    if total >= max_bytes:
+                        return "\n".join(parts)
+                except Exception:
+                    pass
+        return "\n".join(parts)

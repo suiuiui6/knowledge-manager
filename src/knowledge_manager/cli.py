@@ -814,15 +814,21 @@ def apply(ctx: click.Context, apply_type: str, module_ref: str | None, dry_run: 
 @cli.command()
 @click.argument("file", type=click.Path(exists=True, path_type=Path))
 @click.option("-c", "--category", default="general", help="Category for the new modules")
+@click.option("--image", "mode_image", is_flag=True, help="Treat FILE as an image for vision-based extraction")
+@click.option("--repo", "mode_repo", is_flag=True, help="Treat FILE as a code repository directory for analysis")
+@click.option("--meeting", "mode_meeting", is_flag=True, help="Treat FILE as meeting notes for decision/action extraction")
 @click.pass_context
-def add(ctx: click.Context, file: Path, category: str) -> None:
-    """Extract knowledge modules from FILE into staging."""
+def add(ctx: click.Context, file: Path, category: str, mode_image: bool, mode_repo: bool, mode_meeting: bool) -> None:
+    """Extract knowledge modules from FILE into staging.
+
+    Supports multiple input modes:
+      Default: plain text / markdown file
+      --image: architecture diagram or screenshot (vision LLM)
+      --repo: code repository directory analysis
+      --meeting: meeting notes for decisions/actions/risks
+    """
     kb = ctx.obj["kb_path"]
     _require_kb(kb)
-
-    logger.info("Reading input file")
-    text = file.read_text(encoding="utf-8")
-    logger.debug("Input file size: %s characters", len(text))
 
     logger.info("Loading configuration")
     cfg = _load_config(kb)
@@ -845,8 +851,25 @@ def add(ctx: click.Context, file: Path, category: str) -> None:
                 cat_descs.append(desc)
             existing_categories = "\n".join(cat_descs)
 
-    logger.info(f"Extracting modules (category: {category}, max: {cfg.extraction.max_modules_per_extraction})")
-    modules = asyncio.run(extractor.extract(text, category, existing_categories))
+    if mode_image:
+        logger.info(f"Extracting from image: {file}")
+        console.print(f"[dim]Analyzing image with vision model...[/dim]")
+        modules = asyncio.run(extractor.extract_from_image(str(file), category, existing_categories))
+    elif mode_repo:
+        logger.info(f"Extracting from repository: {file}")
+        console.print(f"[dim]Analyzing repository structure...[/dim]")
+        modules = extractor.extract_from_repo(str(file), category, existing_categories)
+    elif mode_meeting:
+        logger.info(f"Extracting from meeting notes: {file}")
+        text = file.read_text(encoding="utf-8")
+        modules = extractor.extract_from_meeting(text, category, existing_categories)
+    else:
+        logger.info("Reading input file")
+        text = file.read_text(encoding="utf-8")
+        logger.debug("Input file size: %s characters", len(text))
+        logger.info(f"Extracting modules (category: {category}, max: {cfg.extraction.max_modules_per_extraction})")
+        modules = asyncio.run(extractor.extract(text, category, existing_categories))
+
     logger.debug(f"Extraction returned {len(modules)} modules")
 
     staging = _staging_path(kb)
@@ -2528,6 +2551,239 @@ def webhook_retry(ctx: click.Context, since: str | None) -> None:
     click.echo(f"Retried successfully: {count}")
     if remaining > 0:
         click.echo(f"Still failing: {remaining} (max attempts reached or still unreachable)")
+
+
+# --- plugin (M11) ---
+
+
+@cli.group()
+def plugin() -> None:
+    """Manage knowledge-manager plugins."""
+
+
+@plugin.command("search")
+@click.argument("query")
+@click.pass_context
+def plugin_search(ctx: click.Context, query: str) -> None:
+    """Search the plugin registry."""
+    from knowledge_manager.plugin import search_registry
+
+    results = search_registry(query)
+    if not results:
+        console.print(f"No plugins found for '{query}'.")
+        return
+    for p in results:
+        console.print(f"  {p['name']} v{p['version']} — {p.get('description', '')}")
+
+
+@plugin.command("install")
+@click.argument("package_name")
+@click.pass_context
+def plugin_install(ctx: click.Context, package_name: str) -> None:
+    """Install a plugin from PyPI or local path."""
+    from knowledge_manager.plugin import PluginManager
+
+    kb = ctx.obj["kb_path"]
+    pm = PluginManager(kb)
+
+    for name in pm.plugins:
+        p = pm.plugins[name]
+        if p.manifest.name == package_name or package_name.startswith(f"km-plugin-{p.manifest.name}"):
+            console.print(f"[yellow]Plugin '{package_name}' is already installed.[/yellow]")
+            return
+
+    console.print(f"Installing {package_name}...")
+    if pm.install(package_name):
+        pm.load_all()
+        console.print(f"[green]Plugin '{package_name}' installed.[/green]")
+    else:
+        console.print(f"[red]Failed to install '{package_name}'.[/red]")
+
+
+@plugin.command("list")
+@click.pass_context
+def plugin_list(ctx: click.Context) -> None:
+    """List installed plugins."""
+    from knowledge_manager.plugin import PluginManager
+
+    kb = ctx.obj["kb_path"]
+    pm = PluginManager(kb)
+    pm.load_all()
+
+    plugins = pm.list_plugins()
+    if not plugins:
+        console.print("No plugins installed.")
+        return
+    for p in plugins:
+        status = "[green]enabled[/green]" if p["enabled"] else "[dim]disabled[/dim]"
+        console.print(f"  {p['name']} v{p['version']} — {status}")
+        console.print(f"    {p['description']}")
+        if p["hooks"]:
+            console.print(f"    hooks: {', '.join(p['hooks'])}")
+
+
+@plugin.command("enable")
+@click.argument("name")
+@click.pass_context
+def plugin_enable(ctx: click.Context, name: str) -> None:
+    """Enable a disabled plugin."""
+    from knowledge_manager.plugin import PluginManager
+
+    kb = ctx.obj["kb_path"]
+    pm = PluginManager(kb)
+    pm.load_all()
+
+    if pm.enable(name):
+        console.print(f"[green]Plugin '{name}' enabled.[/green]")
+    else:
+        console.print(f"[red]Plugin '{name}' not found.[/red]")
+
+
+@plugin.command("disable")
+@click.argument("name")
+@click.pass_context
+def plugin_disable(ctx: click.Context, name: str) -> None:
+    """Disable a plugin without uninstalling."""
+    from knowledge_manager.plugin import PluginManager
+
+    kb = ctx.obj["kb_path"]
+    pm = PluginManager(kb)
+    pm.load_all()
+
+    if pm.disable(name):
+        console.print(f"Plugin '{name}' disabled.")
+    else:
+        console.print(f"[red]Plugin '{name}' not found.[/red]")
+
+
+@plugin.command("uninstall")
+@click.argument("name")
+@click.pass_context
+def plugin_uninstall(ctx: click.Context, name: str) -> None:
+    """Uninstall a plugin completely."""
+    from knowledge_manager.plugin import PluginManager
+
+    kb = ctx.obj["kb_path"]
+    pm = PluginManager(kb)
+    pm.load_all()
+
+    if pm.uninstall(name):
+        console.print(f"[green]Plugin '{name}' uninstalled.[/green]")
+    else:
+        console.print(f"[red]Plugin '{name}' not found.[/red]")
+
+
+# --- audit (M13) ---
+
+
+@cli.group()
+def audit() -> None:
+    """Audit logging for compliance and change tracking."""
+
+
+@audit.command("log")
+@click.option("--since", default=None, help="Filter by start date (YYYY-MM-DD)")
+@click.option("--user", "-u", default=None, help="Filter by user")
+@click.option("--operation", "-o", default=None, help="Filter by operation type")
+@click.pass_context
+def audit_log(ctx: click.Context, since: str | None, user: str | None, operation: str | None) -> None:
+    """Show audit log entries."""
+    from knowledge_manager.audit import read_audit_log
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    events = read_audit_log(kb, since=since, user=user, operation=operation)
+    if not events:
+        console.print("No audit events found.")
+        return
+
+    for e in events[:50]:
+        console.print(
+            f"[dim]{e['timestamp'][:19]}[/dim] "
+            f"[bold]{e['user']}[/bold] "
+            f"{e['operation']} "
+            f"{e.get('module_id', '')}"
+        )
+    if len(events) > 50:
+        console.print(f"[dim]... and {len(events) - 50} more events[/dim]")
+
+
+# --- compliance (M13) ---
+
+
+@cli.command()
+@click.option("--period", "-p", default="", help="Period prefix (e.g. 2026-Q1)")
+@click.option("--format", "-f", "fmt", type=click.Choice(["json", "text"]), default="text", help="Output format")
+@click.pass_context
+def compliance(ctx: click.Context, period: str, fmt: str) -> None:
+    """Generate a compliance report from audit logs."""
+    from knowledge_manager.audit import generate_compliance_report
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    report = generate_compliance_report(kb, period=period, fmt=fmt)
+    console.print(report)
+
+
+# --- rbac (M13) ---
+
+
+@cli.group()
+def rbac() -> None:
+    """Role-based access control for multi-user knowledge bases."""
+
+
+@rbac.command("list")
+@click.pass_context
+def rbac_list(ctx: click.Context) -> None:
+    """List all users and their roles."""
+    from knowledge_manager.rbac import list_users
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    users = list_users(kb)
+    if not users:
+        console.print("No RBAC users configured. Default role for unknown users: viewer")
+        return
+
+    for u in users:
+        console.print(f"  {u['user']}: {u['role']}")
+
+
+@rbac.command("set")
+@click.argument("user")
+@click.argument("role", type=click.Choice(["admin", "editor", "reviewer", "viewer"]))
+@click.pass_context
+def rbac_set(ctx: click.Context, user: str, role: str) -> None:
+    """Set a user's role."""
+    from knowledge_manager.rbac import set_user_role
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    if set_user_role(user, role, kb):
+        console.print(f"[green]User '{user}' role set to '{role}'.[/green]")
+    else:
+        console.print(f"[red]Failed to set role.[/red]")
+
+
+@rbac.command("remove")
+@click.argument("user")
+@click.pass_context
+def rbac_remove(ctx: click.Context, user: str) -> None:
+    """Remove a user from RBAC configuration."""
+    from knowledge_manager.rbac import remove_user
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    if remove_user(user, kb):
+        console.print(f"User '{user}' removed.")
+    else:
+        console.print(f"[red]User '{user}' not found.[/red]")
 
 
 if __name__ == "__main__":

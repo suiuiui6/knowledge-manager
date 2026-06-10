@@ -18,6 +18,9 @@ class BaseLLMClient(ABC):
     async def complete(self, prompt: str) -> str:
         ...
 
+    async def complete_vision(self, prompt: str, image_path: str) -> str:
+        raise NotImplementedError("Vision not supported by this provider")
+
 
 class DeepSeekClient(BaseLLMClient):
     async def complete(self, prompt: str) -> str:
@@ -85,6 +88,34 @@ class ClaudeClient(BaseLLMClient):
                 logger.exception("Claude API call failed")
                 raise
 
+    async def complete_vision(self, prompt: str, image_path: str) -> str:
+        import base64
+        img_bytes = Path(image_path).read_bytes()
+        b64 = base64.b64encode(img_bytes).decode()
+        ext = Path(image_path).suffix.lower()
+        mime = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "gif": "image/gif", "webp": "image/webp"}.get(ext.lstrip("."), "image/png")
+
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                "https://api.anthropic.com/v1/messages",
+                json={
+                    "model": self.config.model,
+                    "max_tokens": self.config.max_tokens,
+                    "messages": [{"role": "user", "content": [
+                        {"type": "text", "text": prompt},
+                        {"type": "image", "source": {"type": "base64", "media_type": mime, "data": b64}},
+                    ]}],
+                },
+                headers={
+                    "x-api-key": self.config.api_key,
+                    "anthropic-version": "2023-06-01",
+                },
+                timeout=120,
+            )
+            resp.raise_for_status()
+            result = cast(dict[str, Any], resp.json())
+            return cast(str, result["content"][0]["text"])
+
 
 class OpenAIClient(BaseLLMClient):
     async def complete(self, prompt: str) -> str:
@@ -117,6 +148,32 @@ class OpenAIClient(BaseLLMClient):
             except Exception:
                 logger.exception("OpenAI API call failed")
                 raise
+
+    async def complete_vision(self, prompt: str, image_path: str) -> str:
+        import base64
+        img_bytes = Path(image_path).read_bytes()
+        b64 = base64.b64encode(img_bytes).decode()
+        ext = Path(image_path).suffix.lower()
+        mime = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "gif": "image/gif", "webp": "image/webp"}.get(ext.lstrip("."), "image/png")
+
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                f"{self.config.base_url or 'https://api.openai.com'}/v1/chat/completions",
+                json={
+                    "model": self.config.model,
+                    "messages": [{"role": "user", "content": [
+                        {"type": "text", "text": prompt},
+                        {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}},
+                    ]}],
+                    "temperature": self.config.temperature,
+                    "max_tokens": self.config.max_tokens,
+                },
+                headers={"Authorization": f"Bearer {self.config.api_key}"},
+                timeout=120,
+            )
+            resp.raise_for_status()
+            result = cast(dict[str, Any], resp.json())
+            return cast(str, result["choices"][0]["message"]["content"])
 
 
 def create_client(provider_name: str, config: LLMProviderConfig) -> BaseLLMClient:

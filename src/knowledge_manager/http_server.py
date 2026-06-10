@@ -494,6 +494,9 @@ def create_app(kb_path: Path) -> FastAPI:
     if ui_dist.exists():
         app.mount("/assets", StaticFiles(directory=str(ui_dist / "assets")), name="assets")
 
+    from knowledge_manager.auth import inject_auth_middleware
+    inject_auth_middleware(app, kb_path)
+
     return app
 
 
