@@ -498,6 +498,33 @@ FALLBACK_HTML = """<!DOCTYPE html>
   }
   .km-caveat p { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6; }
 
+  /* ── Transclusion / Block Reference ── */
+  .km-transclude {
+    background: rgba(91,155,213,0.06);
+    border: 1px solid rgba(91,155,213,0.15);
+    border-left: 3px solid var(--accent-blue);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    padding: 12px 16px;
+    margin: 16px 0;
+    font-size: 0.85rem;
+  }
+  .km-transclude-header {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent-blue);
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+  .km-wikilink {
+    color: var(--accent-blue);
+    text-decoration: underline;
+    text-decoration-color: rgba(91,155,213,0.3);
+    cursor: pointer;
+    transition: all 0.12s ease;
+  }
+  .km-wikilink:hover { color: var(--accent-amber); text-decoration-color: var(--accent-amber); }
+
   /* ── Health ── */
   .km-health-header { margin-bottom: 24px; }
   .km-health-header h2 { font-family: var(--font-display); font-size: 1.6rem; font-weight: 400; margin-bottom: 6px; }
@@ -1035,6 +1062,21 @@ FALLBACK_HTML = """<!DOCTYPE html>
     return html;
   }
 
+  function renderWikilinks(text) {
+    return text
+      .replace(/!\\[\\[([^\\]]+?)\\]\\]/g, function(m, target) {
+        return '<blockquote class="km-transclude" onclick="event.stopPropagation();loadModule(\'' + esc(target.split('#')[0]) + '\')">'
+          + '<div class="km-transclude-header">📌 Embedded: ' + esc(target) + '</div>'
+          + '<div style="font-size:0.8rem;color:var(--text-tertiary)">Click to load source module</div>'
+          + '</blockquote>';
+      })
+      .replace(/\\[\\[([^\\]]+?)\\]\\]/g, function(m, target) {
+        var display = target.indexOf('|') > -1 ? target.split('|')[1] : target;
+        var path = target.indexOf('|') > -1 ? target.split('|')[0] : target;
+        return '<span class="km-wikilink" onclick="event.stopPropagation();loadModule(\'' + esc(path) + '\')" title="' + esc(path) + '">' + esc(display) + '</span>';
+      });
+  }
+
   function renderModule(mod) {
     var html = '<div class="km-module">';
     html += '<div class="km-module-breadcrumb">' + esc(mod.category || '') + ' / ' + esc(mod.id || '') + '</div>';
@@ -1053,19 +1095,19 @@ FALLBACK_HTML = """<!DOCTYPE html>
 
     if (mod.content) {
       if (mod.content.overview) {
-        html += '<div class="km-section"><h3>Overview</h3><p>' + esc(mod.content.overview) + '</p></div>';
+        html += '<div class="km-section"><h3>Overview</h3><p>' + renderWikilinks(esc(mod.content.overview)) + '</p></div>';
       }
       if (mod.content.details) {
-        html += '<div class="km-section"><h3>Details</h3><p>' + esc(mod.content.details) + '</p></div>';
+        html += '<div class="km-section"><h3>Details</h3><p>' + renderWikilinks(esc(mod.content.details)) + '</p></div>';
       }
       if (mod.content.examples) {
-        html += '<div class="km-section"><h3>Examples</h3><pre>' + esc(mod.content.examples) + '</pre></div>';
+        html += '<div class="km-section"><h3>Examples</h3><pre>' + renderWikilinks(esc(mod.content.examples)) + '</pre></div>';
       }
       if (mod.content.caveats) {
-        html += '<div class="km-caveat"><strong>Caution</strong><p>' + esc(mod.content.caveats) + '</p></div>';
+        html += '<div class="km-caveat"><strong>Caution</strong><p>' + renderWikilinks(esc(mod.content.caveats)) + '</p></div>';
       }
       if (mod.content.references) {
-        html += '<div class="km-section"><h3>References</h3><p>' + esc(mod.content.references) + '</p></div>';
+        html += '<div class="km-section"><h3>References</h3><p>' + renderWikilinks(esc(mod.content.references)) + '</p></div>';
       }
     }
 
