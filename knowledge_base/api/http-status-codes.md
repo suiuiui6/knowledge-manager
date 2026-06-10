@@ -1,0 +1,31 @@
+---
+id: http-status-codes
+category: api
+title: HTTP Status Code Usage
+summary: We return precise HTTP status codes to clearly communicate request outcomes,
+  avoiding generic 200 and selecting the most specific code for each situation.
+tags:
+- api
+- http-status-codes
+- error-handling
+confidence: high
+status: published
+created_at: '2026-06-05T05:05:15.010044+00:00'
+updated_at: '2026-06-05T05:05:15.010045+00:00'
+---
+
+# 概述
+
+We use standard HTTP status codes rigorously to give clients unambiguous feedback, reducing integration guesswork and aiding automated error handling.
+
+# 细节
+
+Our practices include: 200 for successful reads, 201 Created with a Location header for successful resource creation, 400 Bad Request with detailed validation errors, 401 for missing or invalid authentication, 403 for authenticated but unauthorized access, 404 for non-existent resources, and 500 for unexpected server errors. This specificity accelerates client debugging and aligns with REST expectations.
+
+# 示例
+
+Resource creation returns 201 Created with a Location header pointing to the new resource; an invalid input payload returns 400 Bad Request with a JSON body describing field-level errors.
+
+# 注意事项
+
+Never default to 200 for all responses; picking an imprecise status code misleads client error-handling logic and degrades API reliability.

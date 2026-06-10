@@ -1,0 +1,6 @@
+# Claude Code
+.claude/
+
+# Knowledge base runtime data
+knowledge_base/.staging/
+knowledge_base/.telemetry/

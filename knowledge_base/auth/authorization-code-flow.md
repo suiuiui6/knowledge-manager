@@ -1,0 +1,31 @@
+---
+id: authorization-code-flow
+category: auth
+title: Authorization Code Flow Implementation
+summary: We authenticate users using the OAuth 2.0 Authorization Code flow, exchanging
+  an authorization code for tokens server-side.
+tags:
+- oauth2
+- authentication
+- authorization-code
+confidence: high
+status: published
+created_at: '2026-06-05T05:06:32.523006+00:00'
+updated_at: '2026-06-05T05:06:32.523009+00:00'
+---
+
+# 概述
+
+We use the Authorization Code grant type to enable users to log in via external providers securely without sharing credentials. The flow involves redirecting the user to the provider, obtaining consent, receiving a short-lived code, and exchanging it for an access token via a back-channel request.
+
+# 细节
+
+We avoid implicit grant to keep tokens off the browser. The flow is initiated by a 'Login with Provider' button that constructs an authorize URL with client_id, redirect_uri, scope, and state parameters. After user consent, the provider redirects back with a code appended to the redirect URI. Our server then makes a POST to the token endpoint with the code, client credentials, and redirect_uri to get the access token. This token is then used to call APIs on behalf of the user.
+
+# 示例
+
+Example: User clicks 'Login with Google'. Client constructs URL: https://accounts.google.com/o/oauth2/v2/auth?client_id=...&redirect_uri=https://our.app/callback&response_type=code&scope=openid+profile&state=random. After user approves, Google redirects to https://our.app/callback?code=AUTH_CODE&state=... Then server posts to https://oauth2.googleapis.com/token with code, client_id, client_secret, redirect_uri, grant_type=authorization_code.
+
+# 注意事项
+
+The authorization code is short-lived; exchange must happen promptly. Ensure state parameter is verified to prevent CSRF.

@@ -2,264 +2,18 @@
   "version": "1.0",
   "description": "A curated knowledge base of our team's technical methodology — architecture decisions, implementation patterns, operational practices, and lessons learned. Each module captures HOW we approach a topic, not just what it means. Use the index to identify relevant modules, then load the ones you need. Prefer modules with higher confidence ratings. Cross-reference related modules when topics overlap.",
   "categories": {
-    "api": {
-      "name": "api",
-      "description": "",
-      "modules": [
-        {
-          "id": "api-documentation-essentials",
-          "category": "api",
-          "title": "API Documentation Standards",
-          "summary": "We create comprehensive API documentation with authentication, endpoints, and examples using OpenAPI and Postman to drive adoption and ease of integration.",
-          "tags": [
-            "api",
-            "documentation",
-            "openapi",
-            "postman"
-          ],
-          "word_count": 108
-        },
-        {
-          "id": "api-rate-limiting",
-          "category": "api",
-          "title": "Rate Limiting Implementation",
-          "summary": "We apply rate limiting with standard response headers and choose algorithms like token bucket based on burst-handling requirements to protect the API and ensure fair usage.",
-          "tags": [
-            "api",
-            "rate-limiting",
-            "headers"
-          ],
-          "word_count": 123
-        },
-        {
-          "id": "api-versioning",
-          "category": "api",
-          "title": "API Versioning Strategy",
-          "summary": "We use URL path versioning for its simplicity and discoverability, accepting the added complexity in HATEOAS management to avoid breaking existing clients.",
-          "tags": [
-            "api",
-            "versioning",
-            "url-path"
-          ],
-          "word_count": 129
-        },
-        {
-          "id": "http-status-codes",
-          "category": "api",
-          "title": "HTTP Status Code Usage",
-          "summary": "We return precise HTTP status codes to clearly communicate request outcomes, avoiding generic 200 and selecting the most specific code for each situation.",
-          "tags": [
-            "api",
-            "http-status-codes",
-            "error-handling"
-          ],
-          "word_count": 125
-        },
-        {
-          "id": "restful-api-principles",
-          "category": "api",
-          "title": "RESTful API Design Principles",
-          "summary": "We design APIs following REST constraints, requiring stateless communication and a uniform interface where resources are identified by URIs and manipulated with standard HTTP methods.",
-          "tags": [
-            "api",
-            "rest",
-            "stateless",
-            "uniform-interface"
-          ],
-          "word_count": 129
-        }
-      ]
-    },
-    "auth": {
-      "name": "auth",
-      "description": "",
-      "modules": [
-        {
-          "id": "access-token-presentation",
-          "category": "auth",
-          "title": "API Access Token Usage",
-          "summary": "We pass the access token in the Authorization header as a Bearer token for all protected API requests.",
-          "tags": [
-            "api",
-            "access-token",
-            "bearer"
-          ],
-          "word_count": 120
-        },
-        {
-          "id": "authorization-code-flow",
-          "category": "auth",
-          "title": "Authorization Code Flow Implementation",
-          "summary": "We authenticate users using the OAuth 2.0 Authorization Code flow, exchanging an authorization code for tokens server-side.",
-          "tags": [
-            "oauth2",
-            "authentication",
-            "authorization-code"
-          ],
-          "word_count": 173
-        },
-        {
-          "id": "authorization-code-receipt",
-          "category": "auth",
-          "title": "Authorization Code Return Handling",
-          "summary": "We receive the temporary authorization code appended to the redirect URI after user consent.",
-          "tags": [
-            "oauth2",
-            "callback",
-            "authorization-code"
-          ],
-          "word_count": 111
-        },
-        {
-          "id": "token-exchange-endpoint",
-          "category": "auth",
-          "title": "Token Exchange for Access Token",
-          "summary": "We exchange the authorization code for an access token by making a server-to-server POST to the provider's token endpoint.",
-          "tags": [
-            "oauth2",
-            "token-exchange",
-            "server-to-server"
-          ],
-          "word_count": 99
-        },
-        {
-          "id": "user-authorization-consent",
-          "category": "auth",
-          "title": "User Authorization Consent Flow",
-          "summary": "We rely on the provider's consent screen where users explicitly approve requested scopes before granting access.",
-          "tags": [
-            "oauth2",
-            "consent",
-            "scopes"
-          ],
-          "word_count": 122
-        }
-      ]
-    },
-    "database": {
-      "name": "database",
-      "description": "",
-      "modules": [
-        {
-          "id": "connection-pooling",
-          "category": "database",
-          "title": "Database Connection Pooling",
-          "summary": "We maintain a reusable pool of database connections with specific configuration parameters to reduce overhead and improve performance.",
-          "tags": [
-            "connection-pooling",
-            "performance"
-          ],
-          "word_count": 132
-        },
-        {
-          "id": "database-migrations",
-          "category": "database",
-          "title": "Database Migrations",
-          "summary": "We version-control schema changes using incremental, reversible migrations tested on staging before production deployment.",
-          "tags": [
-            "migrations",
-            "schema",
-            "version-control"
-          ],
-          "word_count": 147
-        },
-        {
-          "id": "query-optimization",
-          "category": "database",
-          "title": "Query Optimization",
-          "summary": "We optimize SQL queries by leveraging indexes, avoiding SELECT *, using EXPLAIN, and batching operations.",
-          "tags": [
-            "sql",
-            "performance",
-            "indexes"
-          ],
-          "word_count": 161
-        },
-        {
-          "id": "transaction-management",
-          "category": "database",
-          "title": "Transaction Management",
-          "summary": "We wrap related operations in database transactions, relying on the default READ COMMITTED isolation level to balance consistency and performance.",
-          "tags": [
-            "transactions",
-            "acid",
-            "isolation"
-          ],
-          "word_count": 155
-        }
-      ]
-    },
-    "deployment": {
-      "name": "deployment",
-      "description": "",
-      "modules": [
-        {
-          "id": "blue-green-deployment",
-          "category": "deployment",
-          "title": "Blue-Green Deployment",
-          "summary": "We reduce downtime by maintaining two identical environments and switching traffic after validation.",
-          "tags": [
-            "deployment",
-            "blue-green",
-            "zero-downtime"
-          ],
-          "word_count": 52
-        },
-        {
-          "id": "ci-cd-pipeline",
-          "category": "deployment",
-          "title": "CI/CD Pipeline",
-          "summary": "We automate code delivery with stages from commit to production deployment, ensuring reliable releases.",
-          "tags": [
-            "ci-cd",
-            "automation",
-            "pipelines"
-          ],
-          "word_count": 42
-        },
-        {
-          "id": "docker-containerization",
-          "category": "deployment",
-          "title": "Docker Containerization",
-          "summary": "We package applications with dependencies into containers using best practices like multi-stage builds and non-root users.",
-          "tags": [
-            "docker",
-            "containers",
-            "build"
-          ],
-          "word_count": 49
-        },
-        {
-          "id": "kubernetes-deployment",
-          "category": "deployment",
-          "title": "Kubernetes Deployment",
-          "summary": "We orchestrate containerized applications with Kubernetes, using Deployments, Services, ConfigMaps, and Secrets.",
-          "tags": [
-            "kubernetes",
-            "orchestration",
-            "scaling"
-          ],
-          "word_count": 38
-        },
-        {
-          "id": "monitoring-and-logging",
-          "category": "deployment",
-          "title": "Monitoring and Logging",
-          "summary": "We monitor request rate, latency, errors, CPU/memory, and connection pools using Prometheus, Grafana, ELK, and Jaeger.",
-          "tags": [
-            "monitoring",
-            "observability",
-            "metrics",
-            "logging"
-          ],
-          "word_count": 51
-        }
-      ]
-    },
     "general": {
       "name": "general",
-      "description": "",
+      "description": "Topics: abstention, auth, caveats, connection-pool, cross-content, database, direct-hit, evaluation. Modules include: Phase5 Test Module; Retrieval Evaluation Rubric Overview; P5 Verify Updated; Overall Pass Criteria Summary; Retrieval Scoring Algorithm",
       "modules": [
+        {
+          "id": "p5test",
+          "category": "general",
+          "title": "Phase5 Test Module",
+          "summary": "Integration test for Phase 5 verify.",
+          "tags": [],
+          "word_count": 15
+        },
         {
           "id": "evaluation-rubric-overview",
           "category": "general",
@@ -369,13 +123,269 @@
           "word_count": 100
         }
       ]
+    },
+    "api": {
+      "name": "api",
+      "description": "Topics: api, documentation, error-handling, headers, http-status-codes, openapi, postman, rate-limiting. Modules include: API Documentation Standards; Rate Limiting Implementation; API Versioning Strategy; HTTP Status Code Usage; RESTful API Design Principles",
+      "modules": [
+        {
+          "id": "api-documentation-essentials",
+          "category": "api",
+          "title": "API Documentation Standards",
+          "summary": "We create comprehensive API documentation with authentication, endpoints, and examples using OpenAPI and Postman to drive adoption and ease of integration.",
+          "tags": [
+            "api",
+            "documentation",
+            "openapi",
+            "postman"
+          ],
+          "word_count": 108
+        },
+        {
+          "id": "api-rate-limiting",
+          "category": "api",
+          "title": "Rate Limiting Implementation",
+          "summary": "We apply rate limiting with standard response headers and choose algorithms like token bucket based on burst-handling requirements to protect the API and ensure fair usage.",
+          "tags": [
+            "api",
+            "rate-limiting",
+            "headers"
+          ],
+          "word_count": 123
+        },
+        {
+          "id": "api-versioning",
+          "category": "api",
+          "title": "API Versioning Strategy",
+          "summary": "We use URL path versioning for its simplicity and discoverability, accepting the added complexity in HATEOAS management to avoid breaking existing clients.",
+          "tags": [
+            "api",
+            "versioning",
+            "url-path"
+          ],
+          "word_count": 129
+        },
+        {
+          "id": "http-status-codes",
+          "category": "api",
+          "title": "HTTP Status Code Usage",
+          "summary": "We return precise HTTP status codes to clearly communicate request outcomes, avoiding generic 200 and selecting the most specific code for each situation.",
+          "tags": [
+            "api",
+            "http-status-codes",
+            "error-handling"
+          ],
+          "word_count": 125
+        },
+        {
+          "id": "restful-api-principles",
+          "category": "api",
+          "title": "RESTful API Design Principles",
+          "summary": "We design APIs following REST constraints, requiring stateless communication and a uniform interface where resources are identified by URIs and manipulated with standard HTTP methods.",
+          "tags": [
+            "api",
+            "rest",
+            "stateless",
+            "uniform-interface"
+          ],
+          "word_count": 129
+        }
+      ]
+    },
+    "auth": {
+      "name": "auth",
+      "description": "Topics: access-token, api, authentication, authorization-code, bearer, callback, consent, oauth2. Modules include: API Access Token Usage; Authorization Code Flow Implementation; Authorization Code Return Handling; Token Exchange for Access Token; User Authorization Consent Flow",
+      "modules": [
+        {
+          "id": "access-token-presentation",
+          "category": "auth",
+          "title": "API Access Token Usage",
+          "summary": "We pass the access token in the Authorization header as a Bearer token for all protected API requests.",
+          "tags": [
+            "api",
+            "access-token",
+            "bearer"
+          ],
+          "word_count": 120
+        },
+        {
+          "id": "authorization-code-flow",
+          "category": "auth",
+          "title": "Authorization Code Flow Implementation",
+          "summary": "We authenticate users using the OAuth 2.0 Authorization Code flow, exchanging an authorization code for tokens server-side.",
+          "tags": [
+            "oauth2",
+            "authentication",
+            "authorization-code"
+          ],
+          "word_count": 173
+        },
+        {
+          "id": "authorization-code-receipt",
+          "category": "auth",
+          "title": "Authorization Code Return Handling",
+          "summary": "We receive the temporary authorization code appended to the redirect URI after user consent.",
+          "tags": [
+            "oauth2",
+            "callback",
+            "authorization-code"
+          ],
+          "word_count": 111
+        },
+        {
+          "id": "token-exchange-endpoint",
+          "category": "auth",
+          "title": "Token Exchange for Access Token",
+          "summary": "We exchange the authorization code for an access token by making a server-to-server POST to the provider's token endpoint.",
+          "tags": [
+            "oauth2",
+            "token-exchange",
+            "server-to-server"
+          ],
+          "word_count": 99
+        },
+        {
+          "id": "user-authorization-consent",
+          "category": "auth",
+          "title": "User Authorization Consent Flow",
+          "summary": "We rely on the provider's consent screen where users explicitly approve requested scopes before granting access.",
+          "tags": [
+            "oauth2",
+            "consent",
+            "scopes"
+          ],
+          "word_count": 122
+        }
+      ]
+    },
+    "database": {
+      "name": "database",
+      "description": "Topics: acid, connection-pooling, indexes, isolation, migrations, performance, schema, sql. Modules include: Database Connection Pooling; Database Migrations; Query Optimization; Transaction Management",
+      "modules": [
+        {
+          "id": "connection-pooling",
+          "category": "database",
+          "title": "Database Connection Pooling",
+          "summary": "We maintain a reusable pool of database connections with specific configuration parameters to reduce overhead and improve performance.",
+          "tags": [
+            "connection-pooling",
+            "performance"
+          ],
+          "word_count": 132
+        },
+        {
+          "id": "database-migrations",
+          "category": "database",
+          "title": "Database Migrations",
+          "summary": "We version-control schema changes using incremental, reversible migrations tested on staging before production deployment.",
+          "tags": [
+            "migrations",
+            "schema",
+            "version-control"
+          ],
+          "word_count": 147
+        },
+        {
+          "id": "query-optimization",
+          "category": "database",
+          "title": "Query Optimization",
+          "summary": "We optimize SQL queries by leveraging indexes, avoiding SELECT *, using EXPLAIN, and batching operations.",
+          "tags": [
+            "sql",
+            "performance",
+            "indexes"
+          ],
+          "word_count": 161
+        },
+        {
+          "id": "transaction-management",
+          "category": "database",
+          "title": "Transaction Management",
+          "summary": "We wrap related operations in database transactions, relying on the default READ COMMITTED isolation level to balance consistency and performance.",
+          "tags": [
+            "transactions",
+            "acid",
+            "isolation"
+          ],
+          "word_count": 155
+        }
+      ]
+    },
+    "deployment": {
+      "name": "deployment",
+      "description": "Topics: automation, blue-green, build, ci-cd, containers, deployment, docker, kubernetes. Modules include: Blue-Green Deployment; CI/CD Pipeline; Docker Containerization; Kubernetes Deployment; Monitoring and Logging",
+      "modules": [
+        {
+          "id": "blue-green-deployment",
+          "category": "deployment",
+          "title": "Blue-Green Deployment",
+          "summary": "We reduce downtime by maintaining two identical environments and switching traffic after validation.",
+          "tags": [
+            "deployment",
+            "blue-green",
+            "zero-downtime"
+          ],
+          "word_count": 52
+        },
+        {
+          "id": "ci-cd-pipeline",
+          "category": "deployment",
+          "title": "CI/CD Pipeline",
+          "summary": "We automate code delivery with stages from commit to production deployment, ensuring reliable releases.",
+          "tags": [
+            "ci-cd",
+            "automation",
+            "pipelines"
+          ],
+          "word_count": 42
+        },
+        {
+          "id": "docker-containerization",
+          "category": "deployment",
+          "title": "Docker Containerization",
+          "summary": "We package applications with dependencies into containers using best practices like multi-stage builds and non-root users.",
+          "tags": [
+            "docker",
+            "containers",
+            "build"
+          ],
+          "word_count": 49
+        },
+        {
+          "id": "kubernetes-deployment",
+          "category": "deployment",
+          "title": "Kubernetes Deployment",
+          "summary": "We orchestrate containerized applications with Kubernetes, using Deployments, Services, ConfigMaps, and Secrets.",
+          "tags": [
+            "kubernetes",
+            "orchestration",
+            "scaling"
+          ],
+          "word_count": 38
+        },
+        {
+          "id": "monitoring-and-logging",
+          "category": "deployment",
+          "title": "Monitoring and Logging",
+          "summary": "We monitor request rate, latency, errors, CPU/memory, and connection pools using Prometheus, Grafana, ELK, and Jaeger.",
+          "tags": [
+            "monitoring",
+            "observability",
+            "metrics",
+            "logging"
+          ],
+          "word_count": 51
+        }
+      ]
     }
   },
+  "graph": {},
   "stats": {
-    "total_modules": 27,
-    "total_words": 2886,
+    "total_modules": 28,
+    "total_words": 2901,
     "categories": 5,
-    "last_updated": "2026-06-05T06:00:09.454946Z"
+    "last_updated": "2026-06-09T14:20:01.081120Z"
   },
-  "updated_at": "2026-06-05T06:00:09.454948Z"
+  "updated_at": "2026-06-09T14:20:01.081125Z",
+  "tree": null
 }

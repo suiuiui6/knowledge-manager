@@ -1,0 +1,32 @@
+---
+id: pass-criteria-summary
+category: general
+title: Overall Pass Criteria Summary
+summary: 'A collection of what ''good'' looks like across all five scenarios: correct
+  module loading and no fabricated content from unrelated modules.'
+tags:
+- evaluation
+- pass-criteria
+- summary
+- retrieval
+confidence: high
+status: published
+created_at: '2026-05-29T11:54:35.775196'
+updated_at: '2026-05-29T11:54:35.775197'
+---
+
+# 概述
+
+A passing run means all five scenarios are satisfied: each direct hit, the cross-content match, and the abstention scenario all behave as expected without hallucination.
+
+# 细节
+
+The system's safety net is Claude's judgment about what to load. Search precision is secondary; the key is that Claude correctly decides whether to load a module and, if so, cites its actual content.
+
+# 示例
+
+Scenario 1: cites RS256/JWKS/kid rotation from module. Scenario 4: loads jwt-tokens/auth for HS256 rejection despite weak summary match. Scenario 5: does not load a random module.
+
+# 注意事项
+
+The rubric must be run in a fresh session with no prior context to avoid priming effects.

@@ -1,0 +1,31 @@
+---
+id: api-versioning
+category: api
+title: API Versioning Strategy
+summary: We use URL path versioning for its simplicity and discoverability, accepting
+  the added complexity in HATEOAS management to avoid breaking existing clients.
+tags:
+- api
+- versioning
+- url-path
+confidence: high
+status: published
+created_at: '2026-06-05T05:05:15.010031+00:00'
+updated_at: '2026-06-05T05:05:15.010032+00:00'
+---
+
+# 概述
+
+We version our APIs to introduce breaking changes without disrupting existing consumers. Our primary strategy is URL path versioning, which offers straightforward client visibility.
+
+# 细节
+
+We evaluated URL path versioning (/v1/users, /v2/users), header-based versioning (Accept: application/vnd.api.v1+json), and query parameter versioning (/users?version=1). URL versioning was chosen because it is immediately clear in requests and logs, and easier for clients to debug. We are aware that it can complicate hypermedia (HATEOAS) link generation when spanning versions, so we carefully structure resource identifiers and links when introducing new major versions.
+
+# 示例
+
+V1 endpoint: GET /v1/users; V2 endpoint: GET /v2/users, which returns an updated response format.
+
+# 注意事项
+
+URL versioning can make HATEOAS link management harder if a resource representation must reference endpoints across versions. We mitigate this by designing versioned media types or link structures explicitly.
