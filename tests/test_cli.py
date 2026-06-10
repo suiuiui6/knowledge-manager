@@ -54,7 +54,7 @@ def test_cli_help(cli_runner):
 def test_cli_version(cli_runner):
     result = cli_runner.invoke(cli, ["--version"])
     assert result.exit_code == 0
-    assert "0.5.1" in result.output
+    assert "0.5.2" in result.output
 
 
 def test_cli_init_creates_knowledge_base(cli_runner, tmp_path):
