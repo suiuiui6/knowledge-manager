@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "knowledge-manager"
-version = "0.5.0"
+version = "0.5.1"
 description = "Git-native structured knowledge modules for LLM agent workflows via MCP."
 authors = ["Tang Yanhao <tangyanhao@example.com>"]
 readme = "README.md"

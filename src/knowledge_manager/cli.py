@@ -92,7 +92,7 @@ def _require_kb(kb_path: Path) -> None:
 
 
 @click.group()
-@click.version_option("0.5.0", prog_name="km")
+@click.version_option("0.5.1", prog_name="km")
 @click.option(
     "--kb-path",
     type=click.Path(path_type=Path),
