@@ -488,7 +488,7 @@ def create_app(kb_path: Path) -> FastAPI:
     @app.get("/ui/fallback", response_class=HTMLResponse)
     def ui_fallback():
         from knowledge_manager.ui_fallback import FALLBACK_HTML
-        return HTMLResponse(FALLBACK_HTML)
+        return HTMLResponse(FALLBACK_HTML, headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
 
     # Serve static files if dist exists
     if ui_dist.exists():
