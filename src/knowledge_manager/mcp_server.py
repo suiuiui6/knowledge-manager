@@ -5,6 +5,7 @@ from pathlib import Path
 from mcp.server.fastmcp import FastMCP
 
 from knowledge_manager.cache import ModuleCache
+from knowledge_manager.tenancy import TenantContext, module_visible_to_tenant
 from knowledge_manager.storage import load_changelogs, load_federation, load_index, load_module, load_module_changelog, record_load_event, search_modules
 
 
@@ -243,16 +244,19 @@ def create_server(kb_path: Path, cache: ModuleCache | None = None, federation: d
         }, indent=2)
 
     @mcp.tool(name="load_module")
-    def load_module_tool(module_id: str, category: str, namespace: str = "default") -> str:
+    def load_module_tool(module_id: str, category: str, namespace: str = "default", tenant_id: str = "") -> str:
         """Load a full knowledge module by ID and category. Use namespace for federated KBs."""
         target_kb = _resolve_kb(namespace)
         ns_key = f"{namespace}:{module_id}"
         cached = cache.get(module_id, namespace)
-        if cached is not None:
+        tenant = TenantContext(tenant_id=tenant_id) if tenant_id else None
+        if cached is not None and (tenant is None or module_visible_to_tenant(cached, tenant)):
             return cached.model_dump_json(indent=2)
 
         module = load_module(module_id, category, target_kb)
         if module is None:
+            return f"Module not found: {module_id} in category {category}"
+        if tenant is not None and not module_visible_to_tenant(module, tenant):
             return f"Module not found: {module_id} in category {category}"
 
         cache.put(module, namespace)
@@ -274,9 +278,11 @@ def create_server(kb_path: Path, cache: ModuleCache | None = None, federation: d
         agent_id: str = "",
         task_type: str = "",
         risk_level: str = "",
+        tenant_id: str = "",
     ) -> str:
         """Search modules by keyword. Use namespace for federated KBs."""
         target_kb = _resolve_kb(namespace)
+        tenant = TenantContext(tenant_id=tenant_id) if tenant_id else None
         results = [
             {
                 "id": r.module.id,
@@ -301,24 +307,38 @@ def create_server(kb_path: Path, cache: ModuleCache | None = None, federation: d
                 agent_id=agent_id or None,
                 task_type=task_type or None,
                 risk_level=risk_level or None,
+                tenant=tenant,
             )
         ]
         return json.dumps(results, indent=2)
 
     @mcp.tool(name="list_categories")
-    def list_categories_tool(namespace: str = "default") -> str:
+    def list_categories_tool(namespace: str = "default", tenant_id: str = "") -> str:
         """List all categories and their module counts. Use namespace for federated KBs."""
         target_kb = _resolve_kb(namespace)
-        index = load_index(target_kb)
-        if index is None:
-            return json.dumps([])
+        tenant = TenantContext(tenant_id=tenant_id) if tenant_id else None
+        if tenant is None:
+            index = load_index(target_kb)
+            if index is None:
+                return json.dumps([])
+            result = [
+                {
+                    "category": name,
+                    "module_count": len(cat.modules),
+                    "description": cat.description,
+                }
+                for name, cat in index.categories.items()
+            ]
+            return json.dumps(result, indent=2)
+
+        from knowledge_manager.storage import list_modules
+
+        categories: dict[str, int] = {}
+        for module in list_modules(target_kb, tenant=tenant):
+            categories[module.category] = categories.get(module.category, 0) + 1
         result = [
-            {
-                "category": name,
-                "module_count": len(cat.modules),
-                "description": cat.description,
-            }
-            for name, cat in index.categories.items()
+            {"category": name, "module_count": count, "description": ""}
+            for name, count in sorted(categories.items())
         ]
         return json.dumps(result, indent=2)
 
@@ -405,6 +425,27 @@ def create_server(kb_path: Path, cache: ModuleCache | None = None, federation: d
             module_data["neighbors"] = neighbors
             output.append(module_data)
         return json.dumps(output, indent=2)
+
+    @mcp.tool(name="explain_access")
+    def explain_access_tool(
+        groups: list[str],
+        category: str,
+        module_id: str,
+        roles: dict | None = None,
+        group_mapping: dict | None = None,
+    ) -> str:
+        """Explain whether the provided groups can read a module."""
+        from knowledge_manager.rbac import PermissionChecker
+
+        checker = PermissionChecker(
+            roles=roles or {},
+            group_mapping=group_mapping or {},
+        )
+        decision = checker.explain_module_access(
+            groups,
+            {"category": category, "id": module_id},
+        )
+        return decision.model_dump_json(indent=2)
 
     # ── Lint resource (M7) ──
 

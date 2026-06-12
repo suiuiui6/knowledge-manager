@@ -344,3 +344,10 @@ def test_run_eval_suite_does_not_count_extra_relevant_results_as_false_positives
 
     assert result.passed_cases == 1
     assert result.false_positive_rate == 0.0
+    assert result.results[0].first_hit_rank == 1
+    assert result.results[0].mrr == 1.0
+    assert result.results[0].ndcg_at_k > 0.5
+    assert result.avg_first_hit_rank == 1.0
+    assert result.avg_mrr == 1.0
+    assert result.avg_ndcg_at_k > 0.5
+    assert result.avg_recall_at_k == 1.0

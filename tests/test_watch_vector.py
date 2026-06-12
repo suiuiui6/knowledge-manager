@@ -110,3 +110,30 @@ class TestVectorIndex:
         assert results
         assert results[0].source == "vector_fallback"
         assert results[0].module.id == "legacy-acronym"
+
+    def test_hybrid_search_promotes_supported_vector_hit_without_losing_policy_controls(self, tmp_path, monkeypatch):
+        kb = tmp_path / "kb"
+        kb.mkdir()
+        save_module(
+            Module(
+                id="legacy-acronym",
+                category="ops",
+                title="Legacy Acronym Guide",
+                summary="Legacy acronym reference for operations.",
+                content=ModuleContent(
+                    overview="Legacy acronym overview.",
+                    details="Legacy acronym details with enough length for validation.",
+                ),
+            ),
+            kb,
+        )
+
+        monkeypatch.setattr(
+            "knowledge_manager.vector_index.VectorIndex.search",
+            lambda self, query, top_k=20: [("ops/legacy-acronym", 0.97)],
+        )
+
+        results = search_modules("zzqv acronym", kb, enable_vector_fallback=True)
+
+        assert results[0].module.id == "legacy-acronym"
+        assert any(reason.startswith("vector_support:") for reason in results[0].reasons)

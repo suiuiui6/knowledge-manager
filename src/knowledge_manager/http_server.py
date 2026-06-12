@@ -23,6 +23,20 @@ from knowledge_manager.storage import (
     list_modules,
     search_modules,
 )
+from knowledge_manager.tenancy import TenantContext, module_visible_to_tenant
+
+
+class MigrationDryRunRequest(BaseModel):
+    source_path: str
+    source_kind: str
+
+
+class AccessExplainRequest(BaseModel):
+    groups: list[str] = Field(default_factory=list)
+    category: str
+    module_id: str
+    roles: dict = Field(default_factory=dict)
+    group_mapping: dict = Field(default_factory=dict)
 
 
 def _load_config_safe(kb_path: Path):
@@ -92,10 +106,12 @@ def create_app(kb_path: Path) -> FastAPI:
         category: str = Query(""),
         status: str = Query(""),
         tag: str = Query(""),
+        tenant_id: str = Query(""),
         page: int = Query(1, ge=1),
         limit: int = Query(50, ge=1, le=200),
     ):
-        modules = list_modules(kb_path)
+        tenant = TenantContext(tenant_id=tenant_id) if tenant_id else None
+        modules = list_modules(kb_path, tenant=tenant)
         if category:
             modules = [m for m in modules if m.category == category]
         if status:
@@ -126,7 +142,13 @@ def create_app(kb_path: Path) -> FastAPI:
         return PaginatedResponse(items=items, total=total, page=page, limit=limit, pages=pages).model_dump()
 
     @app.get("/api/modules/{cat}/{mod_id}")
-    def api_module_detail(cat: str, mod_id: str, include_archived: bool = Query(False)):
+    def api_module_detail(
+        cat: str,
+        mod_id: str,
+        include_archived: bool = Query(False),
+        tenant_id: str = Query(""),
+    ):
+        tenant = TenantContext(tenant_id=tenant_id) if tenant_id else None
         # Handle .md suffix: strip and return 501 for M1
         if mod_id.endswith(".md"):
             real_id = mod_id[:-3]
@@ -134,15 +156,19 @@ def create_app(kb_path: Path) -> FastAPI:
             if md_path.exists():
                 from fastapi.responses import PlainTextResponse
                 return PlainTextResponse(md_path.read_text(encoding="utf-8"), media_type="text/markdown")
-            if load_module(real_id, cat, kb_path) is None:
+            module = load_module(real_id, cat, kb_path)
+            if module is None:
+                raise HTTPException(404, f"Module not found: {cat}/{real_id}")
+            if tenant is not None and not module_visible_to_tenant(module, tenant):
                 raise HTTPException(404, f"Module not found: {cat}/{real_id}")
             # Module exists but no .md file yet — generate on the fly
-            module = load_module(real_id, cat, kb_path)
             from knowledge_manager.markdown import render_markdown_module
             from fastapi.responses import PlainTextResponse
             return PlainTextResponse(render_markdown_module(module), media_type="text/markdown")
         module = load_module(mod_id, cat, kb_path)
         if module is None:
+            raise HTTPException(404, f"Module not found: {cat}/{mod_id}")
+        if tenant is not None and not module_visible_to_tenant(module, tenant):
             raise HTTPException(404, f"Module not found: {cat}/{mod_id}")
         if module.metadata.status == "archived" and not include_archived:
             raise HTTPException(410, f"Module archived: {cat}/{mod_id}")
@@ -161,6 +187,8 @@ def create_app(kb_path: Path) -> FastAPI:
         agent_id = body.get("agent_id") or None
         task_type = body.get("task_type") or None
         risk_level = body.get("risk_level") or None
+        tenant_id = body.get("tenant_id") or ""
+        tenant = TenantContext(tenant_id=tenant_id) if tenant_id else None
 
         results = search_modules(
             query,
@@ -171,6 +199,7 @@ def create_app(kb_path: Path) -> FastAPI:
             agent_id=agent_id,
             task_type=task_type,
             risk_level=risk_level,
+            tenant=tenant,
         )
 
         from knowledge_manager.storage import _classify_intent
@@ -182,6 +211,7 @@ def create_app(kb_path: Path) -> FastAPI:
             "agent_id": agent_id,
             "task_type": task_type,
             "risk_level": risk_level,
+            "tenant_id": tenant_id or None,
             "results": [
                 {
                     "id": r.module.id,
@@ -527,6 +557,46 @@ def create_app(kb_path: Path) -> FastAPI:
         from knowledge_manager.dual_view import build_dual_view
 
         return build_dual_view(kb_path)
+
+    @app.get("/api/source/jobs")
+    def api_source_jobs():
+        from knowledge_manager.ingestion_jobs import list_ingestion_jobs
+
+        jobs = list_ingestion_jobs(kb_path)
+        return {
+            "total": len(jobs),
+            "items": [job.model_dump(mode="json") for job in jobs],
+        }
+
+    @app.post("/api/migrate/dry-run")
+    def api_migrate_dry_run(request: MigrationDryRunRequest):
+        from knowledge_manager.migration import dry_run_import
+
+        source_path = Path(request.source_path)
+        if not source_path.exists():
+            raise HTTPException(status_code=404, detail="migration source not found")
+        summary = dry_run_import(Path(request.source_path), source_kind=request.source_kind)
+        return summary.model_dump()
+
+    @app.get("/api/admin/dashboard")
+    def api_admin_dashboard():
+        from knowledge_manager.admin_views import build_admin_dashboard
+
+        return build_admin_dashboard(kb_path)
+
+    @app.post("/api/access/explain")
+    def api_access_explain(request: AccessExplainRequest):
+        from knowledge_manager.rbac import PermissionChecker
+
+        checker = PermissionChecker(
+            roles=request.roles,
+            group_mapping=request.group_mapping,
+        )
+        decision = checker.explain_module_access(
+            request.groups,
+            {"category": request.category, "id": request.module_id},
+        )
+        return decision.model_dump()
 
     # ── UI entry ──
 

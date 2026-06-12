@@ -18,6 +18,7 @@ from knowledge_manager.schemas import (
     RoutingPolicyConfig,
     StagingMeta,
 )
+from knowledge_manager.tenancy import TenantContext, module_visible_to_tenant
 
 
 _FIELD_WEIGHTS = {"title": 5, "tag": 3, "summary": 2, "overview": 1, "details": 1, "examples": 0, "caveats": 0}
@@ -152,7 +153,7 @@ def delete_module(module_id: str, category: str, kb_path: Path) -> bool:
     return True
 
 
-def list_modules(kb_path: Path) -> List[Module]:
+def list_modules(kb_path: Path, tenant: TenantContext | None = None) -> List[Module]:
     if not kb_path.exists():
         return []
     modules = []
@@ -160,7 +161,9 @@ def list_modules(kb_path: Path) -> List[Module]:
         if json_file.name == "index.json":
             continue
         try:
-            modules.append(Module.model_validate_json(json_file.read_text(encoding="utf-8")))
+            module = Module.model_validate_json(json_file.read_text(encoding="utf-8"))
+            if module_visible_to_tenant(module, tenant):
+                modules.append(module)
         except Exception:
             pass
     return modules
@@ -211,6 +214,39 @@ class SearchResult(NamedTuple):
     module: Module
     source: str  # "direct", "related", or "policy"
     reasons: list[str]
+
+
+def _merge_hybrid_results(
+    lexical_results: list[SearchResult],
+    vector_hits: list[tuple[str, float]],
+    kb_path: Path,
+) -> list[SearchResult]:
+    merged: list[SearchResult] = list(lexical_results)
+    index_by_key = {
+        f"{item.module.category}/{item.module.id}": idx for idx, item in enumerate(merged)
+    }
+
+    for module_key, score in vector_hits:
+        if "/" not in module_key:
+            continue
+        reason = f"vector_support:{round(score, 3)}"
+        if module_key in index_by_key:
+            idx = index_by_key[module_key]
+            current = merged[idx]
+            if reason not in current.reasons:
+                merged[idx] = SearchResult(
+                    current.module,
+                    current.source,
+                    current.reasons + [reason],
+                )
+            continue
+        category, module_id = module_key.split("/", 1)
+        module = load_module(module_id, category, kb_path)
+        if module is None:
+            continue
+        index_by_key[module_key] = len(merged)
+        merged.append(SearchResult(module, "vector_fallback", [reason]))
+    return merged
 
 
 def _bm25_scores(query: str, modules: List[Module]) -> Dict[str, float]:
@@ -290,6 +326,7 @@ def search_modules(
     task_type: str | None = None,
     risk_level: str | None = None,
     enable_vector_fallback: bool = False,
+    tenant: TenantContext | None = None,
 ) -> List[SearchResult]:
     terms: list[str] = []
     for w in _WORD_RE.findall(query.lower()):
@@ -302,7 +339,7 @@ def search_modules(
     if not terms:
         return []
 
-    all_modules = list_modules(kb_path)
+    all_modules = list_modules(kb_path, tenant=tenant)
     cfg = _load_config_safe(kb_path)
     user_synonyms: Dict[str, List[str]] = cfg.synonyms if cfg else {}
     routing_policy: RoutingPolicyConfig = cfg.routing_policy if cfg else RoutingPolicyConfig()
@@ -550,6 +587,13 @@ def search_modules(
     )
     results = [SearchResult(module, source, reasons) for _, _, _, module, source, reasons in scored]
 
+    if enable_vector_fallback:
+        from knowledge_manager.vector_index import VectorIndex
+
+        vector_index = VectorIndex(kb_path)
+        vector_hits = vector_index.search(query, top_k=limit)
+        results = _merge_hybrid_results(results, vector_hits, kb_path)
+
     seen_keys = {f"{result.module.category}/{result.module.id}" for result in results}
     primary_categories = [result.module.category for result in results if result.source == "direct"]
     policy_decision = evaluate_module_policy(
@@ -589,29 +633,6 @@ def search_modules(
         result_ids = [f"{r.module.category}/{r.module.id}" for r in results[:20]]
         record_search_event(query, result_ids, kb_path)
         return results[:limit]
-
-    if enable_vector_fallback:
-        from knowledge_manager.vector_index import VectorIndex
-
-        vector_index = VectorIndex(kb_path)
-        vector_hits = vector_index.search(query, top_k=limit)
-        fallback_results: list[SearchResult] = []
-        for module_key, _score in vector_hits:
-            if "/" not in module_key:
-                continue
-            mod_category, mod_id = module_key.split("/", 1)
-            module = load_module(mod_id, mod_category, kb_path)
-            if module is None:
-                continue
-            fallback_results.append(
-                SearchResult(module, "vector_fallback", ["vector_fallback"])
-            )
-        record_search_event(
-            query,
-            [f"{r.module.category}/{r.module.id}" for r in fallback_results[:20]],
-            kb_path,
-        )
-        return fallback_results[:limit]
 
     record_search_event(query, [], kb_path)
     return []

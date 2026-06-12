@@ -322,3 +322,108 @@ def test_enterprise_ingest_eval_ops_flow(runner, integration_kb, monkeypatch, tm
     ops = runner.invoke(cli, ["--kb-path", str(integration_kb), "ops"])
     assert ops.exit_code == 0
     assert "Operations Report" in ops.output
+
+
+def test_replacement_flow_import_ingest_eval_and_ops(runner, integration_kb, monkeypatch, tmp_path):
+    from knowledge_manager.confluence import ConfluencePage
+
+    export_path = tmp_path / "legacy-export.json"
+    export_path.write_text(
+        json.dumps([{"id": "page-1", "title": "Runbook", "body": "rollback safely"}]),
+        encoding="utf-8",
+    )
+
+    dry_run = runner.invoke(
+        cli,
+        [
+            "--kb-path",
+            str(integration_kb),
+            "migrate",
+            "dry-run",
+            str(export_path),
+            "--source-kind",
+            "llm_wiki",
+        ],
+    )
+    assert dry_run.exit_code == 0
+    assert '"total_documents": 1' in dry_run.output
+
+    runner.invoke(
+        cli,
+        [
+            "--kb-path",
+            str(integration_kb),
+            "source",
+            "add-confluence",
+            "team-docs",
+            "--base-url",
+            "https://example.atlassian.net/wiki",
+            "--space-key",
+            "ENG",
+            "--email",
+            "docs@example.com",
+            "--token-env",
+            "CONFLUENCE_API_TOKEN",
+            "--category",
+            "ops",
+        ],
+    )
+    monkeypatch.setenv("CONFLUENCE_API_TOKEN", "token")
+
+    async def fake_list_pages(self, space_key, root_page_id="", limit=25, cursor=""):
+        return (
+            [
+                ConfluencePage(
+                    page_id="12345",
+                    title="JWT Runbook",
+                    url="https://example.atlassian.net/wiki/spaces/ENG/pages/12345",
+                    version="7",
+                    body_text="Refresh tokens rotate on every successful refresh.",
+                    heading_path=["ENG", "JWT Runbook"],
+                    checksum="abc123",
+                )
+            ],
+            "cursor-2",
+        )
+
+    async def fake_extract(self, text, category, existing_categories=""):
+        return [make_module("jwt-playbook", category)]
+
+    monkeypatch.setattr("knowledge_manager.confluence.ConfluenceClient.list_pages", fake_list_pages)
+    monkeypatch.setattr("knowledge_manager.cli.Extractor.extract", fake_extract)
+    monkeypatch.setattr("knowledge_manager.cli.create_client", lambda provider_name, provider_cfg: MagicMock())
+
+    pull = runner.invoke(cli, ["--kb-path", str(integration_kb), "source", "pull", "team-docs"])
+    assert pull.exit_code == 0
+    assert "staged 1 modules" in pull.output
+
+    review = runner.invoke(cli, ["--kb-path", str(integration_kb), "review"], input="a\n")
+    assert review.exit_code == 0
+
+    suite_path = tmp_path / "eval-suite.json"
+    suite_path.write_text(
+        json.dumps(
+            {
+                "name": "replacement-flow",
+                "cases": [
+                    {
+                        "id": "jwt-hit",
+                        "query": "refresh tokens rotate",
+                        "required_modules": ["ops/jwt-playbook"],
+                        "top_k": 3,
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    eval_run = runner.invoke(
+        cli,
+        ["--kb-path", str(integration_kb), "eval", "run", str(suite_path), "--top-k", "3"],
+    )
+    assert eval_run.exit_code == 0
+    assert "Baseline win rate" in eval_run.output
+
+    ops = runner.invoke(cli, ["--kb-path", str(integration_kb), "ops", "--format", "json"])
+    assert ops.exit_code == 0
+    assert '"source_backlog"' in ops.output

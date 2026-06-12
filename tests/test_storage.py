@@ -7,7 +7,7 @@ from knowledge_manager.storage import (
     save_module, load_module, delete_module, list_modules,
     save_index, load_index, rebuild_index,
     save_to_staging, list_staging, load_from_staging, approve_from_staging,
-    _stem, search_modules,
+    _merge_hybrid_results, _stem, search_modules,
     record_search_event, record_load_event, load_search_events,
     compute_bayesian_priors, save_rank_model, load_rank_model,
     get_supersession_chain, mark_source_documents_changed,
@@ -95,6 +95,21 @@ def test_list_modules(kb_path):
     modules = list_modules(kb_path)
     ids = {m.id for m in modules}
     assert ids == {"mod-a", "mod-b", "mod-c"}
+
+
+def test_merge_hybrid_results_adds_vector_support_reason(kb_path):
+    module = make_module("legacy-acronym", "ops")
+    save_module(module, kb_path)
+    lexical_results = [search_modules("test module", kb_path)[0]]
+
+    merged = _merge_hybrid_results(
+        lexical_results,
+        [("ops/legacy-acronym", 0.97)],
+        kb_path,
+    )
+
+    assert len(merged) == 1
+    assert any(reason.startswith("vector_support:") for reason in merged[0].reasons)
 
 
 def test_rebuild_index_auto_generates_category_descriptions(kb_path):

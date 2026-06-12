@@ -3,6 +3,8 @@ import logging
 from pathlib import Path
 from typing import Optional
 
+from pydantic import BaseModel, Field
+
 logger = logging.getLogger("knowledge_manager.rbac")
 
 ROLES = {"admin", "editor", "reviewer", "viewer"}
@@ -113,16 +115,39 @@ class PermissionChecker:
                     resolved.append(role)
         return resolved
 
+    class AccessDecision(BaseModel):
+        allowed: bool
+        reasons: list[str] = Field(default_factory=list)
+        matched_roles: list[str] = Field(default_factory=list)
+
+    def _role_allows(self, role: str, module: dict, permission: str) -> bool:
+        role_config = self.roles.get(role, {})
+        if permission not in role_config.get("permissions", []):
+            return False
+        scopes = role_config.get("scopes", [])
+        if not scopes:
+            return True
+        category_scope = f"category:{module.get('category', '')}"
+        module_scope = f"module:{module.get('category', '')}/{module.get('id', '')}"
+        return category_scope in scopes or module_scope in scopes
+
+    def explain_module_access(self, groups: list[str], module: dict) -> AccessDecision:
+        roles = self.resolve_roles(groups)
+        matched_roles: list[str] = []
+        for role in roles:
+            if self._role_allows(role, module, "module:read"):
+                matched_roles.append(role)
+        if matched_roles:
+            return self.AccessDecision(
+                allowed=True,
+                reasons=["role_scope_match"],
+                matched_roles=matched_roles,
+            )
+        return self.AccessDecision(
+            allowed=False,
+            reasons=["scope_mismatch"] if roles else ["no_matching_role"],
+            matched_roles=roles,
+        )
+
     def can_read_module(self, groups: list[str], module: dict) -> bool:
-        for role in self.resolve_roles(groups):
-            role_config = self.roles.get(role, {})
-            if "module:read" not in role_config.get("permissions", []):
-                continue
-            scopes = role_config.get("scopes", [])
-            if not scopes:
-                return True
-            category_scope = f"category:{module.get('category', '')}"
-            module_scope = f"module:{module.get('category', '')}/{module.get('id', '')}"
-            if category_scope in scopes or module_scope in scopes:
-                return True
-        return False
+        return self.explain_module_access(groups, module).allowed

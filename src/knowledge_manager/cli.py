@@ -2964,6 +2964,25 @@ def source() -> None:
     """Manage external enterprise knowledge sources."""
 
 
+@cli.group()
+def migrate() -> None:
+    """Import and evaluate migration inputs from incumbent systems."""
+
+
+@migrate.command("dry-run")
+@click.argument("source_path", type=click.Path(path_type=Path, exists=True))
+@click.option("--source-kind", required=True)
+@click.pass_context
+def migrate_dry_run(ctx: click.Context, source_path: Path, source_kind: str) -> None:
+    """Analyze a legacy export without importing it."""
+    from knowledge_manager.migration import dry_run_import
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+    summary = dry_run_import(source_path, source_kind=source_kind)
+    click.echo(summary.model_dump_json(indent=2))
+
+
 @source.command("add-confluence")
 @click.argument("source_id")
 @click.option("--base-url", required=True)
@@ -3084,6 +3103,12 @@ def source_status(ctx: click.Context) -> None:
 def source_pull(ctx: click.Context, source_id: str) -> None:
     """Pull from a registered enterprise source into staging."""
     from knowledge_manager.confluence import ConfluenceClient
+    from knowledge_manager.ingestion_jobs import (
+        claim_ingestion_job,
+        complete_ingestion_job,
+        create_ingestion_job,
+        fail_ingestion_job,
+    )
     from knowledge_manager.notion import NotionClient
     from knowledge_manager.source_ingestion import (
         ingest_confluence_pages,
@@ -3116,6 +3141,8 @@ def source_pull(ctx: click.Context, source_id: str) -> None:
     provider_name, provider_cfg = cfg.get_default_provider()
     llm_client = create_client(provider_name, provider_cfg)
     extractor = Extractor(llm_client, cfg.extraction)
+    job = create_ingestion_job(kb, source_id=source_id, trigger="manual")
+    claim_ingestion_job(kb, job.job_id, worker_id="cli")
 
     async def _run_pull() -> tuple[int, int, int]:
         last_error: Exception | None = None
@@ -3158,10 +3185,19 @@ def source_pull(ctx: click.Context, source_id: str) -> None:
     try:
         pages_seen, modules_staged, modules_marked_stale = asyncio.run(_run_pull())
     except Exception as exc:
+        fail_ingestion_job(kb, job.job_id, str(exc))
         record_source_sync_error(source_id, str(exc), kb)
         click.echo(f"Error: source pull failed: {exc}", err=True)
         raise click.Abort()
+    complete_ingestion_job(
+        kb,
+        job.job_id,
+        pages_seen=pages_seen,
+        modules_staged=modules_staged,
+        modules_marked_stale=modules_marked_stale,
+    )
     click.echo(
+        f"Job {job.job_id}: "
         f"Pulled {pages_seen} pages from {source_id}; "
         f"staged {modules_staged} modules; marked {modules_marked_stale} modules stale"
     )

@@ -14,6 +14,8 @@ from knowledge_manager.rbac import (
     PermissionChecker, RBACConfig, get_user_role, set_user_role, check_permission,
     list_users, remove_user, load_rbac_config,
 )
+from knowledge_manager.schemas import Module, ModuleContent
+from knowledge_manager.tenancy import TenantContext, module_visible_to_tenant
 
 
 class TestAuthConfig:
@@ -33,6 +35,34 @@ class TestAuthConfig:
         cfg = AuthConfig()
         assert cfg.provider == ""
         assert cfg.oidc_config == {}
+
+
+def test_tenant_context_allows_global_module_reads():
+    assert module_visible_to_tenant(
+        Module(
+            id="shared-guide",
+            category="ops",
+            title="Shared Guide",
+            summary="Shared operational guidance for all tenants.",
+            content=ModuleContent(
+                overview="Shared guide overview.",
+                details="Shared guide details with enough length for validation.",
+            ),
+        ),
+        TenantContext(tenant_id="team-a"),
+    ) is True
+
+
+def test_permission_checker_reports_effective_reason():
+    checker = PermissionChecker(
+        roles={"reviewer": {"permissions": ["module:read"], "scopes": ["category:policy"]}},
+        group_mapping={"grp-reviewers": ["reviewer"]},
+    )
+
+    decision = checker.explain_module_access(["grp-reviewers"], {"category": "finance", "id": "fin-1"})
+
+    assert decision.allowed is False
+    assert "scope_mismatch" in decision.reasons
 
 
 class TestAuthMiddleware:

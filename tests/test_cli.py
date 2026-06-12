@@ -364,9 +364,11 @@ def test_cli_source_pull_stages_modules(cli_runner, initialized_kb, monkeypatch)
 
     result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "source", "pull", "team-docs"])
     assert result.exit_code == 0, result.output
+    assert "Job job-" in result.output
     assert "staged 1 modules" in result.output
     assert (initialized_kb / ".staging" / "jwt-playbook.json").exists()
     assert (initialized_kb / ".staging" / "jwt-playbook.meta.json").exists()
+    assert any((initialized_kb / ".jobs" / "ingestion").glob("*.json"))
 
     status_result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "source", "status"])
     assert status_result.exit_code == 0
@@ -419,6 +421,7 @@ def test_cli_source_pull_notion_stages_modules(cli_runner, initialized_kb, monke
 
     result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "source", "pull", "ops-notes"])
     assert result.exit_code == 0, result.output
+    assert "Job job-" in result.output
     assert "staged 1 modules" in result.output
     assert (initialized_kb / ".staging" / "ops-runbook.json").exists()
 
@@ -526,6 +529,9 @@ def test_cli_source_pull_does_not_retry_permanent_errors(cli_runner, initialized
     assert result.exit_code != 0
     assert attempts["count"] == 1
     assert "source pull failed" in result.output
+    job_files = list((initialized_kb / ".jobs" / "ingestion").glob("*.json"))
+    assert job_files
+    assert '"status": "failed"' in job_files[0].read_text(encoding="utf-8")
 
 
 def test_cli_eval_run(cli_runner, initialized_kb, tmp_path):
@@ -1968,6 +1974,32 @@ def test_cli_ops_export_source_backlog_writes_json(cli_runner, initialized_kb):
     data = json.loads(output_path.read_text(encoding="utf-8"))
     assert data["total"] == 1
     assert data["items"][0]["source_id"] == "team-docs"
+
+
+def test_cli_migrate_dry_run_outputs_summary(cli_runner, initialized_kb, tmp_path):
+    export_path = tmp_path / "legacy-export.json"
+    export_path.write_text(
+        json.dumps([{"id": "page-1", "title": "Runbook", "body": "rollback safely"}]),
+        encoding="utf-8",
+    )
+
+    result = cli_runner.invoke(
+        cli,
+        [
+            "--kb-path",
+            str(initialized_kb),
+            "migrate",
+            "dry-run",
+            str(export_path),
+            "--source-kind",
+            "llm_wiki",
+        ],
+    )
+
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["total_documents"] == 1
+    assert data["creates"] == 1
 
 
 # ── Phase 3D: apply CLI tests ──

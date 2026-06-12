@@ -5,6 +5,7 @@ from typing import List
 
 from pydantic import BaseModel, Field
 
+from knowledge_manager.retrieval_eval import score_ranked_case
 from knowledge_manager.storage import search_modules
 
 
@@ -33,6 +34,10 @@ class EvalCaseResult(BaseModel):
     policy_suppressed_modules: List[str] = Field(default_factory=list)
     baseline_found_modules: List[str] = Field(default_factory=list)
     context_tokens: int = 0
+    first_hit_rank: int | None = None
+    mrr: float = 0.0
+    ndcg_at_k: float = 0.0
+    recall_at_k: float = 0.0
     failure_type: str = "none"
     passed: bool
 
@@ -54,6 +59,10 @@ class EvalRunResult(BaseModel):
     false_positive_rate: float = 0.0
     false_negative_rate: float = 0.0
     avg_context_tokens: int = 0
+    avg_first_hit_rank: float = 0.0
+    avg_mrr: float = 0.0
+    avg_ndcg_at_k: float = 0.0
+    avg_recall_at_k: float = 0.0
     policy_failure_rate: float = 0.0
     retrieval_failure_rate: float = 0.0
     risk_level_summary: dict[str, EvalDimensionSummary] = Field(default_factory=dict)
@@ -88,6 +97,11 @@ def run_eval_suite(
     policy_failures = 0
     retrieval_failures = 0
     total_context_tokens = 0
+    total_first_hit_rank = 0
+    cases_with_first_hit = 0
+    total_mrr = 0.0
+    total_ndcg_at_k = 0.0
+    total_recall_at_k = 0.0
     risk_level_summary: dict[str, EvalDimensionSummary] = {}
     task_type_summary: dict[str, EvalDimensionSummary] = {}
     for case in suite.cases:
@@ -111,6 +125,7 @@ def run_eval_suite(
             risk_level=case.risk_level or None,
         )
         found = [f"{item.module.category}/{item.module.id}" for item in full_results]
+        ranking = score_ranked_case(case.required_modules, found)
         missing = [required for required in case.required_modules if required not in found]
         suppressed = [module_key for module_key in baseline_found if module_key not in found]
         case_passed = len(missing) == 0
@@ -130,6 +145,12 @@ def run_eval_suite(
         if missing:
             false_negatives += 1
         total_context_tokens += context_tokens
+        if ranking.first_hit_rank is not None:
+            total_first_hit_rank += ranking.first_hit_rank
+            cases_with_first_hit += 1
+        total_mrr += ranking.mrr
+        total_ndcg_at_k += ranking.ndcg_at_k
+        total_recall_at_k += ranking.recall_at_k
         baseline_case = (baseline_results or {}).get(case.case_id)
         if baseline_case is not None:
             baseline_required_hit = baseline_case.get("required_hit", False)
@@ -164,6 +185,10 @@ def run_eval_suite(
                 policy_suppressed_modules=suppressed,
                 baseline_found_modules=baseline_found,
                 context_tokens=context_tokens,
+                first_hit_rank=ranking.first_hit_rank,
+                mrr=ranking.mrr,
+                ndcg_at_k=ranking.ndcg_at_k,
+                recall_at_k=ranking.recall_at_k,
                 failure_type=failure_type,
                 passed=case_passed,
             )
@@ -184,6 +209,10 @@ def run_eval_suite(
         false_positive_rate=round((false_positives / total) * 100, 1) if total else 0.0,
         false_negative_rate=round((false_negatives / total) * 100, 1) if total else 0.0,
         avg_context_tokens=round(total_context_tokens / total) if total else 0,
+        avg_first_hit_rank=round(total_first_hit_rank / cases_with_first_hit, 2) if cases_with_first_hit else 0.0,
+        avg_mrr=round(total_mrr / total, 4) if total else 0.0,
+        avg_ndcg_at_k=round(total_ndcg_at_k / total, 4) if total else 0.0,
+        avg_recall_at_k=round(total_recall_at_k / total, 4) if total else 0.0,
         policy_failure_rate=round((policy_failures / failed_cases) * 100, 1) if failed_cases else 0.0,
         retrieval_failure_rate=round((retrieval_failures / failed_cases) * 100, 1) if failed_cases else 0.0,
         risk_level_summary=risk_level_summary,

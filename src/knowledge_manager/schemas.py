@@ -135,6 +135,8 @@ class ModuleMetadata(BaseModel):
     tags: List[str] = Field(default_factory=list)
     related_modules: List[str] = Field(default_factory=list)
     confidence: Literal["high", "medium", "low"] = "medium"
+    tenant_id: str = ""
+    workspace_id: str = ""
     source: str = Field(default="")
     source_documents: List[SourceDocumentRef] = Field(default_factory=list)
     source_spans: List[SourceSpan] = Field(default_factory=list)

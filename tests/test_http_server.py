@@ -84,6 +84,49 @@ class TestModules:
         r = client.get("/api/modules?limit=999")
         assert r.status_code == 422
 
+    def test_list_modules_honors_tenant_filter(self, tmp_path):
+        kb = tmp_path / "kb"
+        kb.mkdir()
+        from knowledge_manager.schemas import Index, Module, ModuleContent, ModuleMetadata
+        from knowledge_manager.storage import save_index, save_module
+
+        save_index(Index(description="Tenant KB"), kb)
+        save_module(
+            Module(
+                id="tenant-a",
+                category="ops",
+                title="Tenant A Guide",
+                summary="Tenant A operational guidance.",
+                content=ModuleContent(
+                    overview="Tenant A overview.",
+                    details="Tenant A details with enough length for validation.",
+                ),
+                metadata=ModuleMetadata(tenant_id="team-a"),
+            ),
+            kb,
+        )
+        save_module(
+            Module(
+                id="tenant-b",
+                category="ops",
+                title="Tenant B Guide",
+                summary="Tenant B operational guidance.",
+                content=ModuleContent(
+                    overview="Tenant B overview.",
+                    details="Tenant B details with enough length for validation.",
+                ),
+                metadata=ModuleMetadata(tenant_id="team-b"),
+            ),
+            kb,
+        )
+
+        tenant_client = TestClient(create_app(kb))
+        r = tenant_client.get("/api/modules?tenant_id=team-a")
+        assert r.status_code == 200
+        data = r.json()
+        assert data["total"] == 1
+        assert data["items"][0]["id"] == "tenant-a"
+
     def test_module_detail(self, client):
         r = client.get("/api/modules/general/test-mod")
         assert r.status_code == 200
@@ -93,6 +136,32 @@ class TestModules:
 
     def test_module_detail_404(self, client):
         r = client.get("/api/modules/general/nonexistent")
+        assert r.status_code == 404
+
+    def test_module_detail_honors_tenant_filter(self, tmp_path):
+        kb = tmp_path / "kb"
+        kb.mkdir()
+        from knowledge_manager.schemas import Index, Module, ModuleContent, ModuleMetadata
+        from knowledge_manager.storage import save_index, save_module
+
+        save_index(Index(description="Tenant Detail KB"), kb)
+        save_module(
+            Module(
+                id="tenant-a",
+                category="ops",
+                title="Tenant A Guide",
+                summary="Tenant A operational guidance.",
+                content=ModuleContent(
+                    overview="Tenant A overview.",
+                    details="Tenant A details with enough length for validation.",
+                ),
+                metadata=ModuleMetadata(tenant_id="team-a"),
+            ),
+            kb,
+        )
+
+        tenant_client = TestClient(create_app(kb))
+        r = tenant_client.get("/api/modules/ops/tenant-a?tenant_id=team-b")
         assert r.status_code == 404
 
     def test_module_md_available(self, client):
@@ -117,6 +186,49 @@ class TestSearch:
     def test_search_category_filter(self, client):
         r = client.post("/api/search", json={"query": "test", "category": "general"})
         assert r.status_code == 200
+
+    def test_search_honors_tenant_filter(self, tmp_path):
+        kb = tmp_path / "kb"
+        kb.mkdir()
+        from knowledge_manager.schemas import Index, Module, ModuleContent, ModuleMetadata
+        from knowledge_manager.storage import save_index, save_module
+
+        save_index(Index(description="Tenant Search KB"), kb)
+        save_module(
+            Module(
+                id="tenant-a",
+                category="ops",
+                title="Rollback Guide A",
+                summary="Tenant A rollback guidance.",
+                content=ModuleContent(
+                    overview="Rollback safely for tenant A.",
+                    details="Tenant A rollback details with enough length for validation.",
+                ),
+                metadata=ModuleMetadata(tenant_id="team-a"),
+            ),
+            kb,
+        )
+        save_module(
+            Module(
+                id="tenant-b",
+                category="ops",
+                title="Rollback Guide B",
+                summary="Tenant B rollback guidance.",
+                content=ModuleContent(
+                    overview="Rollback safely for tenant B.",
+                    details="Tenant B rollback details with enough length for validation.",
+                ),
+                metadata=ModuleMetadata(tenant_id="team-b"),
+            ),
+            kb,
+        )
+
+        tenant_client = TestClient(create_app(kb))
+        r = tenant_client.post("/api/search", json={"query": "rollback safely", "tenant_id": "team-a"})
+        assert r.status_code == 200
+        data = r.json()
+        assert len(data["results"]) == 1
+        assert data["results"][0]["id"] == "tenant-a"
 
     def test_search_accepts_agent_task_and_risk_policy_inputs(self, tmp_path):
         kb = tmp_path / "kb"
@@ -248,6 +360,29 @@ class TestSearch:
         ids = [result["id"] for result in r.json()["results"]]
         assert "published-runbook" in ids
         assert "draft-runbook" not in ids
+
+    def test_access_explain_endpoint_returns_scope_mismatch(self, tmp_path):
+        kb = tmp_path / "kb"
+        kb.mkdir()
+        from knowledge_manager.schemas import Index
+        from knowledge_manager.storage import save_index
+
+        save_index(Index(description="Access explain KB"), kb)
+        access_client = TestClient(create_app(kb))
+        r = access_client.post(
+            "/api/access/explain",
+            json={
+                "groups": ["grp-reviewers"],
+                "category": "finance",
+                "module_id": "fin-1",
+                "roles": {"reviewer": {"permissions": ["module:read"], "scopes": ["category:policy"]}},
+                "group_mapping": {"grp-reviewers": ["reviewer"]},
+            },
+        )
+        assert r.status_code == 200
+        data = r.json()
+        assert data["allowed"] is False
+        assert "scope_mismatch" in data["reasons"]
 
 
 class TestGraph:
@@ -454,6 +589,93 @@ class TestOps:
         data = r.json()
         assert data["sources"][0]["source_id"] == "team-docs"
         assert data["modules"][0]["module_id"] == "ops/mod-1"
+
+    def test_source_jobs_endpoint_returns_ingestion_jobs(self, tmp_path):
+        from knowledge_manager.ingestion_jobs import create_ingestion_job
+        from knowledge_manager.schemas import Index
+        from knowledge_manager.storage import save_index
+
+        kb = tmp_path / "kb"
+        kb.mkdir()
+        save_index(Index(description="jobs view"), kb)
+        create_ingestion_job(kb, source_id="team-docs", trigger="manual")
+
+        jobs_client = TestClient(create_app(kb))
+        r = jobs_client.get("/api/source/jobs")
+        assert r.status_code == 200
+        data = r.json()
+        assert data["total"] == 1
+        assert data["items"][0]["source_id"] == "team-docs"
+
+    def test_migrate_dry_run_endpoint_returns_summary(self, tmp_path):
+        from knowledge_manager.schemas import Index
+        from knowledge_manager.storage import save_index
+
+        kb = tmp_path / "kb"
+        kb.mkdir()
+        save_index(Index(description="migration view"), kb)
+        export_path = tmp_path / "legacy-export.json"
+        export_path.write_text(
+            json.dumps([{"id": "page-1", "title": "Runbook", "body": "rollback safely"}]),
+            encoding="utf-8",
+        )
+
+        jobs_client = TestClient(create_app(kb))
+        r = jobs_client.post(
+            "/api/migrate/dry-run",
+            json={"source_path": str(export_path), "source_kind": "llm_wiki"},
+        )
+        assert r.status_code == 200
+        data = r.json()
+        assert data["total_documents"] == 1
+        assert data["creates"] == 1
+
+    def test_migrate_dry_run_endpoint_returns_404_for_missing_source(self, tmp_path):
+        from knowledge_manager.schemas import Index
+        from knowledge_manager.storage import save_index
+
+        kb = tmp_path / "kb"
+        kb.mkdir()
+        save_index(Index(description="migration missing source"), kb)
+
+        jobs_client = TestClient(create_app(kb))
+        r = jobs_client.post(
+            "/api/migrate/dry-run",
+            json={"source_path": str(tmp_path / "missing.json"), "source_kind": "llm_wiki"},
+        )
+        assert r.status_code == 404
+        assert r.json()["detail"] == "migration source not found"
+
+    def test_admin_dashboard_endpoint_returns_aggregates(self, tmp_path):
+        from knowledge_manager.ingestion_jobs import create_ingestion_job
+        from knowledge_manager.schemas import Index, Module, ModuleContent, StagingMeta
+        from knowledge_manager.storage import save_index, save_staging_meta, save_to_staging
+
+        kb = tmp_path / "kb"
+        kb.mkdir()
+        save_index(Index(description="admin dashboard"), kb)
+        create_ingestion_job(kb, source_id="team-docs", trigger="manual")
+        staged = Module(
+            id="review-me",
+            category="ops",
+            title="Review me",
+            summary="Review me summary for operators.",
+            content=ModuleContent(
+                overview="Review me overview.",
+                details="Review me details with enough length for validation.",
+            ),
+        )
+        save_to_staging(staged, kb / ".staging")
+        save_staging_meta(StagingMeta(module_id="review-me", status="pending"), kb / ".staging")
+
+        dashboard_client = TestClient(create_app(kb))
+        r = dashboard_client.get("/api/admin/dashboard")
+        assert r.status_code == 200
+        data = r.json()
+        assert "ingestion_jobs" in data
+        assert "review_backlog" in data
+        assert "stale_sources" in data
+        assert "eval_regressions" in data
 
 
 class TestStats:

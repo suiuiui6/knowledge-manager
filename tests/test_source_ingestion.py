@@ -19,6 +19,7 @@ from knowledge_manager.source_ingestion import (
     upsert_source,
     update_source_sync,
 )
+from knowledge_manager.ingestion_jobs import create_ingestion_job, resume_ingestion_job, update_ingestion_checkpoint
 from knowledge_manager.storage import load_from_staging, load_staging_meta, save_module
 
 
@@ -193,3 +194,15 @@ async def test_ingest_notion_pages_stamps_notion_source_type(tmp_path):
     assert staged is not None
     assert staged.category == "operations"
     assert staged.metadata.source_documents[0].source_type == "notion"
+
+
+def test_ingestion_job_checkpoint_round_trip(tmp_path):
+    kb_path = tmp_path / "kb"
+    kb_path.mkdir()
+
+    job = create_ingestion_job(kb_path, source_id="team-docs", trigger="manual")
+    update_ingestion_checkpoint(kb_path, job.job_id, cursor="cursor-2", pages_seen=10)
+    resumed = resume_ingestion_job(kb_path, job.job_id)
+
+    assert resumed.resume_cursor == "cursor-2"
+    assert resumed.pages_seen == 10

@@ -326,6 +326,14 @@ Current validation artifacts are checked into [`test-results/`](test-results/) a
 - Pull and stage changes with `km source pull <source-id>`.
 - Audit routing and freshness with `km ops`, `km ops-export-review-backlog`, `km ops-export-risky-misses`, and `km ops-export-source-backlog`.
 - Review rollout procedures in [`docs/runbooks/enterprise-rollout.md`](docs/runbooks/enterprise-rollout.md) and eval gates in [`docs/runbooks/eval-gate.md`](docs/runbooks/eval-gate.md).
+- Use `km migrate dry-run <export.json> --source-kind <kind>` before cutover, and follow [`docs/runbooks/migration-cutover.md`](docs/runbooks/migration-cutover.md) for replacement rollouts.
+
+## Replacement Readiness
+
+- Hybrid retrieval quality can now be measured with first-hit rank, MRR, nDCG, and recall in addition to hit rate.
+- Source ingestion runs are tracked as durable jobs with visible status, failure state, checkpoints, and resume metadata.
+- Tenant-aware module isolation and explainable permission decisions are available as the foundation for deeper enterprise tenancy.
+- Migration dry runs, job views, ops exports, and the admin dashboard reduce switching risk from incumbent knowledge tools.
 
 ## Example knowledge base
 

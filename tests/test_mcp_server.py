@@ -60,6 +60,29 @@ async def test_tool_load_module_found(server, kb_path):
 
 
 @pytest.mark.asyncio
+async def test_tool_load_module_honors_tenant_filter(server, kb_path):
+    module = Module(
+        id="tenant-a",
+        category="ops",
+        title="Tenant A Guide",
+        summary="Tenant A operational guidance.",
+        content=ModuleContent(
+            overview="Tenant A overview.",
+            details="Tenant A details with enough length for validation.",
+        ),
+        metadata=ModuleMetadata(tenant_id="team-a"),
+    )
+    save_module(module, kb_path)
+
+    result = await server.call_tool(
+        "load_module",
+        {"module_id": "tenant-a", "category": "ops", "tenant_id": "team-b"},
+    )
+    content = result[0].text if hasattr(result[0], "text") else str(result[0])
+    assert "not found" in content.lower()
+
+
+@pytest.mark.asyncio
 async def test_tool_load_module_not_found(server, kb_path):
     result = await server.call_tool("load_module", {"module_id": "missing", "category": "auth"})
     content = result[0].text if hasattr(result[0], "text") else str(result[0])
@@ -79,6 +102,43 @@ async def test_tool_search_modules(server, kb_path):
     assert '"caveats"' in raw
     assert '"related_modules"' in raw
     assert '"policy_reasons"' in raw
+
+
+@pytest.mark.asyncio
+async def test_tool_search_modules_honors_tenant_filter(server, kb_path):
+    save_module(
+        Module(
+            id="tenant-a",
+            category="ops",
+            title="Rollback Guide A",
+            summary="Tenant A rollback guidance.",
+            content=ModuleContent(
+                overview="Rollback safely for tenant A.",
+                details="Tenant A rollback details with enough length for validation.",
+            ),
+            metadata=ModuleMetadata(tenant_id="team-a"),
+        ),
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="tenant-b",
+            category="ops",
+            title="Rollback Guide B",
+            summary="Tenant B rollback guidance.",
+            content=ModuleContent(
+                overview="Rollback safely for tenant B.",
+                details="Tenant B rollback details with enough length for validation.",
+            ),
+            metadata=ModuleMetadata(tenant_id="team-b"),
+        ),
+        kb_path,
+    )
+
+    result = await server.call_tool("search_modules", {"query": "rollback safely", "tenant_id": "team-a"})
+    raw = result[0].text if hasattr(result[0], "text") else str(result[0])
+    assert '"tenant-a"' in raw
+    assert '"tenant-b"' not in raw
 
 
 @pytest.mark.asyncio
@@ -147,6 +207,60 @@ async def test_tool_search_modules_accepts_agent_task_and_risk_inputs(server, kb
     assert '"sensitive-rollout"' in raw
     assert '"change-approval"' in raw
     assert '"risk_level:high"' in raw
+
+
+@pytest.mark.asyncio
+async def test_tool_explain_access_returns_scope_mismatch(server, kb_path):
+    result = await server.call_tool(
+        "explain_access",
+        {
+            "groups": ["grp-reviewers"],
+            "category": "finance",
+            "module_id": "fin-1",
+            "roles": {"reviewer": {"permissions": ["module:read"], "scopes": ["category:policy"]}},
+            "group_mapping": {"grp-reviewers": ["reviewer"]},
+        },
+    )
+    raw = result[0].text if hasattr(result[0], "text") else str(result[0])
+    assert '"allowed": false' in raw.lower()
+    assert "scope_mismatch" in raw
+
+
+@pytest.mark.asyncio
+async def test_tool_list_categories_honors_tenant_filter(server, kb_path):
+    save_module(
+        Module(
+            id="tenant-a",
+            category="ops",
+            title="Tenant A Guide",
+            summary="Tenant A operational guidance.",
+            content=ModuleContent(
+                overview="Tenant A overview.",
+                details="Tenant A details with enough length for validation.",
+            ),
+            metadata=ModuleMetadata(tenant_id="team-a"),
+        ),
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="tenant-b",
+            category="finance",
+            title="Tenant B Guide",
+            summary="Tenant B finance guidance.",
+            content=ModuleContent(
+                overview="Tenant B overview.",
+                details="Tenant B details with enough length for validation.",
+            ),
+            metadata=ModuleMetadata(tenant_id="team-b"),
+        ),
+        kb_path,
+    )
+
+    result = await server.call_tool("list_categories", {"tenant_id": "team-a"})
+    raw = result[0].text if hasattr(result[0], "text") else str(result[0])
+    assert '"ops"' in raw
+    assert '"finance"' not in raw
 
 
 @pytest.mark.asyncio
