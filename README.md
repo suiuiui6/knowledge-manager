@@ -166,6 +166,32 @@ This launches a stdio MCP server. Clients (Claude Code, etc.) see:
 - Tool `search_modules(query)` — ranked keyword search with exact, stem, and short-query partial matching
 - Tool `list_categories()` — categories with counts
 
+## Enterprise Operations
+
+Register external sources and inspect sync health:
+
+```bash
+km --kb-path ./my_kb source add-confluence team-docs --base-url https://example.atlassian.net/wiki --space-key ENG --email docs@example.com --token-env CONFLUENCE_API_TOKEN --category architecture
+km --kb-path ./my_kb source add-notion ops-notes --database-id db-1 --token-env NOTION_TOKEN --category operations
+km --kb-path ./my_kb source status
+km --kb-path ./my_kb source pull team-docs
+```
+
+Run enterprise eval and operations gates:
+
+```bash
+km --kb-path ./my_kb eval run ./eval-suite.json
+km --kb-path ./my_kb ops
+km --kb-path ./my_kb ops-export-review-backlog ./review-backlog.json
+km --kb-path ./my_kb ops-export-risky-misses ./risky-misses.json
+km --kb-path ./my_kb ops-export-source-backlog ./source-backlog.json
+```
+
+The same control-plane data is exposed through:
+
+- HTTP: `/api/ops`, `/api/ops/backlog/review`, `/api/ops/backlog/risky-misses`, `/api/ops/backlog/source`, `/api/dual-view`
+- MCP resources: `knowledge://ops`, `knowledge://ops/backlog/review`, `knowledge://ops/backlog/risky-misses`, `knowledge://ops/backlog/source`, `knowledge://dual-view`
+
 ## Module schema
 
 ```json

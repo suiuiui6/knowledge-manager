@@ -352,6 +352,50 @@ class TestOps:
         assert data["total"] == 1
         assert data["items"][0]["module_id"] == "review-me"
 
+    def test_ops_backlog_risky_misses_endpoint_returns_export(self, tmp_path):
+        from knowledge_manager.schemas import Index
+        from knowledge_manager.storage import record_search_event, save_index
+
+        kb = tmp_path / "kb"
+        kb.mkdir()
+        save_index(Index(description="ops backlog risky"), kb)
+        record_search_event("deploy rollback", [], kb)
+
+        ops_client = TestClient(create_app(kb))
+        r = ops_client.get("/api/ops/backlog/risky-misses")
+        assert r.status_code == 200
+        data = r.json()
+        assert data["total"] == 1
+        assert data["items"][0]["query_terms"]
+
+    def test_ops_backlog_source_endpoint_returns_export(self, tmp_path):
+        from knowledge_manager.schemas import ConfluenceSourceConfig, Index, SourceDefinition
+        from knowledge_manager.source_ingestion import upsert_source
+        from knowledge_manager.storage import save_index
+
+        kb = tmp_path / "kb"
+        kb.mkdir()
+        save_index(Index(description="ops backlog source"), kb)
+        upsert_source(
+            SourceDefinition(
+                id="team-docs",
+                confluence=ConfluenceSourceConfig(
+                    base_url="https://example.atlassian.net/wiki",
+                    space_key="ENG",
+                    email="docs@example.com",
+                    api_token_env="CONFLUENCE_API_TOKEN",
+                ),
+            ),
+            kb,
+        )
+
+        ops_client = TestClient(create_app(kb))
+        r = ops_client.get("/api/ops/backlog/source")
+        assert r.status_code == 200
+        data = r.json()
+        assert data["total"] == 1
+        assert data["items"][0]["source_id"] == "team-docs"
+
     def test_dual_view_endpoint_returns_projection(self, tmp_path):
         from knowledge_manager.schemas import (
             ConfluenceSourceConfig,

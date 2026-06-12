@@ -598,6 +598,69 @@ async def test_resource_dual_view_returns_json(server, kb_path):
     assert "modules" in data
 
 
+@pytest.mark.asyncio
+async def test_resource_ops_backlog_review_returns_json(server, kb_path):
+    from knowledge_manager.schemas import Module, ModuleContent, StagingMeta
+    from knowledge_manager.storage import save_staging_meta, save_to_staging
+
+    staged = Module(
+        id="review-me",
+        category="ops",
+        title="Review me",
+        summary="Review me summary for operators.",
+        content=ModuleContent(
+            overview="Review me overview.",
+            details="Review me details with enough length for validation.",
+        ),
+    )
+    save_to_staging(staged, kb_path / ".staging")
+    save_staging_meta(StagingMeta(module_id="review-me", status="pending"), kb_path / ".staging")
+
+    result = await server.read_resource("knowledge://ops/backlog/review")
+    content = result[0].content if hasattr(result[0], "content") else str(result[0])
+    data = json.loads(content)
+    assert data["total"] == 1
+    assert data["items"][0]["module_id"] == "review-me"
+
+
+@pytest.mark.asyncio
+async def test_resource_ops_backlog_risky_misses_returns_json(server, kb_path):
+    from knowledge_manager.storage import record_search_event
+
+    record_search_event("deploy rollback", [], kb_path)
+
+    result = await server.read_resource("knowledge://ops/backlog/risky-misses")
+    content = result[0].content if hasattr(result[0], "content") else str(result[0])
+    data = json.loads(content)
+    assert data["total"] == 1
+    assert data["items"][0]["query_terms"]
+
+
+@pytest.mark.asyncio
+async def test_resource_ops_backlog_source_returns_json(server, kb_path):
+    from knowledge_manager.schemas import ConfluenceSourceConfig, SourceDefinition
+    from knowledge_manager.source_ingestion import upsert_source
+
+    upsert_source(
+        SourceDefinition(
+            id="team-docs",
+            confluence=ConfluenceSourceConfig(
+                base_url="https://example.atlassian.net/wiki",
+                space_key="ENG",
+                email="docs@example.com",
+                api_token_env="CONFLUENCE_API_TOKEN",
+            ),
+        ),
+        kb_path,
+    )
+
+    result = await server.read_resource("knowledge://ops/backlog/source")
+    content = result[0].content if hasattr(result[0], "content") else str(result[0])
+    data = json.loads(content)
+    assert data["total"] == 1
+    assert data["items"][0]["source_id"] == "team-docs"
+
+
 # ── Phase 4B: Federation MCP tests ──
 
 

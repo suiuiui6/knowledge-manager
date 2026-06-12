@@ -504,6 +504,24 @@ def create_app(kb_path: Path) -> FastAPI:
 
         return generate_review_backlog_export(kb_path)
 
+    @app.get("/api/ops/backlog/review")
+    def api_ops_backlog_review():
+        from knowledge_manager.ops_export import generate_review_backlog_export
+
+        return generate_review_backlog_export(kb_path)
+
+    @app.get("/api/ops/backlog/risky-misses")
+    def api_ops_backlog_risky_misses():
+        from knowledge_manager.ops_export import generate_risky_miss_export
+
+        return generate_risky_miss_export(kb_path)
+
+    @app.get("/api/ops/backlog/source")
+    def api_ops_backlog_source():
+        from knowledge_manager.ops_export import generate_source_backlog_export
+
+        return generate_source_backlog_export(kb_path)
+
     @app.get("/api/dual-view")
     def api_dual_view():
         from knowledge_manager.dual_view import build_dual_view

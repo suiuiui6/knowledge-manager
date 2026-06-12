@@ -101,18 +101,6 @@ def run_eval_suite(
                 limit=effective_top_k,
             )
         ]
-        found = [
-            f"{item.module.category}/{item.module.id}"
-            for item in search_modules(
-                case.query,
-                kb_path,
-                category=case.category or None,
-                limit=effective_top_k,
-                agent_id=case.agent_id or None,
-                task_type=case.task_type or None,
-                risk_level=case.risk_level or None,
-            )
-        ]
         full_results = search_modules(
             case.query,
             kb_path,
@@ -137,7 +125,7 @@ def run_eval_suite(
             policy_failures += 1
         elif failure_type == "retrieval":
             retrieval_failures += 1
-        if case_passed and len(found) > len(case.required_modules):
+        if found and not any(required in found for required in case.required_modules):
             false_positives += 1
         if missing:
             false_negatives += 1

@@ -7,13 +7,15 @@ from knowledge_manager.ops_export import (
 )
 from knowledge_manager.schemas import (
     ConfluenceSourceConfig,
+    Module,
+    ModuleContent,
     SourceDefinition,
     SourceRegistry,
     SourceSyncState,
     StagingMeta,
 )
 from knowledge_manager.source_ingestion import save_source_registry
-from knowledge_manager.storage import record_search_event, save_staging_meta
+from knowledge_manager.storage import load_search_events, record_search_event, save_module, save_staging_meta, search_modules
 
 
 def test_generate_review_backlog_export_includes_stale_sources(tmp_path):
@@ -57,6 +59,35 @@ def test_generate_risky_miss_export_collects_zero_result_queries(tmp_path):
 
     assert export["total"] == 1
     assert export["items"][0]["query_terms"]
+
+
+def test_generate_risky_miss_export_ignores_vector_fallback_successes(tmp_path, monkeypatch):
+    kb = tmp_path / "kb"
+    kb.mkdir()
+    save_module(
+        Module(
+            id="legacy-acronym",
+            category="ops",
+            title="Legacy Acronym Guide",
+            summary="Legacy acronym reference for operations.",
+            content=ModuleContent(
+                overview="Legacy acronym overview.",
+                details="Legacy acronym details with enough length for validation.",
+            ),
+        ),
+        kb,
+    )
+    monkeypatch.setattr(
+        "knowledge_manager.vector_index.VectorIndex.search",
+        lambda self, query, top_k=20: [("ops/legacy-acronym", 0.91)],
+    )
+
+    results = search_modules("zzqv", kb, enable_vector_fallback=True)
+
+    assert results
+    assert len(load_search_events(kb)) == 1
+    export = generate_risky_miss_export(kb)
+    assert export["total"] == 0
 
 
 def test_generate_source_backlog_export_returns_items(tmp_path):

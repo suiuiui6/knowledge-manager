@@ -124,6 +124,27 @@ def create_server(kb_path: Path, cache: ModuleCache | None = None, federation: d
 
         return json.dumps(generate_review_backlog_export(kb_path), ensure_ascii=False, indent=2)
 
+    @mcp.resource("knowledge://ops/backlog/review")
+    def get_ops_backlog_review() -> str:
+        """Get the staging review backlog export."""
+        from knowledge_manager.ops_export import generate_review_backlog_export
+
+        return json.dumps(generate_review_backlog_export(kb_path), ensure_ascii=False, indent=2)
+
+    @mcp.resource("knowledge://ops/backlog/risky-misses")
+    def get_ops_backlog_risky_misses() -> str:
+        """Get queries that surfaced no final results."""
+        from knowledge_manager.ops_export import generate_risky_miss_export
+
+        return json.dumps(generate_risky_miss_export(kb_path), ensure_ascii=False, indent=2)
+
+    @mcp.resource("knowledge://ops/backlog/source")
+    def get_ops_backlog_source() -> str:
+        """Get the stale-source backlog export."""
+        from knowledge_manager.ops_export import generate_source_backlog_export
+
+        return json.dumps(generate_source_backlog_export(kb_path), ensure_ascii=False, indent=2)
+
     @mcp.resource("knowledge://dual-view")
     def get_dual_view() -> str:
         """Get source-to-module and module-to-source projection data."""

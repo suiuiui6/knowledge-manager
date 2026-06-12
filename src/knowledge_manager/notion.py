@@ -65,10 +65,77 @@ def _normalize_page(item: dict[str, Any]) -> NotionPage:
     )
 
 
+def _extract_block_text(block: dict[str, Any]) -> str:
+    block_type = str(block.get("type", ""))
+    value = block.get(block_type)
+    if not isinstance(value, dict):
+        return ""
+    rich_text = value.get("rich_text")
+    if rich_text:
+        return _extract_plain_text(rich_text)
+    if "caption" in value:
+        return _extract_plain_text(value.get("caption", []))
+    if "title" in value:
+        return _extract_plain_text(value.get("title", []))
+    return ""
+
+
 class NotionClient:
     def __init__(self, api_token: str, timeout: float = 30.0):
         self._api_token = api_token
         self._timeout = timeout
+
+    async def _request_json(
+        self,
+        client: httpx.AsyncClient,
+        method: str,
+        url: str,
+        *,
+        json_body: dict[str, Any] | None = None,
+        params: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        response = await client.request(method, url, json=json_body, params=params)
+        response.raise_for_status()
+        return response.json()
+
+    async def _fetch_block_children(
+        self,
+        client: httpx.AsyncClient,
+        block_id: str,
+    ) -> list[dict[str, Any]]:
+        blocks: list[dict[str, Any]] = []
+        cursor = ""
+        while True:
+            params: dict[str, Any] = {"page_size": 100}
+            if cursor:
+                params["start_cursor"] = cursor
+            data = await self._request_json(
+                client,
+                "GET",
+                f"https://api.notion.com/v1/blocks/{block_id}/children",
+                params=params,
+            )
+            blocks.extend(data.get("results", []))
+            cursor = str(data.get("next_cursor") or "")
+            if not data.get("has_more"):
+                break
+        return blocks
+
+    async def _collect_block_text(
+        self,
+        client: httpx.AsyncClient,
+        block_id: str,
+    ) -> str:
+        lines: list[str] = []
+        for block in await self._fetch_block_children(client, block_id):
+            block_text = _extract_block_text(block).strip()
+            if block_text:
+                lines.append(block_text)
+            if block.get("has_children"):
+                nested_text = await self._collect_block_text(client, str(block.get("id", "")))
+                if nested_text.strip():
+                    lines.append(nested_text.strip())
+        return "\n".join(lines).strip()
 
     async def list_pages(
         self,
@@ -86,13 +153,26 @@ class NotionClient:
             payload["start_cursor"] = cursor
 
         async with httpx.AsyncClient(timeout=self._timeout, headers=headers) as client:
-            response = await client.post(
+            data = await self._request_json(
+                client,
+                "POST",
                 f"https://api.notion.com/v1/databases/{database_id}/query",
-                json=payload,
+                json_body=payload,
             )
-            response.raise_for_status()
-            data = response.json()
-
-        pages = [_normalize_page(item) for item in data.get("results", [])]
+            pages: list[NotionPage] = []
+            for item in data.get("results", []):
+                page = _normalize_page(item)
+                body_text = await self._collect_block_text(client, page.page_id)
+                if body_text:
+                    page = NotionPage(
+                        page_id=page.page_id,
+                        title=page.title,
+                        url=page.url,
+                        version=page.version,
+                        body_text=body_text,
+                        heading_path=page.heading_path,
+                        checksum=hashlib.sha256(body_text.encode("utf-8")).hexdigest(),
+                    )
+                pages.append(page)
         next_cursor = str(data.get("next_cursor") or "")
         return pages, next_cursor

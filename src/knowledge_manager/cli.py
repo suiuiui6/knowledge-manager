@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Optional
 
 import click
+import httpx
 from rich.console import Console
 from rich.prompt import Prompt
 from rich.table import Table
@@ -65,6 +66,15 @@ def _configure_logging(verbose: bool) -> None:
             )
         )
         root.addHandler(handler)
+
+
+def _is_transient_source_pull_error(exc: Exception) -> bool:
+    if isinstance(exc, (httpx.TimeoutException, httpx.NetworkError, httpx.RemoteProtocolError)):
+        return True
+    if isinstance(exc, httpx.HTTPStatusError):
+        status_code = exc.response.status_code
+        return status_code == 429 or 500 <= status_code < 600
+    return False
 
 
 def _config_path(kb_path: Path) -> Path:
@@ -3109,7 +3119,7 @@ def source_pull(ctx: click.Context, source_id: str) -> None:
 
     async def _run_pull() -> tuple[int, int, int]:
         last_error: Exception | None = None
-        for _ in range(3):
+        for attempt in range(3):
             try:
                 if source_def.type == "confluence":
                     assert source_def.confluence is not None
@@ -3135,6 +3145,9 @@ def source_pull(ctx: click.Context, source_id: str) -> None:
                 break
             except Exception as exc:
                 last_error = exc
+                if not _is_transient_source_pull_error(exc) or attempt == 2:
+                    raise
+                await asyncio.sleep(0.5 * (attempt + 1))
         else:
             assert last_error is not None
             raise last_error

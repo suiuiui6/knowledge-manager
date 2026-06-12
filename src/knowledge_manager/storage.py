@@ -585,10 +585,9 @@ def search_modules(
         results.append(SearchResult(companion, "policy", companion_reasons))
         seen_keys.add(companion_key)
 
-    # Record search event for future learning
-    result_ids = [f"{r.module.category}/{r.module.id}" for r in results[:20]]
-    record_search_event(query, result_ids, kb_path)
     if results:
+        result_ids = [f"{r.module.category}/{r.module.id}" for r in results[:20]]
+        record_search_event(query, result_ids, kb_path)
         return results[:limit]
 
     if enable_vector_fallback:
@@ -607,14 +606,14 @@ def search_modules(
             fallback_results.append(
                 SearchResult(module, "vector_fallback", ["vector_fallback"])
             )
-        if fallback_results:
-            record_search_event(
-                query,
-                [f"{r.module.category}/{r.module.id}" for r in fallback_results[:20]],
-                kb_path,
-            )
+        record_search_event(
+            query,
+            [f"{r.module.category}/{r.module.id}" for r in fallback_results[:20]],
+            kb_path,
+        )
         return fallback_results[:limit]
 
+    record_search_event(query, [], kb_path)
     return []
 
 

@@ -293,3 +293,54 @@ def test_run_eval_suite_reports_baseline_delta_and_failure_decomposition(tmp_pat
     assert result.retrieval_failure_rate == 0.0
     assert result.avg_context_tokens > 0
     assert result.results[0].failure_type == "none"
+    assert result.false_positive_rate == 0.0
+
+
+def test_run_eval_suite_does_not_count_extra_relevant_results_as_false_positives(tmp_path):
+    kb_path = tmp_path / "kb"
+    save_module(
+        Module(
+            id="jwt-playbook",
+            category="auth",
+            title="JWT Playbook",
+            summary="JWT production guide for auth flows.",
+            content=ModuleContent(
+                overview="JWT auth production overview for the team.",
+                details="JWT auth production details and refresh token rotation guidance.",
+            ),
+        ),
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="jwt-checklist",
+            category="auth",
+            title="JWT Checklist",
+            summary="JWT production checklist for auth flows.",
+            content=ModuleContent(
+                overview="JWT checklist overview for the team.",
+                details="JWT checklist details with refresh token guidance.",
+            ),
+        ),
+        kb_path,
+    )
+
+    result = run_eval_suite(
+        EvalSuite.model_validate(
+            {
+                "name": "precision-smoke",
+                "cases": [
+                    {
+                        "id": "jwt-hit",
+                        "query": "jwt production",
+                        "required_modules": ["auth/jwt-playbook"],
+                        "top_k": 5,
+                    }
+                ],
+            }
+        ),
+        kb_path,
+    )
+
+    assert result.passed_cases == 1
+    assert result.false_positive_rate == 0.0

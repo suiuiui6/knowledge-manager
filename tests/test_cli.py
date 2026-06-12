@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
+import httpx
 import pytest
 from click.testing import CliRunner
 
@@ -426,6 +427,107 @@ def test_cli_source_pull_notion_stages_modules(cli_runner, initialized_kb, monke
     assert "cursor-3" in status_result.output
 
 
+def test_cli_source_pull_retries_transient_errors(cli_runner, initialized_kb, monkeypatch):
+    cli_runner.invoke(
+        cli,
+        [
+            "--kb-path",
+            str(initialized_kb),
+            "source",
+            "add-confluence",
+            "team-docs",
+            "--base-url",
+            "https://example.atlassian.net/wiki",
+            "--space-key",
+            "ENG",
+            "--email",
+            "docs@example.com",
+            "--token-env",
+            "CONFLUENCE_API_TOKEN",
+            "--category",
+            "architecture",
+        ],
+    )
+    monkeypatch.setenv("CONFLUENCE_API_TOKEN", "token")
+    attempts = {"count": 0}
+
+    async def flaky_list_pages(self, space_key, root_page_id="", limit=25, cursor=""):
+        attempts["count"] += 1
+        if attempts["count"] < 3:
+            request = httpx.Request("GET", "https://example.atlassian.net/wiki/rest/api/content")
+            response = httpx.Response(503, request=request)
+            raise httpx.HTTPStatusError("service unavailable", request=request, response=response)
+        return (
+            [
+                ConfluencePage(
+                    page_id="12345",
+                    title="JWT Runbook",
+                    url="https://example.atlassian.net/wiki/spaces/ENG/pages/12345",
+                    version="7",
+                    body_text="Refresh tokens rotate on every successful refresh.",
+                    heading_path=["ENG", "JWT Runbook"],
+                    checksum="abc123",
+                )
+            ],
+            "cursor-2",
+        )
+
+    async def fake_extract(self, text, category, existing_categories=""):
+        return [make_module("jwt-playbook", category)]
+
+    monkeypatch.setattr("knowledge_manager.confluence.ConfluenceClient.list_pages", flaky_list_pages)
+    monkeypatch.setattr("knowledge_manager.cli.Extractor.extract", fake_extract)
+    monkeypatch.setattr("knowledge_manager.cli.create_client", lambda provider_name, provider_cfg: AsyncMock())
+    monkeypatch.setattr("knowledge_manager.cli.asyncio.sleep", AsyncMock())
+
+    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "source", "pull", "team-docs"])
+
+    assert result.exit_code == 0, result.output
+    assert attempts["count"] == 3
+    assert "staged 1 modules" in result.output
+
+
+def test_cli_source_pull_does_not_retry_permanent_errors(cli_runner, initialized_kb, monkeypatch):
+    cli_runner.invoke(
+        cli,
+        [
+            "--kb-path",
+            str(initialized_kb),
+            "source",
+            "add-confluence",
+            "team-docs",
+            "--base-url",
+            "https://example.atlassian.net/wiki",
+            "--space-key",
+            "ENG",
+            "--email",
+            "docs@example.com",
+            "--token-env",
+            "CONFLUENCE_API_TOKEN",
+            "--category",
+            "architecture",
+        ],
+    )
+    monkeypatch.setenv("CONFLUENCE_API_TOKEN", "token")
+    attempts = {"count": 0}
+
+    async def unauthorized_list_pages(self, space_key, root_page_id="", limit=25, cursor=""):
+        attempts["count"] += 1
+        request = httpx.Request("GET", "https://example.atlassian.net/wiki/rest/api/content")
+        response = httpx.Response(401, request=request)
+        raise httpx.HTTPStatusError("unauthorized", request=request, response=response)
+
+    monkeypatch.setattr("knowledge_manager.confluence.ConfluenceClient.list_pages", unauthorized_list_pages)
+    monkeypatch.setattr("knowledge_manager.cli.create_client", lambda provider_name, provider_cfg: AsyncMock())
+    monkeypatch.setattr("knowledge_manager.cli.asyncio.sleep", AsyncMock())
+
+    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "source", "pull", "team-docs"])
+
+    assert result.exit_code != 0
+    assert attempts["count"] == 1
+    assert "source pull failed" in result.output
+
+
 def test_cli_eval_run(cli_runner, initialized_kb, tmp_path):
     save_module(make_module("jwt-playbook", "auth"), initialized_kb)
     suite_path = tmp_path / "eval-suite.json"
@@ -590,7 +692,9 @@ def test_cli_source_pull_retries_transient_failure(cli_runner, initialized_kb, m
     async def flaky_list_pages(self, space_key, root_page_id="", limit=25, cursor=""):
         attempts["count"] += 1
         if attempts["count"] < 3:
-            raise RuntimeError("temporary confluence error")
+            request = httpx.Request("GET", "https://example.atlassian.net/wiki/rest/api/content")
+            response = httpx.Response(503, request=request)
+            raise httpx.HTTPStatusError("service unavailable", request=request, response=response)
         return (
             [
                 ConfluencePage(
@@ -612,6 +716,7 @@ def test_cli_source_pull_retries_transient_failure(cli_runner, initialized_kb, m
     monkeypatch.setattr("knowledge_manager.confluence.ConfluenceClient.list_pages", flaky_list_pages)
     monkeypatch.setattr("knowledge_manager.cli.Extractor.extract", fake_extract)
     monkeypatch.setattr("knowledge_manager.cli.create_client", lambda provider_name, provider_cfg: AsyncMock())
+    monkeypatch.setattr("knowledge_manager.cli.asyncio.sleep", AsyncMock())
 
     result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "source", "pull", "team-docs"])
     assert result.exit_code == 0, result.output
