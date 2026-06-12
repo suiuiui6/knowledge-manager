@@ -41,6 +41,7 @@ Return a JSON array (no markdown, no explanation) of up to {max_modules} modules
 }}
 
 Guidelines:
+- Preserve the original language of the source text. If source is Chinese, output Chinese titles and content.
 - Each module covers ONE topic, decision, or pattern. Don't cram.
 - Prefer OUR specific way over general theory. "We use RS256 because..." not "JWT is a standard that..."
 - Fill examples, references, caveats when the source provides real content. Don't invent.
