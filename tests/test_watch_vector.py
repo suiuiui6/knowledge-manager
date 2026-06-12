@@ -3,6 +3,8 @@ from pathlib import Path
 
 from knowledge_manager.watch_scheduler import WatchScheduler, WatchSource, WatchEvent
 from knowledge_manager.vector_index import VectorIndex
+from knowledge_manager.schemas import Module, ModuleContent
+from knowledge_manager.storage import save_module, search_modules
 
 
 class TestWatchScheduler:
@@ -80,3 +82,31 @@ class TestVectorIndex:
     def test_init_defaults(self, vi):
         assert vi.provider == "ollama"
         assert vi.dimensions == 1024
+
+    def test_search_modules_uses_vector_fallback_when_enabled(self, tmp_path, monkeypatch):
+        kb = tmp_path / "kb"
+        kb.mkdir()
+        save_module(
+            Module(
+                id="legacy-acronym",
+                category="ops",
+                title="Legacy Acronym Guide",
+                summary="Legacy acronym reference for operations.",
+                content=ModuleContent(
+                    overview="Legacy acronym overview.",
+                    details="Legacy acronym details with enough length for validation.",
+                ),
+            ),
+            kb,
+        )
+
+        monkeypatch.setattr(
+            "knowledge_manager.vector_index.VectorIndex.search",
+            lambda self, query, top_k=20: [("ops/legacy-acronym", 0.91)],
+        )
+
+        results = search_modules("zzqv", kb, enable_vector_fallback=True)
+
+        assert results
+        assert results[0].source == "vector_fallback"
+        assert results[0].module.id == "legacy-acronym"

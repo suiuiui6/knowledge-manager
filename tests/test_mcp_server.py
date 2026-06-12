@@ -2,7 +2,7 @@ import json
 import pytest
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
-from knowledge_manager.schemas import Module, ModuleContent, Index
+from knowledge_manager.schemas import Index, Module, ModuleContent, ModuleMetadata
 from knowledge_manager.storage import save_module, save_index
 
 
@@ -78,6 +78,125 @@ async def test_tool_search_modules(server, kb_path):
     assert '"confidence": "medium"' in raw
     assert '"caveats"' in raw
     assert '"related_modules"' in raw
+    assert '"policy_reasons"' in raw
+
+
+@pytest.mark.asyncio
+async def test_tool_search_modules_accepts_agent_task_and_risk_inputs(server, kb_path):
+    (kb_path / "config.json").write_text(
+        json.dumps(
+            {
+                "routing_policy": {
+                    "task_type_category_priorities": {"incident-response": ["runbook"]},
+                    "risk_level_companions": {"high": ["policy/change-approval"]},
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    save_module(
+        Module(
+            id="jwt-runbook",
+            category="runbook",
+            title="JWT incident runbook",
+            summary="JWT incident response runbook.",
+            content=ModuleContent(
+                overview="JWT incident response overview.",
+                details="JWT incident response details with enough length for validation.",
+            ),
+        ),
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="sensitive-rollout",
+            category="runbook",
+            title="Sensitive rollout workflow",
+            summary="Sensitive rollout workflow for production updates.",
+            content=ModuleContent(
+                overview="Sensitive rollout workflow overview.",
+                details="Sensitive rollout workflow details with enough length for validation.",
+            ),
+        ),
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="change-approval",
+            category="policy",
+            title="High-risk change approval",
+            summary="Mandatory approval policy for high-risk changes.",
+            content=ModuleContent(
+                overview="High-risk approval overview.",
+                details="High-risk approval details with enough length for validation.",
+            ),
+        ),
+        kb_path,
+    )
+
+    result = await server.call_tool(
+        "search_modules",
+        {
+            "query": "sensitive rollout workflow",
+            "task_type": "incident-response",
+            "risk_level": "high",
+            "agent_id": "incident-agent",
+        },
+    )
+    raw = result[0].text if hasattr(result[0], "text") else str(result[0])
+    assert '"sensitive-rollout"' in raw
+    assert '"change-approval"' in raw
+    assert '"risk_level:high"' in raw
+
+
+@pytest.mark.asyncio
+async def test_tool_search_modules_filters_disallowed_statuses(server, kb_path):
+    (kb_path / "config.json").write_text(
+        json.dumps(
+            {
+                "routing_policy": {
+                    "risk_level_allowed_statuses": {"high": ["published"]}
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    save_module(
+        Module(
+            id="draft-runbook",
+            category="ops",
+            title="Sensitive rollout draft",
+            summary="Sensitive rollout draft guidance.",
+            content=ModuleContent(
+                overview="Sensitive rollout draft overview.",
+                details="Sensitive rollout draft details with enough length for validation.",
+            ),
+            metadata=ModuleMetadata(status="draft"),
+        ),
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="published-runbook",
+            category="ops",
+            title="Sensitive rollout published",
+            summary="Sensitive rollout published guidance.",
+            content=ModuleContent(
+                overview="Sensitive rollout published overview.",
+                details="Sensitive rollout published details with enough length for validation.",
+            ),
+            metadata=ModuleMetadata(status="published"),
+        ),
+        kb_path,
+    )
+
+    result = await server.call_tool(
+        "search_modules",
+        {"query": "sensitive rollout", "risk_level": "high"},
+    )
+    raw = result[0].text if hasattr(result[0], "text") else str(result[0])
+    assert '"published-runbook"' in raw
+    assert '"draft-runbook"' not in raw
 
 
 @pytest.mark.asyncio
@@ -441,6 +560,42 @@ async def test_resource_recommendations_empty_kb(server, kb_path):
     data = json.loads(content)
     assert data["archive_candidates"] == []
     assert data["enrichment_needed"] == []
+
+
+@pytest.mark.asyncio
+async def test_resource_ops_returns_json(server, kb_path):
+    result = await server.read_resource("knowledge://ops")
+    content = result[0].content if hasattr(result[0], "content") else str(result[0])
+    data = json.loads(content)
+    assert "source_backlog" in data
+    assert "lifecycle_backlog" in data
+    assert "policy_suppressed_modules" in data
+
+
+@pytest.mark.asyncio
+async def test_resource_dual_view_returns_json(server, kb_path):
+    from knowledge_manager.schemas import ConfluenceSourceConfig, SourceDefinition
+    from knowledge_manager.source_ingestion import upsert_source
+
+    upsert_source(
+        SourceDefinition(
+            id="team-docs",
+            confluence=ConfluenceSourceConfig(
+                base_url="https://example.atlassian.net/wiki",
+                space_key="ENG",
+                email="docs@example.com",
+                api_token_env="CONFLUENCE_API_TOKEN",
+            ),
+        ),
+        kb_path,
+    )
+    save_module(make_module("auth-jwt", "auth"), kb_path)
+
+    result = await server.read_resource("knowledge://dual-view")
+    content = result[0].content if hasattr(result[0], "content") else str(result[0])
+    data = json.loads(content)
+    assert "sources" in data
+    assert "modules" in data
 
 
 # ── Phase 4B: Federation MCP tests ──

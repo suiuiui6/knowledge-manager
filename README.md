@@ -72,7 +72,8 @@ km --kb-path ./my_kb serve
 - Keep retrieval responsive for hot modules with a thread-safe LRU cache.
 - Process long documents reliably with chunked extraction (`chunk_size`, `chunk_overlap`).
 - Operate with visibility through verbose CLI logs for provider/model choice, chunking, and extraction progress.
-- Ship with confidence: 75 tests across schema, storage, cache, LLM clients, MCP server, CLI, and integration layers.
+- Enterprise ingestion and governance: Confluence + Notion source pull, provenance stamping, routing-policy controls, ops exports, and dual source/module views.
+- Ship with confidence: focused schema, storage, HTTP, MCP, CLI, enterprise, and integration tests back the production path.
 
 ## Typical Use Cases
 
@@ -292,6 +293,13 @@ poetry run mypy src             # type check
 ```
 
 Current validation artifacts are checked into [`test-results/`](test-results/) and [`docs/validation-report-2026-05-29.md`](docs/validation-report-2026-05-29.md). They cover MCP protocol compliance, retrieval behavior, and an end-to-end extract -> review -> serve run against a real sample knowledge base.
+
+## Enterprise Operations
+
+- Register enterprise sources with `km source add-confluence` and `km source add-notion`.
+- Pull and stage changes with `km source pull <source-id>`.
+- Audit routing and freshness with `km ops`, `km ops-export-review-backlog`, `km ops-export-risky-misses`, and `km ops-export-source-backlog`.
+- Review rollout procedures in [`docs/runbooks/enterprise-rollout.md`](docs/runbooks/enterprise-rollout.md) and eval gates in [`docs/runbooks/eval-gate.md`](docs/runbooks/eval-gate.md).
 
 ## Example knowledge base
 

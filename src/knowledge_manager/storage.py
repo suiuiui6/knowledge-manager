@@ -10,7 +10,14 @@ from typing import Any, Dict, List, Mapping, NamedTuple, Optional, cast
 
 from snowballstemmer import stemmer as _snowball_stemmer  # type: ignore[import-untyped]
 
-from knowledge_manager.schemas import Config, Index, Module, StagingMeta
+from knowledge_manager.policy import evaluate_module_policy, merge_agent_routing_policy
+from knowledge_manager.schemas import (
+    Config,
+    Index,
+    Module,
+    RoutingPolicyConfig,
+    StagingMeta,
+)
 
 
 _FIELD_WEIGHTS = {"title": 5, "tag": 3, "summary": 2, "overview": 1, "details": 1, "examples": 0, "caveats": 0}
@@ -159,9 +166,51 @@ def list_modules(kb_path: Path) -> List[Module]:
     return modules
 
 
+def get_supersession_chain(module_id: str, category: str, kb_path: Path) -> list[str]:
+    module = load_module(module_id, category, kb_path)
+    if module is None:
+        return []
+
+    chain: list[str] = []
+    pending = list(module.metadata.supersedes)
+    seen: set[str] = set()
+    while pending:
+        ref = pending.pop(0)
+        if ref in seen:
+            continue
+        seen.add(ref)
+        chain.append(ref)
+        if "/" not in ref:
+            continue
+        ref_category, ref_id = ref.split("/", 1)
+        ref_module = load_module(ref_id, ref_category, kb_path)
+        if ref_module is not None:
+            pending.extend(ref_module.metadata.supersedes)
+    return chain
+
+
+def mark_source_documents_changed(source_versions: dict[str, str], kb_path: Path) -> list[str]:
+    affected: list[str] = []
+    for module in list_modules(kb_path):
+        if module.metadata.stale_due_to_source_change:
+            continue
+        for ref in module.metadata.source_documents:
+            current_version = source_versions.get(ref.external_id)
+            if current_version and current_version != ref.version:
+                module.metadata.stale_due_to_source_change = True
+                module.updated_at = datetime.now(timezone.utc)
+                save_module(module, kb_path)
+                affected.append(f"{module.category}/{module.id}")
+                break
+    if affected:
+        rebuild_index(kb_path)
+    return affected
+
+
 class SearchResult(NamedTuple):
     module: Module
-    source: str  # "direct" or "related"
+    source: str  # "direct", "related", or "policy"
+    reasons: list[str]
 
 
 def _bm25_scores(query: str, modules: List[Module]) -> Dict[str, float]:
@@ -230,7 +279,18 @@ def _bm25_scores(query: str, modules: List[Module]) -> Dict[str, float]:
     return scores
 
 
-def search_modules(query: str, kb_path: Path, category: str | None = None, limit: int = 15, boost_ids: List[str] | None = None, include_archived: bool = False) -> List[SearchResult]:
+def search_modules(
+    query: str,
+    kb_path: Path,
+    category: str | None = None,
+    limit: int = 15,
+    boost_ids: List[str] | None = None,
+    include_archived: bool = False,
+    agent_id: str | None = None,
+    task_type: str | None = None,
+    risk_level: str | None = None,
+    enable_vector_fallback: bool = False,
+) -> List[SearchResult]:
     terms: list[str] = []
     for w in _WORD_RE.findall(query.lower()):
         if _CJK_RE.search(w):
@@ -243,8 +303,31 @@ def search_modules(query: str, kb_path: Path, category: str | None = None, limit
         return []
 
     all_modules = list_modules(kb_path)
+    cfg = _load_config_safe(kb_path)
+    user_synonyms: Dict[str, List[str]] = cfg.synonyms if cfg else {}
+    routing_policy: RoutingPolicyConfig = cfg.routing_policy if cfg else RoutingPolicyConfig()
+    effective_policy = merge_agent_routing_policy(
+        routing_policy,
+        routing_policy.agent_overrides.get(agent_id) if agent_id else None,
+    )
+    allowed_statuses: set[str] | None = None
+    if task_type:
+        task_allowed = effective_policy.task_type_allowed_statuses.get(task_type, [])
+        if task_allowed:
+            allowed_statuses = set(task_allowed)
+    if risk_level:
+        risk_allowed = effective_policy.risk_level_allowed_statuses.get(risk_level, [])
+        if risk_allowed:
+            risk_allowed_set = set(risk_allowed)
+            allowed_statuses = risk_allowed_set if allowed_statuses is None else allowed_statuses & risk_allowed_set
+
     if not include_archived:
         all_modules = [m for m in all_modules if m.metadata.status != "archived"]
+    all_modules = [
+        m
+        for m in all_modules
+        if evaluate_module_policy(m, effective_policy, allowed_statuses=allowed_statuses).allowed
+    ]
     bm25 = _bm25_scores(query, all_modules)
 
     # Build tag synonym map from co-occurring tags across all modules
@@ -259,9 +342,6 @@ def search_modules(query: str, kb_path: Path, category: str | None = None, limit
             tag_synonyms[tw].update(tag_words - {tw})
 
     # Load user-configured synonyms from config
-    cfg = _load_config_safe(kb_path)
-    user_synonyms: Dict[str, List[str]] = cfg.synonyms if cfg else {}
-
     # Expand query with tag synonyms (0.3 weight) and user synonyms (0.5 weight)
     synonym_terms: Dict[str, float] = {}
     for term in terms:
@@ -332,7 +412,17 @@ def search_modules(query: str, kb_path: Path, category: str | None = None, limit
         partial = re.compile(re.escape(syn), re.IGNORECASE) if len(syn) < 5 else None
         patterns.append((syn, word_boundary, partial, weight))
 
-    scored: List[tuple[float, float, int, Module, str]] = []
+    scored: List[tuple[float, float, int, Module, str, list[str]]] = []
+    prioritized_categories = list(effective_policy.category_priorities.get(intent, []))
+    if task_type:
+        for category_name in reversed(effective_policy.task_type_category_priorities.get(task_type, [])):
+            if category_name in prioritized_categories:
+                prioritized_categories.remove(category_name)
+            prioritized_categories.insert(0, category_name)
+    category_priority_bonus = {
+        category_name: max(0, len(prioritized_categories) - index) * 4
+        for index, category_name in enumerate(prioritized_categories)
+    }
     for module in all_modules:
         fields: dict[str, str | list[str]] = {
             "title": module.title,
@@ -354,19 +444,30 @@ def search_modules(query: str, kb_path: Path, category: str | None = None, limit
         }
         score = 0
         best_quality = 0
+        reasons: list[str] = []
 
         for term, word_pattern, partial_pattern, weight in patterns:
             term_score, quality = score_term(term, fields, field_stems, word_pattern, partial_pattern, effective_weights)
             score += int(term_score * weight)
             best_quality = max(best_quality, quality)
 
+        if score > 0 and module.category in category_priority_bonus:
+            score += category_priority_bonus[module.category]
+            reasons.append(f"category_priority:{module.category}")
         if score > 0:
-            scored.append((bm25.get(module.id, 0.0), score, best_quality, module, "direct"))
+            reasons.append(f"intent:{intent}")
+        if score > 0 and task_type and module.category in effective_policy.task_type_category_priorities.get(task_type, []):
+            reasons.append(f"task_type:{task_type}")
+        if score > 0 and agent_id:
+            reasons.append(f"agent:{agent_id}")
+
+        if score > 0:
+            scored.append((bm25.get(module.id, 0.0), score, best_quality, module, "direct", reasons))
 
     # 1-hop graph expansion: add related modules with discounted scores
     direct_matches = list(scored)
-    direct_ids = {m.id for _, _, _, m, _ in direct_matches}
-    for bm25_score, heur_score, _, trigger_module, _ in direct_matches:
+    direct_ids = {m.id for _, _, _, m, _, _ in direct_matches}
+    for bm25_score, heur_score, _, trigger_module, _, trigger_reasons in direct_matches:
         module_key = f"{trigger_module.category}/{trigger_module.id}"
         for neighbor_ref in graph.get(module_key, []):
             # Parse optional edge weight: "category/id:0.8" → weight=0.8 (default 1.0)
@@ -390,12 +491,21 @@ def search_modules(query: str, kb_path: Path, category: str | None = None, limit
                 continue
             expanded_heuristic = heur_score * _EXPANSION_DISCOUNT * edge_weight
             expanded_bm25 = bm25.get(n_id, 0.0)
-            scored.append((expanded_bm25, expanded_heuristic, 0, neighbor, "related"))
+            scored.append(
+                (
+                    expanded_bm25,
+                    expanded_heuristic,
+                    0,
+                    neighbor,
+                    "related",
+                    trigger_reasons + [f"graph_related:{module_key}"],
+                )
+            )
             direct_ids.add(n_id)
 
     # Filter by category if specified
     if category is not None:
-        scored = [(b, s, q, m, src) for b, s, q, m, src in scored if m.category == category]
+        scored = [(b, s, q, m, src, reasons) for b, s, q, m, src, reasons in scored if m.category == category]
 
     # Compute Bayesian priors from historical telemetry (if available)
     priors = compute_bayesian_priors(kb_path)
@@ -438,13 +548,74 @@ def search_modules(query: str, kb_path: Path, category: str | None = None, limit
         ),
         reverse=True,
     )
-    results = [SearchResult(module, source) for _, _, _, module, source in scored]
+    results = [SearchResult(module, source, reasons) for _, _, _, module, source, reasons in scored]
+
+    seen_keys = {f"{result.module.category}/{result.module.id}" for result in results}
+    primary_categories = [result.module.category for result in results if result.source == "direct"]
+    policy_decision = evaluate_module_policy(
+        results[0].module if results else None,
+        effective_policy,
+        primary_categories=primary_categories,
+        risk_level=risk_level,
+    )
+    for companion_key in policy_decision.mandatory_companions:
+        if companion_key in seen_keys:
+            continue
+        parts = companion_key.split("/", 1)
+        if len(parts) != 2:
+            continue
+        comp_category, comp_id = parts
+        companion = load_module(comp_id, comp_category, kb_path)
+        if companion is None:
+            continue
+        companion_decision = evaluate_module_policy(
+            companion,
+            effective_policy,
+            allowed_statuses=allowed_statuses,
+        )
+        if not companion_decision.allowed and companion_key not in effective_policy.risk_level_companions.get(risk_level or "", []):
+            continue
+        companion_reasons = [f"mandatory_companion:{companion_key}"]
+        if risk_level and companion_key in effective_policy.risk_level_companions.get(risk_level, []):
+            companion_reasons.append(f"risk_level:{risk_level}")
+        for primary_category in primary_categories:
+            if companion_key in effective_policy.mandatory_companions.get(primary_category, []):
+                companion_reasons.append(f"primary_category:{primary_category}")
+        companion_reasons.extend(companion_decision.reasons)
+        results.append(SearchResult(companion, "policy", companion_reasons))
+        seen_keys.add(companion_key)
 
     # Record search event for future learning
     result_ids = [f"{r.module.category}/{r.module.id}" for r in results[:20]]
     record_search_event(query, result_ids, kb_path)
+    if results:
+        return results[:limit]
 
-    return results[:limit]
+    if enable_vector_fallback:
+        from knowledge_manager.vector_index import VectorIndex
+
+        vector_index = VectorIndex(kb_path)
+        vector_hits = vector_index.search(query, top_k=limit)
+        fallback_results: list[SearchResult] = []
+        for module_key, _score in vector_hits:
+            if "/" not in module_key:
+                continue
+            mod_category, mod_id = module_key.split("/", 1)
+            module = load_module(mod_id, mod_category, kb_path)
+            if module is None:
+                continue
+            fallback_results.append(
+                SearchResult(module, "vector_fallback", ["vector_fallback"])
+            )
+        if fallback_results:
+            record_search_event(
+                query,
+                [f"{r.module.category}/{r.module.id}" for r in fallback_results[:20]],
+                kb_path,
+            )
+        return fallback_results[:limit]
+
+    return []
 
 
 def generate_changelog(kb_path: Path) -> dict | None:
@@ -1495,6 +1666,80 @@ def generate_recommendations(kb_path: Path) -> Any:
         enrichment_needed=sorted(enrichment_needed, key=lambda r: -r.score)[:10],
         suggested_links=suggested_links[:10],
         review_reminders=sorted(review_reminders, key=lambda r: -r.score)[:5],
+    )
+
+
+def generate_ops_report(kb_path: Path) -> Any:
+    """Generate an operator-focused report across sources, lifecycle, and routing suppression."""
+    from knowledge_manager.schemas import (
+        LifecycleBacklog,
+        OpsReport,
+        PolicySuppressedModule,
+        SourceBacklogEntry,
+    )
+    from knowledge_manager.source_ingestion import load_source_registry
+
+    modules = list_modules(kb_path)
+    registry = load_source_registry(kb_path)
+    staging_path = kb_path / ".staging"
+    staging_meta = list_staging_meta(staging_path)
+    cfg = _load_config_safe(kb_path)
+    routing_policy = cfg.routing_policy if cfg else RoutingPolicyConfig()
+
+    source_backlog: list[SourceBacklogEntry] = []
+    for source_id, definition in registry.sources.items():
+        stale_count = 0
+        for module in modules:
+            if module.metadata.stale_due_to_source_change and any(
+                doc.source_id == source_id for doc in module.metadata.source_documents
+            ):
+                stale_count += 1
+        source_backlog.append(
+            SourceBacklogEntry(
+                source_id=source_id,
+                source_type=definition.type,
+                last_synced_at=definition.sync.last_synced_at,
+                tracked_pages=len(definition.sync.page_versions),
+                stale_module_count=stale_count,
+                sync_error=definition.sync.last_error,
+            )
+        )
+
+    status_counts: dict[str, int] = {}
+    for module in modules:
+        status_counts[module.metadata.status] = status_counts.get(module.metadata.status, 0) + 1
+
+    staging_status_counts: dict[str, int] = {}
+    for meta in staging_meta:
+        staging_status_counts[meta.status] = staging_status_counts.get(meta.status, 0) + 1
+
+    suppressed: list[PolicySuppressedModule] = []
+    risk_allowed = set(routing_policy.risk_level_allowed_statuses.get("high", [])) or None
+    for module in modules:
+        reasons = evaluate_module_policy(
+            module,
+            routing_policy,
+            allowed_statuses=risk_allowed,
+        ).reasons
+        if reasons:
+            suppressed.append(
+                PolicySuppressedModule(
+                    module_id=module.id,
+                    category=module.category,
+                    title=module.title,
+                    reasons=reasons,
+                )
+            )
+
+    return OpsReport(
+        source_backlog=sorted(source_backlog, key=lambda item: (-item.stale_module_count, item.source_id)),
+        lifecycle_backlog=LifecycleBacklog(
+            status_counts=status_counts,
+            staging_status_counts=staging_status_counts,
+        ),
+        policy_suppressed_modules=sorted(
+            suppressed, key=lambda item: (item.category, item.module_id)
+        ),
     )
 
 

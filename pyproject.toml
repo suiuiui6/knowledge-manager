@@ -58,3 +58,6 @@ warn_unused_configs = true
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+filterwarnings = [
+    "ignore:pkg_resources is deprecated as an API:UserWarning",
+]

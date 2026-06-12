@@ -3,11 +3,17 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Tuple
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def ensure_utc_aware(value: Optional[datetime]) -> Optional[datetime]:
+    if value is None or value.tzinfo is not None:
+        return value
+    return value.replace(tzinfo=timezone.utc)
 
 
 class ModuleContent(BaseModel):
@@ -18,14 +24,134 @@ class ModuleContent(BaseModel):
     caveats: str = Field(default="")
 
 
+class SourceDocumentRef(BaseModel):
+    source_type: Literal["confluence", "notion"]
+    source_id: str
+    external_id: str
+    title: str
+    url: str = ""
+    version: str = ""
+    checksum: str = ""
+    fetched_at: datetime = Field(default_factory=utc_now)
+
+    @field_validator("fetched_at", mode="after")
+    @classmethod
+    def normalize_fetched_at(cls, value: datetime) -> datetime:
+        normalized = ensure_utc_aware(value)
+        assert normalized is not None
+        return normalized
+
+
+class SourceSpan(BaseModel):
+    external_id: str
+    heading_path: List[str] = Field(default_factory=list)
+    excerpt: str = ""
+    char_start: int = Field(default=0, ge=0)
+    char_end: int = Field(default=0, ge=0)
+
+    @model_validator(mode="after")
+    def validate_char_range(self) -> "SourceSpan":
+        if self.char_end < self.char_start:
+            raise ValueError("char_end must be greater than or equal to char_start")
+        return self
+
+
+class ConfluenceSourceConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    base_url: str
+    space_key: str
+    email: str
+    api_token_env: str
+    root_page_id: str = ""
+    category: str = "general"
+    page_limit: int = 25
+
+
+class NotionSourceConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    api_token_env: str
+    database_id: str
+    category: str = "general"
+    page_limit: int = 25
+
+
+class SourceSyncState(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    last_cursor: str = ""
+    last_synced_at: Optional[datetime] = None
+    last_error: str = ""
+    page_versions: Dict[str, str] = Field(default_factory=dict)
+
+    @field_validator("last_synced_at", mode="after")
+    @classmethod
+    def normalize_last_synced_at(cls, value: Optional[datetime]) -> Optional[datetime]:
+        return ensure_utc_aware(value)
+
+
+class SourceDefinition(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    type: Literal["confluence", "notion"] = "confluence"
+    enabled: bool = True
+    confluence: Optional[ConfluenceSourceConfig] = None
+    notion: Optional[NotionSourceConfig] = None
+    sync: SourceSyncState = Field(default_factory=SourceSyncState)
+
+    @model_validator(mode="after")
+    def validate_source_config(self) -> "SourceDefinition":
+        if self.type == "confluence":
+            if self.confluence is None:
+                raise ValueError("confluence config is required for confluence sources")
+            if self.notion is not None:
+                raise ValueError("notion config must be omitted for confluence sources")
+        if self.type == "notion":
+            if self.notion is None:
+                raise ValueError("notion config is required for notion sources")
+            if self.confluence is not None:
+                raise ValueError("confluence config must be omitted for notion sources")
+        return self
+
+
+class SourceRegistry(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    sources: Dict[str, SourceDefinition] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def validate_source_keys(self) -> "SourceRegistry":
+        for source_key, source in self.sources.items():
+            if source_key != source.id:
+                raise ValueError(
+                    f"Source registry key {source_key!r} must match source id {source.id!r}"
+                )
+        return self
+
+
 class ModuleMetadata(BaseModel):
     tags: List[str] = Field(default_factory=list)
     related_modules: List[str] = Field(default_factory=list)
     confidence: Literal["high", "medium", "low"] = "medium"
     source: str = Field(default="")
+    source_documents: List[SourceDocumentRef] = Field(default_factory=list)
+    source_spans: List[SourceSpan] = Field(default_factory=list)
+    extraction_run_id: str = ""
+    reviewed_by: str = ""
+    reviewed_at: Optional[datetime] = None
+    stale_due_to_source_change: bool = False
+    supersedes: List[str] = Field(default_factory=list)
+    derived_from: List[str] = Field(default_factory=list)
     expires_at: Optional[datetime] = None
     review_interval_days: Optional[int] = None
     status: Literal["draft", "reviewed", "published", "deprecated", "archived"] = "published"
+
+    @field_validator("reviewed_at", mode="after")
+    @classmethod
+    def normalize_reviewed_at(cls, value: Optional[datetime]) -> Optional[datetime]:
+        return ensure_utc_aware(value)
 
 
 class Module(BaseModel):
@@ -248,6 +374,29 @@ class UIConfig(BaseModel):
     enabled: bool = False
 
 
+class AgentRoutingPolicyConfig(BaseModel):
+    category_priorities: Dict[str, List[str]] = Field(default_factory=dict)
+    task_type_category_priorities: Dict[str, List[str]] = Field(default_factory=dict)
+    task_type_allowed_statuses: Dict[str, List[str]] = Field(default_factory=dict)
+    mandatory_companions: Dict[str, List[str]] = Field(default_factory=dict)
+    risk_level_companions: Dict[str, List[str]] = Field(default_factory=dict)
+    risk_level_allowed_statuses: Dict[str, List[str]] = Field(default_factory=dict)
+    suppress_stale_sources: Optional[bool] = None
+    suppress_expired: Optional[bool] = None
+
+
+class RoutingPolicyConfig(BaseModel):
+    category_priorities: Dict[str, List[str]] = Field(default_factory=dict)
+    task_type_category_priorities: Dict[str, List[str]] = Field(default_factory=dict)
+    task_type_allowed_statuses: Dict[str, List[str]] = Field(default_factory=dict)
+    mandatory_companions: Dict[str, List[str]] = Field(default_factory=dict)
+    risk_level_companions: Dict[str, List[str]] = Field(default_factory=dict)
+    risk_level_allowed_statuses: Dict[str, List[str]] = Field(default_factory=dict)
+    suppress_stale_sources: bool = True
+    suppress_expired: bool = True
+    agent_overrides: Dict[str, AgentRoutingPolicyConfig] = Field(default_factory=dict)
+
+
 class Config(BaseModel):
     llm_providers: Dict[str, LLMProviderConfig] = Field(default_factory=dict)
     extraction: ExtractionConfig = Field(default_factory=ExtractionConfig)
@@ -261,6 +410,7 @@ class Config(BaseModel):
     marketplace: "MarketplaceConfig" = Field(default_factory=lambda: MarketplaceConfig())
     research: ResearchConfig = Field(default_factory=ResearchConfig)
     ui: UIConfig = Field(default_factory=UIConfig)
+    routing_policy: RoutingPolicyConfig = Field(default_factory=RoutingPolicyConfig)
 
     def get_default_provider(self) -> Tuple[str, LLMProviderConfig]:
         for name, provider in self.llm_providers.items():
@@ -412,6 +562,34 @@ class RecommendationReport(BaseModel):
     enrichment_needed: List[Recommendation] = Field(default_factory=list)
     suggested_links: List[Recommendation] = Field(default_factory=list)
     review_reminders: List[Recommendation] = Field(default_factory=list)
+
+
+class SourceBacklogEntry(BaseModel):
+    source_id: str
+    source_type: str = ""
+    last_synced_at: Optional[datetime] = None
+    tracked_pages: int = 0
+    stale_module_count: int = 0
+    sync_error: str = ""
+
+
+class LifecycleBacklog(BaseModel):
+    status_counts: Dict[str, int] = Field(default_factory=dict)
+    staging_status_counts: Dict[str, int] = Field(default_factory=dict)
+
+
+class PolicySuppressedModule(BaseModel):
+    module_id: str
+    category: str
+    title: str
+    reasons: List[str] = Field(default_factory=list)
+
+
+class OpsReport(BaseModel):
+    generated_at: datetime = Field(default_factory=utc_now)
+    source_backlog: List[SourceBacklogEntry] = Field(default_factory=list)
+    lifecycle_backlog: LifecycleBacklog = Field(default_factory=LifecycleBacklog)
+    policy_suppressed_modules: List[PolicySuppressedModule] = Field(default_factory=list)
 
 
 # ── Phase 4A: Platform connector schemas ──

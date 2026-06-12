@@ -14,6 +14,7 @@ from knowledge_manager.storage import (
     aggregate_usage_stats,
     analyze_graph,
     generate_health_report,
+    generate_ops_report,
     generate_recommendations,
     get_subtree,
     get_tree,
@@ -157,8 +158,20 @@ def create_app(kb_path: Path) -> FastAPI:
         category = body.get("category") or None
         include_archived = body.get("include_archived", False)
         top_k = min(body.get("top_k", 10), 50)
+        agent_id = body.get("agent_id") or None
+        task_type = body.get("task_type") or None
+        risk_level = body.get("risk_level") or None
 
-        results = search_modules(query, kb_path, category=category, limit=top_k, include_archived=include_archived)
+        results = search_modules(
+            query,
+            kb_path,
+            category=category,
+            limit=top_k,
+            include_archived=include_archived,
+            agent_id=agent_id,
+            task_type=task_type,
+            risk_level=risk_level,
+        )
 
         from knowledge_manager.storage import _classify_intent
 
@@ -166,6 +179,9 @@ def create_app(kb_path: Path) -> FastAPI:
         return {
             "query": query,
             "intent": intent,
+            "agent_id": agent_id,
+            "task_type": task_type,
+            "risk_level": risk_level,
             "results": [
                 {
                     "id": r.module.id,
@@ -176,6 +192,7 @@ def create_app(kb_path: Path) -> FastAPI:
                     "confidence": r.module.metadata.confidence,
                     "status": r.module.metadata.status,
                     "source": r.source,
+                    "policy_reasons": r.reasons,
                     "related_modules": r.module.metadata.related_modules,
                     "snippet": _snippet(r.module.content.overview, query),
                     "caveats": r.module.content.caveats,
@@ -475,6 +492,23 @@ def create_app(kb_path: Path) -> FastAPI:
     def api_recommendations():
         report = generate_recommendations(kb_path)
         return report.model_dump()
+
+    @app.get("/api/ops")
+    def api_ops():
+        report = generate_ops_report(kb_path)
+        return report.model_dump()
+
+    @app.get("/api/ops/backlog")
+    def api_ops_backlog():
+        from knowledge_manager.ops_export import generate_review_backlog_export
+
+        return generate_review_backlog_export(kb_path)
+
+    @app.get("/api/dual-view")
+    def api_dual_view():
+        from knowledge_manager.dual_view import build_dual_view
+
+        return build_dual_view(kb_path)
 
     # ── UI entry ──
 

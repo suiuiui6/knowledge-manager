@@ -1,7 +1,7 @@
 """Integration tests covering full end-to-end workflows."""
 import json
 from pathlib import Path
-from unittest.mock import AsyncMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from click.testing import CliRunner
@@ -160,7 +160,7 @@ def test_extract_review_approve_workflow(runner, integration_kb):
     with patch("knowledge_manager.cli.Extractor.extract", new=fake_extract), patch(
         "knowledge_manager.cli.create_client"
     ) as mock_create:
-        mock_create.return_value = AsyncMock()
+        mock_create.return_value = MagicMock()
         result = runner.invoke(
             cli,
             [
@@ -213,7 +213,7 @@ def test_serve_command_wires_up(runner, integration_kb):
         "knowledge_manager.cli.asyncio.run"
     ) as mock_run:
         mock_server = mock_create_server.return_value
-        mock_server.run_stdio_async = AsyncMock()
+        mock_server.run_stdio_async = MagicMock()
 
         result = runner.invoke(cli, ["--kb-path", str(integration_kb), "serve"])
 
@@ -238,3 +238,87 @@ def test_index_format_matches_schema(runner, integration_kb):
 
     index = Index.model_validate_json(raw)
     assert sorted(index.categories.keys()) == ["advanced", "core"]
+
+
+def test_enterprise_ingest_eval_ops_flow(runner, integration_kb, monkeypatch, tmp_path):
+    from knowledge_manager.confluence import ConfluencePage
+
+    runner.invoke(
+        cli,
+        [
+            "--kb-path",
+            str(integration_kb),
+            "source",
+            "add-confluence",
+            "team-docs",
+            "--base-url",
+            "https://example.atlassian.net/wiki",
+            "--space-key",
+            "ENG",
+            "--email",
+            "docs@example.com",
+            "--token-env",
+            "CONFLUENCE_API_TOKEN",
+            "--category",
+            "ops",
+        ],
+    )
+    monkeypatch.setenv("CONFLUENCE_API_TOKEN", "token")
+
+    async def fake_list_pages(self, space_key, root_page_id="", limit=25, cursor=""):
+        return (
+            [
+                ConfluencePage(
+                    page_id="12345",
+                    title="JWT Runbook",
+                    url="https://example.atlassian.net/wiki/spaces/ENG/pages/12345",
+                    version="7",
+                    body_text="Refresh tokens rotate on every successful refresh.",
+                    heading_path=["ENG", "JWT Runbook"],
+                    checksum="abc123",
+                )
+            ],
+            "cursor-2",
+        )
+
+    async def fake_extract(self, text, category, existing_categories=""):
+        return [make_module("jwt-playbook", category)]
+
+    monkeypatch.setattr("knowledge_manager.confluence.ConfluenceClient.list_pages", fake_list_pages)
+    monkeypatch.setattr("knowledge_manager.cli.Extractor.extract", fake_extract)
+    monkeypatch.setattr("knowledge_manager.cli.create_client", lambda provider_name, provider_cfg: MagicMock())
+
+    pull = runner.invoke(cli, ["--kb-path", str(integration_kb), "source", "pull", "team-docs"])
+    assert pull.exit_code == 0
+    assert "staged 1 modules" in pull.output
+
+    review = runner.invoke(cli, ["--kb-path", str(integration_kb), "review"], input="a\n")
+    assert review.exit_code == 0
+
+    suite_path = tmp_path / "eval-suite.json"
+    suite_path.write_text(
+        json.dumps(
+            {
+                "name": "enterprise-flow",
+                "cases": [
+                    {
+                        "id": "jwt-hit",
+                        "query": "refresh tokens rotate",
+                        "required_modules": ["ops/jwt-playbook"],
+                        "top_k": 3,
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    eval_run = runner.invoke(
+        cli,
+        ["--kb-path", str(integration_kb), "eval", "run", str(suite_path), "--top-k", "3"],
+    )
+    assert eval_run.exit_code == 0
+    assert "Baseline win rate" in eval_run.output
+
+    ops = runner.invoke(cli, ["--kb-path", str(integration_kb), "ops"])
+    assert ops.exit_code == 0
+    assert "Operations Report" in ops.output

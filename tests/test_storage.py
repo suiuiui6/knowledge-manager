@@ -1,7 +1,7 @@
 import json
 import pytest
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from knowledge_manager.schemas import Module, ModuleContent, ModuleMetadata, Index
 from knowledge_manager.storage import (
     save_module, load_module, delete_module, list_modules,
@@ -10,6 +10,7 @@ from knowledge_manager.storage import (
     _stem, search_modules,
     record_search_event, record_load_event, load_search_events,
     compute_bayesian_priors, save_rank_model, load_rank_model,
+    get_supersession_chain, mark_source_documents_changed,
 )
 
 
@@ -330,6 +331,443 @@ def test_search_modules_stem_matches_pooling_query(kb_path):
     ids = [r.module.id for r in results]
 
     assert "conn-pool" in ids
+
+
+def test_get_supersession_chain_follows_prior_modules(kb_path):
+    kb_path.mkdir(parents=True, exist_ok=True)
+    original = make_module("policy-v1", "policy")
+    save_module(original, kb_path)
+
+    replacement = make_module("policy-v2", "policy")
+    replacement.metadata.supersedes = ["policy/policy-v1"]
+    save_module(replacement, kb_path)
+
+    assert get_supersession_chain("policy-v2", "policy", kb_path) == ["policy/policy-v1"]
+
+
+def test_mark_source_documents_changed_marks_matching_modules_stale(kb_path):
+    from knowledge_manager.schemas import SourceDocumentRef
+
+    kb_path.mkdir(parents=True, exist_ok=True)
+    module = make_module("runbook", "ops")
+    module.metadata.source_documents = [
+        SourceDocumentRef(
+            source_type="confluence",
+            source_id="team-docs",
+            external_id="12345",
+            title="JWT Runbook",
+            version="3",
+        )
+    ]
+    save_module(module, kb_path)
+
+    affected = mark_source_documents_changed({"12345": "4"}, kb_path)
+
+    assert affected == ["ops/runbook"]
+    reloaded = load_module("runbook", "ops", kb_path)
+    assert reloaded is not None
+    assert reloaded.metadata.stale_due_to_source_change is True
+
+
+def test_search_modules_applies_intent_category_priority_and_explains_reason(kb_path):
+    kb_path.mkdir(parents=True, exist_ok=True)
+    (kb_path / "config.json").write_text(
+        json.dumps(
+            {
+                "routing_policy": {
+                    "category_priorities": {"how-to": ["runbook"]},
+                    "mandatory_companions": {},
+                    "suppress_stale_sources": True,
+                    "suppress_expired": True,
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    save_module(
+        Module(
+            id="token-guide",
+            category="auth",
+            title="Token rotation guide",
+            summary="How to rotate tokens in production safely.",
+            content=ModuleContent(
+                overview="How to rotate tokens in production.",
+                details="Rotate access tokens with short TTLs and audited rollout steps.",
+            ),
+        ),
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="token-runbook",
+            category="runbook",
+            title="Token rotation runbook",
+            summary="How to rotate tokens during production incidents.",
+            content=ModuleContent(
+                overview="How to rotate tokens during incidents.",
+                details="Use the incident runbook path with rollback checkpoints and approvals.",
+            ),
+        ),
+        kb_path,
+    )
+
+    results = search_modules("how to rotate tokens", kb_path)
+
+    assert results[0].module.id == "token-runbook"
+    assert any("category_priority:runbook" in reason for reason in results[0].reasons)
+
+
+def test_search_modules_suppresses_expired_and_stale_modules_by_policy(kb_path):
+    kb_path.mkdir(parents=True, exist_ok=True)
+    (kb_path / "config.json").write_text(
+        json.dumps(
+            {
+                "routing_policy": {
+                    "suppress_stale_sources": True,
+                    "suppress_expired": True,
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    save_module(
+        Module(
+            id="active-guidance",
+            category="auth",
+            title="Active guidance",
+            summary="Current production auth guidance.",
+            content=ModuleContent(
+                overview="Current production auth guidance overview.",
+                details="Current production auth guidance details with enough length.",
+            ),
+        ),
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="stale-guidance",
+            category="auth",
+            title="Stale guidance",
+            summary="Stale production auth guidance.",
+            content=ModuleContent(
+                overview="Stale production auth guidance overview.",
+                details="Stale production auth guidance details with enough length.",
+            ),
+            metadata=ModuleMetadata(stale_due_to_source_change=True),
+        ),
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="expired-guidance",
+            category="auth",
+            title="Expired guidance",
+            summary="Expired production auth guidance.",
+            content=ModuleContent(
+                overview="Expired production auth guidance overview.",
+                details="Expired production auth guidance details with enough length.",
+            ),
+            metadata=ModuleMetadata(expires_at=datetime.now(timezone.utc) - timedelta(days=1)),
+        ),
+        kb_path,
+    )
+
+    results = search_modules("production auth guidance", kb_path)
+    ids = [r.module.id for r in results]
+
+    assert ids == ["active-guidance"]
+
+
+def test_search_modules_appends_mandatory_companion_modules(kb_path):
+    kb_path.mkdir(parents=True, exist_ok=True)
+    (kb_path / "config.json").write_text(
+        json.dumps(
+            {
+                "routing_policy": {
+                    "mandatory_companions": {"auth": ["policy/security-baseline"]},
+                    "suppress_stale_sources": True,
+                    "suppress_expired": True,
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    save_module(
+        Module(
+            id="jwt-runbook",
+            category="auth",
+            title="JWT Runbook",
+            summary="How JWT auth runs in production.",
+            content=ModuleContent(
+                overview="JWT auth production overview.",
+                details="JWT auth production details with rotation and revocation guidance.",
+            ),
+        ),
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="security-baseline",
+            category="policy",
+            title="Incident approval baseline",
+            summary="Mandatory approval baseline for sensitive workflows.",
+            content=ModuleContent(
+                overview="Approval baseline overview for sensitive workflow changes.",
+                details="Approval baseline details covering approvals, audit checkpoints, and sign-off gates.",
+            ),
+        ),
+        kb_path,
+    )
+
+    results = search_modules("jwt auth production", kb_path)
+    ids = [r.module.category + "/" + r.module.id for r in results]
+
+    assert "auth/jwt-runbook" in ids
+    assert "policy/security-baseline" in ids
+    companion = next(r for r in results if r.module.id == "security-baseline")
+    assert companion.source == "policy"
+    assert any("mandatory_companion:policy/security-baseline" in reason for reason in companion.reasons)
+
+
+def test_search_modules_applies_agent_specific_policy_override(kb_path):
+    kb_path.mkdir(parents=True, exist_ok=True)
+    (kb_path / "config.json").write_text(
+        json.dumps(
+            {
+                "routing_policy": {
+                    "category_priorities": {"how-to": ["reference"]},
+                    "agent_overrides": {
+                        "incident-agent": {
+                            "category_priorities": {"how-to": ["runbook"]}
+                        }
+                    },
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    save_module(
+        Module(
+            id="token-reference",
+            category="reference",
+            title="Token rotation reference",
+            summary="How to rotate tokens in the default reference workflow.",
+            content=ModuleContent(
+                overview="How to rotate tokens in the reference workflow.",
+                details="Reference-oriented token rotation details with enough length for validation.",
+            ),
+        ),
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="token-runbook",
+            category="runbook",
+            title="Token rotation runbook",
+            summary="How to rotate tokens during an incident.",
+            content=ModuleContent(
+                overview="How to rotate tokens during incidents.",
+                details="Runbook-oriented token rotation details with enough length for validation.",
+            ),
+        ),
+        kb_path,
+    )
+
+    default_results = search_modules("how to rotate tokens", kb_path)
+    incident_results = search_modules("how to rotate tokens", kb_path, agent_id="incident-agent")
+
+    assert default_results[0].module.id == "token-reference"
+    assert incident_results[0].module.id == "token-runbook"
+    assert any(
+        "agent:incident-agent" in reason for reason in incident_results[0].reasons
+    )
+
+
+def test_search_modules_applies_task_type_category_priority(kb_path):
+    kb_path.mkdir(parents=True, exist_ok=True)
+    (kb_path / "config.json").write_text(
+        json.dumps(
+            {
+                "routing_policy": {
+                    "task_type_category_priorities": {"incident-response": ["runbook"]}
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    save_module(
+        Module(
+            id="jwt-guide",
+            category="auth",
+            title="JWT response guide",
+            summary="JWT response workflow for general operations.",
+            content=ModuleContent(
+                overview="JWT response workflow overview.",
+                details="General JWT response workflow details with enough length for validation.",
+            ),
+        ),
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="jwt-runbook",
+            category="runbook",
+            title="JWT incident runbook",
+            summary="JWT incident response runbook.",
+            content=ModuleContent(
+                overview="JWT incident response overview.",
+                details="JWT incident response details with enough length for validation.",
+            ),
+        ),
+        kb_path,
+    )
+
+    results = search_modules("jwt response", kb_path, task_type="incident-response")
+
+    assert results[0].module.id == "jwt-runbook"
+    assert any("task_type:incident-response" in reason for reason in results[0].reasons)
+
+
+def test_search_modules_appends_risk_level_companions(kb_path):
+    kb_path.mkdir(parents=True, exist_ok=True)
+    (kb_path / "config.json").write_text(
+        json.dumps(
+            {
+                "routing_policy": {
+                    "risk_level_companions": {"high": ["policy/change-approval"]}
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    save_module(
+        Module(
+            id="prod-change",
+            category="ops",
+            title="Sensitive rollout workflow",
+            summary="Sensitive rollout workflow for production updates.",
+            content=ModuleContent(
+                overview="Sensitive rollout workflow overview.",
+                details="Sensitive rollout workflow details with enough length for validation.",
+            ),
+        ),
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="change-approval",
+            category="policy",
+            title="High-risk change approval",
+            summary="Mandatory approval gates for elevated operational risk.",
+            content=ModuleContent(
+                overview="Approval gate overview for elevated operational risk.",
+                details="Approval gate details with reviewers, audit checkpoints, and sign-off expectations.",
+            ),
+        ),
+        kb_path,
+    )
+
+    results = search_modules("sensitive rollout workflow", kb_path, risk_level="high")
+    companion = next(r for r in results if r.module.id == "change-approval")
+
+    assert companion.source == "policy"
+    assert any("risk_level:high" in reason for reason in companion.reasons)
+
+
+def test_search_modules_filters_disallowed_statuses_for_risk_level(kb_path):
+    kb_path.mkdir(parents=True, exist_ok=True)
+    (kb_path / "config.json").write_text(
+        json.dumps(
+            {
+                "routing_policy": {
+                    "risk_level_allowed_statuses": {"high": ["reviewed", "published"]}
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    save_module(
+        Module(
+            id="draft-runbook",
+            category="ops",
+            title="Sensitive rollout draft",
+            summary="Sensitive rollout draft guidance.",
+            content=ModuleContent(
+                overview="Sensitive rollout draft overview.",
+                details="Sensitive rollout draft details with enough length for validation.",
+            ),
+            metadata=ModuleMetadata(status="draft"),
+        ),
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="published-runbook",
+            category="ops",
+            title="Sensitive rollout published",
+            summary="Sensitive rollout published guidance.",
+            content=ModuleContent(
+                overview="Sensitive rollout published overview.",
+                details="Sensitive rollout published details with enough length for validation.",
+            ),
+            metadata=ModuleMetadata(status="published"),
+        ),
+        kb_path,
+    )
+
+    results = search_modules("sensitive rollout", kb_path, risk_level="high")
+    ids = [r.module.id for r in results]
+
+    assert "published-runbook" in ids
+    assert "draft-runbook" not in ids
+
+
+def test_search_modules_filters_disallowed_statuses_for_task_type(kb_path):
+    kb_path.mkdir(parents=True, exist_ok=True)
+    (kb_path / "config.json").write_text(
+        json.dumps(
+            {
+                "routing_policy": {
+                    "task_type_allowed_statuses": {"production-change": ["published"]}
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    save_module(
+        Module(
+            id="reviewed-guide",
+            category="ops",
+            title="Rollout reviewed guide",
+            summary="Rollout reviewed guidance.",
+            content=ModuleContent(
+                overview="Rollout reviewed overview.",
+                details="Rollout reviewed details with enough length for validation.",
+            ),
+            metadata=ModuleMetadata(status="reviewed"),
+        ),
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="published-guide",
+            category="ops",
+            title="Rollout published guide",
+            summary="Rollout published guidance.",
+            content=ModuleContent(
+                overview="Rollout published overview.",
+                details="Rollout published details with enough length for validation.",
+            ),
+            metadata=ModuleMetadata(status="published"),
+        ),
+        kb_path,
+    )
+
+    results = search_modules("rollout guide", kb_path, task_type="production-change")
+    ids = [r.module.id for r in results]
+
+    assert "published-guide" in ids
+    assert "reviewed-guide" not in ids
 
 
 def test_search_modules_chinese_tokenization(kb_path):
@@ -1726,6 +2164,128 @@ def test_generate_recommendations_link_suggestion(kb_path):
 
     report = generate_recommendations(kb_path)
     assert len(report.suggested_links) >= 1
+
+
+def test_generate_ops_report_surfaces_source_lifecycle_and_policy_backlogs(kb_path):
+    from knowledge_manager.schemas import (
+        ConfluenceSourceConfig,
+        ReviewRecord,
+        SourceDocumentRef,
+        SourceDefinition,
+        SourceRegistry,
+        SourceSyncState,
+        StagingMeta,
+    )
+    from knowledge_manager.source_ingestion import save_source_registry
+    from knowledge_manager.storage import generate_ops_report, save_staging_meta
+
+    kb_path.mkdir(parents=True, exist_ok=True)
+    (kb_path / "config.json").write_text(
+        json.dumps(
+            {
+                "routing_policy": {
+                    "risk_level_allowed_statuses": {"high": ["published"]},
+                    "suppress_stale_sources": True,
+                    "suppress_expired": True,
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    registry = SourceRegistry(
+        sources={
+            "team-docs": SourceDefinition(
+                id="team-docs",
+                confluence=ConfluenceSourceConfig(
+                    base_url="https://example.atlassian.net/wiki",
+                    space_key="ENG",
+                    email="docs@example.com",
+                    api_token_env="CONFLUENCE_API_TOKEN",
+                    category="ops",
+                ),
+                sync=SourceSyncState(
+                    last_cursor="cursor-2",
+                    page_versions={"123": "7", "456": "1"},
+                ),
+            )
+        }
+    )
+    save_source_registry(registry, kb_path)
+
+    save_module(
+        Module(
+            id="published-guide",
+            category="ops",
+            title="Published guide",
+            summary="Published guide for operators.",
+            content=ModuleContent(
+                overview="Published guide overview.",
+                details="Published guide details with enough length for validation.",
+            ),
+            metadata=ModuleMetadata(
+                source_documents=[
+                    SourceDocumentRef(
+                        source_type="confluence",
+                        source_id="team-docs",
+                        external_id="123",
+                        title="Guide",
+                        version="6",
+                    )
+                ],
+                stale_due_to_source_change=True,
+                status="published",
+            ),
+        ),
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="draft-guide",
+            category="ops",
+            title="Draft guide",
+            summary="Draft guide for operators.",
+            content=ModuleContent(
+                overview="Draft guide overview.",
+                details="Draft guide details with enough length for validation.",
+            ),
+            metadata=ModuleMetadata(status="draft"),
+        ),
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="reviewed-guide",
+            category="ops",
+            title="Reviewed guide",
+            summary="Reviewed guide for operators.",
+            content=ModuleContent(
+                overview="Reviewed guide overview.",
+                details="Reviewed guide details with enough length for validation.",
+            ),
+            metadata=ModuleMetadata(status="reviewed"),
+        ),
+        kb_path,
+    )
+    save_staging_meta(
+        StagingMeta(
+            module_id="pending-module",
+            status="changes-requested",
+            reviews=[ReviewRecord(reviewer="alice", action="changes-requested", comment="Needs fixes")],
+        ),
+        kb_path / ".staging",
+    )
+
+    report = generate_ops_report(kb_path)
+
+    assert report.source_backlog[0].source_id == "team-docs"
+    assert report.source_backlog[0].stale_module_count == 1
+    assert report.source_backlog[0].tracked_pages == 2
+    assert report.lifecycle_backlog.status_counts["draft"] == 1
+    assert report.lifecycle_backlog.status_counts["reviewed"] == 1
+    assert report.lifecycle_backlog.staging_status_counts["changes-requested"] == 1
+    suppressed_ids = [entry.module_id for entry in report.policy_suppressed_modules]
+    assert "draft-guide" in suppressed_ids
+    assert "published-guide" in suppressed_ids
 
 
 # ── Phase 4B: Federation tests ──

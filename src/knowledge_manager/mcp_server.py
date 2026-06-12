@@ -110,6 +110,27 @@ def create_server(kb_path: Path, cache: ModuleCache | None = None, federation: d
         report = generate_recommendations(kb_path)
         return report.model_dump_json(indent=2)
 
+    @mcp.resource("knowledge://ops")
+    def get_ops() -> str:
+        """Get operator-focused source, lifecycle, and policy backlog report."""
+        from knowledge_manager.storage import generate_ops_report
+        report = generate_ops_report(kb_path)
+        return report.model_dump_json(indent=2)
+
+    @mcp.resource("knowledge://ops/backlog")
+    def get_ops_backlog() -> str:
+        """Get exportable review and stale-source backlog data."""
+        from knowledge_manager.ops_export import generate_review_backlog_export
+
+        return json.dumps(generate_review_backlog_export(kb_path), ensure_ascii=False, indent=2)
+
+    @mcp.resource("knowledge://dual-view")
+    def get_dual_view() -> str:
+        """Get source-to-module and module-to-source projection data."""
+        from knowledge_manager.dual_view import build_dual_view
+
+        return json.dumps(build_dual_view(kb_path), ensure_ascii=False, indent=2)
+
     # ── Federation: namespace-scoped resources ──
 
     if federation:
@@ -224,7 +245,15 @@ def create_server(kb_path: Path, cache: ModuleCache | None = None, federation: d
         return module.model_dump_json(indent=2)
 
     @mcp.tool(name="search_modules")
-    def search_modules_tool(query: str, category: str = "", include_archived: bool = False, namespace: str = "default") -> str:
+    def search_modules_tool(
+        query: str,
+        category: str = "",
+        include_archived: bool = False,
+        namespace: str = "default",
+        agent_id: str = "",
+        task_type: str = "",
+        risk_level: str = "",
+    ) -> str:
         """Search modules by keyword. Use namespace for federated KBs."""
         target_kb = _resolve_kb(namespace)
         results = [
@@ -237,11 +266,21 @@ def create_server(kb_path: Path, cache: ModuleCache | None = None, federation: d
                 "confidence": r.module.metadata.confidence,
                 "status": r.module.metadata.status,
                 "source": r.source,
+                "policy_reasons": r.reasons,
                 "caveats": r.module.content.caveats,
                 "related_modules": r.module.metadata.related_modules,
                 "snippet": _snippet(r.module.content.overview, query),
             }
-            for r in search_modules(query, target_kb, category if category else None, boost_ids=_session_loaded, include_archived=include_archived)
+            for r in search_modules(
+                query,
+                target_kb,
+                category if category else None,
+                boost_ids=_session_loaded,
+                include_archived=include_archived,
+                agent_id=agent_id or None,
+                task_type=task_type or None,
+                risk_level=risk_level or None,
+            )
         ]
         return json.dumps(results, indent=2)
 

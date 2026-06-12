@@ -108,6 +108,7 @@ class TestSearch:
         data = r.json()
         assert data["intent"] in ("how-to", "reference", "decision-record", "general")
         assert "results" in data
+        assert "policy_reasons" in data["results"][0]
 
     def test_search_empty_query(self, client):
         r = client.post("/api/search", json={"query": ""})
@@ -116,6 +117,137 @@ class TestSearch:
     def test_search_category_filter(self, client):
         r = client.post("/api/search", json={"query": "test", "category": "general"})
         assert r.status_code == 200
+
+    def test_search_accepts_agent_task_and_risk_policy_inputs(self, tmp_path):
+        kb = tmp_path / "kb"
+        kb.mkdir()
+        from knowledge_manager.schemas import Index, Module, ModuleContent
+        from knowledge_manager.storage import save_index, save_module
+
+        save_index(Index(description="Policy KB"), kb)
+        (kb / "config.json").write_text(
+            json.dumps(
+                {
+                    "routing_policy": {
+                        "task_type_category_priorities": {"incident-response": ["runbook"]},
+                        "risk_level_companions": {"high": ["policy/change-approval"]},
+                    }
+                }
+            ),
+            encoding="utf-8",
+        )
+        save_module(
+            Module(
+                id="jwt-runbook",
+                category="runbook",
+                title="JWT incident runbook",
+                summary="JWT incident response runbook.",
+                content=ModuleContent(
+                    overview="JWT incident response overview.",
+                    details="JWT incident response details with enough length for validation.",
+                ),
+            ),
+            kb,
+        )
+        save_module(
+            Module(
+                id="change-approval",
+                category="policy",
+                title="High-risk change approval",
+                summary="Mandatory approval policy for high-risk changes.",
+                content=ModuleContent(
+                    overview="High-risk approval overview.",
+                    details="High-risk approval details with enough length for validation.",
+                ),
+            ),
+            kb,
+        )
+        save_module(
+            Module(
+                id="sensitive-rollout",
+                category="runbook",
+                title="Sensitive rollout workflow",
+                summary="Sensitive rollout workflow for production updates.",
+                content=ModuleContent(
+                    overview="Sensitive rollout workflow overview.",
+                    details="Sensitive rollout workflow details with enough length for validation.",
+                ),
+            ),
+            kb,
+        )
+
+        policy_client = TestClient(create_app(kb))
+        r = policy_client.post(
+            "/api/search",
+            json={
+                "query": "sensitive rollout workflow",
+                "task_type": "incident-response",
+                "risk_level": "high",
+                "agent_id": "incident-agent",
+            },
+        )
+
+        assert r.status_code == 200
+        data = r.json()
+        assert data["results"][0]["id"] in {"jwt-runbook", "sensitive-rollout"}
+        assert any(result["id"] == "change-approval" for result in data["results"])
+
+    def test_search_filters_disallowed_statuses_from_policy(self, tmp_path):
+        kb = tmp_path / "kb"
+        kb.mkdir()
+        from knowledge_manager.schemas import Index, Module, ModuleContent, ModuleMetadata
+        from knowledge_manager.storage import save_index, save_module
+
+        save_index(Index(description="Policy KB"), kb)
+        (kb / "config.json").write_text(
+            json.dumps(
+                {
+                    "routing_policy": {
+                        "risk_level_allowed_statuses": {"high": ["published"]}
+                    }
+                }
+            ),
+            encoding="utf-8",
+        )
+        save_module(
+            Module(
+                id="draft-runbook",
+                category="ops",
+                title="Sensitive rollout draft",
+                summary="Sensitive rollout draft guidance.",
+                content=ModuleContent(
+                    overview="Sensitive rollout draft overview.",
+                    details="Sensitive rollout draft details with enough length for validation.",
+                ),
+                metadata=ModuleMetadata(status="draft"),
+            ),
+            kb,
+        )
+        save_module(
+            Module(
+                id="published-runbook",
+                category="ops",
+                title="Sensitive rollout published",
+                summary="Sensitive rollout published guidance.",
+                content=ModuleContent(
+                    overview="Sensitive rollout published overview.",
+                    details="Sensitive rollout published details with enough length for validation.",
+                ),
+                metadata=ModuleMetadata(status="published"),
+            ),
+            kb,
+        )
+
+        policy_client = TestClient(create_app(kb))
+        r = policy_client.post(
+            "/api/search",
+            json={"query": "sensitive rollout", "risk_level": "high"},
+        )
+
+        assert r.status_code == 200
+        ids = [result["id"] for result in r.json()["results"]]
+        assert "published-runbook" in ids
+        assert "draft-runbook" not in ids
 
 
 class TestGraph:
@@ -156,6 +288,128 @@ class TestRecommendations:
         assert r.status_code == 200
         data = r.json()
         assert "archive_candidates" in data
+
+
+class TestOps:
+    def test_ops_report_ok(self, tmp_path):
+        kb = tmp_path / "kb"
+        kb.mkdir()
+        from knowledge_manager.schemas import Index, Module, ModuleContent, ModuleMetadata
+        from knowledge_manager.storage import save_index, save_module
+
+        save_index(Index(description="Ops KB"), kb)
+        (kb / "config.json").write_text(
+            json.dumps({"routing_policy": {"risk_level_allowed_statuses": {"high": ["published"]}}}),
+            encoding="utf-8",
+        )
+        save_module(
+            Module(
+                id="draft-guide",
+                category="ops",
+                title="Draft guide",
+                summary="Draft guide for operators.",
+                content=ModuleContent(
+                    overview="Draft guide overview.",
+                    details="Draft guide details with enough length for validation.",
+                ),
+                metadata=ModuleMetadata(status="draft"),
+            ),
+            kb,
+        )
+
+        ops_client = TestClient(create_app(kb))
+        r = ops_client.get("/api/ops")
+        assert r.status_code == 200
+        data = r.json()
+        assert "source_backlog" in data
+        assert "lifecycle_backlog" in data
+        assert "policy_suppressed_modules" in data
+
+    def test_ops_backlog_endpoint_returns_review_export(self, tmp_path):
+        from knowledge_manager.schemas import Index, Module, ModuleContent, StagingMeta
+        from knowledge_manager.storage import save_index, save_staging_meta, save_to_staging
+
+        kb = tmp_path / "kb"
+        kb.mkdir()
+        save_index(Index(description="ops backlog"), kb)
+        staged = Module(
+            id="review-me",
+            category="ops",
+            title="Review me",
+            summary="Review me summary for operators.",
+            content=ModuleContent(
+                overview="Review me overview.",
+                details="Review me details with enough length for validation.",
+            ),
+        )
+        save_to_staging(staged, kb / ".staging")
+        save_staging_meta(StagingMeta(module_id="review-me", status="pending"), kb / ".staging")
+
+        ops_client = TestClient(create_app(kb))
+        r = ops_client.get("/api/ops/backlog")
+        assert r.status_code == 200
+        data = r.json()
+        assert data["total"] == 1
+        assert data["items"][0]["module_id"] == "review-me"
+
+    def test_dual_view_endpoint_returns_projection(self, tmp_path):
+        from knowledge_manager.schemas import (
+            ConfluenceSourceConfig,
+            Index,
+            Module,
+            ModuleContent,
+            ModuleMetadata,
+            SourceDefinition,
+            SourceDocumentRef,
+        )
+        from knowledge_manager.source_ingestion import upsert_source
+        from knowledge_manager.storage import save_index, save_module
+
+        kb = tmp_path / "kb"
+        kb.mkdir()
+        save_index(Index(description="dual view"), kb)
+        upsert_source(
+            SourceDefinition(
+                id="team-docs",
+                confluence=ConfluenceSourceConfig(
+                    base_url="https://example.atlassian.net/wiki",
+                    space_key="ENG",
+                    email="docs@example.com",
+                    api_token_env="CONFLUENCE_API_TOKEN",
+                ),
+            ),
+            kb,
+        )
+        save_module(
+            Module(
+                id="mod-1",
+                category="ops",
+                title="Ops Runbook",
+                summary="Ops runbook summary.",
+                content=ModuleContent(
+                    overview="Ops runbook overview.",
+                    details="Ops runbook details with enough length for validation.",
+                ),
+                metadata=ModuleMetadata(
+                    source_documents=[
+                        SourceDocumentRef(
+                            source_type="confluence",
+                            source_id="team-docs",
+                            external_id="page-1",
+                            title="Runbook",
+                        )
+                    ]
+                ),
+            ),
+            kb,
+        )
+
+        dual_client = TestClient(create_app(kb))
+        r = dual_client.get("/api/dual-view")
+        assert r.status_code == 200
+        data = r.json()
+        assert data["sources"][0]["source_id"] == "team-docs"
+        assert data["modules"][0]["module_id"] == "ops/mod-1"
 
 
 class TestStats:

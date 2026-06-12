@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
@@ -10,6 +11,7 @@ from knowledge_manager.cli import cli
 from knowledge_manager.schemas import Module, ModuleContent, ModuleMetadata
 from knowledge_manager.storage import save_module, save_to_staging, save_index, rebuild_index, load_index
 from knowledge_manager.schemas import Index
+from knowledge_manager.confluence import ConfluencePage
 
 
 @pytest.fixture
@@ -257,6 +259,364 @@ def test_cli_review_skip(cli_runner, initialized_kb):
     assert result.exit_code == 0
     # Skipped — should remain in staging
     assert (initialized_kb / ".staging" / "auth-jwt.json").exists()
+
+
+def test_cli_source_add_confluence_and_status(cli_runner, initialized_kb):
+    add_result = cli_runner.invoke(
+        cli,
+        [
+            "--kb-path",
+            str(initialized_kb),
+            "source",
+            "add-confluence",
+            "team-docs",
+            "--base-url",
+            "https://example.atlassian.net/wiki",
+            "--space-key",
+            "ENG",
+            "--email",
+            "docs@example.com",
+            "--token-env",
+            "CONFLUENCE_API_TOKEN",
+            "--category",
+            "architecture",
+        ],
+    )
+
+    assert add_result.exit_code == 0
+    status_result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "source", "status"])
+    assert status_result.exit_code == 0
+    assert "team-docs" in status_result.output
+    assert "architecture" in status_result.output
+
+
+def test_cli_source_add_notion_and_status(cli_runner, initialized_kb):
+    add_result = cli_runner.invoke(
+        cli,
+        [
+            "--kb-path",
+            str(initialized_kb),
+            "source",
+            "add-notion",
+            "ops-notes",
+            "--token-env",
+            "NOTION_TOKEN",
+            "--database-id",
+            "db-1",
+            "--category",
+            "operations",
+        ],
+    )
+
+    assert add_result.exit_code == 0
+    status_result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "source", "status"])
+    assert status_result.exit_code == 0
+    assert "ops-notes [notion]" in status_result.output
+    assert "operations" in status_result.output
+
+
+def test_cli_source_pull_stages_modules(cli_runner, initialized_kb, monkeypatch):
+    cli_runner.invoke(
+        cli,
+        [
+            "--kb-path",
+            str(initialized_kb),
+            "source",
+            "add-confluence",
+            "team-docs",
+            "--base-url",
+            "https://example.atlassian.net/wiki",
+            "--space-key",
+            "ENG",
+            "--email",
+            "docs@example.com",
+            "--token-env",
+            "CONFLUENCE_API_TOKEN",
+            "--category",
+            "architecture",
+        ],
+    )
+    monkeypatch.setenv("CONFLUENCE_API_TOKEN", "token")
+
+    async def fake_list_pages(self, space_key, root_page_id="", limit=25, cursor=""):
+        return (
+            [
+                ConfluencePage(
+                    page_id="12345",
+                    title="JWT Runbook",
+                    url="https://example.atlassian.net/wiki/spaces/ENG/pages/12345",
+                    version="7",
+                    body_text="Refresh tokens rotate on every successful refresh.",
+                    heading_path=["ENG", "JWT Runbook"],
+                    checksum="abc123",
+                )
+            ],
+            "cursor-2",
+        )
+
+    async def fake_extract(self, text, category, existing_categories=""):
+        return [make_module("jwt-playbook", category)]
+
+    monkeypatch.setattr("knowledge_manager.confluence.ConfluenceClient.list_pages", fake_list_pages)
+    monkeypatch.setattr("knowledge_manager.cli.Extractor.extract", fake_extract)
+    monkeypatch.setattr("knowledge_manager.cli.create_client", lambda provider_name, provider_cfg: AsyncMock())
+
+    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "source", "pull", "team-docs"])
+    assert result.exit_code == 0, result.output
+    assert "staged 1 modules" in result.output
+    assert (initialized_kb / ".staging" / "jwt-playbook.json").exists()
+    assert (initialized_kb / ".staging" / "jwt-playbook.meta.json").exists()
+
+    status_result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "source", "status"])
+    assert status_result.exit_code == 0
+    assert "cursor-2" in status_result.output
+
+
+def test_cli_source_pull_notion_stages_modules(cli_runner, initialized_kb, monkeypatch):
+    cli_runner.invoke(
+        cli,
+        [
+            "--kb-path",
+            str(initialized_kb),
+            "source",
+            "add-notion",
+            "ops-notes",
+            "--token-env",
+            "NOTION_TOKEN",
+            "--database-id",
+            "db-1",
+            "--category",
+            "operations",
+        ],
+    )
+    monkeypatch.setenv("NOTION_TOKEN", "token")
+
+    async def fake_list_pages(self, database_id, page_limit=25, cursor=""):
+        from knowledge_manager.notion import NotionPage
+
+        return (
+            [
+                NotionPage(
+                    page_id="page-1",
+                    title="Ops Runbook",
+                    url="https://www.notion.so/page-1",
+                    version="2026-06-12T08:00:00.000Z",
+                    body_text="Escalations route through the primary on-call.",
+                    heading_path=["Notion", "Ops Runbook"],
+                    checksum="xyz123",
+                )
+            ],
+            "cursor-3",
+        )
+
+    async def fake_extract(self, text, category, existing_categories=""):
+        return [make_module("ops-runbook", category)]
+
+    monkeypatch.setattr("knowledge_manager.notion.NotionClient.list_pages", fake_list_pages)
+    monkeypatch.setattr("knowledge_manager.cli.Extractor.extract", fake_extract)
+    monkeypatch.setattr("knowledge_manager.cli.create_client", lambda provider_name, provider_cfg: AsyncMock())
+
+    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "source", "pull", "ops-notes"])
+    assert result.exit_code == 0, result.output
+    assert "staged 1 modules" in result.output
+    assert (initialized_kb / ".staging" / "ops-runbook.json").exists()
+
+    status_result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "source", "status"])
+    assert status_result.exit_code == 0
+    assert "cursor-3" in status_result.output
+
+
+def test_cli_eval_run(cli_runner, initialized_kb, tmp_path):
+    save_module(make_module("jwt-playbook", "auth"), initialized_kb)
+    suite_path = tmp_path / "eval-suite.json"
+    suite_path.write_text(
+        json.dumps(
+            {
+                "name": "smoke",
+                "cases": [
+                    {
+                        "id": "jwt-hit",
+                        "query": "test module",
+                        "required_modules": ["auth/jwt-playbook"],
+                        "top_k": 3,
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = cli_runner.invoke(
+        cli,
+        ["--kb-path", str(initialized_kb), "eval", "run", str(suite_path), "--top-k", "3"],
+    )
+    assert result.exit_code == 0
+    assert "1/1 cases passed" in result.output
+    assert "Hit rate: 100.0%" in result.output
+    assert "[PASS] jwt-hit" in result.output
+
+
+def test_cli_eval_run_shows_suppression_summary(cli_runner, initialized_kb, tmp_path):
+    (initialized_kb / "config.json").write_text(
+        json.dumps(
+            {
+                "llm_providers": {
+                    "deepseek": {
+                        "api_key": "",
+                        "model": "deepseek-v4-pro",
+                        "base_url": "https://api.deepseek.com",
+                        "default": True
+                    }
+                },
+                "routing_policy": {
+                    "risk_level_allowed_statuses": {"high": ["published"]}
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    draft = make_module("draft-ops", "ops")
+    draft.title = "Sensitive rollout draft"
+    draft.summary = "Sensitive rollout draft guidance."
+    draft.content = ModuleContent(
+        overview="Sensitive rollout draft overview.",
+        details="Sensitive rollout draft details with enough length for validation.",
+    )
+    draft.metadata.status = "draft"
+    save_module(draft, initialized_kb)
+
+    published = make_module("published-ops", "ops")
+    published.title = "Sensitive rollout published"
+    published.summary = "Sensitive rollout published guidance."
+    published.content = ModuleContent(
+        overview="Sensitive rollout published overview.",
+        details="Sensitive rollout published details with enough length for validation.",
+    )
+    save_module(published, initialized_kb)
+
+    suite_path = tmp_path / "eval-suite.json"
+    suite_path.write_text(
+        json.dumps(
+            {
+                "name": "smoke",
+                "cases": [
+                    {
+                        "id": "high-risk-rollout",
+                        "query": "sensitive rollout",
+                        "required_modules": ["ops/published-ops", "ops/draft-ops"],
+                        "risk_level": "high",
+                        "task_type": "production-change",
+                        "top_k": 5
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = cli_runner.invoke(
+        cli,
+        ["--kb-path", str(initialized_kb), "eval", "run", str(suite_path), "--top-k", "5"],
+    )
+    assert result.exit_code == 0
+    assert "Suppression-driven failure rate: 100.0%" in result.output
+    assert "risk/high" in result.output.lower()
+    assert "policy_failures=" in result.output
+    assert "retrieval_failures=" in result.output
+
+
+def test_cli_source_pull_records_sync_error(cli_runner, initialized_kb, monkeypatch):
+    cli_runner.invoke(
+        cli,
+        [
+            "--kb-path",
+            str(initialized_kb),
+            "source",
+            "add-confluence",
+            "team-docs",
+            "--base-url",
+            "https://example.atlassian.net/wiki",
+            "--space-key",
+            "ENG",
+            "--email",
+            "docs@example.com",
+            "--token-env",
+            "CONFLUENCE_API_TOKEN",
+            "--category",
+            "architecture",
+        ],
+    )
+    monkeypatch.setenv("CONFLUENCE_API_TOKEN", "token")
+
+    async def fail_list_pages(self, space_key, root_page_id="", limit=25, cursor=""):
+        raise RuntimeError("confluence unavailable")
+
+    monkeypatch.setattr("knowledge_manager.confluence.ConfluenceClient.list_pages", fail_list_pages)
+    monkeypatch.setattr("knowledge_manager.cli.create_client", lambda provider_name, provider_cfg: AsyncMock())
+
+    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "source", "pull", "team-docs"])
+    assert result.exit_code != 0
+    assert "confluence unavailable" in result.output.lower()
+
+    status_result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "source", "status"])
+    assert status_result.exit_code == 0
+    assert "confluence unavailable" in status_result.output.lower()
+
+
+def test_cli_source_pull_retries_transient_failure(cli_runner, initialized_kb, monkeypatch):
+    cli_runner.invoke(
+        cli,
+        [
+            "--kb-path",
+            str(initialized_kb),
+            "source",
+            "add-confluence",
+            "team-docs",
+            "--base-url",
+            "https://example.atlassian.net/wiki",
+            "--space-key",
+            "ENG",
+            "--email",
+            "docs@example.com",
+            "--token-env",
+            "CONFLUENCE_API_TOKEN",
+            "--category",
+            "architecture",
+        ],
+    )
+    monkeypatch.setenv("CONFLUENCE_API_TOKEN", "token")
+    attempts = {"count": 0}
+
+    async def flaky_list_pages(self, space_key, root_page_id="", limit=25, cursor=""):
+        attempts["count"] += 1
+        if attempts["count"] < 3:
+            raise RuntimeError("temporary confluence error")
+        return (
+            [
+                ConfluencePage(
+                    page_id="12345",
+                    title="JWT Runbook",
+                    url="https://example.atlassian.net/wiki/spaces/ENG/pages/12345",
+                    version="7",
+                    body_text="Refresh tokens rotate on every successful refresh.",
+                    heading_path=["ENG", "JWT Runbook"],
+                    checksum="abc123",
+                )
+            ],
+            "",
+        )
+
+    async def fake_extract(self, text, category, existing_categories=""):
+        return [make_module("jwt-playbook", category)]
+
+    monkeypatch.setattr("knowledge_manager.confluence.ConfluenceClient.list_pages", flaky_list_pages)
+    monkeypatch.setattr("knowledge_manager.cli.Extractor.extract", fake_extract)
+    monkeypatch.setattr("knowledge_manager.cli.create_client", lambda provider_name, provider_cfg: AsyncMock())
+
+    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "source", "pull", "team-docs"])
+    assert result.exit_code == 0, result.output
+    assert attempts["count"] == 3
+    assert "staged 1 modules" in result.output
 
 
 def test_cli_add_verbose_logs_only_metadata(cli_runner, initialized_kb, tmp_path, caplog):
@@ -1285,6 +1645,224 @@ def test_cli_recommend_empty_kb(cli_runner, initialized_kb):
     result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "recommend"])
     assert result.exit_code == 0
     assert "great shape" in result.output or "No recommendations" in result.output
+
+
+def test_cli_ops_overview(cli_runner, initialized_kb):
+    from knowledge_manager.schemas import ModuleMetadata
+
+    kb = initialized_kb
+    (kb / "config.json").write_text(
+        json.dumps(
+            {
+                "llm_providers": {
+                    "deepseek": {
+                        "api_key": "",
+                        "model": "deepseek-v4-pro",
+                        "base_url": "https://api.deepseek.com",
+                        "default": True
+                    }
+                },
+                "routing_policy": {
+                    "risk_level_allowed_statuses": {"high": ["published"]}
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    mod = make_module("draft-ops", "ops")
+    mod.metadata.status = "draft"
+    save_module(mod, kb)
+    rebuild_index(kb)
+
+    result = cli_runner.invoke(cli, ["--kb-path", str(kb), "ops"])
+    assert result.exit_code == 0
+    assert "Operations Report" in result.output
+    assert "Policy-Suppressed" in result.output
+
+
+def test_cli_ops_json(cli_runner, initialized_kb):
+    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "ops", "--format", "json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert "source_backlog" in data
+    assert "lifecycle_backlog" in data
+
+
+def test_cli_ops_apply_stale_source_deprecate_dry_run(cli_runner, initialized_kb):
+    stale_mod = make_module("stale-ops", "ops")
+    stale_mod.metadata.stale_due_to_source_change = True
+    save_module(stale_mod, initialized_kb)
+    rebuild_index(initialized_kb)
+
+    result = cli_runner.invoke(
+        cli,
+        ["--kb-path", str(initialized_kb), "ops-apply", "--action", "stale-source-deprecate", "--dry-run"],
+    )
+    assert result.exit_code == 0
+    assert "[DRY RUN]" in result.output
+
+    from knowledge_manager.storage import load_module
+    loaded = load_module("stale-ops", "ops", initialized_kb)
+    assert loaded is not None
+    assert loaded.metadata.status == "published"
+
+
+def test_cli_ops_apply_stale_source_deprecate_executes(cli_runner, initialized_kb):
+    stale_mod = make_module("stale-ops", "ops")
+    stale_mod.metadata.stale_due_to_source_change = True
+    save_module(stale_mod, initialized_kb)
+    rebuild_index(initialized_kb)
+
+    result = cli_runner.invoke(
+        cli,
+        ["--kb-path", str(initialized_kb), "ops-apply", "--action", "stale-source-deprecate"],
+    )
+    assert result.exit_code == 0
+    assert "Applied 1 action(s)." in result.output
+
+    from knowledge_manager.storage import load_module
+    loaded = load_module("stale-ops", "ops", initialized_kb)
+    assert loaded is not None
+    assert loaded.metadata.status == "deprecated"
+
+
+def test_cli_ops_apply_archive_suppressed_dry_run(cli_runner, initialized_kb):
+    (initialized_kb / "config.json").write_text(
+        json.dumps(
+            {
+                "llm_providers": {
+                    "deepseek": {
+                        "api_key": "",
+                        "model": "deepseek-v4-pro",
+                        "base_url": "https://api.deepseek.com",
+                        "default": True
+                    }
+                },
+                "routing_policy": {
+                    "risk_level_allowed_statuses": {"high": ["published"]}
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    suppressed = make_module("suppressed-ops", "ops")
+    suppressed.metadata.status = "draft"
+    save_module(suppressed, initialized_kb)
+    rebuild_index(initialized_kb)
+
+    result = cli_runner.invoke(
+        cli,
+        ["--kb-path", str(initialized_kb), "ops-apply", "--action", "archive-suppressed", "--dry-run"],
+    )
+    assert result.exit_code == 0
+    assert "[DRY RUN] Archive ops/suppressed-ops" in result.output
+
+
+def test_cli_ops_apply_archive_suppressed_executes(cli_runner, initialized_kb):
+    (initialized_kb / "config.json").write_text(
+        json.dumps(
+            {
+                "llm_providers": {
+                    "deepseek": {
+                        "api_key": "",
+                        "model": "deepseek-v4-pro",
+                        "base_url": "https://api.deepseek.com",
+                        "default": True
+                    }
+                },
+                "routing_policy": {
+                    "risk_level_allowed_statuses": {"high": ["published"]}
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    suppressed = make_module("suppressed-ops", "ops")
+    suppressed.metadata.status = "draft"
+    save_module(suppressed, initialized_kb)
+    rebuild_index(initialized_kb)
+
+    result = cli_runner.invoke(
+        cli,
+        ["--kb-path", str(initialized_kb), "ops-apply", "--action", "archive-suppressed"],
+    )
+    assert result.exit_code == 0
+    assert "Archived ops/suppressed-ops" in result.output
+
+    from knowledge_manager.storage import load_module
+    loaded = load_module("suppressed-ops", "ops", initialized_kb)
+    assert loaded is not None
+    assert loaded.metadata.status == "archived"
+
+
+def test_cli_ops_export_review_backlog_writes_json(cli_runner, initialized_kb):
+    from knowledge_manager.schemas import StagingMeta
+    from knowledge_manager.storage import save_staging_meta, save_to_staging
+
+    staged = make_module("review-me", "ops")
+    save_to_staging(staged, initialized_kb / ".staging")
+    save_staging_meta(StagingMeta(module_id="review-me", status="pending"), initialized_kb / ".staging")
+
+    output_path = initialized_kb / "review-backlog.json"
+    result = cli_runner.invoke(
+        cli,
+        ["--kb-path", str(initialized_kb), "ops-export-review-backlog", str(output_path)],
+    )
+    assert result.exit_code == 0
+    assert output_path.exists()
+    data = json.loads(output_path.read_text(encoding="utf-8"))
+    assert data["total"] == 1
+    assert data["items"][0]["module_id"] == "review-me"
+    assert data["items"][0]["status"] == "pending"
+
+
+def test_cli_ops_export_risky_misses_writes_json(cli_runner, initialized_kb):
+    from knowledge_manager.storage import record_search_event
+
+    record_search_event("deploy rollback", [], initialized_kb)
+
+    output_path = initialized_kb / "risky-misses.json"
+    result = cli_runner.invoke(
+        cli,
+        ["--kb-path", str(initialized_kb), "ops-export-risky-misses", str(output_path)],
+    )
+    assert result.exit_code == 0
+    data = json.loads(output_path.read_text(encoding="utf-8"))
+    assert data["total"] == 1
+    assert data["items"][0]["query_terms"]
+
+
+def test_cli_ops_export_source_backlog_writes_json(cli_runner, initialized_kb):
+    cli_runner.invoke(
+        cli,
+        [
+            "--kb-path",
+            str(initialized_kb),
+            "source",
+            "add-confluence",
+            "team-docs",
+            "--base-url",
+            "https://example.atlassian.net/wiki",
+            "--space-key",
+            "ENG",
+            "--email",
+            "docs@example.com",
+            "--token-env",
+            "CONFLUENCE_API_TOKEN",
+            "--category",
+            "architecture",
+        ],
+    )
+
+    output_path = initialized_kb / "source-backlog.json"
+    result = cli_runner.invoke(
+        cli,
+        ["--kb-path", str(initialized_kb), "ops-export-source-backlog", str(output_path)],
+    )
+    assert result.exit_code == 0
+    data = json.loads(output_path.read_text(encoding="utf-8"))
+    assert data["total"] == 1
+    assert data["items"][0]["source_id"] == "team-docs"
 
 
 # ── Phase 3D: apply CLI tests ──

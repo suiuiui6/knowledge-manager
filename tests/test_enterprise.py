@@ -5,13 +5,13 @@ from fastapi import FastAPI
 from starlette.testclient import TestClient
 
 from knowledge_manager.auth import (
-    AuthConfig, AuthMiddleware, load_auth_config, inject_auth_middleware,
+    AuthConfig, AuthError, AuthMiddleware, load_auth_config, inject_auth_middleware, validate_oidc_token,
 )
 from knowledge_manager.audit import (
     AuditEvent, log_audit_event, read_audit_log, generate_compliance_report,
 )
 from knowledge_manager.rbac import (
-    RBACConfig, get_user_role, set_user_role, check_permission,
+    PermissionChecker, RBACConfig, get_user_role, set_user_role, check_permission,
     list_users, remove_user, load_rbac_config,
 )
 
@@ -110,6 +110,10 @@ class TestAuthMiddleware:
         token = f"{header}.{payload}.sig"
         result = AuthMiddleware._decode_jwt_unsigned(token)
         assert result.get("sub") == "test@example.com"
+
+    def test_validate_oidc_token_rejects_unsigned_payload(self):
+        with pytest.raises(AuthError):
+            validate_oidc_token("header.payload.", issuer="https://issuer.example.com", jwks={"keys": []})
 
 
 class TestAudit:
@@ -226,6 +230,15 @@ class TestRBAC:
         }))
         cfg = load_rbac_config(kb)
         assert cfg.users["alice"] == "admin"
+
+    def test_permission_checker_enforces_category_scope(self):
+        checker = PermissionChecker(
+            roles={"reviewer": {"permissions": ["module:read"], "scopes": ["category:policy"]}},
+            group_mapping={"grp-reviewers": ["reviewer"]},
+        )
+
+        assert checker.can_read_module(["grp-reviewers"], {"category": "policy", "id": "jwt"}) is True
+        assert checker.can_read_module(["grp-reviewers"], {"category": "finance", "id": "budget"}) is False
 
 
 class TestAuditEvent:

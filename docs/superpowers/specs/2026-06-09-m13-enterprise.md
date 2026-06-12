@@ -44,3 +44,8 @@
 - 企业功能通过可选插件实现
 - 文件系统 + Git 保持可审计性根基
 - 不引入数据库作为依赖
+
+## 当前实现补充说明
+
+- 当前仓库已经补上基础企业 ingestion、provenance、routing policy、ops export、eval summary 与最小可信 OIDC/JWT 校验。
+- 下一步生产门禁以 `docs/runbooks/enterprise-rollout.md` 和 `docs/runbooks/eval-gate.md` 为准。

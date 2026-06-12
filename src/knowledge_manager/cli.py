@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import os
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -602,6 +603,158 @@ def usage(ctx: click.Context, period: str, fmt: str) -> None:
             uq_table.add_row(theme, str(uq.count))
         console.print(uq_table)
         console.print("[dim]  → These topics might need new modules.[/dim]")
+
+
+@cli.command()
+@click.option("--format", "-f", "fmt", type=click.Choice(["table", "json"]), default="table", help="Output format")
+@click.pass_context
+def ops(ctx: click.Context, fmt: str) -> None:
+    """Show operator-focused source, lifecycle, and policy backlog report."""
+    from knowledge_manager.storage import generate_ops_report
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+    report = generate_ops_report(kb)
+
+    if fmt == "json":
+        click.echo(report.model_dump_json(indent=2))
+        return
+
+    console.print("\n[bold]Operations Report[/bold]")
+    console.print(
+        f" Sources: {len(report.source_backlog)}   "
+        f"Suppressed modules: {len(report.policy_suppressed_modules)}   "
+        f"Lifecycle states: {len(report.lifecycle_backlog.status_counts)}"
+    )
+
+    if report.source_backlog:
+        source_table = Table(title="Source Backlog")
+        source_table.add_column("Source")
+        source_table.add_column("Tracked Pages")
+        source_table.add_column("Stale Modules")
+        source_table.add_column("Last Sync")
+        for entry in report.source_backlog:
+            source_table.add_row(
+                entry.source_id,
+                str(entry.tracked_pages),
+                str(entry.stale_module_count),
+                entry.last_synced_at.isoformat() if entry.last_synced_at else "never",
+            )
+        console.print(source_table)
+
+    lifecycle_table = Table(title="Lifecycle Backlog")
+    lifecycle_table.add_column("Status")
+    lifecycle_table.add_column("Count")
+    for status, count in sorted(report.lifecycle_backlog.status_counts.items()):
+        lifecycle_table.add_row(status, str(count))
+    for status, count in sorted(report.lifecycle_backlog.staging_status_counts.items()):
+        lifecycle_table.add_row(f"staging:{status}", str(count))
+    console.print(lifecycle_table)
+
+    suppressed_table = Table(title="Policy-Suppressed")
+    suppressed_table.add_column("Module")
+    suppressed_table.add_column("Reasons")
+    for entry in report.policy_suppressed_modules[:10]:
+        suppressed_table.add_row(f"{entry.category}/{entry.module_id}", ", ".join(entry.reasons))
+    console.print(suppressed_table)
+
+
+@cli.command("ops-apply")
+@click.option(
+    "--action",
+    "action",
+    type=click.Choice(["stale-source-deprecate", "archive-suppressed"]),
+    required=True,
+    help="Operator action to apply",
+)
+@click.option("--dry-run", is_flag=True, help="Preview actions without executing")
+@click.pass_context
+def ops_apply(ctx: click.Context, action: str, dry_run: bool) -> None:
+    """Apply operator actions derived from the ops report."""
+    from knowledge_manager.storage import generate_ops_report
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    if action == "stale-source-deprecate":
+        candidates = [
+            module
+            for module in list_modules(kb)
+            if module.metadata.stale_due_to_source_change and module.metadata.status != "archived"
+        ]
+    else:
+        report = generate_ops_report(kb)
+        candidate_keys = {
+            f"{entry.category}/{entry.module_id}" for entry in report.policy_suppressed_modules
+        }
+        candidates = [
+            module
+            for module in list_modules(kb)
+            if f"{module.category}/{module.id}" in candidate_keys and module.metadata.status != "archived"
+        ]
+
+    if not candidates:
+        click.echo("No actions to apply.")
+        return
+
+    for module in candidates:
+        mod_ref = f"{module.category}/{module.id}"
+        if dry_run:
+            verb = "Deprecate" if action == "stale-source-deprecate" else "Archive"
+            reason = "stale source detected" if action == "stale-source-deprecate" else "policy-suppressed"
+            click.echo(f"[DRY RUN] {verb} {mod_ref}: {reason}")
+            continue
+        module.metadata.status = "deprecated" if action == "stale-source-deprecate" else "archived"
+        save_module(module, kb)
+        click.echo(f"{'Deprecated' if action == 'stale-source-deprecate' else 'Archived'} {mod_ref}")
+
+    if dry_run:
+        click.echo(f"\n{len(candidates)} action(s) previewed.")
+    else:
+        rebuild_index(kb)
+        click.echo(f"Applied {len(candidates)} action(s).")
+
+
+@cli.command("ops-export-review-backlog")
+@click.argument("output_path", type=click.Path(path_type=Path))
+@click.pass_context
+def ops_export_review_backlog(ctx: click.Context, output_path: Path) -> None:
+    """Export the current review backlog from staging to a JSON file."""
+    from knowledge_manager.ops_export import generate_review_backlog_export
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+    payload = generate_review_backlog_export(kb)
+    output_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    click.echo(f"Exported review backlog to {output_path}")
+
+
+@cli.command("ops-export-risky-misses")
+@click.argument("output_path", type=click.Path(path_type=Path))
+@click.pass_context
+def ops_export_risky_misses(ctx: click.Context, output_path: Path) -> None:
+    """Export search queries that returned no results."""
+    from knowledge_manager.ops_export import generate_risky_miss_export
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+    payload = generate_risky_miss_export(kb)
+    output_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    click.echo(f"Exported risky misses to {output_path}")
+
+
+@cli.command("ops-export-source-backlog")
+@click.argument("output_path", type=click.Path(path_type=Path))
+@click.pass_context
+def ops_export_source_backlog(ctx: click.Context, output_path: Path) -> None:
+    """Export source backlog and stale-source counts."""
+    from knowledge_manager.ops_export import generate_source_backlog_export
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+    payload = generate_source_backlog_export(kb)
+    output_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    click.echo(f"Exported source backlog to {output_path}")
 
 
 # --- graph ---
@@ -2794,6 +2947,253 @@ def rbac_remove(ctx: click.Context, user: str) -> None:
         console.print(f"User '{user}' removed.")
     else:
         console.print(f"[red]User '{user}' not found.[/red]")
+
+
+@cli.group()
+def source() -> None:
+    """Manage external enterprise knowledge sources."""
+
+
+@source.command("add-confluence")
+@click.argument("source_id")
+@click.option("--base-url", required=True)
+@click.option("--space-key", required=True)
+@click.option("--email", required=True)
+@click.option("--token-env", required=True)
+@click.option("--root-page-id", default="")
+@click.option("--category", default="general")
+@click.option("--page-limit", default=25, type=int)
+@click.pass_context
+def source_add_confluence(
+    ctx: click.Context,
+    source_id: str,
+    base_url: str,
+    space_key: str,
+    email: str,
+    token_env: str,
+    root_page_id: str,
+    category: str,
+    page_limit: int,
+) -> None:
+    """Register a Confluence source."""
+    from knowledge_manager.schemas import ConfluenceSourceConfig, SourceDefinition
+    from knowledge_manager.source_ingestion import upsert_source
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    upsert_source(
+        SourceDefinition(
+            id=source_id,
+            confluence=ConfluenceSourceConfig(
+                base_url=base_url,
+                space_key=space_key,
+                email=email,
+                api_token_env=token_env,
+                root_page_id=root_page_id,
+                category=category,
+                page_limit=page_limit,
+            ),
+        ),
+        kb,
+    )
+    click.echo(f"Registered Confluence source: {source_id}")
+
+
+@source.command("add-notion")
+@click.argument("source_id")
+@click.option("--token-env", required=True)
+@click.option("--database-id", required=True)
+@click.option("--category", default="general")
+@click.option("--page-limit", default=25, type=int)
+@click.pass_context
+def source_add_notion(
+    ctx: click.Context,
+    source_id: str,
+    token_env: str,
+    database_id: str,
+    category: str,
+    page_limit: int,
+) -> None:
+    """Register a Notion source."""
+    from knowledge_manager.schemas import NotionSourceConfig, SourceDefinition
+    from knowledge_manager.source_ingestion import upsert_source
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    upsert_source(
+        SourceDefinition(
+            id=source_id,
+            type="notion",
+            notion=NotionSourceConfig(
+                api_token_env=token_env,
+                database_id=database_id,
+                category=category,
+                page_limit=page_limit,
+            ),
+        ),
+        kb,
+    )
+    click.echo(f"Registered Notion source: {source_id}")
+
+
+@source.command("status")
+@click.pass_context
+def source_status(ctx: click.Context) -> None:
+    """Show configured enterprise sources and sync status."""
+    from knowledge_manager.source_ingestion import load_source_registry
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+    registry = load_source_registry(kb)
+    if not registry.sources:
+        click.echo("No sources configured.")
+        return
+
+    for source_id, definition in registry.sources.items():
+        category = "-"
+        if definition.confluence is not None:
+            category = definition.confluence.category
+        elif definition.notion is not None:
+            category = definition.notion.category
+        synced_at = (
+            definition.sync.last_synced_at.isoformat() if definition.sync.last_synced_at else "never"
+        )
+        click.echo(
+            f"{source_id} [{definition.type}] category={category} "
+            f"last_synced_at={synced_at} tracked_pages={len(definition.sync.page_versions)} "
+            f"cursor={definition.sync.last_cursor or '-'} "
+            f"last_error={definition.sync.last_error or '-'}"
+        )
+
+
+@source.command("pull")
+@click.argument("source_id")
+@click.pass_context
+def source_pull(ctx: click.Context, source_id: str) -> None:
+    """Pull from a registered enterprise source into staging."""
+    from knowledge_manager.confluence import ConfluenceClient
+    from knowledge_manager.notion import NotionClient
+    from knowledge_manager.source_ingestion import (
+        ingest_confluence_pages,
+        load_source_registry,
+        record_source_sync_error,
+    )
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+    cfg = _load_config(kb)
+    registry = load_source_registry(kb)
+    if source_id not in registry.sources:
+        click.echo(f"Error: source not found: {source_id}", err=True)
+        raise click.Abort()
+
+    source_def = registry.sources[source_id]
+    token_env = (
+        source_def.confluence.api_token_env
+        if source_def.confluence is not None
+        else source_def.notion.api_token_env if source_def.notion is not None else ""
+    )
+    token = os.environ.get(token_env, "")
+    if not token:
+        click.echo(
+            f"Error: environment variable {token_env} is not set",
+            err=True,
+        )
+        raise click.Abort()
+
+    provider_name, provider_cfg = cfg.get_default_provider()
+    llm_client = create_client(provider_name, provider_cfg)
+    extractor = Extractor(llm_client, cfg.extraction)
+
+    async def _run_pull() -> tuple[int, int, int]:
+        last_error: Exception | None = None
+        for _ in range(3):
+            try:
+                if source_def.type == "confluence":
+                    assert source_def.confluence is not None
+                    client = ConfluenceClient(
+                        source_def.confluence.base_url,
+                        source_def.confluence.email,
+                        token,
+                    )
+                    pages, next_cursor = await client.list_pages(
+                        source_def.confluence.space_key,
+                        root_page_id=source_def.confluence.root_page_id,
+                        limit=source_def.confluence.page_limit,
+                        cursor=source_def.sync.last_cursor,
+                    )
+                else:
+                    assert source_def.notion is not None
+                    client = NotionClient(token)
+                    pages, next_cursor = await client.list_pages(
+                        source_def.notion.database_id,
+                        page_limit=source_def.notion.page_limit,
+                        cursor=source_def.sync.last_cursor,
+                    )
+                break
+            except Exception as exc:
+                last_error = exc
+        else:
+            assert last_error is not None
+            raise last_error
+
+        summary = await ingest_confluence_pages(source_def, pages, kb, extractor, next_cursor=next_cursor)
+        return summary.pages_seen, summary.modules_staged, summary.modules_marked_stale
+
+    try:
+        pages_seen, modules_staged, modules_marked_stale = asyncio.run(_run_pull())
+    except Exception as exc:
+        record_source_sync_error(source_id, str(exc), kb)
+        click.echo(f"Error: source pull failed: {exc}", err=True)
+        raise click.Abort()
+    click.echo(
+        f"Pulled {pages_seen} pages from {source_id}; "
+        f"staged {modules_staged} modules; marked {modules_marked_stale} modules stale"
+    )
+
+
+@cli.group("eval")
+def eval_group() -> None:
+    """Run retrieval evaluations."""
+
+
+@eval_group.command("run")
+@click.argument("suite_path", type=click.Path(path_type=Path, exists=True))
+@click.option("--top-k", default=5, type=int)
+@click.pass_context
+def eval_run(ctx: click.Context, suite_path: Path, top_k: int) -> None:
+    """Run a retrieval eval suite from JSON."""
+    from knowledge_manager.eval_runner import load_eval_suite, run_eval_suite
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+    suite = load_eval_suite(suite_path)
+    result = run_eval_suite(suite, kb, top_k=top_k)
+    click.echo(f"{result.passed_cases}/{result.total_cases} cases passed (top_k={result.top_k})")
+    click.echo(f"Hit rate: {result.hit_rate}%")
+    click.echo(f"Suppression-driven failure rate: {result.suppression_failure_rate}%")
+    click.echo(f"Baseline win rate: {result.baseline_win_rate}%")
+    click.echo(f"False-positive rate: {result.false_positive_rate}%")
+    click.echo(f"False-negative rate: {result.false_negative_rate}%")
+    click.echo(f"Avg context tokens: {result.avg_context_tokens}")
+    click.echo(
+        f"policy_failures={result.policy_failure_rate}% retrieval_failures={result.retrieval_failure_rate}%"
+    )
+    for risk_level, summary in sorted(result.risk_level_summary.items()):
+        click.echo(
+            f"risk/{risk_level}: {summary.passed_cases}/{summary.total_cases} passed; "
+            f"suppressed_failures={summary.suppressed_failures}"
+        )
+    for task_type, summary in sorted(result.task_type_summary.items()):
+        click.echo(
+            f"task/{task_type}: {summary.passed_cases}/{summary.total_cases} passed; "
+            f"suppressed_failures={summary.suppressed_failures}"
+        )
+    for case in result.results:
+        status = "PASS" if case.passed else "FAIL"
+        click.echo(f"[{status}] {case.case_id}")
 
 
 if __name__ == "__main__":

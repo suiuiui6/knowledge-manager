@@ -1,4 +1,5 @@
 import logging
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -8,6 +9,10 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 logger = logging.getLogger("knowledge_manager.auth")
+
+
+class AuthError(RuntimeError):
+    pass
 
 
 class AuthConfig:
@@ -61,7 +66,14 @@ class AuthMiddleware(BaseHTTPMiddleware):
             return None
         token = auth_header[7:]
         try:
-            payload = self._decode_jwt_unsigned(token)
+            cfg = self.auth_config.oidc_config if self.auth_config else {}
+            payload = validate_oidc_token(
+                token,
+                issuer=cfg.get("issuer", ""),
+                audience=cfg.get("audience"),
+                secret=cfg.get("shared_secret") or os.environ.get(cfg.get("shared_secret_env", ""), ""),
+                jwks=cfg.get("jwks"),
+            )
             return payload.get("sub") or payload.get("email", "unknown")
         except Exception:
             logger.warning("OIDC token verification failed", exc_info=True)
@@ -94,3 +106,50 @@ def inject_auth_middleware(app, kb_path: Path) -> None:
     if auth_config and auth_config.provider:
         app.add_middleware(AuthMiddleware, kb_path=kb_path)
         logger.info("Auth middleware injected: provider=%s", auth_config.provider)
+
+
+def validate_oidc_token(
+    token: str,
+    *,
+    issuer: str = "",
+    audience: str | None = None,
+    secret: str = "",
+    jwks: dict | None = None,
+) -> dict:
+    import jwt
+
+    try:
+        header = jwt.get_unverified_header(token)
+    except Exception as exc:
+        raise AuthError("invalid token header") from exc
+
+    algorithm = header.get("alg", "")
+    if not algorithm or algorithm.lower() == "none":
+        raise AuthError("unsigned tokens are not allowed")
+
+    key = None
+    if jwks:
+        key_id = header.get("kid")
+        for candidate in jwks.get("keys", []):
+            if candidate.get("kid") == key_id:
+                key = jwt.algorithms.RSAAlgorithm.from_jwk(candidate)
+                break
+        if key is None:
+            raise AuthError("signing key not found")
+    elif secret:
+        key = secret
+    else:
+        raise AuthError("no verification key configured")
+
+    options = {"verify_aud": audience is not None, "verify_iss": bool(issuer)}
+    try:
+        return jwt.decode(
+            token,
+            key=key,
+            algorithms=[algorithm],
+            issuer=issuer or None,
+            audience=audience,
+            options=options,
+        )
+    except Exception as exc:
+        raise AuthError("token validation failed") from exc
