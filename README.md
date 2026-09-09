@@ -83,7 +83,7 @@ km --kb-path ./my_kb serve
 ## Installation
 
 ```bash
-git clone <repo>
+git clone https://github.com/suiuiui6/knowledge-manager.git
 cd knowledge-manager
 poetry install
 ```
