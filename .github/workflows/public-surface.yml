@@ -1,0 +1,16 @@
+name: Public surface
+
+on:
+  push:
+    branches: [feat/verbose-logging, main, master]
+  pull_request:
+
+jobs:
+  public-surface:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -B tools/check_public_surface.py
