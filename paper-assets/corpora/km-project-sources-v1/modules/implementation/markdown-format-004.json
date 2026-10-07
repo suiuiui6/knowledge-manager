@@ -1,0 +1,40 @@
+{
+  "id": "markdown-format-004",
+  "category": "implementation",
+  "title": "markdown-format: _set_nested",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/markdown.py, section or definition _set_nested.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: _set_nested.",
+    "details": "def _set_nested(data: dict, dotted: str, value: Any) -> None:\n    keys = dotted.split(\".\")\n    cur = data\n    for k in keys[:-1]:\n        cur = cur.setdefault(k, {})\n    cur[keys[-1]] = value\n",
+    "examples": "",
+    "references": "sources/markdown-format.py; markdown-format:chars:5686-5878; source SHA-256 a69114b0b0d614064365eb97cb7f22d87eee8676342c8a25fdb7be1a520732f7",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "markdown-format"
+    ],
+    "related_modules": [
+      "implementation/markdown-format-003"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://markdown-format",
+    "source_spans": [
+      {
+        "external_id": "markdown-format",
+        "heading_path": [
+          "_set_nested"
+        ],
+        "excerpt": "def _set_nested(data: dict, dotted: str, value: Any) -> None:\n    keys = dotted.split(\".\")\n    cur = data\n    for k in keys[:-1]:\n        cur = cur.setdefault(k, {})\n    cur[keys[-1]] = value\n",
+        "char_start": 5686,
+        "char_end": 5878
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

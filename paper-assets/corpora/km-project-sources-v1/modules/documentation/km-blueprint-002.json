@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-002",
+  "category": "documentation",
+  "title": "km-blueprint: 北极星",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition 北极星.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: 北极星.",
+    "details": "## 北极星\r\n\r\n> 从\"Agent的知识后端\"进化为\"人和Agent共享的第二大脑\"\r\n\r\n- 知识不是被检索的，是**自动生长**的（research-on-miss）\r\n- 知识不是被存储的，是**被记住**的（间隔重复）\r\n- 知识不是孤立的，是**被验证**的（矛盾检测）\r\n- 知识不是JSON文件，是**人类可浏览编辑**的（Markdown + Web UI）\r\n\r\n---\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:233-433; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-001",
+      "documentation/km-blueprint-003"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "北极星"
+        ],
+        "excerpt": "## 北极星\r\n\r\n> 从\"Agent的知识后端\"进化为\"人和Agent共享的第二大脑\"\r\n\r\n- 知识不是被检索的，是**自动生长**的（research-on-miss）\r\n- 知识不是被存储的，是**被记住**的（间隔重复）\r\n- 知识不是孤立的，是**被验证**的（矛盾检测）\r\n- 知识不是JSON文件，是**人类可浏览编辑**的（Markdown + Web UI）\r\n\r\n---\r\n\r\n",
+        "char_start": 233,
+        "char_end": 433
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

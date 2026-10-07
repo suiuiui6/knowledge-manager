@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-033",
+  "category": "documentation",
+  "title": "km-blueprint: CLI 输出设计",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition CLI 输出设计.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: CLI 输出设计.",
+    "details": "### CLI 输出设计\r\n\r\n```bash\r\n$ km lint\r\n🔍 结构化检查... 发现 2 issues (0.3s)\r\n\r\n$ km lint --deep\r\n🔍 结构化检查... 发现 2 issues (0.3s)\r\n🧠 语义分析... 比较 175 对候选模块... (估计 30s)\r\n\r\n================================================================================\r\n                        知识库质量报告\r\n================================================================================\r\n\r\n🔴 Errors (1)\r\n───────────────────────────────────────────────────────────────────────────────\r\n[E1] 断链引用\r\n   📄 backend/api-gateway → ❌ deployment/eks-config (模块不存在)\r\n   建议: 可能是 deployment/k8s-config 的拼写错误? (Levenshtein距离=2)\r\n\r\n🟡 Warnings (2)\r\n───────────────────────────────────────────────────────────────────────────────\r\n[W1] 决策冲突 - 微服务 vs 单体\r\n   📄 architecture/microservices: \"我们选择微服务架构以提高团队独立性\"\r\n   📄 architecture/platform-evolution: \"2026Q1决定回归模块化单体以降低运维成本\"\r\n   影响范围: 2个模块互相引用\r\n   建议: 这两个模块描述的是不同时间点的决策。建议在 architecture/platform-evolution\r\n         中明确说明\"我们之前(2025)使用微服务, 2026Q1起逐步迁移到模块化单体\"。\r\n         并在 architecture/microservices 开头添加废弃声明。\r\n   → 操作: [f]一键修复(添加交叉引用说明)  [e]手动编辑  [i]忽略\r\n\r\n[W2] 废弃引用\r\n   📄 auth/jwt-config → auth/old-session (已废弃)\r\n   建议: 更新引用为 auth/session-management\r\n   → 操作: [f]自动替换引用  [i]忽略\r\n\r\n🔵 Info (1)\r\n───────────────────────────────────────────────────────────────────────────────\r\n[I1] 术语不一致\r\n   📄 auth/oauth-flow: \"OAuth服务\"\r\n   📄 backend/api-gateway: \"Auth0\"\r\n   📄 deployment/service-map: \"认证平台\"\r\n   这三个模块可能指向同一服务\r\n   建议: 统一术语, 推荐使用 \"Auth0 (OAuth认证服务)\"\r\n\r\n================================================================================\r\n总计: 1 error, 2 warnings, 1 info\r\n完整报告已保存到 .lint/lint-report-2026-06-09.json\r\n```\r\n\r\n---\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:66978-68595; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-032",
+      "documentation/km-blueprint-034"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "CLI 输出设计"
+        ],
+        "excerpt": "### CLI 输出设计\r\n\r\n```bash\r\n$ km lint\r\n🔍 结构化检查... 发现 2 issues (0.3s)\r\n\r\n$ km lint --deep\r\n🔍 结构化检查... 发现 2 issues (0.3s)\r\n🧠 语义分析... 比较 175 对候选模块... (估计 30s)\r\n\r\n================================================================================\r\n                        知识库质量报告\r\n================================================================================\r\n\r\n🔴 Errors (1)\r\n───────────────────────────────────────────────────────────────────────────────\r\n[E1] 断链引用\r\n   📄 backend/api-gateway → ❌ deployment/eks-config (模块不存在)\r\n   建议: 可能是 deployment/k8s-config 的拼写错误? (Levenshtein距离=2)\r\n\r\n🟡 Warnings (2)\r\n───────────────────────────────────────────────────────────────────────────────\r\n[W1] 决策冲突 - 微服务 vs 单体\r\n   📄 architecture/microservices: \"我们选择微服务架构以提高团队独立性\"\r\n   📄 architecture/platform-evolution: \"2026Q1决定回归模块化单体以降低运维成本\"\r\n   影响范围: 2个模块互相引用\r\n   建议: 这两个模块描述的是不同时间点的决策。建议在 architecture/platform-evolution\r\n         中明确说明\"我们之前(2025)使用微服务, 2026Q1起逐步迁移到模块化单体\"。\r\n         并在 architecture/microservices 开头添加废弃声明。\r\n   → 操作: [f]一键修复(添加交叉引用说明)  [e]手动编辑  [i]忽略\r\n\r\n[W2] 废弃引用\r\n   📄 auth/jwt-config → auth/old-session (已废弃)\r\n   建议: 更新引用为 auth/session-management\r\n   → 操作: [f]自动替换引用  [i]忽略\r\n\r\n🔵 Info (1)\r\n───────────────────────────────────────────────────────────────────────────────\r\n[I1] 术语不一致\r\n   📄 auth/oauth-flow: \"OAuth服务\"\r\n   📄 backend/api-gateway: \"Auth0\"\r\n   📄 deployment/service-map: \"认证平台\"\r\n   这三个模块可能指向同一服务\r\n   建议: 统一术语, 推荐使用 \"Auth0 (OAuth认证服务)\"\r\n\r\n================================================================================\r\n总计: 1 error, 2 warnings, 1 info\r\n完整报告已保存到 .lint/lint-report-2026-06-09.json\r\n```\r\n\r\n---\r\n\r\n",
+        "char_start": 66978,
+        "char_end": 68595
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

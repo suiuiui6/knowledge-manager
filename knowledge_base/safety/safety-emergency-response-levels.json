@@ -1,0 +1,28 @@
+{
+  "id": "safety-emergency-response-levels",
+  "category": "safety",
+  "title": "Tiered emergency response and reporting",
+  "summary": "We operate three response levels based on incident severity, with defined activation triggers, reporting timelines, and responsible organizations.",
+  "created_at": "2026-06-10T04:28:47.935285Z",
+  "updated_at": "2026-06-10T04:28:47.935286Z",
+  "content": {
+    "overview": "We classify emergencies into three levels to ensure proportional resource mobilization and timely escalation. Level I (fatality or ≥3 severe injuries) triggers immediate company-wide response and external notification within 30 minutes; Level II (severe injury or major equipment loss ≥500k RMB) triggers project-level response and report to company within 2 hours; Level III (minor injury or general equipment failure) is handled locally and reported within 24 hours.",
+    "details": "This triage prevents over-escalation for minor incidents while ensuring serious events receive senior management and regulatory attention quickly. Thresholds: Level I activates for any fatality or three or more severe injuries (inpatient cases), Level II for a single severe injury or asset damage ≥500k RMB, Level III for others. We chose 30-minute reporting to authorities and parent company for Level I to align with mandatory governmental timelines. The 2-hour window for Level II gives project teams time to stabilize the scene and gather initial facts without delay.",
+    "examples": "Scenario A: one worker hospitalized with a fracture → Level II, project HSE manager activates site emergency plan, notifies company HSE within 2 hours. Scenario B: fatality → Level I, company crisis cell activated, call to local emergency bureau within 30 min.",
+    "references": "Company emergency response plan, applicable regulations.",
+    "caveats": "Incident severity classification must be confirmed quickly; initial reports may be preliminary. Delays in classification can cause inappropriate response levels. Financial loss threshold should be consistently assessed."
+  },
+  "metadata": {
+    "tags": [
+      "emergency-response",
+      "reporting",
+      "incident-classification"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": "",
+    "expires_at": null,
+    "review_interval_days": null,
+    "status": "published"
+  }
+}

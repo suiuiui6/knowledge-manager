@@ -1,0 +1,41 @@
+{
+  "id": "km-readme-009",
+  "category": "documentation",
+  "title": "km-readme: Who should not use this?",
+  "summary": "Extractive snapshot of knowledge-manager/README.md, section or definition Who should not use this?.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: Who should not use this?.",
+    "details": "## Who should not use this?\n\n- Workloads that require large-scale semantic retrieval over tens of millions of words.\n- Systems already optimized around production embedding infrastructure.\n\n",
+    "examples": "",
+    "references": "sources/km-readme.md; km-readme:chars:1944-2134; source SHA-256 3e5706ca7be9c3305b940f286214b6508158838296e960f08c00693b52fd3f20",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-readme"
+    ],
+    "related_modules": [
+      "documentation/km-readme-008",
+      "documentation/km-readme-010"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-readme",
+    "source_spans": [
+      {
+        "external_id": "km-readme",
+        "heading_path": [
+          "Who should not use this?"
+        ],
+        "excerpt": "## Who should not use this?\n\n- Workloads that require large-scale semantic retrieval over tens of millions of words.\n- Systems already optimized around production embedding infrastructure.\n\n",
+        "char_start": 1944,
+        "char_end": 2134
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

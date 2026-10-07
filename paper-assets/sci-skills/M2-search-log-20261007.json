@@ -1,0 +1,35 @@
+{
+  "date": "2026-10-07",
+  "purpose": "bounded existing-method comparison; not a systematic review",
+  "successful_primary_records": [
+    "https://arxiv.org/abs/2502.12110",
+    "https://arxiv.org/html/2401.18059v1",
+    "https://proceedings.mlr.press/v235/lee24c.html",
+    "https://arxiv.org/abs/2601.03236",
+    "https://arxiv.org/abs/2207.05987",
+    "https://arxiv.org/abs/2104.08663"
+  ],
+  "selected_methods_reviewed": [
+    "A-Mem",
+    "RAPTOR",
+    "MAGMA"
+  ],
+  "record_or_abstract_only": [
+    "ReadAgent",
+    "DocPrompting",
+    "BEIR"
+  ],
+  "search_queries": [
+    "site.proceedings.mlr.press \"A Human-Inspired Reading Agent\"",
+    "\"agent\" \"retrieval\" \"knowledge modules\" \"2026\"",
+    "\"retrieval\" \"source provenance\" \"context\" \"2026\""
+  ],
+  "result_count": "Not a database-wide hit count; six retained primary records",
+  "limitations": [
+    "Not exhaustive through 2026-10-07",
+    "No completed retraction/correction audit",
+    "No paper reproduction",
+    "No extraction of cross-paper performance scores into project results"
+  ],
+  "previous_failed_search_status": "Retained in older search log; superseded by this successful bounded verification record"
+}

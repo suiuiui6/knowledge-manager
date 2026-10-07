@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-057",
+  "category": "documentation",
+  "title": "km-blueprint: 会议记录理解",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition 会议记录理解.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: 会议记录理解.",
+    "details": "## 会议记录理解\r\n\r\n```bash\r\nkm add meeting-2026-06-09.txt -c decisions\r\n  →\r\n  LLM 分析会议记录:\r\n  - 识别架构决策 → 提取为 decision-record 类型模块\r\n  - 识别行动项 → 生成 todo 模块 (status: draft)\r\n  - 识别风险讨论 → 更新相关模块的 caveats\r\n  - 识别问题讨论 → 生成 faq 模块\r\n```\r\n\r\n---\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:105861-106094; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-056",
+      "documentation/km-blueprint-058"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "会议记录理解"
+        ],
+        "excerpt": "## 会议记录理解\r\n\r\n```bash\r\nkm add meeting-2026-06-09.txt -c decisions\r\n  →\r\n  LLM 分析会议记录:\r\n  - 识别架构决策 → 提取为 decision-record 类型模块\r\n  - 识别行动项 → 生成 todo 模块 (status: draft)\r\n  - 识别风险讨论 → 更新相关模块的 caveats\r\n  - 识别问题讨论 → 生成 faq 模块\r\n```\r\n\r\n---\r\n\r\n",
+        "char_start": 105861,
+        "char_end": 106094
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-036",
+  "category": "documentation",
+  "title": "km-blueprint: 卡片自动生成",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition 卡片自动生成.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: 卡片自动生成.",
+    "details": "## 卡片自动生成\r\n\r\n```python\r\n# src/knowledge_manager/memory.py (新文件)\r\n\r\nCARD_GENERATION_PROMPT = \"\"\"\\\r\n根据以下知识模块, 生成一张间隔重复记忆卡片。\r\n\r\n模块标题: {title}\r\n模块分类: {category}\r\n模块摘要: {summary}\r\n\r\n模块内容:\r\n{content}\r\n\r\n生成规则:\r\n1. 卡片正面 = 一个问题或提示, 能够检验读者是否真正理解了这个知识\r\n   - 不是简单的\"XX是什么?\", 而是场景化的问题\r\n   - 例如: \"如果我们需要支持多服务验证JWT但不共享密钥, 应该选什么签名算法? 为什么?\"\r\n2. 卡片背面 = 简洁准确的答案 (不超过150字)\r\n3. 一张卡片只覆盖一个知识点, 如果模块内容多, 只选最核心的一个\r\n4. 聚焦于\"我们团队的做法和原因\", 不是通用理论\r\n\r\n返回JSON:\r\n{{\r\n  \"front\": \"问题 (中文)\",\r\n  \"back\": \"答案 (中文, ≤150字)\",\r\n  \"source_field\": \"content.details|content.overview|content.caveats\"\r\n}}\r\n\"\"\"\r\n\r\nasync def generate_cards_for_module(\r\n    module: Module,\r\n    llm_client,\r\n    max_cards: int = 3,\r\n) -> list[MemoryCard]:\r\n    \"\"\"为一个模块生成记忆卡片\"\"\"\r\n\r\n    prompt = CARD_GENERATION_PROMPT.format(\r\n        title=module.title,\r\n        category=module.category,\r\n        summary=module.summary,\r\n        content=f\"概述: {module.content.overview}\\n细节: {module.content.details}\\n注意事项: {module.content.caveats}\",\r\n    )\r\n\r\n    cards = []\r\n    for i in range(max_cards):\r\n        response = await llm_client.complete_json(prompt)\r\n        card = MemoryCard(\r\n            id=f\"{module.category}/{module.id}/card-{i}\",\r\n            module_key=f\"{module.category}/{module.id}\",\r\n            module_title=module.title,\r\n            category=module.category,\r\n            front=response[\"front\"],\r\n            back=response[\"back\"],\r\n            source_field=response[\"source_field\"],\r\n        )\r\n        cards.append(card)\r\n\r\n    return cards\r\n\r\ndef select_modules_for_memory(\r\n    kb_path: Path,\r\n    max_modules: int = 50,\r\n) -> list[Module]:\r\n    \"\"\"\r\n    筛选值得生成卡片的模块:\r\n\r\n    1. confidence = high (确定性高的知识才值得记)\r\n    2. status = published (草稿和废弃的不记)\r\n    3. 按 load_count 排序 (经常被用的优先)\r\n    4. 排除已有 ≥3 张卡片的模块\r\n    5. 作者/审核者标记为 \"值得记忆\" 的优先\r\n    \"\"\"\r\n    ...\r\n```\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:70193-72008; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-035",
+      "documentation/km-blueprint-037"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "卡片自动生成"
+        ],
+        "excerpt": "## 卡片自动生成\r\n\r\n```python\r\n# src/knowledge_manager/memory.py (新文件)\r\n\r\nCARD_GENERATION_PROMPT = \"\"\"\\\r\n根据以下知识模块, 生成一张间隔重复记忆卡片。\r\n\r\n模块标题: {title}\r\n模块分类: {category}\r\n模块摘要: {summary}\r\n\r\n模块内容:\r\n{content}\r\n\r\n生成规则:\r\n1. 卡片正面 = 一个问题或提示, 能够检验读者是否真正理解了这个知识\r\n   - 不是简单的\"XX是什么?\", 而是场景化的问题\r\n   - 例如: \"如果我们需要支持多服务验证JWT但不共享密钥, 应该选什么签名算法? 为什么?\"\r\n2. 卡片背面 = 简洁准确的答案 (不超过150字)\r\n3. 一张卡片只覆盖一个知识点, 如果模块内容多, 只选最核心的一个\r\n4. 聚焦于\"我们团队的做法和原因\", 不是通用理论\r\n\r\n返回JSON:\r\n{{\r\n  \"front\": \"问题 (中文)\",\r\n  \"back\": \"答案 (中文, ≤150字)\",\r\n  \"source_field\": \"content.details|content.overview|content.caveats\"\r\n}}\r\n\"\"\"\r\n\r\nasync def generate_cards_for_module(\r\n    module: Module,\r\n    llm_client,\r\n    max_cards: int = 3,\r\n) -> list[MemoryCard]:\r\n    \"\"\"为一个模块生成记忆卡片\"\"\"\r\n\r\n    prompt = CARD_GENERATION_PROMPT.format(\r\n        title=module.title,\r\n        category=module.category,\r\n        summary=module.summary,\r\n        content=f\"概述: {module.content.overview}\\n细节: {module.content.details}\\n注意事项: {module.content.caveats}\",\r\n    )\r\n\r\n    cards = []\r\n    for i in range(max_cards):\r\n        response = await llm_client.complete_json(prompt)\r\n        card = MemoryCard(\r\n            id=f\"{module.category}/{module.id}/card-{i}\",\r\n            module_key=f\"{module.category}/{module.id}\",\r\n            module_title=module.title,\r\n            category=module.category,\r\n            front=response[\"front\"],\r\n            back=response[\"back\"],\r\n            source_field=response[\"source_field\"],\r\n        )\r\n        cards.append(card)\r\n\r\n    return cards\r\n\r\ndef select_modules_for_memory(\r\n    kb_path: Path,\r\n    max_modules: int = 50,\r\n) -> list[Module]:\r\n    \"\"\"\r\n    筛选值得生成卡片的模块:\r\n\r\n    1. confidence = high (确定性高的知识才值得记)\r\n    2. status = published (草稿和废弃的不记)\r\n    3. 按 load_count 排序 (经常被用的优先)\r\n    4. 排除已有 ≥3 张卡片的模块\r\n    5. 作者/审核者标记为 \"值得记忆\" 的优先\r\n    \"\"\"\r\n    ...\r\n```\r\n\r\n",
+        "char_start": 70193,
+        "char_end": 72008
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

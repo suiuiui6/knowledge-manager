@@ -1,0 +1,56 @@
+{
+  "contract_version": "1.0",
+  "expert_skill": "sci-skills-data-availability",
+  "project_id": "knowledge-manager-journal-20261007",
+  "paper_family": "M",
+  "stage_id": "M1",
+  "task_id": "M1-source-rebuild-003",
+  "task_status": "COMPLETE",
+  "inputs_reviewed": [
+    "knowledge-manager/README.md",
+    "knowledge-manager/docs/BLUEPRINT.md",
+    "knowledge-manager/docs/runbooks/enterprise-rollout.md",
+    "knowledge-manager/docs/runbooks/migration-cutover.md",
+    "knowledge-manager/docs/runbooks/deploy-single-node.md",
+    "knowledge-manager/docs/runbooks/observability-and-alerting.md",
+    "knowledge-manager/src/knowledge_manager/schemas.py",
+    "knowledge-manager/src/knowledge_manager/policy.py",
+    "knowledge-manager/src/knowledge_manager/retrieval_eval.py",
+    "knowledge-manager/src/knowledge_manager/markdown.py"
+  ],
+  "outputs": [
+    "paper-assets/corpora/km-project-sources-v1",
+    "paper-assets/scripts/rebuild_source_grounded_corpus.py",
+    "paper-assets/sci-skills/corpus-construction-methods.md"
+  ],
+  "evidence_status": [
+    {
+      "label": "VERIFIED_USER_MATERIAL",
+      "claim": "10 existing local source files selected as a single-project case"
+    },
+    {
+      "label": "EXECUTED_LOCAL",
+      "claim": "183 modules extracted; all source intervals/hash checks and project schema checks passed"
+    },
+    {
+      "label": "PENDING_VERIFICATION",
+      "claim": "Public release rights, human relevance labels, external generalizability and efficacy remain unverified"
+    }
+  ],
+  "assumptions": [
+    "Source documents describe the project; their operational claims are not presumed experimentally verified"
+  ],
+  "author_input_needed": [],
+  "manual_actions": [],
+  "quality_checks": [
+    "Snapshot hashes match originals",
+    "All module details match recorded source intervals",
+    "Project Module schema validates every output",
+    "Old knowledge bases not modified"
+  ],
+  "conflicts": [],
+  "conflict_resolution_status": "NOT_REQUIRED",
+  "merge_permission": "orchestrator_only",
+  "recommended_next_action": "Define tasks and matched evidence-budget comparison; verify closest literature before method novelty claims",
+  "stage_acceptance_recommendation": "PASS_CANDIDATE"
+}

@@ -1,0 +1,40 @@
+{
+  "id": "km-blueprint-001",
+  "category": "documentation",
+  "title": "km-blueprint: 当前定位",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition 当前定位.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: 当前定位.",
+    "details": "## 当前定位\r\n\r\nknowledge-manager v0.5.0 的架构深度已经超过 PageIndex 和 llm-wiki：4层搜索排序、贝叶斯反馈学习、知识市场+依赖解析、多KB联邦、人工审核门控、Git原生全流程。\r\n\r\n问题：这些能力全部藏在CLI和MCP后面。PageIndex有对话界面，llm-wiki有Web UI和Obsidian兼容。**用户选产品不看架构，看体验。**\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:30-233; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-002"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "当前定位"
+        ],
+        "excerpt": "## 当前定位\r\n\r\nknowledge-manager v0.5.0 的架构深度已经超过 PageIndex 和 llm-wiki：4层搜索排序、贝叶斯反馈学习、知识市场+依赖解析、多KB联邦、人工审核门控、Git原生全流程。\r\n\r\n问题：这些能力全部藏在CLI和MCP后面。PageIndex有对话界面，llm-wiki有Web UI和Obsidian兼容。**用户选产品不看架构，看体验。**\r\n\r\n",
+        "char_start": 30,
+        "char_end": 233
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

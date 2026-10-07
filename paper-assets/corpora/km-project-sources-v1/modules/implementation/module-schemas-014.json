@@ -1,0 +1,41 @@
+{
+  "id": "module-schemas-014",
+  "category": "implementation",
+  "title": "module-schemas: IndexCategory",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/schemas.py, section or definition IndexCategory.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: IndexCategory.",
+    "details": "class IndexCategory(BaseModel):\r\n    name: str\r\n    description: str = \"\"\r\n    modules: List[IndexModuleSummary] = Field(default_factory=list)\r\n",
+    "examples": "",
+    "references": "sources/module-schemas.py; module-schemas:chars:6265-6409; source SHA-256 c857e4a99e2e152db3aca0d1a9fc458bebe20ab352e24d0ae1f144a6594904a8",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "module-schemas"
+    ],
+    "related_modules": [
+      "implementation/module-schemas-013",
+      "implementation/module-schemas-015"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://module-schemas",
+    "source_spans": [
+      {
+        "external_id": "module-schemas",
+        "heading_path": [
+          "IndexCategory"
+        ],
+        "excerpt": "class IndexCategory(BaseModel):\r\n    name: str\r\n    description: str = \"\"\r\n    modules: List[IndexModuleSummary] = Field(default_factory=list)\r\n",
+        "char_start": 6265,
+        "char_end": 6409
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

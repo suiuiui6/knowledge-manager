@@ -1,0 +1,25 @@
+{
+  "date": "2026-10-07",
+  "purpose": "bounded topic reconnaissance, not a systematic review",
+  "queries": [
+    "site.arxiv.org \"RAPTOR: Recursive Abstractive Processing\"",
+    "site.arxiv.org \"A-MEM: Agentic Memory for LLM Agents\"",
+    "site.aclanthology.org \"DocPrompting: Generating Code by Retrieving the Docs\"",
+    "site.aclanthology.org/2024.tacl-1.9 \"Lost in the Middle\"",
+    "site.arxiv.org \"BEIR: A Heterogeneous Benchmark\"",
+    "site.arxiv.org \"ReadAgent\" \"Gist\"",
+    "\"agent\" \"knowledge\" \"retrieval\" \"token budget\" \"2026\"",
+    "\"retrieval\" \"human reviewed\" \"knowledge modules\""
+  ],
+  "filters": "domain terms in query; no database date/language filters",
+  "hit_count": "Not reported by platform; returned results are not total database hits",
+  "source_priority": "original papers, author repositories, official conference and publisher records",
+  "limitations": [
+    "Web tools returned no readable results",
+    "No claimed access to PDF, publisher pages or author repositories",
+    "No systematic search, full-text reading, correction audit or reproduction completed"
+  ],
+  "verified_records": [],
+  "candidate_records": "M2-literature-candidates.csv",
+  "source_access_status": "No usable tool results; no external records verified"
+}

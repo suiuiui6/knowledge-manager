@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-052",
+  "category": "documentation",
+  "title": "km-blueprint: 插件管理器",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition 插件管理器.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: 插件管理器.",
+    "details": "## 插件管理器\r\n\r\n```python\r\nclass PluginManager:\r\n    \"\"\"插件生命周期管理\"\"\"\r\n\r\n    def __init__(self, kb_path: Path):\r\n        self.kb_path = kb_path\r\n        self.plugins: dict[str, PluginBase] = {}\r\n        self.plugin_dir = kb_path / \".plugins\"\r\n        self.plugin_dir.mkdir(exist_ok=True)\r\n\r\n    def discover(self) -> list[PluginManifest]:\r\n        \"\"\"发现已安装的插件\"\"\"\r\n        manifests = []\r\n        for plugin_path in self.plugin_dir.iterdir():\r\n            if plugin_path.is_dir() and (plugin_path / \"manifest.json\").exists():\r\n                manifest = json.loads((plugin_path / \"manifest.json\").read_text())\r\n                manifests.append(PluginManifest(**manifest))\r\n        return manifests\r\n\r\n    async def install(self, plugin_name: str, version: str = \"latest\") -> None:\r\n        \"\"\"安装插件 (从 marketplace 下载并安装)\"\"\"\r\n        ...\r\n\r\n    async def load(self, plugin_name: str) -> PluginBase:\r\n        \"\"\"加载插件\"\"\"\r\n        # 1. 查找插件目录\r\n        plugin_path = self.plugin_dir / plugin_name\r\n        if not plugin_path.exists():\r\n            raise ValueError(f\"Plugin not found: {plugin_name}\")\r\n\r\n        # 2. 读取 manifest\r\n        manifest = json.loads((plugin_path / \"manifest.json\").read_text())\r\n\r\n        # 3. 动态导入插件模块\r\n        spec = importlib.util.spec_from_file_location(\r\n            plugin_name,\r\n            plugin_path / \"plugin.py\",\r\n        )\r\n        module = importlib.util.module_from_spec(spec)\r\n        spec.loader.exec_module(module)\r\n\r\n        # 4. 实例化插件\r\n        plugin_class = getattr(module, manifest[\"entry_class\"])\r\n        ctx = PluginContext(\r\n            kb_path=self.kb_path,\r\n            ...\r\n        )\r\n        plugin = plugin_class(ctx)\r\n        plugin.manifest = PluginManifest(**manifest)\r\n\r\n        # 5. 调用 on_load\r\n        await plugin.on_load()\r\n\r\n        self.plugins[plugin_name] = plugin\r\n        return plugin\r\n\r\n    async def unload(self, plugin_name: str) -> None:\r\n        \"\"\"卸载插件\"\"\"\r\n        if plugin_name in self.plugins:\r\n            await self.plugins[plugin_name].on_unload()\r\n            del self.plugins[plugin_name]\r\n```\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:100613-102684; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-051",
+      "documentation/km-blueprint-053"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "插件管理器"
+        ],
+        "excerpt": "## 插件管理器\r\n\r\n```python\r\nclass PluginManager:\r\n    \"\"\"插件生命周期管理\"\"\"\r\n\r\n    def __init__(self, kb_path: Path):\r\n        self.kb_path = kb_path\r\n        self.plugins: dict[str, PluginBase] = {}\r\n        self.plugin_dir = kb_path / \".plugins\"\r\n        self.plugin_dir.mkdir(exist_ok=True)\r\n\r\n    def discover(self) -> list[PluginManifest]:\r\n        \"\"\"发现已安装的插件\"\"\"\r\n        manifests = []\r\n        for plugin_path in self.plugin_dir.iterdir():\r\n            if plugin_path.is_dir() and (plugin_path / \"manifest.json\").exists():\r\n                manifest = json.loads((plugin_path / \"manifest.json\").read_text())\r\n                manifests.append(PluginManifest(**manifest))\r\n        return manifests\r\n\r\n    async def install(self, plugin_name: str, version: str = \"latest\") -> None:\r\n        \"\"\"安装插件 (从 marketplace 下载并安装)\"\"\"\r\n        ...\r\n\r\n    async def load(self, plugin_name: str) -> PluginBase:\r\n        \"\"\"加载插件\"\"\"\r\n        # 1. 查找插件目录\r\n        plugin_path = self.plugin_dir / plugin_name\r\n        if not plugin_path.exists():\r\n            raise ValueError(f\"Plugin not found: {plugin_name}\")\r\n\r\n        # 2. 读取 manifest\r\n        manifest = json.loads((plugin_path / \"manifest.json\").read_text())\r\n\r\n        # 3. 动态导入插件模块\r\n        spec = importlib.util.spec_from_file_location(\r\n            plugin_name,\r\n            plugin_path / \"plugin.py\",\r\n        )\r\n        module = importlib.util.module_from_spec(spec)\r\n        spec.loader.exec_module(module)\r\n\r\n        # 4. 实例化插件\r\n        plugin_class = getattr(module, manifest[\"entry_class\"])\r\n        ctx = PluginContext(\r\n            kb_path=self.kb_path,\r\n            ...\r\n        )\r\n        plugin = plugin_class(ctx)\r\n        plugin.manifest = PluginManifest(**manifest)\r\n\r\n        # 5. 调用 on_load\r\n        await plugin.on_load()\r\n\r\n        self.plugins[plugin_name] = plugin\r\n        return plugin\r\n\r\n    async def unload(self, plugin_name: str) -> None:\r\n        \"\"\"卸载插件\"\"\"\r\n        if plugin_name in self.plugins:\r\n            await self.plugins[plugin_name].on_unload()\r\n            del self.plugins[plugin_name]\r\n```\r\n\r\n",
+        "char_start": 100613,
+        "char_end": 102684
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

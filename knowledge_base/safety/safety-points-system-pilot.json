@@ -1,0 +1,28 @@
+{
+  "id": "safety-points-system-pilot",
+  "category": "safety",
+  "title": "员工安全积分制",
+  "summary": "我们通过正向激励推动员工主动参与安全，上报隐患和参加活动获得积分兑换奖励。",
+  "created_at": "2026-06-10T04:51:15.106134Z",
+  "updated_at": "2026-06-10T04:51:15.106138Z",
+  "content": {
+    "overview": "我们试点“安全积分制”，将安全行为量化为积分，用于兑换奖励，旨在改变传统惩罚式管理的局限，提高员工主动参与安全管理的积极性。",
+    "details": "选择积分制而非单纯考核罚款，因为我们认为正向激励更有利于培养安全文化。积分可通过上报隐患、参加安全活动、提出改进建议等方式获取。Q3开始试点，后续评估推广。",
+    "examples": "",
+    "references": "",
+    "caveats": "试点阶段需关注积分兑换的公平性、发放机制和防作弊设计，避免诱发虚假上报行为。"
+  },
+  "metadata": {
+    "tags": [
+      "正向激励",
+      "安全管理",
+      "积分制"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": "",
+    "expires_at": null,
+    "review_interval_days": null,
+    "status": "published"
+  }
+}

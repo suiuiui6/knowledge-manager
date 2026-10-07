@@ -1,0 +1,383 @@
+# Knowledge Manager
+
+Turn messy notes into structured modules that LLMs can load on demand via MCP.
+
+Knowledge Manager is a git-native knowledge system for agentic workflows. It stores knowledge as inspectable JSON modules, maintains a lightweight index, and serves both through a CLI and MCP server.
+
+**Who It’s For:** Teams running AI-assisted engineering workflows who want reusable, reviewable project knowledge without operating a full RAG stack.
+
+- **Structured modules, not chunks.** Preserve intent with explicit sections (`overview`, `details`, `examples`, `references`, `caveats`).
+- **Git-native JSON storage.** Plain files, atomic writes, and easy review in pull requests.
+- **MCP-ready retrieval.** Expose index + module loading tools so clients can choose what to read at runtime.
+
+## Why this approach?
+
+For small-to-medium knowledge bases (<= 1M words), structured modules are often simpler to operate than embedding-heavy pipelines.
+
+| Approach | Strength | Tradeoff |
+|----------|----------|----------|
+| Knowledge Manager | Human-readable modules + deterministic file storage | Requires a review step during ingest |
+| Classic RAG | Strong semantic recall at larger scale | More moving parts (chunking, embeddings, re-indexing) |
+
+## Quick Start
+
+### 1. Initialize a knowledge base
+
+```bash
+km init ./my_kb
+```
+
+### 2. Configure your provider
+
+```bash
+km --kb-path ./my_kb config set llm_providers.deepseek.api_key "sk-..."
+```
+
+### 3. Extract from notes
+
+```bash
+km --kb-path ./my_kb add notes.txt -c auth
+```
+
+### 4. Review staged modules
+
+```bash
+km --kb-path ./my_kb review
+```
+
+### 5. Serve through MCP
+
+```bash
+km --kb-path ./my_kb serve
+```
+
+## Who should use this?
+
+- Teams that want inspectable, versioned knowledge artifacts in git.
+- Agent workflows that benefit from selective module loading via MCP.
+- Projects where maintainability and editorial control matter more than retrieval automation at massive scale.
+
+## Who should not use this?
+
+- Workloads that require large-scale semantic retrieval over tens of millions of words.
+- Systems already optimized around production embedding infrastructure.
+
+## Features
+
+- Keep knowledge Git-native and auditable: every approved module is JSON you can diff, review, and version with your repo.
+- Turn unstructured docs into reusable modules with clear sections (`overview`, `details`, `examples`, `references`, `caveats`).
+- Add a human checkpoint before publish: **extract → staging → review → approve**.
+- Use one workflow across models with provider support for DeepSeek (default `deepseek-v4-pro`), Claude, and OpenAI.
+- Reuse knowledge from editors and agents through MCP via `knowledge://index`, `load_module`, `search_modules`, and `list_categories`.
+- Keep retrieval responsive for hot modules with a thread-safe LRU cache.
+- Process long documents reliably with chunked extraction (`chunk_size`, `chunk_overlap`).
+- Operate with visibility through verbose CLI logs for provider/model choice, chunking, and extraction progress.
+- Enterprise ingestion and governance: Confluence + Notion source pull, provenance stamping, routing-policy controls, ops exports, and dual source/module views.
+- Ship with confidence: focused schema, storage, HTTP, MCP, CLI, enterprise, and integration tests back the production path.
+
+## Typical Use Cases
+
+- Build a shared team knowledge layer from product docs, runbooks, and incident writeups, then expose it to coding agents via MCP.
+- Replace copy-pasted prompt context with reviewed, versioned modules that can be searched and loaded on demand.
+- Keep architecture decisions and operational caveats close to code so AI-assisted workflows stay accurate over time.
+
+## Installation
+
+```bash
+git clone <repo>
+cd knowledge-manager
+poetry install
+```
+
+The `km` command is available after install via the entry point declared in `pyproject.toml`.
+
+## Detailed Setup
+
+### 1. Initialize a knowledge base
+
+```bash
+km init ./my_kb
+```
+
+This creates:
+
+```
+my_kb/
+├── index.json        # auto-maintained module index
+├── config.json       # LLM provider + extraction config
+└── .staging/         # pending modules awaiting review
+```
+
+### 2. Configure your LLM
+
+Edit `my_kb/config.json` or use the CLI:
+
+```bash
+km --kb-path ./my_kb config set llm_providers.deepseek.api_key "sk-..."
+```
+
+The default provider is `deepseek` with model `deepseek-v4-pro`. Switch providers with:
+
+```bash
+km --kb-path ./my_kb config set extraction.provider claude
+```
+
+### 3. Extract modules from raw notes
+
+```bash
+km --kb-path ./my_kb add notes.txt -c auth
+```
+
+The LLM reads `notes.txt`, chunks it when needed, returns up to `max_modules_per_extraction` structured modules, and writes them to `.staging/`.
+
+### 4. Review staged modules
+
+```bash
+km --kb-path ./my_kb review
+```
+
+For each staged module:
+- `a` — approve (move to KB and update index)
+- `r` — reject (delete from staging)
+- `s` — skip (leave in staging for later)
+
+### 5. Browse and search
+
+```bash
+km --kb-path ./my_kb list                    # all modules
+km --kb-path ./my_kb list -c auth            # filter by category
+km --kb-path ./my_kb search "jwt token"      # ranked keyword search
+km --kb-path ./my_kb show auth-jwt -c auth   # full module JSON
+km --kb-path ./my_kb stats                   # KB statistics
+```
+
+Search ranks exact word matches first, then English stem matches, with partial matching as a fallback for short queries.
+
+### 6. Serve as MCP
+
+```bash
+km --kb-path ./my_kb serve
+```
+
+This launches a stdio MCP server. Clients (Claude Code, etc.) see:
+
+- Resource `knowledge://index` — full index JSON
+- Tool `load_module(module_id, category)` — full module content
+- Tool `search_modules(query)` — ranked keyword search with exact, stem, and short-query partial matching
+- Tool `list_categories()` — categories with counts
+
+## Enterprise Operations
+
+Register external sources and inspect sync health:
+
+```bash
+km --kb-path ./my_kb source add-confluence team-docs --base-url https://example.atlassian.net/wiki --space-key ENG --email docs@example.com --token-env CONFLUENCE_API_TOKEN --category architecture
+km --kb-path ./my_kb source add-notion ops-notes --database-id db-1 --token-env NOTION_TOKEN --category operations
+km --kb-path ./my_kb source status
+km --kb-path ./my_kb source pull team-docs
+```
+
+Run enterprise eval and operations gates:
+
+```bash
+km --kb-path ./my_kb eval run ./eval-suite.json
+km --kb-path ./my_kb ops
+km --kb-path ./my_kb ops-export-review-backlog ./review-backlog.json
+km --kb-path ./my_kb ops-export-risky-misses ./risky-misses.json
+km --kb-path ./my_kb ops-export-source-backlog ./source-backlog.json
+```
+
+The same control-plane data is exposed through:
+
+- HTTP: `/api/ops`, `/api/ops/backlog/review`, `/api/ops/backlog/risky-misses`, `/api/ops/backlog/source`, `/api/dual-view`
+- MCP resources: `knowledge://ops`, `knowledge://ops/backlog/review`, `knowledge://ops/backlog/risky-misses`, `knowledge://ops/backlog/source`, `knowledge://dual-view`
+
+## Runtime Environment Contract
+
+Deployment-owned process settings are read from environment variables:
+
+- `KM_KB_PATH`
+- `KM_UI_HOST`
+- `KM_UI_PORT`
+- `KM_LOG_LEVEL`
+
+`KM_UI_PORT` must be an integer TCP port. `KM_LOG_LEVEL` must be one of `DEBUG`, `INFO`, `WARNING`, `ERROR`, or `CRITICAL`.
+
+Security mode, tenancy, and MCP exposure remain application config and stay in `kb/config.json`.
+
+## Migration Note
+
+Before this change, commands without `--kb-path` defaulted to the current working directory.
+After this change, commands without `--kb-path` resolve the KB path from `KM_KB_PATH` first and fall back to the current working directory only when `KM_KB_PATH` is unset.
+Any shell profile, service unit, or automation that exports `KM_KB_PATH` therefore changes the default KB target for bare `km ...` commands.
+
+## Production Verification
+
+Before production cutover, verify both:
+
+- `python scripts/verify_install_smoke.py`
+
+```bash
+RELEASE_DIR=/opt/knowledge-manager/release-artifacts/run-$(date +%Y%m%d%H%M%S)
+install -d -o km -g km "$RELEASE_DIR"
+python3.11 /opt/knowledge-manager/scripts/verify_install_smoke.py --project-root /opt/knowledge-manager --python python3.11 --format json > "$RELEASE_DIR"/verify-install-smoke.json
+/opt/knowledge-manager/.venv/bin/km --kb-path /opt/knowledge-manager/kb verify-production-readiness --matrix-summary <fresh-matrix-summary.json> > "$RELEASE_DIR"/verify-production-readiness.json
+/opt/knowledge-manager/.venv/bin/km --kb-path /opt/knowledge-manager/kb verify-deployment --base-url http://127.0.0.1:8420 --matrix-summary <fresh-matrix-summary.json> --format json > "$RELEASE_DIR"/verify-deployment.json
+/opt/knowledge-manager/.venv/bin/km --kb-path /opt/knowledge-manager/kb support bundle --output-dir "$RELEASE_DIR" --matrix-summary <fresh-matrix-summary.json>
+python3.11 /opt/knowledge-manager/scripts/collect_host_deploy_proof.py --output-dir "$RELEASE_DIR"
+python3.11 /opt/knowledge-manager/scripts/verify_release_artifacts.py --release-dir "$RELEASE_DIR"
+python3.11 /opt/knowledge-manager/scripts/collect_release_evidence.py --release-dir "$RELEASE_DIR" --kb-path /opt/knowledge-manager/kb --base-url http://127.0.0.1:8420 --matrix-summary <fresh-matrix-summary.json>
+# host-deploy-proof.json is written into $RELEASE_DIR by collect_host_deploy_proof.py
+# verify-release-artifacts.json is written into $RELEASE_DIR by verify_release_artifacts.py
+```
+
+## Module schema
+
+```json
+{
+  "id": "auth-jwt",
+  "category": "auth",
+  "title": "JWT authentication in our API",
+  "summary": "How JWT tokens are issued, signed (RS256), and validated.",
+  "created_at": "2026-05-28T10:00:00Z",
+  "updated_at": "2026-05-28T10:00:00Z",
+  "content": {
+    "overview": "...",
+    "details": "...",
+    "examples": "...",
+    "references": "...",
+    "caveats": "..."
+  },
+  "metadata": {
+    "tags": ["auth", "jwt", "security"],
+    "related_modules": ["auth/oauth-flow"],
+    "confidence": "high",
+    "source": "internal-runbook"
+  }
+}
+```
+
+`id` must match `^[a-z0-9-]+$`. The full schema is in [`src/knowledge_manager/schemas.py`](src/knowledge_manager/schemas.py).
+
+## Architecture
+
+```
+┌────────────┐      ┌──────────────┐
+│  raw text  │─────▶│  Extractor   │  (LLM call)
+└────────────┘      └───────┬──────┘
+                            ▼
+                       .staging/*.json
+                            │
+                       human review
+                            ▼
+            ┌────────────────────────────┐
+            │   <category>/<id>.json     │
+            │   index.json (auto)        │
+            └──────────────┬─────────────┘
+                           │
+                  ┌────────┴────────┐
+                  │                 │
+                  ▼                 ▼
+              CLI (km)         MCP server
+                                 │
+                      Claude Code / clients
+```
+
+| Module | Responsibility |
+|--------|----------------|
+| `schemas.py` | Pydantic models (Module, Index, Config, ...) |
+| `storage.py` | Atomic file I/O, CRUD, staging, index rebuild |
+| `cache.py` | Thread-safe LRU module cache |
+| `llm_clients.py` | DeepSeek / Claude / OpenAI async clients |
+| `extractor.py` | LLM-powered raw-text → module extraction |
+| `mcp_server.py` | FastMCP server (resource + 3 tools) |
+| `cli.py` | Click CLI (10 top-level commands plus `config` subcommands) |
+
+## CLI reference
+
+| Command | Description |
+|---------|-------------|
+| `km init [PATH]` | Initialize a knowledge base |
+| `km list [-c CAT]` | List modules (optionally by category) |
+| `km stats` | Show KB statistics |
+| `km search QUERY` | Keyword search across modules |
+| `km show ID -c CAT` | Show full module JSON |
+| `km add FILE [-c CAT]` | Extract modules from FILE into staging |
+| `km review` | Interactive review of staged modules |
+| `km delete ID -c CAT [--yes]` | Delete a module |
+| `km rebuild` | Rebuild `index.json` from on-disk modules |
+| `km config {set,get,list}` | Manage `config.json` |
+| `km serve` | Run MCP server over stdio |
+
+All commands accept a global `--kb-path PATH` (default: cwd).
+
+## Configuration
+
+`config.json` example:
+
+```json
+{
+  "llm_providers": {
+    "deepseek": {
+      "api_key": "sk-...",
+      "model": "deepseek-v4-pro",
+      "base_url": "https://api.deepseek.com",
+      "default": true,
+      "temperature": 0.3,
+      "max_tokens": 4096
+    },
+    "claude": {
+      "api_key": "sk-ant-...",
+      "model": "claude-sonnet-4-6",
+      "default": false
+    }
+  },
+  "extraction": {
+    "provider": "deepseek",
+    "max_modules_per_extraction": 10
+  },
+  "cache": {
+    "enabled": true,
+    "max_modules": 50
+  }
+}
+```
+
+`config.json` is gitignored — never commit API keys.
+
+## Logging
+
+Use `km --verbose ...` to enable operational logging during CLI runs. Verbose logs include metadata such as provider name, model, chunk counts, module counts, and payload sizes, but they intentionally exclude raw note content, full prompts, LLM responses, API keys, and local file paths.
+
+## Development
+
+```bash
+poetry run pytest               # 75 tests
+poetry run black src tests      # format
+poetry run mypy src             # type check
+```
+
+Current validation artifacts are checked into [`test-results/`](test-results/) and [`docs/validation-report-2026-05-29.md`](docs/validation-report-2026-05-29.md). They cover MCP protocol compliance, retrieval behavior, and an end-to-end extract -> review -> serve run against a real sample knowledge base.
+
+## Enterprise Operations
+
+- Register enterprise sources with `km source add-confluence` and `km source add-notion`.
+- Pull and stage changes with `km source pull <source-id>`.
+- Audit routing and freshness with `km ops`, `km ops-export-review-backlog`, `km ops-export-risky-misses`, and `km ops-export-source-backlog`.
+- Review rollout procedures in [`docs/runbooks/enterprise-rollout.md`](docs/runbooks/enterprise-rollout.md) and eval gates in [`docs/runbooks/eval-gate.md`](docs/runbooks/eval-gate.md).
+- Use `km migrate dry-run <export.json> --source-kind <kind>` before cutover, and follow [`docs/runbooks/migration-cutover.md`](docs/runbooks/migration-cutover.md) for replacement rollouts.
+
+## Replacement Readiness
+
+- Hybrid retrieval quality can now be measured with first-hit rank, MRR, nDCG, and recall in addition to hit rate.
+- Source ingestion runs are tracked as durable jobs with visible status, failure state, checkpoints, and resume metadata.
+- Tenant-aware module isolation and explainable permission decisions are available as the foundation for deeper enterprise tenancy.
+- Migration dry runs, job views, ops exports, and the admin dashboard reduce switching risk from incumbent knowledge tools.
+
+## Example knowledge base
+
+See [`examples/sample_knowledge_base/`](examples/sample_knowledge_base/) for a small working KB you can copy as a starting point.
+
+## License
+
+MIT

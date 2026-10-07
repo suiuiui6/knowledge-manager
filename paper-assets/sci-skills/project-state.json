@@ -1,0 +1,144 @@
+{
+  "project_id": "knowledge-manager-journal-20261007",
+  "product_name": "SCI-Skills",
+  "product_version": "3.0.2",
+  "contract_version": "1.0",
+  "entry_route": "beginner_start",
+  "research_direction": "AI Agent知识检索与上下文管理；Knowledge Manager",
+  "primary_paper_family": "M",
+  "family_confidence": "high",
+  "user_reported_stage": "只有方向，想找选题",
+  "diagnosed_stage": "M2",
+  "stage_confidence": "high",
+  "execution_mode": "CREATE",
+  "action_route": "PROMPT",
+  "target": {
+    "purpose": "期刊发表",
+    "journal": null,
+    "language": null,
+    "deadline": null
+  },
+  "available_resources": {
+    "code": [
+      "knowledge-manager/src/knowledge_manager",
+      "paper-assets/scripts/rebuild_source_grounded_corpus.py"
+    ],
+    "manuscript": [
+      "paper-assets/writing/knowledge-manager-paper-v3.md"
+    ],
+    "evaluation": [
+      "paper-assets/eval/judged-queries.candidate.jsonl"
+    ],
+    "results": [
+      "paper-assets/results/candidate-baseline-eval-result.json"
+    ],
+    "data": [
+      "paper-assets/corpora/km-project-sources-v1"
+    ]
+  },
+  "data_sufficiency": {
+    "status": "UNKNOWN",
+    "evidence_reviewed": [
+      "paper-assets/eval/corpus-inventory.csv",
+      "paper-assets/eval/judged-queries.candidate.jsonl",
+      "paper-assets/eval/judged-queries.author-review.json",
+      "paper-assets/sci-skills/M1-source-audit.json",
+      "paper-assets/corpora/km-project-sources-v1/manifest.json"
+    ],
+    "acquisition_needed": null,
+    "provenance_and_rights_fit": "Source spans and local snapshot hashes verified; original authorship/public reuse rights unverified",
+    "scope": "overall formal evaluation; source construction itself is sufficient for the single-project pilot",
+    "sample_and_method_fit": "Single-project case only; formal independent labels and experimental coverage unassessed"
+  },
+  "stage_status": {
+    "passed": [
+      "M1"
+    ],
+    "partially_passed": [
+      "M2"
+    ],
+    "failed": []
+  },
+  "expert_tasks": {
+    "provisional": [
+      "M1-topic-recon-001",
+      "M1-selected-topic-recon-002",
+      "M2-method-reading-005",
+      "M2-top-journal-audit-006",
+      "M2-residual-probe-007"
+    ],
+    "completed": [
+      "M1-source-rebuild-003",
+      "M2-literature-004"
+    ]
+  },
+  "current_blockers": [
+    "已复现问题在受控条件下可由简单规则处理，尚未建立相对强方案的剩余失败",
+    "跨文件多步任务、可重放检查器与独立证据标签尚未构建",
+    "本轮为单仓库机制诊断，未运行真实Agent及对应强文献基线"
+  ],
+  "completed_outputs": {
+    "topic_candidates": "paper-assets/sci-skills/topic-candidates.json",
+    "expert_return": "paper-assets/sci-skills/M1-literature-recon-result.json",
+    "topic_definition": "paper-assets/sci-skills/M1-topic-definition.md",
+    "literature_recon": "paper-assets/sci-skills/M2-literature-candidates.csv",
+    "preliminary_comparison": "paper-assets/sci-skills/M2-preliminary-comparison.md",
+    "search_log": "paper-assets/sci-skills/M2-search-log.json",
+    "selected_topic_expert_return": "paper-assets/sci-skills/M1-selected-topic-expert-result.json",
+    "source_audit": "paper-assets/sci-skills/M1-source-audit.json",
+    "rebuilt_corpus": "paper-assets/corpora/km-project-sources-v1",
+    "corpus_methods": "paper-assets/sci-skills/corpus-construction-methods.md",
+    "rebuild_expert_return": "paper-assets/sci-skills/M1-source-rebuild-expert-result.json",
+    "M1_stage_review": "paper-assets/sci-skills/M1-stage-review.json",
+    "verified_literature": "paper-assets/sci-skills/M2-literature-verified-20261007.json",
+    "reading_cards": "paper-assets/sci-skills/M2-reading-cards.md",
+    "method_comparison": "paper-assets/sci-skills/M2-method-comparison.md",
+    "proposed_protocol": "paper-assets/sci-skills/M2-experiment-protocol.json",
+    "verified_bibliography": "paper-assets/sci-skills/M2-references.bib",
+    "M2_stage_review": "paper-assets/sci-skills/M2-stage-review.json",
+    "top_journal_audit": "paper-assets/sci-skills/M2-top-journal-feasibility-audit.md",
+    "top_journal_expert_return": "paper-assets/sci-skills/M2-top-journal-expert-result.json",
+    "current_M2_review": "paper-assets/sci-skills/M2-top-journal-stage-review.json",
+    "top_journal_reading_cards": "paper-assets/sci-skills/M2-top-journal-reading-cards.md",
+    "residual_probe_plan": "paper-assets/sci-skills/M2-residual-failure-probe-plan.md",
+    "residual_probe_findings": "paper-assets/sci-skills/M2-residual-failure-findings.md",
+    "residual_probe_results": "paper-assets/results/residual-probe-20261007/results.json",
+    "residual_probe_expert_return": "paper-assets/sci-skills/M2-residual-probe-expert-result.json"
+  },
+  "next_action": {
+    "type": "PROMPT",
+    "stage": "M2",
+    "action": "扩展到真实跨文件、多步操作任务，检查版本和前提简单规则仍然失败的情况"
+  },
+  "last_updated": "2026-10-07",
+  "preservation_note": "Existing paper drafts and engineering goal state preserved; previous research outputs provisional pending verification",
+  "working_title": "面向大语言模型智能体的可审查知识模块检索与按需上下文加载方法",
+  "topic_selection": {
+    "candidate_id": 1,
+    "confirmed_by_user": true,
+    "date": "2026-10-07"
+  },
+  "external_literature_status": "Bounded journal-primary-text audit J1-J3; J4 metadata plus author preprint; J5 metadata only; recent preprints checked for overlap; no systematic coverage or replication claimed",
+  "user_source_report": {
+    "selection": 4,
+    "meaning": "混合来源或不确定，尚未确认每组材料来源",
+    "date": "2026-10-07",
+    "original_documents_retained": false,
+    "rebuild_authorized": true
+  },
+  "candidate_title_revision": "固定上下文预算下可追溯知识模块检索的设计与案例评估（候选，未覆盖原工作题目）",
+  "stage_revision": {
+    "date": "2026-10-07",
+    "previous": "M2 passed / M3 next",
+    "current": "M2 partially passed / repair",
+    "reason": "New overlap evidence undermines the distinct contribution of broad budget packing",
+    "history_retained": "M2-stage-review.json"
+  },
+  "residual_probe_status": {
+    "execution": "EXECUTED_LOCAL",
+    "scope": "source-grounded controlled diagnostics; one repo/runbook",
+    "formal_efficacy": "NOT_EXECUTED",
+    "novelty": "NOT_ESTABLISHED",
+    "review": "M2 remains partially passed"
+  }
+}

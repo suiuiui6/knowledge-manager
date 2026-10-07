@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-003",
+  "category": "documentation",
+  "title": "km-blueprint: 为什么是决定性改进",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition 为什么是决定性改进.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: 为什么是决定性改进.",
+    "details": "## 为什么是决定性改进\r\n\r\n当前用户使用 knowledge-manager 的路径：\r\n\r\n```\r\n终端敲 km search \"jwt token\"\r\n  → 看 JSON 数组输出\r\n  → 找到模块ID\r\n  → km show jwt-config -c auth\r\n  → 读 JSON 的 content.details 字段\r\n  → 回到 MCP agent 提问\r\n```\r\n\r\nPageIndex 用户的路径：\r\n\r\n```\r\n打开 chat.pageindex.ai\r\n  → 输入 \"JWT过期时间是多少？\"\r\n  → 得到自然语言答案 + 页码引用\r\n```\r\n\r\nllm-wiki (Oshayr) 用户的路径：\r\n\r\n```\r\n打开 localhost:8420\r\n  → 看到 Wikipedia 风格的wiki首页\r\n  → 左侧导航树, 右侧知识图谱\r\n  → 搜索框输入 → 实时过滤页面列表\r\n  → 点击页面 → Markdown渲染阅读\r\n  → 聊天侧边栏 → RAG增强问答\r\n```\r\n\r\n**差距不在能力，在交互。** knowledge-manager 的4层搜索排序比两个竞品都强，但用户感知不到——他们只看到JSON。\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:458-1004; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-002",
+      "documentation/km-blueprint-004"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "为什么是决定性改进"
+        ],
+        "excerpt": "## 为什么是决定性改进\r\n\r\n当前用户使用 knowledge-manager 的路径：\r\n\r\n```\r\n终端敲 km search \"jwt token\"\r\n  → 看 JSON 数组输出\r\n  → 找到模块ID\r\n  → km show jwt-config -c auth\r\n  → 读 JSON 的 content.details 字段\r\n  → 回到 MCP agent 提问\r\n```\r\n\r\nPageIndex 用户的路径：\r\n\r\n```\r\n打开 chat.pageindex.ai\r\n  → 输入 \"JWT过期时间是多少？\"\r\n  → 得到自然语言答案 + 页码引用\r\n```\r\n\r\nllm-wiki (Oshayr) 用户的路径：\r\n\r\n```\r\n打开 localhost:8420\r\n  → 看到 Wikipedia 风格的wiki首页\r\n  → 左侧导航树, 右侧知识图谱\r\n  → 搜索框输入 → 实时过滤页面列表\r\n  → 点击页面 → Markdown渲染阅读\r\n  → 聊天侧边栏 → RAG增强问答\r\n```\r\n\r\n**差距不在能力，在交互。** knowledge-manager 的4层搜索排序比两个竞品都强，但用户感知不到——他们只看到JSON。\r\n\r\n",
+        "char_start": 458,
+        "char_end": 1004
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

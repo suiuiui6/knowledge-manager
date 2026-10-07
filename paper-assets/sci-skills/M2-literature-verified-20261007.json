@@ -1,0 +1,171 @@
+[
+  {
+    "id": "L1",
+    "title": "A-MEM: Agentic Memory for LLM Agents",
+    "authors": [
+      "Wujiang Xu",
+      "Zujie Liang",
+      "Kai Mei",
+      "Hang Gao",
+      "Juntao Tan",
+      "Yongfeng Zhang"
+    ],
+    "year": 2025,
+    "type": "arXiv record and HTML",
+    "eprint": "2502.12110",
+    "source_url": "https://arxiv.org/abs/2502.12110",
+    "method_url": "https://arxiv.org/html/2502.12110v11",
+    "version": "v11, 2025-10-08",
+    "verification": "METADATA_AND_SELECTED_METHOD_SECTIONS",
+    "locators": [
+      "Abstract",
+      "2 Related Work",
+      "3 Method: note construction, linking, evolution",
+      "4 Experiments (design scope only)"
+    ],
+    "relevance": "同领域近似",
+    "correction_retraction_check": "No separate correction/retraction audit performed; no claim of absence",
+    "verified_on": "2026-10-07",
+    "reproduced": false
+  },
+  {
+    "id": "L2",
+    "title": "RAPTOR: Recursive Abstractive Processing for Tree-Organized Retrieval",
+    "authors": [
+      "Parth Sarthi",
+      "Salman Abdullah",
+      "Aditi Tuli",
+      "Shubh Khanna",
+      "Anna Goldie",
+      "Christopher D. Manning"
+    ],
+    "year": 2024,
+    "type": "arXiv HTML",
+    "eprint": "2401.18059",
+    "source_url": "https://arxiv.org/html/2401.18059v1",
+    "version": "v1",
+    "verification": "METADATA_AND_SELECTED_METHOD_SECTIONS",
+    "locators": [
+      "Abstract",
+      "3 RAPTOR: tree construction, clustering, summarization, query modes",
+      "4 experimental task scope"
+    ],
+    "relevance": "同领域近似",
+    "correction_retraction_check": "No separate audit performed",
+    "verified_on": "2026-10-07",
+    "reproduced": false
+  },
+  {
+    "id": "L3",
+    "title": "A Human-Inspired Reading Agent with Gist Memory of Very Long Contexts",
+    "authors": [
+      "Kuang-Huei Lee",
+      "Xinyun Chen",
+      "Hiroki Furuta",
+      "John Canny",
+      "Ian Fischer"
+    ],
+    "year": 2024,
+    "type": "Publisher record and abstract",
+    "venue": "Proceedings of the 41st International Conference on Machine Learning",
+    "volume": "235",
+    "pages": "26396--26415",
+    "source_url": "https://proceedings.mlr.press/v235/lee24c.html",
+    "verification": "PUBLISHER_METADATA_AND_ABSTRACT_ONLY",
+    "locators": [
+      "PMLR abstract",
+      "PMLR bibliography"
+    ],
+    "relevance": "同领域近似",
+    "correction_retraction_check": "No separate audit performed",
+    "verified_on": "2026-10-07",
+    "reproduced": false,
+    "metadata_correction": "2026-10-07: official PMLR metadata and BibTeX verified; replaces 27811--27836"
+  },
+  {
+    "id": "L4",
+    "title": "MAGMA: A Multi-Graph based Agentic Memory Architecture for AI Agents",
+    "authors": [
+      "Dongming Wu",
+      "Changyue Wang",
+      "Yifan Wang",
+      "Minghui Fang",
+      "Shang Shi",
+      "Guanpeng Li",
+      "Bingzhe Wu"
+    ],
+    "year": 2026,
+    "type": "arXiv record and HTML",
+    "eprint": "2601.03236",
+    "source_url": "https://arxiv.org/abs/2601.03236",
+    "method_url": "https://arxiv.org/html/2601.03236v2",
+    "version": "v2, 2026-07-14",
+    "venue_claim": "arXiv comment reports acceptance to ACL 2026; not separately verified against proceedings",
+    "verification": "METADATA_AND_SELECTED_METHOD_SECTIONS",
+    "locators": [
+      "3.1 Ingestion and provenance",
+      "3.2.2 Budget-aware graph expansion",
+      "3.2.3 Context synthesis",
+      "4 experiment scope",
+      "C.1 data-cost assumptions"
+    ],
+    "relevance": "同领域近似",
+    "correction_retraction_check": "No separate audit performed",
+    "verified_on": "2026-10-07",
+    "reproduced": false
+  },
+  {
+    "id": "L5",
+    "title": "DocPrompting: Generating Code by Retrieving the Docs",
+    "authors": [
+      "Shuyan Zhou",
+      "Uri Alon",
+      "Frank F. Xu",
+      "Zhiruo Wang",
+      "Zhengbao Jiang",
+      "Graham Neubig"
+    ],
+    "year": 2022,
+    "publication_year": 2023,
+    "type": "arXiv record and abstract",
+    "eprint": "2207.05987",
+    "source_url": "https://arxiv.org/abs/2207.05987",
+    "version": "v2, 2023-01-27",
+    "venue_claim": "arXiv comment: ICLR 2023",
+    "verification": "METADATA_AND_ABSTRACT_ONLY",
+    "locators": [
+      "Abstract",
+      "Comments",
+      "Submission history"
+    ],
+    "relevance": "同领域近似",
+    "correction_retraction_check": "No separate audit performed",
+    "verified_on": "2026-10-07",
+    "reproduced": false
+  },
+  {
+    "id": "L6",
+    "title": "BEIR: A Heterogenous Benchmark for Zero-shot Evaluation of Information Retrieval Models",
+    "authors": [
+      "Nandan Thakur",
+      "Nils Reimers",
+      "Andreas Rueckle",
+      "Abhishek Srivastava",
+      "Iryna Gurevych"
+    ],
+    "year": 2021,
+    "type": "arXiv record and abstract",
+    "eprint": "2104.08663",
+    "source_url": "https://arxiv.org/abs/2104.08663",
+    "version": "v1",
+    "verification": "METADATA_AND_ABSTRACT_ONLY",
+    "locators": [
+      "Abstract",
+      "Submission history"
+    ],
+    "relevance": "仅作类型示例（对照与评价依据）",
+    "correction_retraction_check": "No separate audit performed",
+    "verified_on": "2026-10-07",
+    "reproduced": false
+  }
+]

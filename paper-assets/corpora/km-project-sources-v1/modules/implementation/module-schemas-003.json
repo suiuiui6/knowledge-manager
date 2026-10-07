@@ -1,0 +1,41 @@
+{
+  "id": "module-schemas-003",
+  "category": "implementation",
+  "title": "module-schemas: ModuleContent",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/schemas.py, section or definition ModuleContent.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: ModuleContent.",
+    "details": "class ModuleContent(BaseModel):\n    overview: str = Field(..., min_length=10)\r\n    details: str = Field(..., min_length=20)\r\n    examples: str = Field(default=\"\")\r\n    references: str = Field(default=\"\")\r\n    caveats: str = Field(default=\"\")\n",
+    "examples": "",
+    "references": "sources/module-schemas.py; module-schemas:chars:501-743; source SHA-256 c857e4a99e2e152db3aca0d1a9fc458bebe20ab352e24d0ae1f144a6594904a8",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "module-schemas"
+    ],
+    "related_modules": [
+      "implementation/module-schemas-002",
+      "implementation/module-schemas-004"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://module-schemas",
+    "source_spans": [
+      {
+        "external_id": "module-schemas",
+        "heading_path": [
+          "ModuleContent"
+        ],
+        "excerpt": "class ModuleContent(BaseModel):\n    overview: str = Field(..., min_length=10)\r\n    details: str = Field(..., min_length=20)\r\n    examples: str = Field(default=\"\")\r\n    references: str = Field(default=\"\")\r\n    caveats: str = Field(default=\"\")\n",
+        "char_start": 501,
+        "char_end": 743
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

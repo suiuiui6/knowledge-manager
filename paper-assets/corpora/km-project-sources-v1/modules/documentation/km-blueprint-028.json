@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-028",
+  "category": "documentation",
+  "title": "km-blueprint: 双向同步机制",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition 双向同步机制.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: 双向同步机制.",
+    "details": "## 双向同步机制\r\n\r\n```python\r\n# src/knowledge_manager/sync.py (新文件)\r\n\r\nclass MarkdownSync:\r\n    \"\"\"JSON ↔ Markdown 双向同步\"\"\"\r\n\r\n    @staticmethod\r\n    def sync_on_save(module: Module, kb_path: Path) -> None:\r\n        \"\"\"保存模块时同时写入 JSON 和 MD\"\"\"\r\n        json_path = module.to_file_path(kb_path)\r\n        md_path = json_path.with_suffix('.md')\r\n\r\n        # 写入 JSON (现有逻辑)\r\n        save_module_json(module, json_path)\r\n\r\n        # 写入 Markdown (新增)\r\n        md_content = render_markdown_module(module)\r\n        md_path.write_text(md_content, encoding='utf-8')\r\n\r\n    @staticmethod\r\n    def sync_on_rebuild(kb_path: Path) -> list[SyncConflict]:\r\n        \"\"\"重建索引时检测 JSON/MD 不同步, 自动修复\"\"\"\r\n        conflicts = []\r\n\r\n        for json_path in kb_path.rglob(\"*.json\"):\r\n            if json_path.name in (\"index.json\", \"config.json\"):\r\n                continue\r\n            if json_path.parent.name.startswith('.'):\r\n                continue\r\n\r\n            md_path = json_path.with_suffix('.md')\r\n\r\n            if not md_path.exists():\r\n                # 只有 JSON, 生成 MD\r\n                module = load_module_from_json(json_path)\r\n                md_content = render_markdown_module(module)\r\n                md_path.write_text(md_content, encoding='utf-8')\r\n                continue\r\n\r\n            if not json_path.exists():\r\n                # 只有 MD, 生成 JSON\r\n                md_content = md_path.read_text(encoding='utf-8')\r\n                module = parse_markdown_module(md_content)\r\n                save_module_json(module, json_path)\r\n                continue\r\n\r\n            # 两边都存在, 比较时间戳\r\n            json_mtime = json_path.stat().st_mtime\r\n            md_mtime = md_path.stat().st_mtime\r\n\r\n            if abs(json_mtime - md_mtime) < 1.0:\r\n                continue  # 时间戳接近, 视为同步\r\n\r\n            if json_mtime > md_mtime:\r\n                # JSON 更新 → 重新生成 MD\r\n                module = load_module_from_json(json_path)\r\n                md_content = render_markdown_module(module)\r\n                md_path.write_text(md_content, encoding='utf-8')\r\n            else:\r\n                # MD 更新 → 重新生成 JSON\r\n                md_content = md_path.read_text(encoding='utf-8')\r\n                try:\r\n                    module = parse_markdown_module(md_content)\r\n                    save_module_json(module, json_path)\r\n                except Exception as e:\r\n                    conflicts.append(SyncConflict(\r\n                        path=str(md_path),\r\n                        error=str(e),\r\n                        action_required=\"手动修复 Markdown 格式错误\",\r\n                    ))\r\n\r\n        return conflicts\r\n\r\n@dataclass\r\nclass SyncConflict:\r\n    path: str\r\n    error: str\r\n    action_required: str\r\n```\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:53122-55806; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-027",
+      "documentation/km-blueprint-029"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "双向同步机制"
+        ],
+        "excerpt": "## 双向同步机制\r\n\r\n```python\r\n# src/knowledge_manager/sync.py (新文件)\r\n\r\nclass MarkdownSync:\r\n    \"\"\"JSON ↔ Markdown 双向同步\"\"\"\r\n\r\n    @staticmethod\r\n    def sync_on_save(module: Module, kb_path: Path) -> None:\r\n        \"\"\"保存模块时同时写入 JSON 和 MD\"\"\"\r\n        json_path = module.to_file_path(kb_path)\r\n        md_path = json_path.with_suffix('.md')\r\n\r\n        # 写入 JSON (现有逻辑)\r\n        save_module_json(module, json_path)\r\n\r\n        # 写入 Markdown (新增)\r\n        md_content = render_markdown_module(module)\r\n        md_path.write_text(md_content, encoding='utf-8')\r\n\r\n    @staticmethod\r\n    def sync_on_rebuild(kb_path: Path) -> list[SyncConflict]:\r\n        \"\"\"重建索引时检测 JSON/MD 不同步, 自动修复\"\"\"\r\n        conflicts = []\r\n\r\n        for json_path in kb_path.rglob(\"*.json\"):\r\n            if json_path.name in (\"index.json\", \"config.json\"):\r\n                continue\r\n            if json_path.parent.name.startswith('.'):\r\n                continue\r\n\r\n            md_path = json_path.with_suffix('.md')\r\n\r\n            if not md_path.exists():\r\n                # 只有 JSON, 生成 MD\r\n                module = load_module_from_json(json_path)\r\n                md_content = render_markdown_module(module)\r\n                md_path.write_text(md_content, encoding='utf-8')\r\n                continue\r\n\r\n            if not json_path.exists():\r\n                # 只有 MD, 生成 JSON\r\n                md_content = md_path.read_text(encoding='utf-8')\r\n                module = parse_markdown_module(md_content)\r\n                save_module_json(module, json_path)\r\n                continue\r\n\r\n            # 两边都存在, 比较时间戳\r\n            json_mtime = json_path.stat().st_mtime\r\n            md_mtime = md_path.stat().st_mtime\r\n\r\n            if abs(json_mtime - md_mtime) < 1.0:\r\n                continue  # 时间戳接近, 视为同步\r\n\r\n            if json_mtime > md_mtime:\r\n                # JSON 更新 → 重新生成 MD\r\n                module = load_module_from_json(json_path)\r\n                md_content = render_markdown_module(module)\r\n                md_path.write_text(md_content, encoding='utf-8')\r\n            else:\r\n                # MD 更新 → 重新生成 JSON\r\n                md_content = md_path.read_text(encoding='utf-8')\r\n                try:\r\n                    module = parse_markdown_module(md_content)\r\n                    save_module_json(module, json_path)\r\n                except Exception as e:\r\n                    conflicts.append(SyncConflict(\r\n                        path=str(md_path),\r\n                        error=str(e),\r\n                        action_required=\"手动修复 Markdown 格式错误\",\r\n                    ))\r\n\r\n        return conflicts\r\n\r\n@dataclass\r\nclass SyncConflict:\r\n    path: str\r\n    error: str\r\n    action_required: str\r\n```\r\n\r\n",
+        "char_start": 53122,
+        "char_end": 55806
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

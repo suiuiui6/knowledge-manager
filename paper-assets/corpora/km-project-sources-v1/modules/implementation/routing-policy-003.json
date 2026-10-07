@@ -1,0 +1,40 @@
+{
+  "id": "routing-policy-003",
+  "category": "implementation",
+  "title": "routing-policy: evaluate_module_policy",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/policy.py, section or definition evaluate_module_policy.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: evaluate_module_policy.",
+    "details": "def evaluate_module_policy(\n    module: Module | None,\n    policy: RoutingPolicyConfig,\n    *,\n    allowed_statuses: set[str] | None = None,\n    primary_categories: list[str] | None = None,\n    risk_level: str | None = None,\n) -> PolicyDecision:\n    reasons: list[str] = []\n    if module is not None and allowed_statuses is not None and module.metadata.status not in allowed_statuses:\n        reasons.append(f\"suppressed_by_policy:status:{module.metadata.status}\")\n    if module is not None and policy.suppress_stale_sources and module.metadata.stale_due_to_source_change:\n        reasons.append(\"suppressed_by_policy:stale_source\")\n    if module is not None and policy.suppress_expired:\n        now = datetime.now(timezone.utc)\n        if module.metadata.expires_at is not None and module.metadata.expires_at <= now:\n            reasons.append(\"suppressed_by_policy:expired\")\n\n    companions: list[str] = []\n    for category in primary_categories or []:\n        companions.extend(policy.mandatory_companions.get(category, []))\n    if risk_level:\n        companions.extend(policy.risk_level_companions.get(risk_level, []))\n\n    deduped_companions: list[str] = []\n    for companion in companions:\n        if companion not in deduped_companions:\n            deduped_companions.append(companion)\n    return PolicyDecision(\n        allowed=not reasons,\n        reasons=reasons,\n        mandatory_companions=deduped_companions,\n    )\n",
+    "examples": "",
+    "references": "sources/routing-policy.py; routing-policy:chars:1735-3164; source SHA-256 fd1d389017565331ff43e5e6a855b952b927a9451513dd46d26c27750d155601",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "routing-policy"
+    ],
+    "related_modules": [
+      "implementation/routing-policy-002"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://routing-policy",
+    "source_spans": [
+      {
+        "external_id": "routing-policy",
+        "heading_path": [
+          "evaluate_module_policy"
+        ],
+        "excerpt": "def evaluate_module_policy(\n    module: Module | None,\n    policy: RoutingPolicyConfig,\n    *,\n    allowed_statuses: set[str] | None = None,\n    primary_categories: list[str] | None = None,\n    risk_level: str | None = None,\n) -> PolicyDecision:\n    reasons: list[str] = []\n    if module is not None and allowed_statuses is not None and module.metadata.status not in allowed_statuses:\n        reasons.append(f\"suppressed_by_policy:status:{module.metadata.status}\")\n    if module is not None and policy.suppress_stale_sources and module.metadata.stale_due_to_source_change:\n        reasons.append(\"suppressed_by_policy:stale_source\")\n    if module is not None and policy.suppress_expired:\n        now = datetime.now(timezone.utc)\n        if module.metadata.expires_at is not None and module.metadata.expires_at <= now:\n            reasons.append(\"suppressed_by_policy:expired\")\n\n    companions: list[str] = []\n    for category in primary_categories or []:\n        companions.extend(policy.mandatory_companions.get(category, []))\n    if risk_level:\n        companions.extend(policy.risk_level_companions.get(risk_level, []))\n\n    deduped_companions: list[str] = []\n    for companion in companions:\n        if companion not in deduped_companions:\n            deduped_companions.append(companion)\n    return PolicyDecision(\n        allowed=not reasons,\n        reasons=reasons,\n        mandatory_companions=deduped_companions,\n    )\n",
+        "char_start": 1735,
+        "char_end": 3164
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

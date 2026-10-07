@@ -1,0 +1,28 @@
+{
+  "id": "contractor-safety-ranking",
+  "category": "safety",
+  "title": "承包商安全绩效评价",
+  "summary": "我们对全部80家承包商进行半年安全绩效排名，末位3家约谈，以督促承包商改进安全表现。",
+  "created_at": "2026-06-10T04:51:15.106175Z",
+  "updated_at": "2026-06-10T04:51:15.106175Z",
+  "content": {
+    "overview": "通过建立半年安全绩效排名和约谈机制，倒逼承包商重视安全管理，淘汰劣质承包商。",
+    "details": "评价维度包括事故率、隐患整改率、日常安全检查得分、培训参与度等。排名结果内部公开，对末位3家承包商进行约谈，提出整改要求，连续垫底者将影响其后续投标资格。选择排名与约谈结合模式，既保持压力又给改进机会。",
+    "examples": "",
+    "references": "",
+    "caveats": "绩效指标权重需科学设定，避免承包商选择性上报数据；约谈效果需跟踪验证，防止走形式。"
+  },
+  "metadata": {
+    "tags": [
+      "承包商管理",
+      "绩效评价",
+      "安全排名"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": "",
+    "expires_at": null,
+    "review_interval_days": null,
+    "status": "published"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "id": "km-readme-010",
+  "category": "documentation",
+  "title": "km-readme: Features",
+  "summary": "Extractive snapshot of knowledge-manager/README.md, section or definition Features.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: Features.",
+    "details": "## Features\n\n- Keep knowledge Git-native and auditable: every approved module is JSON you can diff, review, and version with your repo.\n- Turn unstructured docs into reusable modules with clear sections (`overview`, `details`, `examples`, `references`, `caveats`).\n- Add a human checkpoint before publish: **extract → staging → review → approve**.\n- Use one workflow across models with provider support for DeepSeek (default `deepseek-v4-pro`), Claude, and OpenAI.\n- Reuse knowledge from editors and agents through MCP via `knowledge://index`, `load_module`, `search_modules`, and `list_categories`.\n- Keep retrieval responsive for hot modules with a thread-safe LRU cache.\n- Process long documents reliably with chunked extraction (`chunk_size`, `chunk_overlap`).\n- Operate with visibility through verbose CLI logs for provider/model choice, chunking, and extraction progress.\n- Enterprise ingestion and governance: Confluence + Notion source pull, provenance stamping, routing-policy controls, ops exports, and dual source/module views.\n- Ship with confidence: focused schema, storage, HTTP, MCP, CLI, enterprise, and integration tests back the production path.\n\n",
+    "examples": "",
+    "references": "sources/km-readme.md; km-readme:chars:2134-3299; source SHA-256 3e5706ca7be9c3305b940f286214b6508158838296e960f08c00693b52fd3f20",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-readme"
+    ],
+    "related_modules": [
+      "documentation/km-readme-009",
+      "documentation/km-readme-011"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-readme",
+    "source_spans": [
+      {
+        "external_id": "km-readme",
+        "heading_path": [
+          "Features"
+        ],
+        "excerpt": "## Features\n\n- Keep knowledge Git-native and auditable: every approved module is JSON you can diff, review, and version with your repo.\n- Turn unstructured docs into reusable modules with clear sections (`overview`, `details`, `examples`, `references`, `caveats`).\n- Add a human checkpoint before publish: **extract → staging → review → approve**.\n- Use one workflow across models with provider support for DeepSeek (default `deepseek-v4-pro`), Claude, and OpenAI.\n- Reuse knowledge from editors and agents through MCP via `knowledge://index`, `load_module`, `search_modules`, and `list_categories`.\n- Keep retrieval responsive for hot modules with a thread-safe LRU cache.\n- Process long documents reliably with chunked extraction (`chunk_size`, `chunk_overlap`).\n- Operate with visibility through verbose CLI logs for provider/model choice, chunking, and extraction progress.\n- Enterprise ingestion and governance: Confluence + Notion source pull, provenance stamping, routing-policy controls, ops exports, and dual source/module views.\n- Ship with confidence: focused schema, storage, HTTP, MCP, CLI, enterprise, and integration tests back the production path.\n\n",
+        "char_start": 2134,
+        "char_end": 3299
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-007",
+  "category": "documentation",
+  "title": "km-blueprint: 零构建模式",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition 零构建模式.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: 零构建模式.",
+    "details": "### 零构建模式\r\n\r\n对于不想安装 Node.js 的用户，提供一个单HTML文件模式：\r\n\r\n```python\r\n# src/knowledge_manager/ui_fallback.py\r\n\r\nFALLBACK_HTML = \"\"\"<!DOCTYPE html>\r\n<html>\r\n<head>\r\n  <meta charset=\"utf-8\">\r\n  <title>Knowledge Manager</title>\r\n  <script src=\"https://cdn.jsdelivr.net/npm/htmx.org@1.9/dist/htmx.min.js\"></script>\r\n  <script src=\"https://cdn.jsdelivr.net/npm/alpinejs@3.x/dist/cdn.min.js\"></script>\r\n  <link href=\"https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css\" rel=\"stylesheet\">\r\n</head>\r\n<body>\r\n  <!-- 只读浏览模式, 用 htmx + Alpine.js 构建 -->\r\n  ...\r\n</body>\r\n</html>\"\"\"\r\n\r\ndef serve_fallback_ui():\r\n    \"\"\"当没有前端构建产物时, 使用内嵌的单HTML只读UI\"\"\"\r\n    ...\r\n```\r\n\r\n`km serve --ui` 启动时检查前端构建产物是否存在：存在则用完整React UI，不存在则用零构建回退UI。\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:7159-7873; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-006",
+      "documentation/km-blueprint-008"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "零构建模式"
+        ],
+        "excerpt": "### 零构建模式\r\n\r\n对于不想安装 Node.js 的用户，提供一个单HTML文件模式：\r\n\r\n```python\r\n# src/knowledge_manager/ui_fallback.py\r\n\r\nFALLBACK_HTML = \"\"\"<!DOCTYPE html>\r\n<html>\r\n<head>\r\n  <meta charset=\"utf-8\">\r\n  <title>Knowledge Manager</title>\r\n  <script src=\"https://cdn.jsdelivr.net/npm/htmx.org@1.9/dist/htmx.min.js\"></script>\r\n  <script src=\"https://cdn.jsdelivr.net/npm/alpinejs@3.x/dist/cdn.min.js\"></script>\r\n  <link href=\"https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css\" rel=\"stylesheet\">\r\n</head>\r\n<body>\r\n  <!-- 只读浏览模式, 用 htmx + Alpine.js 构建 -->\r\n  ...\r\n</body>\r\n</html>\"\"\"\r\n\r\ndef serve_fallback_ui():\r\n    \"\"\"当没有前端构建产物时, 使用内嵌的单HTML只读UI\"\"\"\r\n    ...\r\n```\r\n\r\n`km serve --ui` 启动时检查前端构建产物是否存在：存在则用完整React UI，不存在则用零构建回退UI。\r\n\r\n",
+        "char_start": 7159,
+        "char_end": 7873
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "job_id": "maint-d2934e09e33b",
+  "action": "module_saved",
+  "payload": {
+    "module": {
+      "id": "single-node-deploy-001",
+      "category": "operations",
+      "title": "single-node-deploy: Prerequisites",
+      "summary": "Extractive snapshot of knowledge-manager/docs/runbooks/deploy-single-node.md, section or definition Prerequisites.",
+      "created_at": "2026-10-07T07:45:03.140359Z",
+      "updated_at": "2026-10-07T07:45:03.140359Z",
+      "content": {
+        "overview": "Verbatim project-source evidence unit: Prerequisites.",
+        "details": "## Prerequisites\n\nOn Rocky Linux 9 / EL9, install the base packages first:\n\n```bash\ndnf install -y python3.11 git caddy logrotate\n```\n\n",
+        "examples": "",
+        "references": "sources/single-node-deploy.md; single-node-deploy:chars:26-161; source SHA-256 c5ddb61a71a4bc324be1a620bbdbcca2f5d2808ab007da1f7d9a2c995197b91d",
+        "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+      },
+      "metadata": {
+        "tags": [
+          "paper-case-study",
+          "extractive",
+          "single-node-deploy"
+        ],
+        "related_modules": [
+          "operations/single-node-deploy-002"
+        ],
+        "confidence": "medium",
+        "tenant_id": "",
+        "workspace_id": "",
+        "source": "paper-corpus://single-node-deploy",
+        "source_documents": [],
+        "source_spans": [
+          {
+            "external_id": "single-node-deploy",
+            "heading_path": [
+              "Prerequisites"
+            ],
+            "excerpt": "## Prerequisites\n\nOn Rocky Linux 9 / EL9, install the base packages first:\n\n```bash\ndnf install -y python3.11 git caddy logrotate\n```\n\n",
+            "char_start": 26,
+            "char_end": 161
+          }
+        ],
+        "extraction_run_id": "source-grounded-v1",
+        "reviewed_by": "",
+        "reviewed_at": null,
+        "stale_due_to_source_change": false,
+        "supersedes": [],
+        "derived_from": [],
+        "expires_at": null,
+        "review_interval_days": null,
+        "status": "draft"
+      }
+    },
+    "existed": false
+  },
+  "status": "queued",
+  "queued_at": "2026-10-07T08:56:05.693626+00:00"
+}

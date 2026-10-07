@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-038",
+  "category": "documentation",
+  "title": "km-blueprint: CLI",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition CLI.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: CLI.",
+    "details": "## CLI\r\n\r\n```bash\r\n# 为知识库生成记忆卡片\r\n$ km memory init\r\n  扫描 127 个模块...\r\n  筛选出 42 个高价值模块\r\n  LLM生成 98 张记忆卡片\r\n  已保存到 .memory/cards.json\r\n\r\n# 今日复习\r\n$ km memory today\r\n\r\n📋 今日复习 (6张卡片到期)\r\n\r\n┌────┬──────────────────────────────────────────┬──────────┬───────────┬──────┐\r\n│ #  │ 卡片                                       │ 分类      │ 上次复习   │ 间隔  │\r\n├────┼──────────────────────────────────────────┼──────────┼───────────┼──────┤\r\n│ 1  │ 为什么选RS256而不是HS256?                   │ auth     │ 1天前      │ 3d   │\r\n│ 2  │ 🔺 K8s HPA的最小/最大副本数是多少?           │ deploy   │ 3天前      │ 7d   │\r\n│ 3  │ gRPC服务间通信的超时重试策略是什么?          │ backend  │ 7天前      │ 14d  │\r\n│ 4  │ Redis缓存穿透的解决方案?                    │ backend  │ 14天前     │ 30d  │\r\n│ 5  │ 数据库迁移的零停机步骤?                     │ backend  │ 30天前     │ 60d  │\r\n│ 6  │ 为什么不用GraphQL而选REST?                  │ arch     │ 60天前     │ 90d  │\r\n└────┴──────────────────────────────────────────┴──────────┴───────────┴──────┘\r\n\r\n选择卡片编号查看 [1-6, 'all']: 1\r\n\r\n📖 卡片 #1\r\n┌──────────────────────────────────────────────────────────────┐\r\n│ Q: 如果我们需要支持多服务验证JWT但不共享密钥,                  │\r\n│    应该选什么签名算法? 为什么?                                 │\r\n│                                                              │\r\n│ [按任意键显示答案]                                            │\r\n└──────────────────────────────────────────────────────────────┘\r\n\r\n┌──────────────────────────────────────────────────────────────┐\r\n│ A: RS256非对称签名。每个服务从JWKS端点获取公钥独立验证签名,    │\r\n│    不需要共享密钥。代价是签名速度比HS256慢约10x。              │\r\n│                                                              │\r\n│ 📎 来源: auth/jwt-config (更新于 2026-06-01)                  │\r\n└──────────────────────────────────────────────────────────────┘\r\n\r\n掌握程度: [1]完全忘记 [2]困难 [3]正确 [4]轻松: 3\r\n✅ 下次复习: 4天后 (6月13日)\r\n\r\n# 统计\r\n$ km memory stats\r\n┌──────────────────────────┬────────┐\r\n│ 指标                      │ 数值    │\r\n├──────────────────────────┼────────┤\r\n│ 总卡片数                   │ 98     │\r\n│ 今日已复习                 │ 4/6    │\r\n│ 连续复习天数               │ 12 🔥  │\r\n│ 预测保留率 (90天)          │ 87.3%  │\r\n│ 总复习次数                 │ 347    │\r\n│ 平均掌握度                 │ 3.2/4  │\r\n└──────────────────────────┴────────┘\r\n```\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:76148-78303; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-037",
+      "documentation/km-blueprint-039"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "CLI"
+        ],
+        "excerpt": "## CLI\r\n\r\n```bash\r\n# 为知识库生成记忆卡片\r\n$ km memory init\r\n  扫描 127 个模块...\r\n  筛选出 42 个高价值模块\r\n  LLM生成 98 张记忆卡片\r\n  已保存到 .memory/cards.json\r\n\r\n# 今日复习\r\n$ km memory today\r\n\r\n📋 今日复习 (6张卡片到期)\r\n\r\n┌────┬──────────────────────────────────────────┬──────────┬───────────┬──────┐\r\n│ #  │ 卡片                                       │ 分类      │ 上次复习   │ 间隔  │\r\n├────┼──────────────────────────────────────────┼──────────┼───────────┼──────┤\r\n│ 1  │ 为什么选RS256而不是HS256?                   │ auth     │ 1天前      │ 3d   │\r\n│ 2  │ 🔺 K8s HPA的最小/最大副本数是多少?           │ deploy   │ 3天前      │ 7d   │\r\n│ 3  │ gRPC服务间通信的超时重试策略是什么?          │ backend  │ 7天前      │ 14d  │\r\n│ 4  │ Redis缓存穿透的解决方案?                    │ backend  │ 14天前     │ 30d  │\r\n│ 5  │ 数据库迁移的零停机步骤?                     │ backend  │ 30天前     │ 60d  │\r\n│ 6  │ 为什么不用GraphQL而选REST?                  │ arch     │ 60天前     │ 90d  │\r\n└────┴──────────────────────────────────────────┴──────────┴───────────┴──────┘\r\n\r\n选择卡片编号查看 [1-6, 'all']: 1\r\n\r\n📖 卡片 #1\r\n┌──────────────────────────────────────────────────────────────┐\r\n│ Q: 如果我们需要支持多服务验证JWT但不共享密钥,                  │\r\n│    应该选什么签名算法? 为什么?                                 │\r\n│                                                              │\r\n│ [按任意键显示答案]                                            │\r\n└──────────────────────────────────────────────────────────────┘\r\n\r\n┌──────────────────────────────────────────────────────────────┐\r\n│ A: RS256非对称签名。每个服务从JWKS端点获取公钥独立验证签名,    │\r\n│    不需要共享密钥。代价是签名速度比HS256慢约10x。              │\r\n│                                                              │\r\n│ 📎 来源: auth/jwt-config (更新于 2026-06-01)                  │\r\n└──────────────────────────────────────────────────────────────┘\r\n\r\n掌握程度: [1]完全忘记 [2]困难 [3]正确 [4]轻松: 3\r\n✅ 下次复习: 4天后 (6月13日)\r\n\r\n# 统计\r\n$ km memory stats\r\n┌──────────────────────────┬────────┐\r\n│ 指标                      │ 数值    │\r\n├──────────────────────────┼────────┤\r\n│ 总卡片数                   │ 98     │\r\n│ 今日已复习                 │ 4/6    │\r\n│ 连续复习天数               │ 12 🔥  │\r\n│ 预测保留率 (90天)          │ 87.3%  │\r\n│ 总复习次数                 │ 347    │\r\n│ 平均掌握度                 │ 3.2/4  │\r\n└──────────────────────────┴────────┘\r\n```\r\n\r\n",
+        "char_start": 76148,
+        "char_end": 78303
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

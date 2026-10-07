@@ -1,0 +1,41 @@
+{
+  "id": "km-readme-025",
+  "category": "documentation",
+  "title": "km-readme: CLI reference",
+  "summary": "Extractive snapshot of knowledge-manager/README.md, section or definition CLI reference.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: CLI reference.",
+    "details": "## CLI reference\n\n| Command | Description |\n|---------|-------------|\n| `km init [PATH]` | Initialize a knowledge base |\n| `km list [-c CAT]` | List modules (optionally by category) |\n| `km stats` | Show KB statistics |\n| `km search QUERY` | Keyword search across modules |\n| `km show ID -c CAT` | Show full module JSON |\n| `km add FILE [-c CAT]` | Extract modules from FILE into staging |\n| `km review` | Interactive review of staged modules |\n| `km delete ID -c CAT [--yes]` | Delete a module |\n| `km rebuild` | Rebuild `index.json` from on-disk modules |\n| `km config {set,get,list}` | Manage `config.json` |\n| `km serve` | Run MCP server over stdio |\n\nAll commands accept a global `--kb-path PATH` (default: cwd).\n\n",
+    "examples": "",
+    "references": "sources/km-readme.md; km-readme:chars:11304-12023; source SHA-256 3e5706ca7be9c3305b940f286214b6508158838296e960f08c00693b52fd3f20",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-readme"
+    ],
+    "related_modules": [
+      "documentation/km-readme-024",
+      "documentation/km-readme-026"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-readme",
+    "source_spans": [
+      {
+        "external_id": "km-readme",
+        "heading_path": [
+          "CLI reference"
+        ],
+        "excerpt": "## CLI reference\n\n| Command | Description |\n|---------|-------------|\n| `km init [PATH]` | Initialize a knowledge base |\n| `km list [-c CAT]` | List modules (optionally by category) |\n| `km stats` | Show KB statistics |\n| `km search QUERY` | Keyword search across modules |\n| `km show ID -c CAT` | Show full module JSON |\n| `km add FILE [-c CAT]` | Extract modules from FILE into staging |\n| `km review` | Interactive review of staged modules |\n| `km delete ID -c CAT [--yes]` | Delete a module |\n| `km rebuild` | Rebuild `index.json` from on-disk modules |\n| `km config {set,get,list}` | Manage `config.json` |\n| `km serve` | Run MCP server over stdio |\n\nAll commands accept a global `--kb-path PATH` (default: cwd).\n\n",
+        "char_start": 11304,
+        "char_end": 12023
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

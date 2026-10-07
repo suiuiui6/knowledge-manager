@@ -1,0 +1,41 @@
+{
+  "id": "module-schemas-010",
+  "category": "implementation",
+  "title": "module-schemas: SourceRegistry",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/schemas.py, section or definition SourceRegistry.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: SourceRegistry.",
+    "details": "class SourceRegistry(BaseModel):\n    model_config = ConfigDict(extra=\"forbid\")\n\n    sources: Dict[str, SourceDefinition] = Field(default_factory=dict)\n\n    @model_validator(mode=\"after\")\n    def validate_source_keys(self) -> \"SourceRegistry\":\n        for source_key, source in self.sources.items():\n            if source_key != source.id:\n                raise ValueError(\n                    f\"Source registry key {source_key!r} must match source id {source.id!r}\"\n                )\n        return self\n",
+    "examples": "",
+    "references": "sources/module-schemas.py; module-schemas:chars:3674-4178; source SHA-256 c857e4a99e2e152db3aca0d1a9fc458bebe20ab352e24d0ae1f144a6594904a8",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "module-schemas"
+    ],
+    "related_modules": [
+      "implementation/module-schemas-009",
+      "implementation/module-schemas-011"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://module-schemas",
+    "source_spans": [
+      {
+        "external_id": "module-schemas",
+        "heading_path": [
+          "SourceRegistry"
+        ],
+        "excerpt": "class SourceRegistry(BaseModel):\n    model_config = ConfigDict(extra=\"forbid\")\n\n    sources: Dict[str, SourceDefinition] = Field(default_factory=dict)\n\n    @model_validator(mode=\"after\")\n    def validate_source_keys(self) -> \"SourceRegistry\":\n        for source_key, source in self.sources.items():\n            if source_key != source.id:\n                raise ValueError(\n                    f\"Source registry key {source_key!r} must match source id {source.id!r}\"\n                )\n        return self\n",
+        "char_start": 3674,
+        "char_end": 4178
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

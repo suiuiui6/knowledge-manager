@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-024",
+  "category": "documentation",
+  "title": "km-blueprint: 目标架构",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition 目标架构.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: 目标架构.",
+    "details": "## 目标架构\r\n\r\n```\r\nmy_kb/\r\n├── index.json\r\n├── config.json\r\n├── .staging/\r\n├── auth/\r\n│   ├── jwt-config.json      # JSON (现有格式, 系统主存储)\r\n│   ├── jwt-config.md        # Markdown (人类编辑格式)\r\n│   ├── oauth-flow.json\r\n│   └── oauth-flow.md\r\n└── deployment/\r\n    ├── k8s-config.json\r\n    └── k8s-config.md\r\n\r\nJSON ←→ MD 双向同步:\r\n- save_module() → 同时写 JSON 和 MD\r\n- km rebuild → 比较时间戳, 以较新的为准, 自动同步另一方\r\n- JSON 是系统权威格式 (用于搜索索引, MCP, API)\r\n- MD 是人类编辑格式 (用于 Obsidian, $EDITOR, Web UI)\r\n```\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:42828-43304; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-023",
+      "documentation/km-blueprint-025"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "目标架构"
+        ],
+        "excerpt": "## 目标架构\r\n\r\n```\r\nmy_kb/\r\n├── index.json\r\n├── config.json\r\n├── .staging/\r\n├── auth/\r\n│   ├── jwt-config.json      # JSON (现有格式, 系统主存储)\r\n│   ├── jwt-config.md        # Markdown (人类编辑格式)\r\n│   ├── oauth-flow.json\r\n│   └── oauth-flow.md\r\n└── deployment/\r\n    ├── k8s-config.json\r\n    └── k8s-config.md\r\n\r\nJSON ←→ MD 双向同步:\r\n- save_module() → 同时写 JSON 和 MD\r\n- km rebuild → 比较时间戳, 以较新的为准, 自动同步另一方\r\n- JSON 是系统权威格式 (用于搜索索引, MCP, API)\r\n- MD 是人类编辑格式 (用于 Obsidian, $EDITOR, Web UI)\r\n```\r\n\r\n",
+        "char_start": 42828,
+        "char_end": 43304
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

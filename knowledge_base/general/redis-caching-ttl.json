@@ -1,0 +1,29 @@
+{
+  "id": "redis-caching-ttl",
+  "category": "general",
+  "title": "Redis Caching with 1-Hour TTL",
+  "summary": "We use Redis as our caching layer with a default TTL of 1 hour for cached entries.",
+  "created_at": "2026-06-10T03:09:22.501207Z",
+  "updated_at": "2026-06-10T03:09:22.501210Z",
+  "content": {
+    "overview": "Our team relies on Redis for application-level caching, applying a 1-hour time-to-live (TTL) policy to balance data freshness against cache hit rates.",
+    "details": "A 1-hour TTL means cached entries are automatically evicted after 60 minutes. This duration was chosen as a middle ground — long enough to reduce origin load and latency for frequently accessed data, short enough to prevent serving excessively stale content.",
+    "examples": "",
+    "references": "",
+    "caveats": "If upstream data changes more frequently than the 1-hour TTL window, clients may receive stale data until the cache entry expires. Cache stampede risk exists when a popular key expires and multiple requests hit the origin simultaneously."
+  },
+  "metadata": {
+    "tags": [
+      "redis",
+      "caching",
+      "ttl",
+      "infrastructure"
+    ],
+    "related_modules": [],
+    "confidence": "medium",
+    "source": "",
+    "expires_at": null,
+    "review_interval_days": null,
+    "status": "published"
+  }
+}

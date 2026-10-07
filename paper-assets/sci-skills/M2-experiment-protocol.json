@@ -1,0 +1,42 @@
+{
+  "status": "PLANNED_NOT_EXECUTED",
+  "project_id": "knowledge-manager-journal-20261007",
+  "source_corpus": "paper-assets/corpora/km-project-sources-v1",
+  "primary_question": "Under matched context budgets, does traceable module organization change necessary evidence coverage and cost?",
+  "reference_methods": [
+    "L1",
+    "L2",
+    "L3",
+    "L4",
+    "L5"
+  ],
+  "comparison_groups": [
+    "raw_chunk_bm25",
+    "boundary_chunk_bm25",
+    "module_bm25",
+    "actual_km",
+    "actual_km_budget_packing_proposed"
+  ],
+  "ablation_candidates": [
+    "remove_adjacency_expansion",
+    "remove_source_span_deduplication"
+  ],
+  "proposed_budgets_tokens": [
+    512,
+    1024,
+    2048,
+    4096
+  ],
+  "tokenizer": "NOT_SELECTED_OR_EXECUTED; package presence only checked",
+  "dense_hybrid_status": "OPTIONAL_STRONG_BASELINE; installed packages detected, local weights and offline execution unchecked",
+  "gold_labels": "NOT_AVAILABLE; automatically generated labels must remain silver-labelled",
+  "queries": "NOT_CREATED_FOR_NEW_CORPUS; previous 30 queries not transferred",
+  "evaluation_unit": "common original-source evidence spans, duplicate evidence counted once",
+  "claim_limits": [
+    "Single-project case, no external-team representativeness",
+    "No independently tested human-review benefit",
+    "No claim of unique source tracking or budget control",
+    "No reproduced A-Mem, RAPTOR, MAGMA, ReadAgent performance"
+  ],
+  "next_design_task": "Specify span-preserving budget selection and freeze dev/test grouping before main results"
+}

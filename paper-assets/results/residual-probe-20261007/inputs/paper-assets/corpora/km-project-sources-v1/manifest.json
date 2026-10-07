@@ -1,0 +1,1412 @@
+{
+  "dataset_id": "km-project-sources-v1",
+  "created_at_utc": "2026-10-07T07:45:03.140359+00:00",
+  "generation_method": "deterministic extractive segmentation; no generative model calls",
+  "script_sha256": "883f5b65fe0e9368800ccdcc12ff4478c42edafb5c1b14bf4ebad1e9d0e8b60e",
+  "documents": [
+    {
+      "document_id": "km-readme",
+      "original_project_path": "knowledge-manager/README.md",
+      "snapshot_path": "sources/km-readme.md",
+      "sha256_bytes": "3e5706ca7be9c3305b940f286214b6508158838296e960f08c00693b52fd3f20",
+      "decoded_character_count": 14784,
+      "decode_policy": "utf-8-sig",
+      "origin": "observed project file; original authorship not inferred",
+      "public_release_rights": "NOT_REVIEWED",
+      "generated_at_utc": "2026-10-07T07:45:03.140359+00:00"
+    },
+    {
+      "document_id": "km-blueprint",
+      "original_project_path": "knowledge-manager/docs/BLUEPRINT.md",
+      "snapshot_path": "sources/km-blueprint.md",
+      "sha256_bytes": "6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+      "decoded_character_count": 107053,
+      "decode_policy": "utf-8-sig",
+      "origin": "observed project file; original authorship not inferred",
+      "public_release_rights": "NOT_REVIEWED",
+      "generated_at_utc": "2026-10-07T07:45:03.140359+00:00"
+    },
+    {
+      "document_id": "enterprise-rollout",
+      "original_project_path": "knowledge-manager/docs/runbooks/enterprise-rollout.md",
+      "snapshot_path": "sources/enterprise-rollout.md",
+      "sha256_bytes": "32961639b9d5cf07f0267d24d0743d4a7a8af9dceac72a5a29744e88432c991a",
+      "decoded_character_count": 1036,
+      "decode_policy": "utf-8-sig",
+      "origin": "observed project file; original authorship not inferred",
+      "public_release_rights": "NOT_REVIEWED",
+      "generated_at_utc": "2026-10-07T07:45:03.140359+00:00"
+    },
+    {
+      "document_id": "migration-cutover",
+      "original_project_path": "knowledge-manager/docs/runbooks/migration-cutover.md",
+      "snapshot_path": "sources/migration-cutover.md",
+      "sha256_bytes": "4ee45b6553aba1b882a0752d92b799067f241aacafa2abffe4de5718b81508e5",
+      "decoded_character_count": 1047,
+      "decode_policy": "utf-8-sig",
+      "origin": "observed project file; original authorship not inferred",
+      "public_release_rights": "NOT_REVIEWED",
+      "generated_at_utc": "2026-10-07T07:45:03.140359+00:00"
+    },
+    {
+      "document_id": "single-node-deploy",
+      "original_project_path": "knowledge-manager/docs/runbooks/deploy-single-node.md",
+      "snapshot_path": "sources/single-node-deploy.md",
+      "sha256_bytes": "c5ddb61a71a4bc324be1a620bbdbcca2f5d2808ab007da1f7d9a2c995197b91d",
+      "decoded_character_count": 5341,
+      "decode_policy": "utf-8-sig",
+      "origin": "observed project file; original authorship not inferred",
+      "public_release_rights": "NOT_REVIEWED",
+      "generated_at_utc": "2026-10-07T07:45:03.140359+00:00"
+    },
+    {
+      "document_id": "observability",
+      "original_project_path": "knowledge-manager/docs/runbooks/observability-and-alerting.md",
+      "snapshot_path": "sources/observability.md",
+      "sha256_bytes": "a7b078911060cff08b059eeabb6e515f6a8889b302c060b42f5c2e1da4969b42",
+      "decoded_character_count": 1136,
+      "decode_policy": "utf-8-sig",
+      "origin": "observed project file; original authorship not inferred",
+      "public_release_rights": "NOT_REVIEWED",
+      "generated_at_utc": "2026-10-07T07:45:03.140359+00:00"
+    },
+    {
+      "document_id": "module-schemas",
+      "original_project_path": "knowledge-manager/src/knowledge_manager/schemas.py",
+      "snapshot_path": "sources/module-schemas.py",
+      "sha256_bytes": "c857e4a99e2e152db3aca0d1a9fc458bebe20ab352e24d0ae1f144a6594904a8",
+      "decoded_character_count": 23516,
+      "decode_policy": "utf-8-sig",
+      "origin": "observed project file; original authorship not inferred",
+      "public_release_rights": "NOT_REVIEWED",
+      "generated_at_utc": "2026-10-07T07:45:03.140359+00:00"
+    },
+    {
+      "document_id": "routing-policy",
+      "original_project_path": "knowledge-manager/src/knowledge_manager/policy.py",
+      "snapshot_path": "sources/routing-policy.py",
+      "sha256_bytes": "fd1d389017565331ff43e5e6a855b952b927a9451513dd46d26c27750d155601",
+      "decoded_character_count": 3164,
+      "decode_policy": "utf-8-sig",
+      "origin": "observed project file; original authorship not inferred",
+      "public_release_rights": "NOT_REVIEWED",
+      "generated_at_utc": "2026-10-07T07:45:03.140359+00:00"
+    },
+    {
+      "document_id": "retrieval-metrics",
+      "original_project_path": "knowledge-manager/src/knowledge_manager/retrieval_eval.py",
+      "snapshot_path": "sources/retrieval-metrics.py",
+      "sha256_bytes": "eb886154589d35786510a7931efe2acfff6fbfae409284ab3b085ba055c58aaa",
+      "decoded_character_count": 1179,
+      "decode_policy": "utf-8-sig",
+      "origin": "observed project file; original authorship not inferred",
+      "public_release_rights": "NOT_REVIEWED",
+      "generated_at_utc": "2026-10-07T07:45:03.140359+00:00"
+    },
+    {
+      "document_id": "markdown-format",
+      "original_project_path": "knowledge-manager/src/knowledge_manager/markdown.py",
+      "snapshot_path": "sources/markdown-format.py",
+      "sha256_bytes": "a69114b0b0d614064365eb97cb7f22d87eee8676342c8a25fdb7be1a520732f7",
+      "decoded_character_count": 5878,
+      "decode_policy": "utf-8-sig",
+      "origin": "observed project file; original authorship not inferred",
+      "public_release_rights": "NOT_REVIEWED",
+      "generated_at_utc": "2026-10-07T07:45:03.140359+00:00"
+    }
+  ],
+  "modules": [
+    {
+      "module_key": "documentation/km-readme-001",
+      "path": "modules/documentation/km-readme-001.json",
+      "document_id": "km-readme",
+      "evidence_unit_id": "km-readme:chars:0-796",
+      "excerpt_sha256_utf8": "47a11d6817b8792ff09796e8b993192e5590a1b0b8882bf06859ec50b1908ee5"
+    },
+    {
+      "module_key": "documentation/km-readme-002",
+      "path": "modules/documentation/km-readme-002.json",
+      "document_id": "km-readme",
+      "evidence_unit_id": "km-readme:chars:796-1250",
+      "excerpt_sha256_utf8": "0baf54a2dd1cda4bc0ed05664fe196c66239e7b0a665743d6d736ed3b4ae13d7"
+    },
+    {
+      "module_key": "documentation/km-readme-003",
+      "path": "modules/documentation/km-readme-003.json",
+      "document_id": "km-readme",
+      "evidence_unit_id": "km-readme:chars:1266-1331",
+      "excerpt_sha256_utf8": "f34441ffac513f9d5a0e4e18500344a347ee2906e88a2a903ac95b19cb656743"
+    },
+    {
+      "module_key": "documentation/km-readme-004",
+      "path": "modules/documentation/km-readme-004.json",
+      "document_id": "km-readme",
+      "evidence_unit_id": "km-readme:chars:1331-1448",
+      "excerpt_sha256_utf8": "21d88cacfc5ac2d95b0f26dc9abcd5a454c914c2c90eec0077bfbde5fc5a09fc"
+    },
+    {
+      "module_key": "documentation/km-readme-005",
+      "path": "modules/documentation/km-readme-005.json",
+      "document_id": "km-readme",
+      "evidence_unit_id": "km-readme:chars:1448-1531",
+      "excerpt_sha256_utf8": "5211df767be139378c419c37acc4f0702a1ce7190c47148ccceeee311bd2cc83"
+    },
+    {
+      "module_key": "documentation/km-readme-006",
+      "path": "modules/documentation/km-readme-006.json",
+      "document_id": "km-readme",
+      "evidence_unit_id": "km-readme:chars:1531-1602",
+      "excerpt_sha256_utf8": "7e4b4d73a13b376b26627c7bb1f2cadf5f03f4fb03ad81dbfaf71f02236a172e"
+    },
+    {
+      "module_key": "documentation/km-readme-007",
+      "path": "modules/documentation/km-readme-007.json",
+      "document_id": "km-readme",
+      "evidence_unit_id": "km-readme:chars:1602-1668",
+      "excerpt_sha256_utf8": "24bb024357f20ff45ace52c7c5d37f9c1a565c2ababdcab111947390fa085d82"
+    },
+    {
+      "module_key": "documentation/km-readme-008",
+      "path": "modules/documentation/km-readme-008.json",
+      "document_id": "km-readme",
+      "evidence_unit_id": "km-readme:chars:1668-1944",
+      "excerpt_sha256_utf8": "d708d2a466e962f3d50fe35f94d72f28ed59f02ef8467f5f5b07d52e30a1f16b"
+    },
+    {
+      "module_key": "documentation/km-readme-009",
+      "path": "modules/documentation/km-readme-009.json",
+      "document_id": "km-readme",
+      "evidence_unit_id": "km-readme:chars:1944-2134",
+      "excerpt_sha256_utf8": "42090169ea0931221ad7f62b9d87c48c27acd967a37e09dbe25957d3c5ce9b3d"
+    },
+    {
+      "module_key": "documentation/km-readme-010",
+      "path": "modules/documentation/km-readme-010.json",
+      "document_id": "km-readme",
+      "evidence_unit_id": "km-readme:chars:2134-3299",
+      "excerpt_sha256_utf8": "30986b814246d734b05acad63567cd043d65b1a3eff3e9f5b48e64c3fc1550d0"
+    },
+    {
+      "module_key": "documentation/km-readme-011",
+      "path": "modules/documentation/km-readme-011.json",
+      "document_id": "km-readme",
+      "evidence_unit_id": "km-readme:chars:3299-3684",
+      "excerpt_sha256_utf8": "7c925856410a37d021a5aa87ba6c2e729e4f447b9ece145c036ecf93b8a923e1"
+    },
+    {
+      "module_key": "documentation/km-readme-012",
+      "path": "modules/documentation/km-readme-012.json",
+      "document_id": "km-readme",
+      "evidence_unit_id": "km-readme:chars:3684-3862",
+      "excerpt_sha256_utf8": "9c17b2c1bf2655324dda292c98786f03d08d97581a893de6bee9d19e0565722b"
+    },
+    {
+      "module_key": "documentation/km-readme-013",
+      "path": "modules/documentation/km-readme-013.json",
+      "document_id": "km-readme",
+      "evidence_unit_id": "km-readme:chars:3881-4143",
+      "excerpt_sha256_utf8": "78ff84631525e72e4ca260cfc3cbe0e32db17f9eb64f58ed82d976ded690d904"
+    },
+    {
+      "module_key": "documentation/km-readme-014",
+      "path": "modules/documentation/km-readme-014.json",
+      "document_id": "km-readme",
+      "evidence_unit_id": "km-readme:chars:4143-4458",
+      "excerpt_sha256_utf8": "ff5ad92a3b537401f34a96bdff24b54ebb1c78a646051d3cc2f59b475465467b"
+    },
+    {
+      "module_key": "documentation/km-readme-015",
+      "path": "modules/documentation/km-readme-015.json",
+      "document_id": "km-readme",
+      "evidence_unit_id": "km-readme:chars:4458-4699",
+      "excerpt_sha256_utf8": "98e38f19177005c688696c79d21216ddd86565d78e852a23981b9444d7213325"
+    },
+    {
+      "module_key": "documentation/km-readme-016",
+      "path": "modules/documentation/km-readme-016.json",
+      "document_id": "km-readme",
+      "evidence_unit_id": "km-readme:chars:4699-4920",
+      "excerpt_sha256_utf8": "650403fffdb3a38328f3c60a3307b38f3698072655732f5e9117e4678097e371"
+    },
+    {
+      "module_key": "documentation/km-readme-017",
+      "path": "modules/documentation/km-readme-017.json",
+      "document_id": "km-readme",
+      "evidence_unit_id": "km-readme:chars:4920-5400",
+      "excerpt_sha256_utf8": "85221bf86547df03b9e467b2d593c8b78cc692a2a43d06f1a44addca031db036"
+    },
+    {
+      "module_key": "documentation/km-readme-018",
+      "path": "modules/documentation/km-readme-018.json",
+      "document_id": "km-readme",
+      "evidence_unit_id": "km-readme:chars:5400-5801",
+      "excerpt_sha256_utf8": "7603d54dd566e8a61d48e897e9e2bd26b116058be3cb29eee0a7638d6479cfcd"
+    },
+    {
+      "module_key": "documentation/km-readme-019",
+      "path": "modules/documentation/km-readme-019.json",
+      "document_id": "km-readme",
+      "evidence_unit_id": "km-readme:chars:5801-6956",
+      "excerpt_sha256_utf8": "47977c9e713ad0d0b214e84642c98e388ec7938796d9715943f9a774ce378b2f"
+    },
+    {
+      "module_key": "documentation/km-readme-020",
+      "path": "modules/documentation/km-readme-020.json",
+      "document_id": "km-readme",
+      "evidence_unit_id": "km-readme:chars:6956-7347",
+      "excerpt_sha256_utf8": "b478d1ced86b306edd39b50733a1855a804cdf3a60e2832ff8486ec3f6b2b8ab"
+    },
+    {
+      "module_key": "documentation/km-readme-021",
+      "path": "modules/documentation/km-readme-021.json",
+      "document_id": "km-readme",
+      "evidence_unit_id": "km-readme:chars:7347-7773",
+      "excerpt_sha256_utf8": "c49f266bcb54e02a19b79d65248d4ee68d47a612081e1e55d714cc6cffbf48a7"
+    },
+    {
+      "module_key": "documentation/km-readme-022",
+      "path": "modules/documentation/km-readme-022.json",
+      "document_id": "km-readme",
+      "evidence_unit_id": "km-readme:chars:7773-9363",
+      "excerpt_sha256_utf8": "5441533abb5c7d197947faca843935d19c9590679ec5d83623053d0314858c8e"
+    },
+    {
+      "module_key": "documentation/km-readme-023",
+      "path": "modules/documentation/km-readme-023.json",
+      "document_id": "km-readme",
+      "evidence_unit_id": "km-readme:chars:9363-10063",
+      "excerpt_sha256_utf8": "79feb04098df4e977d99d55be4db9d21b5bb5b82431d70e8d135e4c477a1d0e1"
+    },
+    {
+      "module_key": "documentation/km-readme-024",
+      "path": "modules/documentation/km-readme-024.json",
+      "document_id": "km-readme",
+      "evidence_unit_id": "km-readme:chars:10063-11304",
+      "excerpt_sha256_utf8": "73c5de859b1bdb374b0b884d6837c93cfd85c248bb3bfac20b29e4713682354c"
+    },
+    {
+      "module_key": "documentation/km-readme-025",
+      "path": "modules/documentation/km-readme-025.json",
+      "document_id": "km-readme",
+      "evidence_unit_id": "km-readme:chars:11304-12023",
+      "excerpt_sha256_utf8": "4a3cf2f9e1f5986b2869aabc61a0ee5536ffaca6c8853ae78dc868a39fd3f4a3"
+    },
+    {
+      "module_key": "documentation/km-readme-026",
+      "path": "modules/documentation/km-readme-026.json",
+      "document_id": "km-readme",
+      "evidence_unit_id": "km-readme:chars:12023-12628",
+      "excerpt_sha256_utf8": "554d0514b3673f86453a3c6adfec98783a9f2071ef7c99e4ffd852e7b6b2f2a1"
+    },
+    {
+      "module_key": "documentation/km-readme-027",
+      "path": "modules/documentation/km-readme-027.json",
+      "document_id": "km-readme",
+      "evidence_unit_id": "km-readme:chars:12628-12929",
+      "excerpt_sha256_utf8": "99788993f66c86628568fad4f971cc75893bae44b6c7d04b15110be4bc248d69"
+    },
+    {
+      "module_key": "documentation/km-readme-028",
+      "path": "modules/documentation/km-readme-028.json",
+      "document_id": "km-readme",
+      "evidence_unit_id": "km-readme:chars:12929-13394",
+      "excerpt_sha256_utf8": "330e6719d707158d69072a56157d5ce796b59ca370d8adca1d724aa85839e9ed"
+    },
+    {
+      "module_key": "documentation/km-readme-029",
+      "path": "modules/documentation/km-readme-029.json",
+      "document_id": "km-readme",
+      "evidence_unit_id": "km-readme:chars:13394-14090",
+      "excerpt_sha256_utf8": "2423fbb55eb3c68dbd11d60c78fc00089bf43102441d62a6d604d97d27ac5439"
+    },
+    {
+      "module_key": "documentation/km-readme-030",
+      "path": "modules/documentation/km-readme-030.json",
+      "document_id": "km-readme",
+      "evidence_unit_id": "km-readme:chars:14090-14610",
+      "excerpt_sha256_utf8": "049c3e69a71d81b064eca5f53e67749d3b681a3bc6f1f46701f4b753466db402"
+    },
+    {
+      "module_key": "documentation/km-readme-031",
+      "path": "modules/documentation/km-readme-031.json",
+      "document_id": "km-readme",
+      "evidence_unit_id": "km-readme:chars:14610-14768",
+      "excerpt_sha256_utf8": "80bb4e3380f66c1771567b65846c45c83a17f6047b1807b5d6b5c4aa2296720c"
+    },
+    {
+      "module_key": "documentation/km-blueprint-001",
+      "path": "modules/documentation/km-blueprint-001.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:30-233",
+      "excerpt_sha256_utf8": "bf6310843fe70fe3bf2903c4415d87d6a60932a0dba6f3a1811c729d3cd73243"
+    },
+    {
+      "module_key": "documentation/km-blueprint-002",
+      "path": "modules/documentation/km-blueprint-002.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:233-433",
+      "excerpt_sha256_utf8": "0c9958f94ed4ad26fd42721dd595d79e59a7b04b759d69687e6012ee234e82a5"
+    },
+    {
+      "module_key": "documentation/km-blueprint-003",
+      "path": "modules/documentation/km-blueprint-003.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:458-1004",
+      "excerpt_sha256_utf8": "959fd7c8ec7c1c24bd5d0781a02eb71f2c71aec355925bcf5c241764303d76a6"
+    },
+    {
+      "module_key": "documentation/km-blueprint-004",
+      "path": "modules/documentation/km-blueprint-004.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:1015-2726",
+      "excerpt_sha256_utf8": "87fe436c0501828babef6f5ab331b95d13e1ac54c4768f48b9f5ee87d3bdc8dc"
+    },
+    {
+      "module_key": "documentation/km-blueprint-005",
+      "path": "modules/documentation/km-blueprint-005.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:2726-5237",
+      "excerpt_sha256_utf8": "93330a227d2b1d212880da1401f734519f742dff37d0bc701d54e5b9e58d2797"
+    },
+    {
+      "module_key": "documentation/km-blueprint-006",
+      "path": "modules/documentation/km-blueprint-006.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:5237-7159",
+      "excerpt_sha256_utf8": "3d2c83700b17ff7863e240f84d5ee4f7ddec6e98fa15b2632e0ad5541322ff5b"
+    },
+    {
+      "module_key": "documentation/km-blueprint-007",
+      "path": "modules/documentation/km-blueprint-007.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:7159-7873",
+      "excerpt_sha256_utf8": "0f0d9231610f9b44a82c0c0529a4f6de4feb74d9ac0ab9190829231da5ee9c74"
+    },
+    {
+      "module_key": "documentation/km-blueprint-008",
+      "path": "modules/documentation/km-blueprint-008.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:7873-14219",
+      "excerpt_sha256_utf8": "026d7596ada6019819a59b9d24716325c8d33082dd0eaaf06c884d1d2129fff6"
+    },
+    {
+      "module_key": "documentation/km-blueprint-009",
+      "path": "modules/documentation/km-blueprint-009.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:14219-16564",
+      "excerpt_sha256_utf8": "a57410715fe9bbe9bc00bcd1b8e24689b9a883c2d363801840cbaf4c37ea7278"
+    },
+    {
+      "module_key": "documentation/km-blueprint-010",
+      "path": "modules/documentation/km-blueprint-010.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:16564-19624",
+      "excerpt_sha256_utf8": "9970f46fec1f20d1087438b52900aa96482ca188ee326ed02c1b01ee8cf6fa17"
+    },
+    {
+      "module_key": "documentation/km-blueprint-011",
+      "path": "modules/documentation/km-blueprint-011.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:19651-19856",
+      "excerpt_sha256_utf8": "99002e772f553e0a8912b671c1ee2b9b975a9bad0d09dc4b9e802a0c1822e240"
+    },
+    {
+      "module_key": "documentation/km-blueprint-012",
+      "path": "modules/documentation/km-blueprint-012.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:19856-21300",
+      "excerpt_sha256_utf8": "ca309be58a61f5596092867415d2afcb1160fbc04d8b3762e5431d3808a9613e"
+    },
+    {
+      "module_key": "documentation/km-blueprint-013",
+      "path": "modules/documentation/km-blueprint-013.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:21300-22017",
+      "excerpt_sha256_utf8": "9c8a01aad2ff39d657619b31fc890c0dd7bf8cfb4e380d734cd4fc84540b1575"
+    },
+    {
+      "module_key": "documentation/km-blueprint-014",
+      "path": "modules/documentation/km-blueprint-014.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:22032-24397",
+      "excerpt_sha256_utf8": "87d27a55eaea9a2cba73f2c1a54af0c8cea659002db1fc0d427718bfaaded00c"
+    },
+    {
+      "module_key": "documentation/km-blueprint-015",
+      "path": "modules/documentation/km-blueprint-015.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:24397-24935",
+      "excerpt_sha256_utf8": "8e159829eece1f1b64193fa9bc6c0f2a838d704a6f2257a6c577a0e783567a25"
+    },
+    {
+      "module_key": "documentation/km-blueprint-016",
+      "path": "modules/documentation/km-blueprint-016.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:24935-25111",
+      "excerpt_sha256_utf8": "c62b31bee59594b51a1d3ae9013031389b19e46e531eb32415015bbaaf438715"
+    },
+    {
+      "module_key": "documentation/km-blueprint-017",
+      "path": "modules/documentation/km-blueprint-017.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:25111-30346",
+      "excerpt_sha256_utf8": "95f156acda9a93d6fd1e3f3c8f3f395f115ce80ba072b8f2962f38c4cd8b0ebb"
+    },
+    {
+      "module_key": "documentation/km-blueprint-018",
+      "path": "modules/documentation/km-blueprint-018.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:30346-30843",
+      "excerpt_sha256_utf8": "3ed03682658a1da88ed29c6f6f10c00127edeb941d4a173e772965c7b4b989b9"
+    },
+    {
+      "module_key": "documentation/km-blueprint-019",
+      "path": "modules/documentation/km-blueprint-019.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:30879-31216",
+      "excerpt_sha256_utf8": "601e62124634cd9ae879d7039908b891a0f8e4b2e701c5f9167d12d98384793c"
+    },
+    {
+      "module_key": "documentation/km-blueprint-020",
+      "path": "modules/documentation/km-blueprint-020.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:31216-32547",
+      "excerpt_sha256_utf8": "96231079387ad16f45da2543a855638f917da6af76c4aef577ffa8100b63e1ac"
+    },
+    {
+      "module_key": "documentation/km-blueprint-021",
+      "path": "modules/documentation/km-blueprint-021.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:32547-40968",
+      "excerpt_sha256_utf8": "34a9c95e8458bf188018bfd2b9733da68597455e95bcec6ae73da2cf139de294"
+    },
+    {
+      "module_key": "documentation/km-blueprint-022",
+      "path": "modules/documentation/km-blueprint-022.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:40968-41774",
+      "excerpt_sha256_utf8": "5f49d312985b8efe3b1207024b8cbae31d8531e9e386c5a0add0ce37309abf03"
+    },
+    {
+      "module_key": "documentation/km-blueprint-023",
+      "path": "modules/documentation/km-blueprint-023.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:41774-42788",
+      "excerpt_sha256_utf8": "8912573c026061b152e177ae80796a706878990cec8440c11bca2d766355efe1"
+    },
+    {
+      "module_key": "documentation/km-blueprint-024",
+      "path": "modules/documentation/km-blueprint-024.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:42828-43304",
+      "excerpt_sha256_utf8": "5d0cd58198a639e1c06e3272a470fd850595593bccb64ef1fac7f9532ba18180"
+    },
+    {
+      "module_key": "documentation/km-blueprint-025",
+      "path": "modules/documentation/km-blueprint-025.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:43304-44985",
+      "excerpt_sha256_utf8": "f374f0e0886f76f5d76dfcd0a050f75e0a1b21c48c69519ca7e3b3cbb374b246"
+    },
+    {
+      "module_key": "documentation/km-blueprint-026",
+      "path": "modules/documentation/km-blueprint-026.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:44985-49827",
+      "excerpt_sha256_utf8": "5f07d0766aa46ddeb31f92549952d95b5b3e2866f5175206b2024eca4d9c46c3"
+    },
+    {
+      "module_key": "documentation/km-blueprint-027",
+      "path": "modules/documentation/km-blueprint-027.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:49827-53122",
+      "excerpt_sha256_utf8": "09f3586bd31460714075ae48f3137314bc6de066ddcef21704a68741888dac09"
+    },
+    {
+      "module_key": "documentation/km-blueprint-028",
+      "path": "modules/documentation/km-blueprint-028.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:53122-55806",
+      "excerpt_sha256_utf8": "6af84b7abd9cfab9d96279445dc0dade9b9d967eb756b65300f2961b606833bf"
+    },
+    {
+      "module_key": "documentation/km-blueprint-029",
+      "path": "modules/documentation/km-blueprint-029.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:55806-56902",
+      "excerpt_sha256_utf8": "5c73d00a96324495427a27113bbfdbc4c673dc24c946fc98ece9b7635b0e5faa"
+    },
+    {
+      "module_key": "documentation/km-blueprint-030",
+      "path": "modules/documentation/km-blueprint-030.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:56933-57128",
+      "excerpt_sha256_utf8": "331cca0e2cba470a091cae743de5b7df09bd58793d1fc64bbbe509fc7abda90a"
+    },
+    {
+      "module_key": "documentation/km-blueprint-031",
+      "path": "modules/documentation/km-blueprint-031.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:57128-58252",
+      "excerpt_sha256_utf8": "1cb570e505fb5e9a9a9116c37681beb7c077437d9fe58ab2a6a8f3f17ae814fe"
+    },
+    {
+      "module_key": "documentation/km-blueprint-032",
+      "path": "modules/documentation/km-blueprint-032.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:58252-66978",
+      "excerpt_sha256_utf8": "0a65a708b11b151337171f572d8b49bcc6793e87abd01b3ce1b3cad5f8e68764"
+    },
+    {
+      "module_key": "documentation/km-blueprint-033",
+      "path": "modules/documentation/km-blueprint-033.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:66978-68595",
+      "excerpt_sha256_utf8": "7159b338e7b03bcadcdd7b3d878cf1cca16c44f593c2b8661728048366005359"
+    },
+    {
+      "module_key": "documentation/km-blueprint-034",
+      "path": "modules/documentation/km-blueprint-034.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:68621-68752",
+      "excerpt_sha256_utf8": "5cb8eae72404a23bf8bdef6b6b26beacf809b1b2a1bd5444b90e767b8bafc392"
+    },
+    {
+      "module_key": "documentation/km-blueprint-035",
+      "path": "modules/documentation/km-blueprint-035.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:68752-70193",
+      "excerpt_sha256_utf8": "c15304109d62fb9655a31b574861ae40d7e138a7614f84f7b3fb7e18ed14b610"
+    },
+    {
+      "module_key": "documentation/km-blueprint-036",
+      "path": "modules/documentation/km-blueprint-036.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:70193-72008",
+      "excerpt_sha256_utf8": "0cfa7a0bf6c556001926e271fa1d823738517b14f1ac13c2d92743b2dde51dbc"
+    },
+    {
+      "module_key": "documentation/km-blueprint-037",
+      "path": "modules/documentation/km-blueprint-037.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:72008-76148",
+      "excerpt_sha256_utf8": "f132146af66f3057cd64b96489ab877efbbf9d8053cc2ed90058372ab222ca55"
+    },
+    {
+      "module_key": "documentation/km-blueprint-038",
+      "path": "modules/documentation/km-blueprint-038.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:76148-78303",
+      "excerpt_sha256_utf8": "4eefcc9c7c137eb3120d66ce0caa09784742a26235f7f5e19488348c89ef3158"
+    },
+    {
+      "module_key": "documentation/km-blueprint-039",
+      "path": "modules/documentation/km-blueprint-039.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:78303-78614",
+      "excerpt_sha256_utf8": "61aa92dd8589b7057f2b134250920d170aac8854df8fc3974a50da5ffb846dec"
+    },
+    {
+      "module_key": "documentation/km-blueprint-040",
+      "path": "modules/documentation/km-blueprint-040.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:78614-79763",
+      "excerpt_sha256_utf8": "4996274304f326379eb509005770e44625e5450c86ec6709a40760586551b8b2"
+    },
+    {
+      "module_key": "documentation/km-blueprint-041",
+      "path": "modules/documentation/km-blueprint-041.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:79795-79901",
+      "excerpt_sha256_utf8": "97c46e35436e40e8274dc71fcc46caadb52fd506af8faee9c5b1e9eac266285d"
+    },
+    {
+      "module_key": "documentation/km-blueprint-042",
+      "path": "modules/documentation/km-blueprint-042.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:79901-80560",
+      "excerpt_sha256_utf8": "8d8b55da08652d8c1913fa54c26db187a1859873a4dd8c94c71c1f761639f47c"
+    },
+    {
+      "module_key": "documentation/km-blueprint-043",
+      "path": "modules/documentation/km-blueprint-043.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:80560-81905",
+      "excerpt_sha256_utf8": "fb525cfa719efa9a0b1a865f13c0a3da47cd27bfc7013f1b9a3288d5c6518203"
+    },
+    {
+      "module_key": "documentation/km-blueprint-044",
+      "path": "modules/documentation/km-blueprint-044.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:81905-85803",
+      "excerpt_sha256_utf8": "51d44831f478d23467a16fc1b06298276957d40973a7db242de65cba79866489"
+    },
+    {
+      "module_key": "documentation/km-blueprint-045",
+      "path": "modules/documentation/km-blueprint-045.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:85803-88352",
+      "excerpt_sha256_utf8": "4b6c794f0f6ab7f4910dd05bb66741ace4ac1e62f5b9f5c4ef1cad832524fa01"
+    },
+    {
+      "module_key": "documentation/km-blueprint-046",
+      "path": "modules/documentation/km-blueprint-046.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:88371-88498",
+      "excerpt_sha256_utf8": "38d42e617976cbf7512562f278c2cbedc560c35eede3a0aea69445fee4897c47"
+    },
+    {
+      "module_key": "documentation/km-blueprint-047",
+      "path": "modules/documentation/km-blueprint-047.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:88498-88779",
+      "excerpt_sha256_utf8": "962756580821f6f080243d59b2cfe13e6d21f5ec5873ec284c3374b35ef5a2a3"
+    },
+    {
+      "module_key": "documentation/km-blueprint-048",
+      "path": "modules/documentation/km-blueprint-048.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:88779-94144",
+      "excerpt_sha256_utf8": "2de602ff023dfa13bd6e24d7ddb727a49da4d27fdf7387cd7bf93ebcf7084a5a"
+    },
+    {
+      "module_key": "documentation/km-blueprint-049",
+      "path": "modules/documentation/km-blueprint-049.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:94144-97299",
+      "excerpt_sha256_utf8": "fc28b019eb3a757e943550ca40b14ee352c0e4faadb44d2a9cd37152f2dce3e4"
+    },
+    {
+      "module_key": "documentation/km-blueprint-050",
+      "path": "modules/documentation/km-blueprint-050.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:97314-97381",
+      "excerpt_sha256_utf8": "41fcae82b1d4de6b09226f9875a4a4984c0181cb9673456c1ddcef43791a8436"
+    },
+    {
+      "module_key": "documentation/km-blueprint-051",
+      "path": "modules/documentation/km-blueprint-051.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:97381-100613",
+      "excerpt_sha256_utf8": "3a8cf16f191f82820dc503d116b565d0376dca9d9a7f4f056973dcc314b3db18"
+    },
+    {
+      "module_key": "documentation/km-blueprint-052",
+      "path": "modules/documentation/km-blueprint-052.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:100613-102684",
+      "excerpt_sha256_utf8": "d0aa2c5cc3a3c60a24c6ed90ca2c4c8cbd10e5fa0901e62fbfac032274071b4d"
+    },
+    {
+      "module_key": "documentation/km-blueprint-053",
+      "path": "modules/documentation/km-blueprint-053.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:102684-104231",
+      "excerpt_sha256_utf8": "830c6d2cf7ccc9252b725d4c51227cbf5e8000cc00298a5ad7f4c7c42dc8d1e7"
+    },
+    {
+      "module_key": "documentation/km-blueprint-054",
+      "path": "modules/documentation/km-blueprint-054.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:104231-104620",
+      "excerpt_sha256_utf8": "eff18a8ba20a9c561f87dee2a886f82772e2a332ba377c476319ee904722ae1b"
+    },
+    {
+      "module_key": "documentation/km-blueprint-055",
+      "path": "modules/documentation/km-blueprint-055.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:104636-105439",
+      "excerpt_sha256_utf8": "617ab39f25bdff67711ee197ef13d26cac62c37a1e9f46f56390cb44cebbb0e7"
+    },
+    {
+      "module_key": "documentation/km-blueprint-056",
+      "path": "modules/documentation/km-blueprint-056.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:105439-105861",
+      "excerpt_sha256_utf8": "49c459e8e3a51462dd03dcfb68b846e7ba8d61e866911763b60ba1a7e611e155"
+    },
+    {
+      "module_key": "documentation/km-blueprint-057",
+      "path": "modules/documentation/km-blueprint-057.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:105861-106094",
+      "excerpt_sha256_utf8": "67ab262bf6999db7a78b0b16358e1ba36560ec18bdae5da63e2f6bd2e46aa37f"
+    },
+    {
+      "module_key": "documentation/km-blueprint-058",
+      "path": "modules/documentation/km-blueprint-058.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:106094-106629",
+      "excerpt_sha256_utf8": "c18b52cf94a73b7457e6aa64960f550b658d08b211fabf98ea6657b3cfabb3ab"
+    },
+    {
+      "module_key": "documentation/km-blueprint-059",
+      "path": "modules/documentation/km-blueprint-059.json",
+      "document_id": "km-blueprint",
+      "evidence_unit_id": "km-blueprint:chars:106629-107053",
+      "excerpt_sha256_utf8": "848304dca1a7594e4556017a8bce59a06fac45a65ff5214b50d8275c663ab44e"
+    },
+    {
+      "module_key": "operations/enterprise-rollout-001",
+      "path": "modules/operations/enterprise-rollout-001.json",
+      "document_id": "enterprise-rollout",
+      "evidence_unit_id": "enterprise-rollout:chars:0-1036",
+      "excerpt_sha256_utf8": "32961639b9d5cf07f0267d24d0743d4a7a8af9dceac72a5a29744e88432c991a"
+    },
+    {
+      "module_key": "operations/migration-cutover-001",
+      "path": "modules/operations/migration-cutover-001.json",
+      "document_id": "migration-cutover",
+      "evidence_unit_id": "migration-cutover:chars:0-1047",
+      "excerpt_sha256_utf8": "4ee45b6553aba1b882a0752d92b799067f241aacafa2abffe4de5718b81508e5"
+    },
+    {
+      "module_key": "operations/single-node-deploy-001",
+      "path": "modules/operations/single-node-deploy-001.json",
+      "document_id": "single-node-deploy",
+      "evidence_unit_id": "single-node-deploy:chars:26-161",
+      "excerpt_sha256_utf8": "c2b56b82d0334dca3b0e2805e81fde3d23da3b04d129172a71f593db63d90a42"
+    },
+    {
+      "module_key": "operations/single-node-deploy-002",
+      "path": "modules/operations/single-node-deploy-002.json",
+      "document_id": "single-node-deploy",
+      "evidence_unit_id": "single-node-deploy:chars:161-2072",
+      "excerpt_sha256_utf8": "181ef5e9d86aa7da7eb9d9649c0985b1b88596d7e7ac37f97ca56c78b88284fb"
+    },
+    {
+      "module_key": "operations/single-node-deploy-003",
+      "path": "modules/operations/single-node-deploy-003.json",
+      "document_id": "single-node-deploy",
+      "evidence_unit_id": "single-node-deploy:chars:2072-4276",
+      "excerpt_sha256_utf8": "3e4c61d88f04c8cd35b5e60c803b9087fcf06b6347f715b3dc1319c5e466087e"
+    },
+    {
+      "module_key": "operations/single-node-deploy-004",
+      "path": "modules/operations/single-node-deploy-004.json",
+      "document_id": "single-node-deploy",
+      "evidence_unit_id": "single-node-deploy:chars:4276-4752",
+      "excerpt_sha256_utf8": "ee08c95cf01bd76479be4868f56ee17561cc97c9d015756ac803b3a7784c1ff7"
+    },
+    {
+      "module_key": "operations/single-node-deploy-005",
+      "path": "modules/operations/single-node-deploy-005.json",
+      "document_id": "single-node-deploy",
+      "evidence_unit_id": "single-node-deploy:chars:4752-5341",
+      "excerpt_sha256_utf8": "307332ce8786e07a9dce662c1537cd2b7866f751479cc259832d70ce88c37427"
+    },
+    {
+      "module_key": "operations/observability-001",
+      "path": "modules/operations/observability-001.json",
+      "document_id": "observability",
+      "evidence_unit_id": "observability:chars:0-45",
+      "excerpt_sha256_utf8": "ed2e07e509d161238f889ce12a0a95509b9a2e6b47e6c972410605f9d0361b98"
+    },
+    {
+      "module_key": "operations/observability-002",
+      "path": "modules/operations/observability-002.json",
+      "document_id": "observability",
+      "evidence_unit_id": "observability:chars:45-403",
+      "excerpt_sha256_utf8": "2f7c3312c24fc58e96a02f13d3ba73d5f90aa378b3ad99d45fd91d0d32b4f1eb"
+    },
+    {
+      "module_key": "operations/observability-003",
+      "path": "modules/operations/observability-003.json",
+      "document_id": "observability",
+      "evidence_unit_id": "observability:chars:403-642",
+      "excerpt_sha256_utf8": "cff38271a8ad7aecf5c210c8eea02a46458235292a55684cc676674d75e91f4a"
+    },
+    {
+      "module_key": "operations/observability-004",
+      "path": "modules/operations/observability-004.json",
+      "document_id": "observability",
+      "evidence_unit_id": "observability:chars:642-954",
+      "excerpt_sha256_utf8": "ea43ae6f18731de6e8a43e372829297ad85b285bce417284e4c443741646d0f7"
+    },
+    {
+      "module_key": "operations/observability-005",
+      "path": "modules/operations/observability-005.json",
+      "document_id": "observability",
+      "evidence_unit_id": "observability:chars:954-1136",
+      "excerpt_sha256_utf8": "99b4611edc239e6cc9667a00e0110b55f9835c11286b884f5cf04f2e04193eb0"
+    },
+    {
+      "module_key": "implementation/module-schemas-001",
+      "path": "modules/implementation/module-schemas-001.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:242-307",
+      "excerpt_sha256_utf8": "a1edb55baf1cfcdfdc071da7f7ae416c1e13ccd3f45118ff4558e2cfa7bac44b"
+    },
+    {
+      "module_key": "implementation/module-schemas-002",
+      "path": "modules/implementation/module-schemas-002.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:309-497",
+      "excerpt_sha256_utf8": "1c786eda6deef4d6449ebee454af34a5f0e3416953937336ed902d1f9b79fb0a"
+    },
+    {
+      "module_key": "implementation/module-schemas-003",
+      "path": "modules/implementation/module-schemas-003.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:501-743",
+      "excerpt_sha256_utf8": "673b5763c8d3db35791db7bfda74e0f4d171e014443afb3f96a33fc2ecb2f6ce"
+    },
+    {
+      "module_key": "implementation/module-schemas-004",
+      "path": "modules/implementation/module-schemas-004.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:745-1246",
+      "excerpt_sha256_utf8": "8d030b71e06fe5ca62a319748805e514dcf636a009cebc1d2d44302c66f9a5a9"
+    },
+    {
+      "module_key": "implementation/module-schemas-005",
+      "path": "modules/implementation/module-schemas-005.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:1248-1702",
+      "excerpt_sha256_utf8": "d86f4e68cb11b6b9ccbece814e9c448302b327e01baca31ef8baea58089a003c"
+    },
+    {
+      "module_key": "implementation/module-schemas-006",
+      "path": "modules/implementation/module-schemas-006.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:1704-1949",
+      "excerpt_sha256_utf8": "4c5b3e3c2df8fb805cf1044064861b27f096ce7aaa0484f37a4dc98529b2883d"
+    },
+    {
+      "module_key": "implementation/module-schemas-007",
+      "path": "modules/implementation/module-schemas-007.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:1951-2134",
+      "excerpt_sha256_utf8": "118f4fd19eba28942d63bff077f39a7ae4716bbedab79e42ce5332f0e1677bcb"
+    },
+    {
+      "module_key": "implementation/module-schemas-008",
+      "path": "modules/implementation/module-schemas-008.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:2136-2576",
+      "excerpt_sha256_utf8": "c414c3d8db900b0959f49724fa43b4f7ac7a3e91432d28d9683e18614edeaaff"
+    },
+    {
+      "module_key": "implementation/module-schemas-009",
+      "path": "modules/implementation/module-schemas-009.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:2578-3672",
+      "excerpt_sha256_utf8": "825ca1ddc8ebfefbd86637ba84f31412b3f7f8108fc931291e9071e8bfc108b8"
+    },
+    {
+      "module_key": "implementation/module-schemas-010",
+      "path": "modules/implementation/module-schemas-010.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:3674-4178",
+      "excerpt_sha256_utf8": "d94e5dee23bbc517925a987244ab7799ce0b97fadc6626c54bc4909393ac4d70"
+    },
+    {
+      "module_key": "implementation/module-schemas-011",
+      "path": "modules/implementation/module-schemas-011.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:4182-5249",
+      "excerpt_sha256_utf8": "ef8736a06dc9e98b3362bb835c746ec0695b6bf43fd27eacab45628006193388"
+    },
+    {
+      "module_key": "implementation/module-schemas-012",
+      "path": "modules/implementation/module-schemas-012.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:5253-6077",
+      "excerpt_sha256_utf8": "07d75a36a84fbe15a853b67f8fa830f131ca61200d7e6c9c0fa8a9ea7eb1b4d4"
+    },
+    {
+      "module_key": "implementation/module-schemas-013",
+      "path": "modules/implementation/module-schemas-013.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:6081-6261",
+      "excerpt_sha256_utf8": "e6e22237f291814a96c3e2d64f9b2e3f07c63530a916c3fed74316f7dc2e3503"
+    },
+    {
+      "module_key": "implementation/module-schemas-014",
+      "path": "modules/implementation/module-schemas-014.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:6265-6409",
+      "excerpt_sha256_utf8": "63f247c670a600a085ce4dff13656216756e2b6aab4c48c31bb2bf4a3948fd44"
+    },
+    {
+      "module_key": "implementation/module-schemas-015",
+      "path": "modules/implementation/module-schemas-015.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:6413-6583",
+      "excerpt_sha256_utf8": "eafeb48216deaf7d077f17d39177f61b0fd111d6ca923f9c95a352730d1e668d"
+    },
+    {
+      "module_key": "implementation/module-schemas-016",
+      "path": "modules/implementation/module-schemas-016.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:6587-8941",
+      "excerpt_sha256_utf8": "761eac4e4a1026773f4c69adaa0dee989f0f9ebe0d0321b3e706c74d6e0b94cb"
+    },
+    {
+      "module_key": "implementation/module-schemas-017",
+      "path": "modules/implementation/module-schemas-017.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:8945-9125",
+      "excerpt_sha256_utf8": "d23db4354e17bee478e62f6098ae623f444244572794788b887103b103e5a0eb"
+    },
+    {
+      "module_key": "implementation/module-schemas-018",
+      "path": "modules/implementation/module-schemas-018.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:9129-9332",
+      "excerpt_sha256_utf8": "124933b1451651399c1c457a2c4dd982fd79712b09536763af9d08772b7481e1"
+    },
+    {
+      "module_key": "implementation/module-schemas-019",
+      "path": "modules/implementation/module-schemas-019.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:9336-9420",
+      "excerpt_sha256_utf8": "41e07f9aead453e65df4329dc8495c1a13434b22746c6a4cd096fb2366e46851"
+    },
+    {
+      "module_key": "implementation/module-schemas-020",
+      "path": "modules/implementation/module-schemas-020.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:9424-9483",
+      "excerpt_sha256_utf8": "b75e7bf1fcdc3e23297f94ff178de42f8737cc99af7919cadd55e8df4b85d2f9"
+    },
+    {
+      "module_key": "implementation/module-schemas-021",
+      "path": "modules/implementation/module-schemas-021.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:9485-9822",
+      "excerpt_sha256_utf8": "cea764f38ca68ff64e4e9b8c00cf6a1f93aaec5f857ff76431b94b5f014867dc"
+    },
+    {
+      "module_key": "implementation/module-schemas-022",
+      "path": "modules/implementation/module-schemas-022.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:9824-10005",
+      "excerpt_sha256_utf8": "c7c33b11fc03c867ed77622ed353b0fa34d4f4fe2c86264f5154221972bb62e9"
+    },
+    {
+      "module_key": "implementation/module-schemas-023",
+      "path": "modules/implementation/module-schemas-023.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:10009-10400",
+      "excerpt_sha256_utf8": "590fe4e5cc2441cdfcedc14e838a747ce8988d2149777a9bcf2cae7dc3bc9995"
+    },
+    {
+      "module_key": "implementation/module-schemas-024",
+      "path": "modules/implementation/module-schemas-024.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:10404-10581",
+      "excerpt_sha256_utf8": "b824551bd0df3f5e394959e9e1c372248542adde31cdfff55f3e95e3e3987af4"
+    },
+    {
+      "module_key": "implementation/module-schemas-025",
+      "path": "modules/implementation/module-schemas-025.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:10585-10715",
+      "excerpt_sha256_utf8": "d8ff2ed4857c4f61be747d28435c13f7caa0b08011335a5c7a4a093ef1c2bc2a"
+    },
+    {
+      "module_key": "implementation/module-schemas-026",
+      "path": "modules/implementation/module-schemas-026.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:10749-10927",
+      "excerpt_sha256_utf8": "7e3b268afaa9ab88c384319349d70e7247ae4674291d078b8d7eb140990a255b"
+    },
+    {
+      "module_key": "implementation/module-schemas-027",
+      "path": "modules/implementation/module-schemas-027.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:10931-11024",
+      "excerpt_sha256_utf8": "f621dcabba02e871f8b2725000111c568b913dcc6e2e4b27ef885f0843c0666c"
+    },
+    {
+      "module_key": "implementation/module-schemas-028",
+      "path": "modules/implementation/module-schemas-028.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:11028-11162",
+      "excerpt_sha256_utf8": "441f1aee0622ab1cba51ce78427046f8bbc000b7e765a4d7a6b3b94ba7203208"
+    },
+    {
+      "module_key": "implementation/module-schemas-029",
+      "path": "modules/implementation/module-schemas-029.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:11166-11513",
+      "excerpt_sha256_utf8": "d45d6d4452003a6bfcba0bff9300b6ec2b96b10d766f82ea4127788dddb893cd"
+    },
+    {
+      "module_key": "implementation/module-schemas-030",
+      "path": "modules/implementation/module-schemas-030.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:11551-11824",
+      "excerpt_sha256_utf8": "42c65cacb921cff79ca214d29a36e2096fadc01a16bf4a0cfac2a30316ad54d1"
+    },
+    {
+      "module_key": "implementation/module-schemas-031",
+      "path": "modules/implementation/module-schemas-031.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:11828-12170",
+      "excerpt_sha256_utf8": "4da8fce02d994e9dec04af916b77f9f3297f754ef984fd46e7677b8d414a473c"
+    },
+    {
+      "module_key": "implementation/module-schemas-032",
+      "path": "modules/implementation/module-schemas-032.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:12174-12227",
+      "excerpt_sha256_utf8": "0dfe813afced3cb3298dab94b5630d52ffa178f30815a87b4b2a02c2b138053d"
+    },
+    {
+      "module_key": "implementation/module-schemas-033",
+      "path": "modules/implementation/module-schemas-033.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:12229-12850",
+      "excerpt_sha256_utf8": "fc3f9eb0d347fb6eff6a68e261107e5ff489829ff5ab3ad7b1867f220fbbb20b"
+    },
+    {
+      "module_key": "implementation/module-schemas-034",
+      "path": "modules/implementation/module-schemas-034.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:12852-13535",
+      "excerpt_sha256_utf8": "f198f37e5a005c199a1696505bc90b6afb0ac018654d81f1c0dfd7ad2ab1e3ef"
+    },
+    {
+      "module_key": "implementation/module-schemas-035",
+      "path": "modules/implementation/module-schemas-035.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:13537-14983",
+      "excerpt_sha256_utf8": "e2ae45d5f9f1dab575cde97dc5ef46f26fedffd60d44438ca51383f76d8cd19c"
+    },
+    {
+      "module_key": "implementation/module-schemas-036",
+      "path": "modules/implementation/module-schemas-036.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:15035-15243",
+      "excerpt_sha256_utf8": "02f7cd96ce239e1338082764caa4b43f46a5655d152917f162b98cba0871a4da"
+    },
+    {
+      "module_key": "implementation/module-schemas-037",
+      "path": "modules/implementation/module-schemas-037.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:15247-15614",
+      "excerpt_sha256_utf8": "c40dff8f8a6f9ed3d0a3ae2540629984088c2b4f0ba48a92d760eea77a9309b2"
+    },
+    {
+      "module_key": "implementation/module-schemas-038",
+      "path": "modules/implementation/module-schemas-038.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:15618-15747",
+      "excerpt_sha256_utf8": "c29a016ccb4d4b47f6cb826c13273b6bf02c90e6ef62dc57c8547a6c9edc082f"
+    },
+    {
+      "module_key": "implementation/module-schemas-039",
+      "path": "modules/implementation/module-schemas-039.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:15751-16089",
+      "excerpt_sha256_utf8": "5170985cff5ad567e3c92baf7db6669c3c5ed7dcea90e946e8c53f336fc1ae12"
+    },
+    {
+      "module_key": "implementation/module-schemas-040",
+      "path": "modules/implementation/module-schemas-040.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:16140-16309",
+      "excerpt_sha256_utf8": "ad491391fe252e6150a8c7069be6c8482daab61d965794cda0e257a2c6af77c5"
+    },
+    {
+      "module_key": "implementation/module-schemas-041",
+      "path": "modules/implementation/module-schemas-041.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:16313-16451",
+      "excerpt_sha256_utf8": "6417c264219488530127619991601856d034aa373b66b3d66c58f92293c3135c"
+    },
+    {
+      "module_key": "implementation/module-schemas-042",
+      "path": "modules/implementation/module-schemas-042.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:16455-16551",
+      "excerpt_sha256_utf8": "b1c823d74854b40f6544ead52885f0e097cb66f3388712ad58d06bc56b074f8a"
+    },
+    {
+      "module_key": "implementation/module-schemas-043",
+      "path": "modules/implementation/module-schemas-043.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:16555-17000",
+      "excerpt_sha256_utf8": "9f4f9e5e62fe48e396b14fa06a19a01cffcf3bd3ffb53db7f6b842887cb90ea2"
+    },
+    {
+      "module_key": "implementation/module-schemas-044",
+      "path": "modules/implementation/module-schemas-044.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:17050-17182",
+      "excerpt_sha256_utf8": "6e23a104ba019a2b343ad7bf92149955a092f202a9678a836616de43557f04e8"
+    },
+    {
+      "module_key": "implementation/module-schemas-045",
+      "path": "modules/implementation/module-schemas-045.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:17186-17303",
+      "excerpt_sha256_utf8": "720efc355655a9d38c3183525888db5570fbfc6c3b67bb1c520df616c2ed5c28"
+    },
+    {
+      "module_key": "implementation/module-schemas-046",
+      "path": "modules/implementation/module-schemas-046.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:17307-17495",
+      "excerpt_sha256_utf8": "3702e1c172b9947d07f944e2b42df6b3d3061689fd9ba9a8335a38a1828ca90e"
+    },
+    {
+      "module_key": "implementation/module-schemas-047",
+      "path": "modules/implementation/module-schemas-047.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:17499-17646",
+      "excerpt_sha256_utf8": "12f2237f486d617634caa0d991c8d990559e87f46bc042e33c9638d15e4e8519"
+    },
+    {
+      "module_key": "implementation/module-schemas-048",
+      "path": "modules/implementation/module-schemas-048.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:17650-18025",
+      "excerpt_sha256_utf8": "c1232789c534135e97e8aad89d2dc8d6b2071e6fa36e59713a3173f903615737"
+    },
+    {
+      "module_key": "implementation/module-schemas-049",
+      "path": "modules/implementation/module-schemas-049.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:18075-18203",
+      "excerpt_sha256_utf8": "bdce077b59290675181b4b9749574a58b1cc884073cb8abcfa65b1796f43571a"
+    },
+    {
+      "module_key": "implementation/module-schemas-050",
+      "path": "modules/implementation/module-schemas-050.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:18207-18476",
+      "excerpt_sha256_utf8": "41da6174cad38cac8a18e19eaae980ed61acce440f27ceb2676c53d091d6a312"
+    },
+    {
+      "module_key": "implementation/module-schemas-051",
+      "path": "modules/implementation/module-schemas-051.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:18480-18873",
+      "excerpt_sha256_utf8": "a8d64e029bec8d5cf1ed344c2351cf255040c76d007d781aebfc7f865fae04fd"
+    },
+    {
+      "module_key": "implementation/module-schemas-052",
+      "path": "modules/implementation/module-schemas-052.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:18875-19087",
+      "excerpt_sha256_utf8": "0162958e04be769c639b01427f960b46dd4175fdd8edf4148fd120471cb09aca"
+    },
+    {
+      "module_key": "implementation/module-schemas-053",
+      "path": "modules/implementation/module-schemas-053.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:19089-19260",
+      "excerpt_sha256_utf8": "4e0c76addadf7d022de91bcff557626c629a4a6f5bbb16f9b0cefe4c31d43d81"
+    },
+    {
+      "module_key": "implementation/module-schemas-054",
+      "path": "modules/implementation/module-schemas-054.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:19262-19408",
+      "excerpt_sha256_utf8": "d1a5754e19c29673daa8d33041d8c8a30908af4b5cd07eed5cb9ed03ae345adf"
+    },
+    {
+      "module_key": "implementation/module-schemas-055",
+      "path": "modules/implementation/module-schemas-055.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:19410-19745",
+      "excerpt_sha256_utf8": "a20c9e2a163e69ee94fae97ee339766889c07f72855947d5acd48f426c894c72"
+    },
+    {
+      "module_key": "implementation/module-schemas-056",
+      "path": "modules/implementation/module-schemas-056.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:19799-20014",
+      "excerpt_sha256_utf8": "f2b08011183d76cdd44c87b7c257f754f3f04ca087fb2f3154fce7f061457a07"
+    },
+    {
+      "module_key": "implementation/module-schemas-057",
+      "path": "modules/implementation/module-schemas-057.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:20060-20177",
+      "excerpt_sha256_utf8": "0b4cc23652eb70728f9d63ff457d93a32e7dd3c8be358e6f6938b9ad6c33effa"
+    },
+    {
+      "module_key": "implementation/module-schemas-058",
+      "path": "modules/implementation/module-schemas-058.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:20181-20295",
+      "excerpt_sha256_utf8": "d4e46629842898eef3963742aebb037a8247b6acafaf787dafb22adddf93cdd1"
+    },
+    {
+      "module_key": "implementation/module-schemas-059",
+      "path": "modules/implementation/module-schemas-059.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:20338-20434",
+      "excerpt_sha256_utf8": "15832e3beac21bc1c9d24b0d0f64f11f815731a0fdaa0326f7d590db94963485"
+    },
+    {
+      "module_key": "implementation/module-schemas-060",
+      "path": "modules/implementation/module-schemas-060.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:20438-20741",
+      "excerpt_sha256_utf8": "2bead7d03c0348eeb8163b7607e142af7d0251beefe5f69622b8b2198bb021f6"
+    },
+    {
+      "module_key": "implementation/module-schemas-061",
+      "path": "modules/implementation/module-schemas-061.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:20745-21049",
+      "excerpt_sha256_utf8": "3ce107813852d6df512751a83d5cc7522062f6fa3784809271341a7dcaa0f6d5"
+    },
+    {
+      "module_key": "implementation/module-schemas-062",
+      "path": "modules/implementation/module-schemas-062.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:21053-21181",
+      "excerpt_sha256_utf8": "47e339751d9aa32a41268ef7ee925f1dcd795d1df7cd9be08debddc9a6a773d8"
+    },
+    {
+      "module_key": "implementation/module-schemas-063",
+      "path": "modules/implementation/module-schemas-063.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:21228-21668",
+      "excerpt_sha256_utf8": "7de4a81500bc329b913ea1e352a49671020f23cfd3cb9e3c15433414b2d27f62"
+    },
+    {
+      "module_key": "implementation/module-schemas-064",
+      "path": "modules/implementation/module-schemas-064.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:21672-21868",
+      "excerpt_sha256_utf8": "c07b3fcbcf9865aa2b609b791f07abb018efac88ff6d073e99f51ab89e9c388a"
+    },
+    {
+      "module_key": "implementation/module-schemas-065",
+      "path": "modules/implementation/module-schemas-065.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:21872-22071",
+      "excerpt_sha256_utf8": "e6d088b237e137f92d0428e43844dcf69b82861b20fd68643c7cde5b9987aabc"
+    },
+    {
+      "module_key": "implementation/module-schemas-066",
+      "path": "modules/implementation/module-schemas-066.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:22075-22249",
+      "excerpt_sha256_utf8": "48f9090d80856e52b72496a7d95cc3a6f6c84876ce22a8986e152e70b2ba3687"
+    },
+    {
+      "module_key": "implementation/module-schemas-067",
+      "path": "modules/implementation/module-schemas-067.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:22302-22428",
+      "excerpt_sha256_utf8": "fe3da4ecb5c58d279ae88f26c1c9e122bbc7935f8455eaa4ce217c63bf4770b2"
+    },
+    {
+      "module_key": "implementation/module-schemas-068",
+      "path": "modules/implementation/module-schemas-068.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:22432-22843",
+      "excerpt_sha256_utf8": "474cfdd314fdf34a15a7ce40a6910670e1c96228bf6f9aa88c83c37f0bf5bd96"
+    },
+    {
+      "module_key": "implementation/module-schemas-069",
+      "path": "modules/implementation/module-schemas-069.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:22847-23009",
+      "excerpt_sha256_utf8": "f4f2858b1c31fb63da1c40321ce32159f1c3a5f6f07cc7ce5c46f13d9ef4a098"
+    },
+    {
+      "module_key": "implementation/module-schemas-070",
+      "path": "modules/implementation/module-schemas-070.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:23013-23101",
+      "excerpt_sha256_utf8": "8c98689c33bcee4e3b18f05660bab22e9b0a96a4696ba75dd256e70e02017993"
+    },
+    {
+      "module_key": "implementation/module-schemas-071",
+      "path": "modules/implementation/module-schemas-071.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:23105-23284",
+      "excerpt_sha256_utf8": "e826844750d4990521e89bc6da5514dbbec7f25306167cf1e463ef441d7d176b"
+    },
+    {
+      "module_key": "implementation/module-schemas-072",
+      "path": "modules/implementation/module-schemas-072.json",
+      "document_id": "module-schemas",
+      "evidence_unit_id": "module-schemas:chars:23288-23458",
+      "excerpt_sha256_utf8": "aa7bf28e8e155980e6290351260df22d1d09538d814ba19accff9759bde67712"
+    },
+    {
+      "module_key": "implementation/routing-policy-001",
+      "path": "modules/implementation/routing-policy-001.json",
+      "document_id": "routing-policy",
+      "evidence_unit_id": "routing-policy:chars:212-382",
+      "excerpt_sha256_utf8": "61742e1168233239bb3f7b7e83f37b0776d55c36b2460ecdfd4d75017d75cdc1"
+    },
+    {
+      "module_key": "implementation/routing-policy-002",
+      "path": "modules/implementation/routing-policy-002.json",
+      "document_id": "routing-policy",
+      "evidence_unit_id": "routing-policy:chars:384-1733",
+      "excerpt_sha256_utf8": "5192127d8b92af3b8115a1a04f06690ddeb6a2f944c9e3b5294aeb2500223db7"
+    },
+    {
+      "module_key": "implementation/routing-policy-003",
+      "path": "modules/implementation/routing-policy-003.json",
+      "document_id": "routing-policy",
+      "evidence_unit_id": "routing-policy:chars:1735-3164",
+      "excerpt_sha256_utf8": "e7525cfad0261f75104f091fdce588bb911d38a5b0c82365955c3e51c964576e"
+    },
+    {
+      "module_key": "implementation/retrieval-metrics-001",
+      "path": "modules/implementation/retrieval-metrics-001.json",
+      "document_id": "retrieval-metrics",
+      "evidence_unit_id": "retrieval-metrics:chars:82-233",
+      "excerpt_sha256_utf8": "aabee1f8d09812c44a2bbb6e543038ee2e3851d34f7c3aa6a27c8a5139073283"
+    },
+    {
+      "module_key": "implementation/retrieval-metrics-002",
+      "path": "modules/implementation/retrieval-metrics-002.json",
+      "document_id": "retrieval-metrics",
+      "evidence_unit_id": "retrieval-metrics:chars:235-1179",
+      "excerpt_sha256_utf8": "aafa7c21c04e7aee78203562ef6fd1f0bb9115c5c8eabb57b83e940103a0c8e9"
+    },
+    {
+      "module_key": "implementation/markdown-format-001",
+      "path": "modules/implementation/markdown-format-001.json",
+      "document_id": "markdown-format",
+      "evidence_unit_id": "markdown-format:chars:1489-3724",
+      "excerpt_sha256_utf8": "4d1b4576060cf37d3ce3b4191dab2f8f97287148663fa696093760a7c9094831"
+    },
+    {
+      "module_key": "implementation/markdown-format-002",
+      "path": "modules/implementation/markdown-format-002.json",
+      "document_id": "markdown-format",
+      "evidence_unit_id": "markdown-format:chars:3726-5007",
+      "excerpt_sha256_utf8": "46a3102a6658d30e7a7bb19245d8056f3063b98f8e2425224d530eef489390e9"
+    },
+    {
+      "module_key": "implementation/markdown-format-003",
+      "path": "modules/implementation/markdown-format-003.json",
+      "document_id": "markdown-format",
+      "evidence_unit_id": "markdown-format:chars:5009-5684",
+      "excerpt_sha256_utf8": "6a12ca557c453f1e739e730378b785082e8d18c5b32df8f8263a127967b1be58"
+    },
+    {
+      "module_key": "implementation/markdown-format-004",
+      "path": "modules/implementation/markdown-format-004.json",
+      "document_id": "markdown-format",
+      "evidence_unit_id": "markdown-format:chars:5686-5878",
+      "excerpt_sha256_utf8": "5259a2855d3dc9e4ea419d84a2385498586df3ef30c72c694f663018c8be50f7"
+    }
+  ],
+  "case_scope": "single-project documentation and source-code case study",
+  "main_experiment_ready": false,
+  "external_api_used": false,
+  "review_status": "AUTOMATIC_EXTRACTION_NOT_HUMAN_APPROVED",
+  "rights_status": "NOT_REVIEWED_FOR_PUBLIC_RELEASE",
+  "limitations": [
+    "Docs and code are not independent corpora",
+    "Selected files are not a representative sample of external teams",
+    "Human-relevance judgments and actual system retrieval experiments not completed",
+    "Documentation claims are not proof of operational behavior"
+  ]
+}

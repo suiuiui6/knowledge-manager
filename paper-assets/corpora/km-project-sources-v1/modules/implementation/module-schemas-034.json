@@ -1,0 +1,41 @@
+{
+  "id": "module-schemas-034",
+  "category": "implementation",
+  "title": "module-schemas: RoutingPolicyConfig",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/schemas.py, section or definition RoutingPolicyConfig.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: RoutingPolicyConfig.",
+    "details": "class RoutingPolicyConfig(BaseModel):\n    category_priorities: Dict[str, List[str]] = Field(default_factory=dict)\n    task_type_category_priorities: Dict[str, List[str]] = Field(default_factory=dict)\n    task_type_allowed_statuses: Dict[str, List[str]] = Field(default_factory=dict)\n    mandatory_companions: Dict[str, List[str]] = Field(default_factory=dict)\n    risk_level_companions: Dict[str, List[str]] = Field(default_factory=dict)\n    risk_level_allowed_statuses: Dict[str, List[str]] = Field(default_factory=dict)\n    suppress_stale_sources: bool = True\n    suppress_expired: bool = True\n    agent_overrides: Dict[str, AgentRoutingPolicyConfig] = Field(default_factory=dict)\n",
+    "examples": "",
+    "references": "sources/module-schemas.py; module-schemas:chars:12852-13535; source SHA-256 c857e4a99e2e152db3aca0d1a9fc458bebe20ab352e24d0ae1f144a6594904a8",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "module-schemas"
+    ],
+    "related_modules": [
+      "implementation/module-schemas-033",
+      "implementation/module-schemas-035"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://module-schemas",
+    "source_spans": [
+      {
+        "external_id": "module-schemas",
+        "heading_path": [
+          "RoutingPolicyConfig"
+        ],
+        "excerpt": "class RoutingPolicyConfig(BaseModel):\n    category_priorities: Dict[str, List[str]] = Field(default_factory=dict)\n    task_type_category_priorities: Dict[str, List[str]] = Field(default_factory=dict)\n    task_type_allowed_statuses: Dict[str, List[str]] = Field(default_factory=dict)\n    mandatory_companions: Dict[str, List[str]] = Field(default_factory=dict)\n    risk_level_companions: Dict[str, List[str]] = Field(default_factory=dict)\n    risk_level_allowed_statuses: Dict[str, List[str]] = Field(default_factory=dict)\n    suppress_stale_sources: bool = True\n    suppress_expired: bool = True\n    agent_overrides: Dict[str, AgentRoutingPolicyConfig] = Field(default_factory=dict)\n",
+        "char_start": 12852,
+        "char_end": 13535
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

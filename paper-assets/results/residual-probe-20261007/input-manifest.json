@@ -1,0 +1,389 @@
+{
+  "files": [
+    {
+      "original": "knowledge-manager/src/knowledge_manager/admin_views.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/admin_views.py",
+      "sha256": "b38c91789f7e72a3a054f47761589c8a4663c072e663934f2b3696beefbd4f5c",
+      "byte_count": 2786
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/audit.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/audit.py",
+      "sha256": "832bdd6f451d7e062452882a2f968c223b445ff605393da2a3b733ef07814442",
+      "byte_count": 4333
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/auth.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/auth.py",
+      "sha256": "269b0e32427f9bdc3772db7182a76d224511821a7abac37f8cf4045e56a94a42",
+      "byte_count": 6138
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/backup_restore.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/backup_restore.py",
+      "sha256": "aa62f947195bb323979b8a3a6eec9808aa63959f9ef30bcbe3c22c82e6f537a4",
+      "byte_count": 4110
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/cache.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/cache.py",
+      "sha256": "bb86779ff2eb685de69a428f8c22cc38355d11c680b1d05d98b17e6a4081a52b",
+      "byte_count": 1795
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/chat.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/chat.py",
+      "sha256": "843d9b8e5f7d3257e56077386ad09f7c830786fbf7f0602c8b34160c2ce9d1ea",
+      "byte_count": 15381
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/cli.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/cli.py",
+      "sha256": "0a8661d55681e27f8d483b22115a236a6d0ebccba842dc5b05e5dcb3bb8ff047",
+      "byte_count": 136579
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/confluence.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/confluence.py",
+      "sha256": "8598e5a52ce1ec1e8b6a2b5d0b9e9386e5551c6bd7ae46b828557b61ce4badc6",
+      "byte_count": 2752
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/connect.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/connect.py",
+      "sha256": "73d3b4d55330037701a9ce4bb41ceedb6144f76f3f497e4bff3894362c40a40f",
+      "byte_count": 3761
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/deploy_proof.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/deploy_proof.py",
+      "sha256": "b9a561bcb85d5ac102915be636e1bf869dbb4856e64e34a8c56fffe40509bde8",
+      "byte_count": 2522
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/dual_view.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/dual_view.py",
+      "sha256": "cfd92412bba637edf80e4fe522ea6a4657ffe19df1ec0d075c791c4bf072fb87",
+      "byte_count": 1711
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/eval_runner.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/eval_runner.py",
+      "sha256": "9aeff62ae927deb4ca0853fc2c9c8afd2f4c4ea69d713132f2566a647425c56a",
+      "byte_count": 8320
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/extractor.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/extractor.py",
+      "sha256": "7ece85ac4528f075ec8c84bda364c4e8f25e2cde160ff8d33e1046bc8de401f5",
+      "byte_count": 18925
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/http_authz.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/http_authz.py",
+      "sha256": "2d1e16a74c944c2fd7ac3c8bc11de66d3f4ec9aba13e71508e656ffc473cb042",
+      "byte_count": 6714
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/http_server.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/http_server.py",
+      "sha256": "ecaff66a96a555b75903b62fb852a934bb3de0dba50072efbc7a88e556948d3a",
+      "byte_count": 36440
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/ingestion_jobs.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/ingestion_jobs.py",
+      "sha256": "cffc5f4dc1719a36af0785e22e846423c68677bc9f96c98b96b8be2f26d5ac73",
+      "byte_count": 7709
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/job_worker.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/job_worker.py",
+      "sha256": "fac4c4fe9f58540bc0f43ff7f4c962dce598de62f0ba6caed2e7ed2d84bbf94d",
+      "byte_count": 11152
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/lexical_index.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/lexical_index.py",
+      "sha256": "5752b43e4cad071e6bb2e21d68c9f702cbd23c2d936e6cfa0146108b104a03a5",
+      "byte_count": 3939
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/linter.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/linter.py",
+      "sha256": "34b75da69a03cd6ba2cb757fa55767cca8203f23c985baf93eb2df4e97d6d5b6",
+      "byte_count": 10363
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/llm_clients.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/llm_clients.py",
+      "sha256": "88b34a73c1527c3d576b37b105765cc91c7819f69940b044aebbb47716140aae",
+      "byte_count": 7627
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/markdown.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/markdown.py",
+      "sha256": "a69114b0b0d614064365eb97cb7f22d87eee8676342c8a25fdb7be1a520732f7",
+      "byte_count": 5938
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/marketplace.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/marketplace.py",
+      "sha256": "05b2ac7b9d300a1aea08f8b3e6c5419a51c150bf1d765f655240b7fafb2502c8",
+      "byte_count": 7760
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/materialized_views.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/materialized_views.py",
+      "sha256": "abefd8a4b9d04155134eca6e61b859e3d202a634527ab7a7d85df762ff21f14e",
+      "byte_count": 4141
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/mcp_server.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/mcp_server.py",
+      "sha256": "ad1a4a0e686ea688df5f407513dd3cc5e16ab71676fe58d8aefc08ea89b9a651",
+      "byte_count": 34776
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/memory.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/memory.py",
+      "sha256": "461cd32add1c505dc53656372b0f783f3df8c0be6def9554318e23ee0e018f26",
+      "byte_count": 7493
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/migration.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/migration.py",
+      "sha256": "0c95e9ad986ce26ff124fe66051c69b6514f2b3ce57b992046dca9732560ae6c",
+      "byte_count": 1107
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/module_cache.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/module_cache.py",
+      "sha256": "066722233b585875167177a7ed7bfd84322be120bda11b8f21250de838e2eb0c",
+      "byte_count": 949
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/notion.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/notion.py",
+      "sha256": "fa875e5acc222e401bdb014e5c64441d6d0d97455344dc5f8f633cbdcf462400",
+      "byte_count": 6033
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/ops_export.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/ops_export.py",
+      "sha256": "9047631ce8433210d07890536455e78f973310dca84c0ec20a4380a8c182c743",
+      "byte_count": 1848
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/performance_benchmarks.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/performance_benchmarks.py",
+      "sha256": "8dd6af6c494390dabd4c2a8da484f58e4451d50a1928132b5fd899c9c96bddc2",
+      "byte_count": 38382
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/performance_hotspots.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/performance_hotspots.py",
+      "sha256": "8598756d7553adc7c433ef51f64b3b1c8b615d3cf0f11cbdda5a0f7f9ffe9a8f",
+      "byte_count": 1512
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/plugin.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/plugin.py",
+      "sha256": "8c45b9cfffa5f081b5dc4ea518ab0f33824317c6ada733f3288d40e169ba92a9",
+      "byte_count": 5401
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/policy.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/policy.py",
+      "sha256": "fd1d389017565331ff43e5e6a855b952b927a9451513dd46d26c27750d155601",
+      "byte_count": 3164
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/rbac.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/rbac.py",
+      "sha256": "fb46bb1bdfbc344473cda94ae595b51861f64ffaa054e45da8b3b4184ec843c1",
+      "byte_count": 4781
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/recommendation_index.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/recommendation_index.py",
+      "sha256": "1840535fbfb263d9d28b291fee6c98c857d34c6dcce3cf9578a4cb312fe3202d",
+      "byte_count": 4936
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/researcher.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/researcher.py",
+      "sha256": "12db5d2ba0c392fe3356be56c480909c7749cc5b9447d7a0d80de3d153cb215b",
+      "byte_count": 12616
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/retrieval_eval.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/retrieval_eval.py",
+      "sha256": "eb886154589d35786510a7931efe2acfff6fbfae409284ab3b085ba055c58aaa",
+      "byte_count": 1179
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/runtime_checks.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/runtime_checks.py",
+      "sha256": "991a4de169ee1667b68a8607ad02a6b1768bd8fab9a20d56f2da018435ccdcc4",
+      "byte_count": 8290
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/runtime_env.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/runtime_env.py",
+      "sha256": "f80806be48e16526a607a692f5269aa3a17f2e1ab9d106dbf591457fa03532d8",
+      "byte_count": 1529
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/schemas.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/schemas.py",
+      "sha256": "c857e4a99e2e152db3aca0d1a9fc458bebe20ab352e24d0ae1f144a6594904a8",
+      "byte_count": 23604
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/search_projection.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/search_projection.py",
+      "sha256": "f64f2c07c479275181de92c8a1509a745ed57adcda5f9b7c42dee62f11d27e4a",
+      "byte_count": 6944
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/source_ingestion.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/source_ingestion.py",
+      "sha256": "b6386868ff42a44f62ab5db0f6162e2dbb5cbfd71cf142b542a108fb8fbf8bb2",
+      "byte_count": 9584
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/storage.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/storage.py",
+      "sha256": "834e99603da264c602939a77d49745ad26fa071d10303ea49472352bd27b4d03",
+      "byte_count": 91126
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/sync.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/sync.py",
+      "sha256": "0d1363b3068a132e5573ffb55b8590b5f9a278459994493d2f12048283f263fb",
+      "byte_count": 4926
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/tenancy.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/tenancy.py",
+      "sha256": "d8f2832f6cb73f052f42067232ebdf7fa53bbdfaba8ef6b1fcdde268648dcc52",
+      "byte_count": 525
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/tenant_views.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/tenant_views.py",
+      "sha256": "40d39e677ce85694733cf02a081f1624646a60495f6dbe72ab44df67aede0760",
+      "byte_count": 10857
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/tree_builder.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/tree_builder.py",
+      "sha256": "f193680d9c543ff76039937fa4efae618f1cb4bae0cacb786c61656d35acc570",
+      "byte_count": 5468
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/tree_navigator.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/tree_navigator.py",
+      "sha256": "a808fed2a9ba9cbb6f4eb2405ea0cd46c06b41a694ad844117687644f7b50623",
+      "byte_count": 11696
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/ui_fallback.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/ui_fallback.py",
+      "sha256": "c886c0af139cc741cec91ccc4a93a73e09b6323b556b2eb8c991815a5c38811b",
+      "byte_count": 41916
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/vector_index.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/vector_index.py",
+      "sha256": "228045d080fb05e70d2579ae8f36227376ebeaf24d44abe3725ed2b7e02f1897",
+      "byte_count": 4376
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/watch_scheduler.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/watch_scheduler.py",
+      "sha256": "b51a31e3c897b04169ad40ab25db7c89b2c65c53a1a8eb8bfd50699675d081ae",
+      "byte_count": 6587
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/webhooks.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/webhooks.py",
+      "sha256": "8b274dc286f843c8d101e9c9ca7576902c196a5c1a0fe9c38ade36386a27b703",
+      "byte_count": 5580
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/wikilinks.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/wikilinks.py",
+      "sha256": "88def37aca41263b23d94609927ab763a6ae2332ef8910d919d818e1998b6e9e",
+      "byte_count": 6678
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/worker_service.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/worker_service.py",
+      "sha256": "6ef28ab629ec4d7e6b929b5cfc5dd76fb97583c76b04120845e0fd5df1995060",
+      "byte_count": 1290
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/__init__.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/__init__.py",
+      "sha256": "924b0775529a16e9309c9350bbcd9b37e4bf8778a790e28fabaa09203683f113",
+      "byte_count": 92
+    },
+    {
+      "original": "knowledge-manager/src/knowledge_manager/__main__.py",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/src/knowledge_manager/__main__.py",
+      "sha256": "23f021d5485f1699ce66e38e629c0a93e41ebf333d797512864319026532c786",
+      "byte_count": 76
+    },
+    {
+      "original": "knowledge-manager/pyproject.toml",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/knowledge-manager/pyproject.toml",
+      "sha256": "abdfc8e56982fd5e5a9afd120db843104e96a3bce2c3df9db75cf37327d90d8e",
+      "byte_count": 1683
+    },
+    {
+      "original": "paper-assets/corpora/km-project-sources-v1/sources/single-node-deploy.md",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/paper-assets/corpora/km-project-sources-v1/sources/single-node-deploy.md",
+      "sha256": "c5ddb61a71a4bc324be1a620bbdbcca2f5d2808ab007da1f7d9a2c995197b91d",
+      "byte_count": 5341
+    },
+    {
+      "original": "paper-assets/corpora/km-project-sources-v1/manifest.json",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/paper-assets/corpora/km-project-sources-v1/manifest.json",
+      "sha256": "a4c4dac3498a3e4efee9cae09f88364bf80e73e2523295e8df623d78ba294e93",
+      "byte_count": 66815
+    },
+    {
+      "original": "paper-assets/corpora/km-project-sources-v1/modules/operations/single-node-deploy-001.json",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/paper-assets/corpora/km-project-sources-v1/modules/operations/single-node-deploy-001.json",
+      "sha256": "a0d3358e2e12d00d45de391858b016f72c2f4d2dcb4507e4488d6b6bd8bac2de",
+      "byte_count": 1748
+    },
+    {
+      "original": "paper-assets/corpora/km-project-sources-v1/modules/operations/single-node-deploy-002.json",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/paper-assets/corpora/km-project-sources-v1/modules/operations/single-node-deploy-002.json",
+      "sha256": "d625409bf66b4d6c9f37c6df7d3e56319951a60cedb71a13fdcd697750cdc616",
+      "byte_count": 5374
+    },
+    {
+      "original": "paper-assets/corpora/km-project-sources-v1/modules/operations/single-node-deploy-003.json",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/paper-assets/corpora/km-project-sources-v1/modules/operations/single-node-deploy-003.json",
+      "sha256": "d85e75a9879814b5fe5e49af4c9b59b8ec6333c3e24b6ed3d3c3cdc8b1ce827f",
+      "byte_count": 5994
+    },
+    {
+      "original": "paper-assets/corpora/km-project-sources-v1/modules/operations/single-node-deploy-004.json",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/paper-assets/corpora/km-project-sources-v1/modules/operations/single-node-deploy-004.json",
+      "sha256": "a5d3106f396c27ce56bf02c3ced32f67936f1a94432bc502b3f4934b8e291d62",
+      "byte_count": 2558
+    },
+    {
+      "original": "paper-assets/corpora/km-project-sources-v1/modules/operations/single-node-deploy-005.json",
+      "snapshot": "paper-assets/results/residual-probe-20261007/inputs/paper-assets/corpora/km-project-sources-v1/modules/operations/single-node-deploy-005.json",
+      "sha256": "fdadaec26bff0a57c172026f9b359aebea32e3e691058bfe3dbdd4f0f88ccc71",
+      "byte_count": 2646
+    }
+  ],
+  "script_sha256": "df631049c1031f2d9082bec4c66954585dce6b7704bc08039e35500c85d94c82"
+}

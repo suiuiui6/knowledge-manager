@@ -1,0 +1,314 @@
+import json
+import math
+import os
+import re
+import tempfile
+from pathlib import Path
+from typing import Any, Dict, List, Mapping, Optional, cast
+
+from snowballstemmer import stemmer as _snowball_stemmer  # type: ignore[import-untyped]
+
+from knowledge_manager.schemas import Index, Module
+
+
+_FIELD_WEIGHTS = {"title": 5, "tag": 3, "summary": 2, "overview": 1}
+_WORD_RE = re.compile(r"\w+")
+_EN_STEMMER: Any = _snowball_stemmer("english")
+
+_QUALITY_EXACT = 3
+_QUALITY_STEM = 2
+_QUALITY_PARTIAL = 1
+
+# BM25 parameters
+_BM25_K1 = 1.2
+_BM25_B = 0.75
+
+# Graph expansion discount (applied to heuristic score of triggering module)
+_EXPANSION_DISCOUNT = 0.4
+
+# Confidence multiplier
+_CONFIDENCE_WEIGHT = {"high": 1.0, "medium": 0.85, "low": 0.7}
+
+
+def _stem(word: str) -> str:
+    return cast(str, _EN_STEMMER.stemWord(word.lower()))
+
+
+def _module_full_text(module: Module) -> str:
+    return " ".join([
+        module.title,
+        " ".join(module.metadata.tags),
+        module.summary,
+        module.content.overview,
+        module.content.details,
+        module.content.examples,
+        module.content.references,
+        module.content.caveats,
+    ])
+
+
+def _field_stems(text: str) -> set[str]:
+    return {_stem(word) for word in _WORD_RE.findall(text)}
+
+
+def _atomic_write(path: Path, data: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(data, encoding="utf-8")
+    os.replace(tmp, path)
+
+
+def save_module(module: Module, kb_path: Path) -> None:
+    path = module.to_file_path(kb_path)
+    _atomic_write(path, module.model_dump_json(indent=2))
+
+
+def load_module(module_id: str, category: str, kb_path: Path) -> Optional[Module]:
+    path = kb_path / category / f"{module_id}.json"
+    if not path.exists():
+        return None
+    return Module.model_validate_json(path.read_text(encoding="utf-8"))
+
+
+def delete_module(module_id: str, category: str, kb_path: Path) -> bool:
+    path = kb_path / category / f"{module_id}.json"
+    if not path.exists():
+        return False
+    path.unlink()
+    return True
+
+
+def list_modules(kb_path: Path) -> List[Module]:
+    if not kb_path.exists():
+        return []
+    modules = []
+    for json_file in kb_path.rglob("*.json"):
+        if json_file.name == "index.json":
+            continue
+        try:
+            modules.append(Module.model_validate_json(json_file.read_text(encoding="utf-8")))
+        except Exception:
+            pass
+    return modules
+
+
+def _bm25_scores(query: str, modules: List[Module]) -> Dict[str, float]:
+    """Compute BM25 scores for modules given a query string.
+
+    Returns a dict mapping module.id to BM25 score. Built from scratch each call
+    for simplicity — acceptable for small-to-medium knowledge bases.
+    """
+    if not modules or not query.strip():
+        return {}
+
+    query_stems = [_stem(w) for w in _WORD_RE.findall(query.lower())]
+    if not query_stems:
+        return {}
+
+    doc_tfs: List[Dict[str, int]] = []
+    doc_ids: List[str] = []
+    df: Dict[str, int] = {}
+    doc_lengths: List[int] = []
+
+    for module in modules:
+        text = _module_full_text(module)
+        words = [w.lower() for w in _WORD_RE.findall(text)]
+        stemmed = [_stem(w) for w in words]
+
+        tf: Dict[str, int] = {}
+        for s in stemmed:
+            tf[s] = tf.get(s, 0) + 1
+
+        doc_tfs.append(tf)
+        doc_ids.append(module.id)
+        doc_lengths.append(len(stemmed))
+
+        for term in set(stemmed):
+            df[term] = df.get(term, 0) + 1
+
+    N = len(modules)
+    total_len = sum(doc_lengths)
+    if total_len == 0:
+        return {}
+    avgdl = total_len / N
+
+    scores: Dict[str, float] = {}
+    for i, tf_map in enumerate(doc_tfs):
+        score = 0.0
+        dl = doc_lengths[i]
+        for term in query_stems:
+            df_t = df.get(term, 0)
+            if df_t == 0:
+                continue
+            idf = math.log((N - df_t + 0.5) / (df_t + 0.5) + 1)
+            tf = tf_map.get(term, 0)
+            if tf == 0:
+                continue
+            score += (
+                idf
+                * (tf * (_BM25_K1 + 1))
+                / (tf + _BM25_K1 * (1 - _BM25_B + _BM25_B * dl / avgdl))
+            )
+        scores[doc_ids[i]] = score
+
+    return scores
+
+
+def search_modules(query: str, kb_path: Path, category: str | None = None) -> List[Module]:
+    terms = query.lower().split()
+    if not terms:
+        return []
+
+    all_modules = list_modules(kb_path)
+    bm25 = _bm25_scores(query, all_modules)
+
+    # Build adjacency graph from module metadata (always fresh, no index dependency)
+    graph: Dict[str, List[str]] = {}
+    for m in all_modules:
+        if m.metadata.related_modules:
+            graph[f"{m.category}/{m.id}"] = list(m.metadata.related_modules)
+
+    def score_term(
+        term: str,
+        fields: Mapping[str, str | list[str]],
+        field_stems: Mapping[str, set[str]],
+        word_pattern: re.Pattern[str],
+        partial_pattern: re.Pattern[str] | None,
+    ) -> tuple[int, int]:
+        for field_name in ("title", "tag", "summary", "overview"):
+            field_value = fields[field_name]
+            values = field_value if isinstance(field_value, list) else [field_value]
+            if any(word_pattern.search(value) for value in values):
+                return _FIELD_WEIGHTS[field_name], _QUALITY_EXACT
+
+        term_stem = _stem(term)
+        for field_name in ("title", "tag", "summary", "overview"):
+            if term_stem in field_stems[field_name]:
+                return _FIELD_WEIGHTS[field_name], _QUALITY_STEM
+
+        if partial_pattern is not None:
+            for field_name in ("title", "tag", "summary", "overview"):
+                field_value = fields[field_name]
+                values = field_value if isinstance(field_value, list) else [field_value]
+                if any(partial_pattern.search(value) for value in values):
+                    return _FIELD_WEIGHTS[field_name] // 2, _QUALITY_PARTIAL
+
+        return 0, 0
+
+    patterns = []
+    for term in terms:
+        word_boundary = re.compile(rf"\b{re.escape(term)}\b", re.IGNORECASE)
+        partial = re.compile(re.escape(term), re.IGNORECASE) if len(term) < 5 else None
+        patterns.append((term, word_boundary, partial))
+
+    scored: List[tuple[float, float, int, Module]] = []
+    for module in all_modules:
+        fields: dict[str, str | list[str]] = {
+            "title": module.title,
+            "tag": module.metadata.tags,
+            "summary": module.summary,
+            "overview": module.content.overview,
+        }
+        field_stems = {
+            "title": _field_stems(module.title),
+            "tag": {_stem(tag) for tag in module.metadata.tags},
+            "summary": _field_stems(module.summary),
+            "overview": _field_stems(module.content.overview),
+        }
+        score = 0
+        best_quality = 0
+
+        for term, word_pattern, partial_pattern in patterns:
+            term_score, quality = score_term(term, fields, field_stems, word_pattern, partial_pattern)
+            score += term_score
+            best_quality = max(best_quality, quality)
+
+        if score > 0:
+            scored.append((bm25.get(module.id, 0.0), score, best_quality, module))
+
+    # 1-hop graph expansion: add related modules with discounted scores
+    direct_matches = list(scored)
+    direct_ids = {m.id for _, _, _, m in direct_matches}
+    for bm25_score, heur_score, _, trigger_module in direct_matches:
+        module_key = f"{trigger_module.category}/{trigger_module.id}"
+        for neighbor_ref in graph.get(module_key, []):
+            parts = neighbor_ref.split("/", 1)
+            if len(parts) != 2:
+                continue
+            n_cat, n_id = parts
+            if n_id in direct_ids:
+                continue
+            neighbor = load_module(n_id, n_cat, kb_path)
+            if neighbor is None:
+                continue
+            expanded_heuristic = heur_score * _EXPANSION_DISCOUNT
+            expanded_bm25 = bm25.get(n_id, 0.0)
+            scored.append((expanded_bm25, expanded_heuristic, 0, neighbor))
+            direct_ids.add(n_id)
+
+    # Filter by category if specified
+    if category is not None:
+        scored = [(b, s, q, m) for b, s, q, m in scored if m.category == category]
+
+    # Primary: confidence-weighted heuristic score. Secondary: match quality.
+    # Tertiary: BM25 (tf-idf with length normalization).
+    scored.sort(
+        key=lambda item: (
+            item[1] * _CONFIDENCE_WEIGHT.get(item[3].metadata.confidence, 0.85),
+            item[2],
+            item[0],
+        ),
+        reverse=True,
+    )
+    return [module for _, _, _, module in scored]
+
+
+def save_index(index: Index, kb_path: Path) -> None:
+    _atomic_write(kb_path / "index.json", index.model_dump_json(indent=2))
+
+
+def load_index(kb_path: Path) -> Optional[Index]:
+    path = kb_path / "index.json"
+    if not path.exists():
+        return None
+    return Index.model_validate_json(path.read_text(encoding="utf-8"))
+
+
+def rebuild_index(kb_path: Path) -> Index:
+    index = load_index(kb_path) or Index()
+    index.categories.clear()
+    for module in list_modules(kb_path):
+        index.add_module(module)
+    save_index(index, kb_path)
+    return index
+
+
+def save_to_staging(module: Module, staging_path: Path) -> None:
+    _atomic_write(staging_path / f"{module.id}.json", module.model_dump_json(indent=2))
+
+
+def load_from_staging(module_id: str, staging_path: Path) -> Optional[Module]:
+    path = staging_path / f"{module_id}.json"
+    if not path.exists():
+        return None
+    return Module.model_validate_json(path.read_text(encoding="utf-8"))
+
+
+def list_staging(staging_path: Path) -> List[Module]:
+    if not staging_path.exists():
+        return []
+    modules = []
+    for json_file in staging_path.glob("*.json"):
+        try:
+            modules.append(Module.model_validate_json(json_file.read_text(encoding="utf-8")))
+        except Exception:
+            pass
+    return modules
+
+
+def approve_from_staging(module_id: str, staging_path: Path, kb_path: Path) -> None:
+    module = load_from_staging(module_id, staging_path)
+    if module is None:
+        raise FileNotFoundError(f"Staging module not found: {module_id}")
+    save_module(module, kb_path)
+    (staging_path / f"{module_id}.json").unlink()

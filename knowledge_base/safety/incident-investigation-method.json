@@ -1,0 +1,29 @@
+{
+  "id": "incident-investigation-method",
+  "category": "safety",
+  "title": "事故调查与根本原因分析法",
+  "summary": "执行“四不放过”原则，事故调查报告须在7个工作日内完成，并采用5-Why法追溯根本原因。",
+  "created_at": "2026-06-10T04:46:49.392728Z",
+  "updated_at": "2026-06-10T04:46:49.392728Z",
+  "content": {
+    "overview": "我们通过‘四不放过’原则强制事故闭环管理，结合5-Why根本原因分析法，将单次教训转化为系统性整改，防止同类事故重复发生。",
+    "details": "所有事故均要求做到：原因未查清不放过、责任人未处理不放过、整改措施未落实不放过、相关人员未受教育不放过。调查报告在事发后7个工作日内编制完成，内容包括直接原因、根本原因（必须使用5-Why法逐层追问）、整改措施及责任人、完成期限。选择5-Why而非更复杂的FTA或Bow-Tie，因其简单、快速，适合施工现场常见人为或组织管理缺陷的挖掘。",
+    "examples": "一起人员被坠落的扳手砸伤事故，通过5-Why分析：为什么扳手掉落→工具未系保险绳→为什么没系→工人图省事→为什么图省事→赶工期、工具配备不足→为什么配备不足→采购未能提前识别需求，最终整改措施除处罚工人外，更增加了所有手持工具强制系绳和采购前置需求识别流程。",
+    "references": "",
+    "caveats": "5-Why法可能因分析者认知偏差而停留在表面原因，需由独立调查员主持；7个工作日的报告周期对复杂事故可能仓促，此时应发布初步报告并后续补充。"
+  },
+  "metadata": {
+    "tags": [
+      "incident-investigation",
+      "root-cause-analysis",
+      "5-why",
+      "closing-loop"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": "",
+    "expires_at": null,
+    "review_interval_days": null,
+    "status": "published"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "id": "module-schemas-007",
+  "category": "implementation",
+  "title": "module-schemas: NotionSourceConfig",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/schemas.py, section or definition NotionSourceConfig.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: NotionSourceConfig.",
+    "details": "class NotionSourceConfig(BaseModel):\n    model_config = ConfigDict(extra=\"forbid\")\n\n    api_token_env: str\n    database_id: str\n    category: str = \"general\"\n    page_limit: int = 25\n",
+    "examples": "",
+    "references": "sources/module-schemas.py; module-schemas:chars:1951-2134; source SHA-256 c857e4a99e2e152db3aca0d1a9fc458bebe20ab352e24d0ae1f144a6594904a8",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "module-schemas"
+    ],
+    "related_modules": [
+      "implementation/module-schemas-006",
+      "implementation/module-schemas-008"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://module-schemas",
+    "source_spans": [
+      {
+        "external_id": "module-schemas",
+        "heading_path": [
+          "NotionSourceConfig"
+        ],
+        "excerpt": "class NotionSourceConfig(BaseModel):\n    model_config = ConfigDict(extra=\"forbid\")\n\n    api_token_env: str\n    database_id: str\n    category: str = \"general\"\n    page_limit: int = 25\n",
+        "char_start": 1951,
+        "char_end": 2134
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "id": "occupational-health-examination-rate",
+  "category": "safety",
+  "title": "职业健康体检率管理",
+  "summary": "我们推进职业健康体检率提升，Q2达92.3%，目标≥95%，覆盖接触职业病危害员工。",
+  "created_at": "2026-06-10T04:51:15.106206Z",
+  "updated_at": "2026-06-10T04:51:15.106206Z",
+  "content": {
+    "overview": "我们以体检率作为衡量职业健康管理覆盖面的关键指标，通过督促承包商和内部协调，持续提升参与度。",
+    "details": "Q2体检率92.3%，环比提升2.2个百分点，但仍有缺口，主要困难在于部分外包队伍流动性大，体检安排难以精准覆盖。我们计划在入场前核验体检证明，对于体检过期人员安排集中补检，并与承包商绩效挂钩。",
+    "examples": "",
+    "references": "",
+    "caveats": "体检率提升需关注复查和禁忌证员工的妥善安置，不能仅追求数字达标。"
+  },
+  "metadata": {
+    "tags": [
+      "职业健康",
+      "体检率",
+      "员工健康"
+    ],
+    "related_modules": [],
+    "confidence": "medium",
+    "source": "",
+    "expires_at": null,
+    "review_interval_days": null,
+    "status": "published"
+  }
+}

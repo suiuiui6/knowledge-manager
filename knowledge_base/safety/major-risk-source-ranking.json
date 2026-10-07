@@ -1,0 +1,28 @@
+{
+  "id": "major-risk-source-ranking",
+  "category": "safety",
+  "title": "主要风险源分级管理",
+  "summary": "我们按风险等级对TOP5风险源排序，聚焦重大风险项目，实施分级管控。",
+  "created_at": "2026-06-10T04:51:15.106182Z",
+  "updated_at": "2026-06-10T04:51:15.106182Z",
+  "content": {
+    "overview": "我们使用风险评估矩阵，对在建项目风险源进行评级和排序，明确R≥15的重大风险，并将管理资源向高风险项目倾斜。",
+    "details": "Q2识别出重大风险源：惠州乙烯项目裂解炉安装（大型吊装交叉作业）和湛江储罐区（受限空间残留油气），均评定为R≥15级别。对于重大风险，实施提级审批、专人旁站、增加巡查频次等措施。对于较大风险，采取常规强化管控。此方法确保有限资源用于最危险环节。",
+    "examples": "",
+    "references": "",
+    "caveats": "风险评估依赖于主观判断和经验，需要定期校验；交叉作业带来的动态风险可能被低估；风险值可能未能及时反映现场条件变化。"
+  },
+  "metadata": {
+    "tags": [
+      "风险源",
+      "分级管控",
+      "重大风险"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": "",
+    "expires_at": null,
+    "review_interval_days": null,
+    "status": "published"
+  }
+}

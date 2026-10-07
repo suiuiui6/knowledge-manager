@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-015",
+  "category": "documentation",
+  "title": "km-blueprint: 方式B：LLM 自动构建",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition 方式B：LLM 自动构建.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: 方式B：LLM 自动构建.",
+    "details": "### 方式B：LLM 自动构建\r\n\r\n```python\r\nasync def build_tree_from_llm(\r\n    modules: list[Module],\r\n    llm_client,\r\n) -> TreeNode:\r\n    \"\"\"\r\n    将现有扁平模块列表交给LLM, 让其构建合理的树状分组:\r\n\r\n    提示词大致内容:\r\n    - 输入: 所有模块的 [category, id, title, summary, tags, related_modules]\r\n    - 任务: 将这些模块组织成一个层级树\r\n    - 规则:\r\n        - 根节点下是领域分组 (如 auth, deployment, backend)\r\n        - 每个分组下按主题逻辑排列模块\r\n        - 紧密相关的模块 (互相引用) 应该放在同一子树\r\n        - 有明确先后关系的模块 (如 \"选择\" → \"实现\" → \"优化\") 标注顺序\r\n    - 输出: JSON格式的树结构\r\n\r\n    这个方法适用于知识库已经有很多模块, 需要重新组织结构的情况。\r\n    \"\"\"\r\n    ...\r\n```\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:24397-24935; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-014",
+      "documentation/km-blueprint-016"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "方式B：LLM 自动构建"
+        ],
+        "excerpt": "### 方式B：LLM 自动构建\r\n\r\n```python\r\nasync def build_tree_from_llm(\r\n    modules: list[Module],\r\n    llm_client,\r\n) -> TreeNode:\r\n    \"\"\"\r\n    将现有扁平模块列表交给LLM, 让其构建合理的树状分组:\r\n\r\n    提示词大致内容:\r\n    - 输入: 所有模块的 [category, id, title, summary, tags, related_modules]\r\n    - 任务: 将这些模块组织成一个层级树\r\n    - 规则:\r\n        - 根节点下是领域分组 (如 auth, deployment, backend)\r\n        - 每个分组下按主题逻辑排列模块\r\n        - 紧密相关的模块 (互相引用) 应该放在同一子树\r\n        - 有明确先后关系的模块 (如 \"选择\" → \"实现\" → \"优化\") 标注顺序\r\n    - 输出: JSON格式的树结构\r\n\r\n    这个方法适用于知识库已经有很多模块, 需要重新组织结构的情况。\r\n    \"\"\"\r\n    ...\r\n```\r\n\r\n",
+        "char_start": 24397,
+        "char_end": 24935
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

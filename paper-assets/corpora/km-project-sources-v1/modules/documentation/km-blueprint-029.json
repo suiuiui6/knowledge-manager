@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-029",
+  "category": "documentation",
+  "title": "km-blueprint: Obsidian 导出",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition Obsidian 导出.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: Obsidian 导出.",
+    "details": "## Obsidian 导出\r\n\r\n```bash\r\nkm export --obsidian ./my_obsidian_vault\r\n\r\n# 生成:\r\nmy_obsidian_vault/\r\n├── .obsidian/\r\n│   ├── graph.json           # Graph View 颜色配置\r\n│   ├── templates/\r\n│   │   ├── module.md        # 新建模块模板\r\n│   │   └── category.md     # 新建分类模板\r\n│   └── dataview/\r\n│       └── queries.md       # Dataview 查询示例\r\n├── auth/\r\n│   ├── jwt-config.md\r\n│   ├── oauth-flow.md\r\n│   └── api-keys.md\r\n├── deployment/\r\n│   └── k8s-config.md\r\n├── _index.md                # 全局索引页 (Dataview 驱动的仪表盘)\r\n├── _health.md               # 健康状态页\r\n└── _graph.md                # 知识图谱入口\r\n```\r\n\r\nObsidian Dataview 查询模板示例：\r\n\r\n```markdown\r\n# 全局知识索引\r\n\r\n## 按分类\r\n\r\n\\`\\`\\`dataview\r\nTABLE summary, confidence, status\r\nFROM \"auth\"\r\nSORT file.name ASC\r\n\\`\\`\\`\r\n\r\n## 需要复习的模块\r\n\r\n\\`\\`\\`dataview\r\nTABLE review_interval_days, date(updated_at) as \"最后更新\"\r\nFROM \"\"\r\nWHERE status = \"published\"\r\n  AND date(updated_at) < date(today) - dur(90 days)\r\nSORT updated_at ASC\r\n\\`\\`\\`\r\n\r\n## 孤岛模块 (无关联)\r\n\r\n\\`\\`\\`dataview\r\nTABLE category, tags\r\nFROM \"\"\r\nWHERE length(related_modules) = 0\r\n  AND status = \"published\"\r\n\\`\\`\\`\r\n```\r\n\r\n---\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:55806-56902; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-028",
+      "documentation/km-blueprint-030"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "Obsidian 导出"
+        ],
+        "excerpt": "## Obsidian 导出\r\n\r\n```bash\r\nkm export --obsidian ./my_obsidian_vault\r\n\r\n# 生成:\r\nmy_obsidian_vault/\r\n├── .obsidian/\r\n│   ├── graph.json           # Graph View 颜色配置\r\n│   ├── templates/\r\n│   │   ├── module.md        # 新建模块模板\r\n│   │   └── category.md     # 新建分类模板\r\n│   └── dataview/\r\n│       └── queries.md       # Dataview 查询示例\r\n├── auth/\r\n│   ├── jwt-config.md\r\n│   ├── oauth-flow.md\r\n│   └── api-keys.md\r\n├── deployment/\r\n│   └── k8s-config.md\r\n├── _index.md                # 全局索引页 (Dataview 驱动的仪表盘)\r\n├── _health.md               # 健康状态页\r\n└── _graph.md                # 知识图谱入口\r\n```\r\n\r\nObsidian Dataview 查询模板示例：\r\n\r\n```markdown\r\n# 全局知识索引\r\n\r\n## 按分类\r\n\r\n\\`\\`\\`dataview\r\nTABLE summary, confidence, status\r\nFROM \"auth\"\r\nSORT file.name ASC\r\n\\`\\`\\`\r\n\r\n## 需要复习的模块\r\n\r\n\\`\\`\\`dataview\r\nTABLE review_interval_days, date(updated_at) as \"最后更新\"\r\nFROM \"\"\r\nWHERE status = \"published\"\r\n  AND date(updated_at) < date(today) - dur(90 days)\r\nSORT updated_at ASC\r\n\\`\\`\\`\r\n\r\n## 孤岛模块 (无关联)\r\n\r\n\\`\\`\\`dataview\r\nTABLE category, tags\r\nFROM \"\"\r\nWHERE length(related_modules) = 0\r\n  AND status = \"published\"\r\n\\`\\`\\`\r\n```\r\n\r\n---\r\n\r\n",
+        "char_start": 55806,
+        "char_end": 56902
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

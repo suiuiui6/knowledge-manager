@@ -1,0 +1,41 @@
+{
+  "id": "module-schemas-062",
+  "category": "implementation",
+  "title": "module-schemas: WebhookConfig",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/schemas.py, section or definition WebhookConfig.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: WebhookConfig.",
+    "details": "class WebhookConfig(BaseModel):\r\n    enabled: bool = False\r\n    endpoints: List[WebhookEndpoint] = Field(default_factory=list)\r\n",
+    "examples": "",
+    "references": "sources/module-schemas.py; module-schemas:chars:21053-21181; source SHA-256 c857e4a99e2e152db3aca0d1a9fc458bebe20ab352e24d0ae1f144a6594904a8",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "module-schemas"
+    ],
+    "related_modules": [
+      "implementation/module-schemas-061",
+      "implementation/module-schemas-063"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://module-schemas",
+    "source_spans": [
+      {
+        "external_id": "module-schemas",
+        "heading_path": [
+          "WebhookConfig"
+        ],
+        "excerpt": "class WebhookConfig(BaseModel):\r\n    enabled: bool = False\r\n    endpoints: List[WebhookEndpoint] = Field(default_factory=list)\r\n",
+        "char_start": 21053,
+        "char_end": 21181
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-053",
+  "category": "documentation",
+  "title": "km-blueprint: 示例插件：Slack 通知",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition 示例插件：Slack 通知.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: 示例插件：Slack 通知.",
+    "details": "## 示例插件：Slack 通知\r\n\r\n```python\r\n# .plugins/km-plugin-slack/plugin.py\r\n\r\nclass SlackNotifier(PluginBase):\r\n    \"\"\"审核事件通知到 Slack\"\"\"\r\n\r\n    manifest = PluginManifest(\r\n        name=\"km-plugin-slack\",\r\n        version=\"1.0.0\",\r\n        description=\"审核事件通知到 Slack 频道\",\r\n        author=\"community\",\r\n    )\r\n\r\n    def __init__(self, ctx: PluginContext):\r\n        super().__init__(ctx)\r\n        self.webhook_url = \"\"\r\n\r\n    async def on_load(self) -> None:\r\n        self.webhook_url = self.ctx.config.get(\"slack_webhook_url\", \"\")\r\n\r\n    class ReviewNotifier(ReviewHook):\r\n        async def after_approve(self, module: Module, ctx: PluginContext) -> None:\r\n            message = {\r\n                \"text\": f\"✅ 知识模块已审核通过\",\r\n                \"blocks\": [\r\n                    {\r\n                        \"type\": \"section\",\r\n                        \"text\": {\r\n                            \"type\": \"mrkdwn\",\r\n                            \"text\": (\r\n                                f\"*新知识模块已审核通过*\\n\"\r\n                                f\"📄 *{module.title}*\\n\"\r\n                                f\"📁 {module.category}/{module.id}\\n\"\r\n                                f\"🏷️ {' '.join(f'`{t}`' for t in module.metadata.tags)}\\n\"\r\n                                f\"📝 {module.summary[:200]}\"\r\n                            ),\r\n                        },\r\n                    },\r\n                ],\r\n            }\r\n            async with httpx.AsyncClient() as client:\r\n                await client.post(self.webhook_url, json=message)\r\n\r\n    review_hook = ReviewNotifier()\r\n```\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:102684-104231; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-052",
+      "documentation/km-blueprint-054"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "示例插件：Slack 通知"
+        ],
+        "excerpt": "## 示例插件：Slack 通知\r\n\r\n```python\r\n# .plugins/km-plugin-slack/plugin.py\r\n\r\nclass SlackNotifier(PluginBase):\r\n    \"\"\"审核事件通知到 Slack\"\"\"\r\n\r\n    manifest = PluginManifest(\r\n        name=\"km-plugin-slack\",\r\n        version=\"1.0.0\",\r\n        description=\"审核事件通知到 Slack 频道\",\r\n        author=\"community\",\r\n    )\r\n\r\n    def __init__(self, ctx: PluginContext):\r\n        super().__init__(ctx)\r\n        self.webhook_url = \"\"\r\n\r\n    async def on_load(self) -> None:\r\n        self.webhook_url = self.ctx.config.get(\"slack_webhook_url\", \"\")\r\n\r\n    class ReviewNotifier(ReviewHook):\r\n        async def after_approve(self, module: Module, ctx: PluginContext) -> None:\r\n            message = {\r\n                \"text\": f\"✅ 知识模块已审核通过\",\r\n                \"blocks\": [\r\n                    {\r\n                        \"type\": \"section\",\r\n                        \"text\": {\r\n                            \"type\": \"mrkdwn\",\r\n                            \"text\": (\r\n                                f\"*新知识模块已审核通过*\\n\"\r\n                                f\"📄 *{module.title}*\\n\"\r\n                                f\"📁 {module.category}/{module.id}\\n\"\r\n                                f\"🏷️ {' '.join(f'`{t}`' for t in module.metadata.tags)}\\n\"\r\n                                f\"📝 {module.summary[:200]}\"\r\n                            ),\r\n                        },\r\n                    },\r\n                ],\r\n            }\r\n            async with httpx.AsyncClient() as client:\r\n                await client.post(self.webhook_url, json=message)\r\n\r\n    review_hook = ReviewNotifier()\r\n```\r\n\r\n",
+        "char_start": 102684,
+        "char_end": 104231
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

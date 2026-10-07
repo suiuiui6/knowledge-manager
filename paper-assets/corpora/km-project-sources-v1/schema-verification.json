@@ -1,0 +1,6 @@
+{
+  "status": "PASS",
+  "schema": "knowledge_manager.schemas.Module",
+  "validated_modules": 183,
+  "validation_scope": "schema compatibility; not operational retrieval or human approval"
+}

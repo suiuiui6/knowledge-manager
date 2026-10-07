@@ -1,0 +1,41 @@
+{
+  "id": "module-schemas-047",
+  "category": "implementation",
+  "title": "module-schemas: ClusterEntry",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/schemas.py, section or definition ClusterEntry.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: ClusterEntry.",
+    "details": "class ClusterEntry(BaseModel):\r\n    id: str\r\n    label: str = \"\"\r\n    module_count: int = 0\r\n    modules: List[str] = Field(default_factory=list)\r\n",
+    "examples": "",
+    "references": "sources/module-schemas.py; module-schemas:chars:17499-17646; source SHA-256 c857e4a99e2e152db3aca0d1a9fc458bebe20ab352e24d0ae1f144a6594904a8",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "module-schemas"
+    ],
+    "related_modules": [
+      "implementation/module-schemas-046",
+      "implementation/module-schemas-048"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://module-schemas",
+    "source_spans": [
+      {
+        "external_id": "module-schemas",
+        "heading_path": [
+          "ClusterEntry"
+        ],
+        "excerpt": "class ClusterEntry(BaseModel):\r\n    id: str\r\n    label: str = \"\"\r\n    module_count: int = 0\r\n    modules: List[str] = Field(default_factory=list)\r\n",
+        "char_start": 17499,
+        "char_end": 17646
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

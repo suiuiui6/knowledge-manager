@@ -1,0 +1,41 @@
+{
+  "id": "km-readme-011",
+  "category": "documentation",
+  "title": "km-readme: Typical Use Cases",
+  "summary": "Extractive snapshot of knowledge-manager/README.md, section or definition Typical Use Cases.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: Typical Use Cases.",
+    "details": "## Typical Use Cases\n\n- Build a shared team knowledge layer from product docs, runbooks, and incident writeups, then expose it to coding agents via MCP.\n- Replace copy-pasted prompt context with reviewed, versioned modules that can be searched and loaded on demand.\n- Keep architecture decisions and operational caveats close to code so AI-assisted workflows stay accurate over time.\n\n",
+    "examples": "",
+    "references": "sources/km-readme.md; km-readme:chars:3299-3684; source SHA-256 3e5706ca7be9c3305b940f286214b6508158838296e960f08c00693b52fd3f20",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-readme"
+    ],
+    "related_modules": [
+      "documentation/km-readme-010",
+      "documentation/km-readme-012"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-readme",
+    "source_spans": [
+      {
+        "external_id": "km-readme",
+        "heading_path": [
+          "Typical Use Cases"
+        ],
+        "excerpt": "## Typical Use Cases\n\n- Build a shared team knowledge layer from product docs, runbooks, and incident writeups, then expose it to coding agents via MCP.\n- Replace copy-pasted prompt context with reviewed, versioned modules that can be searched and loaded on demand.\n- Keep architecture decisions and operational caveats close to code so AI-assisted workflows stay accurate over time.\n\n",
+        "char_start": 3299,
+        "char_end": 3684
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

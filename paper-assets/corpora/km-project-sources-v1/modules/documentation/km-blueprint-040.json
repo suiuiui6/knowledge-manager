@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-040",
+  "category": "documentation",
+  "title": "km-blueprint: 与模块健康评分的联动",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition 与模块健康评分的联动.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: 与模块健康评分的联动.",
+    "details": "## 与模块健康评分的联动\r\n\r\n```python\r\n# 模块健康评分新增 team_retention 维度\r\n\r\n# 旧权重\r\nHEALTH_WEIGHTS_OLD = {\r\n    \"freshness\": 0.35,    # 更新频率\r\n    \"usage\": 0.35,        # 被搜索/加载的次数\r\n    \"completeness\": 0.30, # 内容完整性\r\n}\r\n\r\n# 新权重 (引入团队记忆维度)\r\nHEALTH_WEIGHTS_NEW = {\r\n    \"freshness\": 0.30,\r\n    \"usage\": 0.30,\r\n    \"completeness\": 0.25,\r\n    \"team_retention\": 0.15,  # 新增: 团队对该模块的记忆保持度\r\n}\r\n\r\ndef compute_team_retention(module_key: str, cards: list[MemoryCard]) -> float:\r\n    \"\"\"\r\n    团队记忆保持度 (0-100):\r\n    - 基于该模块所有卡片的 FSRS stability 平均值\r\n    - stability 高 → 团队已经内化了这个知识 → 高价值\r\n    - 有卡片但从未复习 → 低分\r\n    - 没有卡片 → 中性分 (50)\r\n    \"\"\"\r\n    mod_cards = [c for c in cards if c.module_key == module_key]\r\n    if not mod_cards:\r\n        return 50.0\r\n\r\n    stabilities = [\r\n        c.fsrs_state.get(\"stability\", 0)\r\n        for c in mod_cards\r\n        if c.review_count > 0\r\n    ]\r\n    if not stabilities:\r\n        return 30.0  # 有卡片但未复习 → 偏低\r\n\r\n    avg_stability = sum(stabilities) / len(stabilities)\r\n    # 将 stability 映射为 0-100 分\r\n    # stability=0 → 0分, stability=30天 → 80分, stability=90天 → 100分\r\n    return min(100, 100 * (1 - math.exp(-avg_stability / 15)))\r\n```\r\n\r\n---\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:78614-79763; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-039",
+      "documentation/km-blueprint-041"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "与模块健康评分的联动"
+        ],
+        "excerpt": "## 与模块健康评分的联动\r\n\r\n```python\r\n# 模块健康评分新增 team_retention 维度\r\n\r\n# 旧权重\r\nHEALTH_WEIGHTS_OLD = {\r\n    \"freshness\": 0.35,    # 更新频率\r\n    \"usage\": 0.35,        # 被搜索/加载的次数\r\n    \"completeness\": 0.30, # 内容完整性\r\n}\r\n\r\n# 新权重 (引入团队记忆维度)\r\nHEALTH_WEIGHTS_NEW = {\r\n    \"freshness\": 0.30,\r\n    \"usage\": 0.30,\r\n    \"completeness\": 0.25,\r\n    \"team_retention\": 0.15,  # 新增: 团队对该模块的记忆保持度\r\n}\r\n\r\ndef compute_team_retention(module_key: str, cards: list[MemoryCard]) -> float:\r\n    \"\"\"\r\n    团队记忆保持度 (0-100):\r\n    - 基于该模块所有卡片的 FSRS stability 平均值\r\n    - stability 高 → 团队已经内化了这个知识 → 高价值\r\n    - 有卡片但从未复习 → 低分\r\n    - 没有卡片 → 中性分 (50)\r\n    \"\"\"\r\n    mod_cards = [c for c in cards if c.module_key == module_key]\r\n    if not mod_cards:\r\n        return 50.0\r\n\r\n    stabilities = [\r\n        c.fsrs_state.get(\"stability\", 0)\r\n        for c in mod_cards\r\n        if c.review_count > 0\r\n    ]\r\n    if not stabilities:\r\n        return 30.0  # 有卡片但未复习 → 偏低\r\n\r\n    avg_stability = sum(stabilities) / len(stabilities)\r\n    # 将 stability 映射为 0-100 分\r\n    # stability=0 → 0分, stability=30天 → 80分, stability=90天 → 100分\r\n    return min(100, 100 * (1 - math.exp(-avg_stability / 15)))\r\n```\r\n\r\n---\r\n\r\n",
+        "char_start": 78614,
+        "char_end": 79763
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

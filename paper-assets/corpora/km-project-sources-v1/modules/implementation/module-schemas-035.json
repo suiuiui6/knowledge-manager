@@ -1,0 +1,41 @@
+{
+  "id": "module-schemas-035",
+  "category": "implementation",
+  "title": "module-schemas: Config",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/schemas.py, section or definition Config.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: Config.",
+    "details": "class Config(BaseModel):\n    llm_providers: Dict[str, LLMProviderConfig] = Field(default_factory=dict)\n    extraction: ExtractionConfig = Field(default_factory=ExtractionConfig)\n    cache: CacheConfig = Field(default_factory=CacheConfig)\n    telemetry: TelemetryConfig = Field(default_factory=TelemetryConfig)\n    security: SecurityConfig = Field(default_factory=SecurityConfig)\n    synonyms: Dict[str, List[str]] = Field(default_factory=dict)\n    review: ReviewConfig = Field(default_factory=ReviewConfig)\n    notifications: NotificationsConfig = Field(default_factory=NotificationsConfig)\n    federation: \"FederationConfig\" = Field(default_factory=lambda: FederationConfig())\r\n    webhooks: \"WebhookConfig\" = Field(default_factory=lambda: WebhookConfig())\n    marketplace: \"MarketplaceConfig\" = Field(default_factory=lambda: MarketplaceConfig())\n    research: ResearchConfig = Field(default_factory=ResearchConfig)\n    ui: UIConfig = Field(default_factory=UIConfig)\n    routing_policy: RoutingPolicyConfig = Field(default_factory=RoutingPolicyConfig)\n\n    def get_default_provider(self) -> Tuple[str, LLMProviderConfig]:\n        for name, provider in self.llm_providers.items():\r\n            if provider.default:\r\n                return name, provider\r\n        if self.llm_providers:\r\n            name = next(iter(self.llm_providers))\r\n            return name, self.llm_providers[name]\r\n        raise ValueError(\"No LLM providers configured\")\r\n",
+    "examples": "",
+    "references": "sources/module-schemas.py; module-schemas:chars:13537-14983; source SHA-256 c857e4a99e2e152db3aca0d1a9fc458bebe20ab352e24d0ae1f144a6594904a8",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "module-schemas"
+    ],
+    "related_modules": [
+      "implementation/module-schemas-034",
+      "implementation/module-schemas-036"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://module-schemas",
+    "source_spans": [
+      {
+        "external_id": "module-schemas",
+        "heading_path": [
+          "Config"
+        ],
+        "excerpt": "class Config(BaseModel):\n    llm_providers: Dict[str, LLMProviderConfig] = Field(default_factory=dict)\n    extraction: ExtractionConfig = Field(default_factory=ExtractionConfig)\n    cache: CacheConfig = Field(default_factory=CacheConfig)\n    telemetry: TelemetryConfig = Field(default_factory=TelemetryConfig)\n    security: SecurityConfig = Field(default_factory=SecurityConfig)\n    synonyms: Dict[str, List[str]] = Field(default_factory=dict)\n    review: ReviewConfig = Field(default_factory=ReviewConfig)\n    notifications: NotificationsConfig = Field(default_factory=NotificationsConfig)\n    federation: \"FederationConfig\" = Field(default_factory=lambda: FederationConfig())\r\n    webhooks: \"WebhookConfig\" = Field(default_factory=lambda: WebhookConfig())\n    marketplace: \"MarketplaceConfig\" = Field(default_factory=lambda: MarketplaceConfig())\n    research: ResearchConfig = Field(default_factory=ResearchConfig)\n    ui: UIConfig = Field(default_factory=UIConfig)\n    routing_policy: RoutingPolicyConfig = Field(default_factory=RoutingPolicyConfig)\n\n    def get_default_provider(self) -> Tuple[str, LLMProviderConfig]:\n        for name, provider in self.llm_providers.items():\r\n            if provider.default:\r\n                return name, provider\r\n        if self.llm_providers:\r\n            name = next(iter(self.llm_providers))\r\n            return name, self.llm_providers[name]\r\n        raise ValueError(\"No LLM providers configured\")\r\n",
+        "char_start": 13537,
+        "char_end": 14983
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

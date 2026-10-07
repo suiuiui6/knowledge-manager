@@ -1,0 +1,28 @@
+{
+  "id": "summer-heat-prevention",
+  "category": "safety",
+  "title": "暑期防暑降温措施",
+  "summary": "高温期间（≥35°C）我们调整作业时间，配备防暑药品和饮品，预防热射病。",
+  "created_at": "2026-06-10T04:51:15.106169Z",
+  "updated_at": "2026-06-10T04:51:15.106170Z",
+  "content": {
+    "overview": "针对夏季高温，我们采取主动干预措施，包括调整户外作业时间、供应防暑物资，以保护人员健康，避免因中暑导致的伤亡事件。",
+    "details": "当气温预报达到35°C及以上时，实行“做两头、歇中间”的弹性工时，避开11:00-15:00时段；现场配备藿香正气水、风油精等药品及绿豆汤、淡盐水等饮品；强化班前会健康状态检查。这一做法已形成常态化机制，Q3重点落实。",
+    "examples": "",
+    "references": "",
+    "caveats": "工时调整需与生产、工程部门充分协调，避免对关键路径造成较大影响；部分作业环境温度更高，需额外增加休息频次和降温设施。"
+  },
+  "metadata": {
+    "tags": [
+      "防暑降温",
+      "职业健康",
+      "季节性措施"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": "",
+    "expires_at": null,
+    "review_interval_days": null,
+    "status": "published"
+  }
+}

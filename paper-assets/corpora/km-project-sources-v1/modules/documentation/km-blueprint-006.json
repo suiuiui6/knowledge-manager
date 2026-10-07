@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-006",
+  "category": "documentation",
+  "title": "km-blueprint: 前端架构",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition 前端架构.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: 前端架构.",
+    "details": "### 前端架构\r\n\r\n```\r\nsrc/ui/                          # 新增目录\r\n├── index.html                   # SPA入口, 零构建模式可用\r\n├── main.tsx                     # React入口 (需要构建时)\r\n├── components/\r\n│   ├── Layout.tsx               # 三栏布局 (树 + 内容 + 图谱)\r\n│   ├── KnowledgeTree.tsx        # 左侧知识树\r\n│   │   ├── TreeNode.tsx         # 递归树节点\r\n│   │   └── TreeSearch.tsx       # 树内过滤搜索\r\n│   ├── ChatPanel.tsx            # 对话面板\r\n│   │   ├── ChatMessage.tsx      # 单条消息 (含引用标记)\r\n│   │   ├── ChatInput.tsx        # 输入框 (支持 @mention 模块)\r\n│   │   └── CitationPopover.tsx  # 引用悬浮卡片\r\n│   ├── ModuleViewer.tsx         # 模块内容渲染\r\n│   │   ├── MarkdownRenderer.tsx # Markdown → React (支持 wikilinks)\r\n│   │   ├── ModuleMeta.tsx       # 元数据面板 (tags/状态/置信度)\r\n│   │   └── RelatedModules.tsx   # 相关模块列表\r\n│   ├── GraphView.tsx            # 知识图谱可视化\r\n│   │   ├── ForceGraph.tsx       # 力导向图 (Cytoscape.js)\r\n│   │   ├── GraphControls.tsx    # 缩放/过滤/布局切换\r\n│   │   └── NodeDetail.tsx       # 节点点击详情弹出\r\n│   ├── Dashboard.tsx            # 首页仪表盘\r\n│   │   ├── StatsCards.tsx       # 统计卡片\r\n│   │   ├── HealthChart.tsx      # 健康趋势图\r\n│   │   └── RecentActivity.tsx   # 最近活动\r\n│   ├── StagingPanel.tsx         # 审核面板\r\n│   │   ├── StagingList.tsx      # 待审核列表\r\n│   │   └── DiffViewer.tsx       # 新增/修改差异对比\r\n│   ├── MemoryPanel.tsx          # 间隔重复面板\r\n│   │   ├── ReviewCard.tsx       # 复习卡片 (正面/背面翻转)\r\n│   │   └── MemoryStats.tsx      # 记忆统计\r\n│   └── SettingsPanel.tsx        # 配置管理\r\n├── hooks/\r\n│   ├── useChat.ts               # SSE流式对话\r\n│   ├── useSearch.ts             # 搜索防抖\r\n│   ├── useGraph.ts              # 图谱数据\r\n│   ├── useTree.ts               # 知识树数据\r\n│   └── useMemory.ts             # 记忆卡片\r\n├── lib/\r\n│   ├── api.ts                   # API 客户端\r\n│   ├── wikilinks.ts             # [[wikilinks]] 解析器\r\n│   └── markdown.ts              # Markdown 渲染 + 自定义插件\r\n├── styles/\r\n│   └── globals.css              # TailwindCSS\r\n└── vite.config.ts               # Vite 构建配置\r\n```\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:5237-7159; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-005",
+      "documentation/km-blueprint-007"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "前端架构"
+        ],
+        "excerpt": "### 前端架构\r\n\r\n```\r\nsrc/ui/                          # 新增目录\r\n├── index.html                   # SPA入口, 零构建模式可用\r\n├── main.tsx                     # React入口 (需要构建时)\r\n├── components/\r\n│   ├── Layout.tsx               # 三栏布局 (树 + 内容 + 图谱)\r\n│   ├── KnowledgeTree.tsx        # 左侧知识树\r\n│   │   ├── TreeNode.tsx         # 递归树节点\r\n│   │   └── TreeSearch.tsx       # 树内过滤搜索\r\n│   ├── ChatPanel.tsx            # 对话面板\r\n│   │   ├── ChatMessage.tsx      # 单条消息 (含引用标记)\r\n│   │   ├── ChatInput.tsx        # 输入框 (支持 @mention 模块)\r\n│   │   └── CitationPopover.tsx  # 引用悬浮卡片\r\n│   ├── ModuleViewer.tsx         # 模块内容渲染\r\n│   │   ├── MarkdownRenderer.tsx # Markdown → React (支持 wikilinks)\r\n│   │   ├── ModuleMeta.tsx       # 元数据面板 (tags/状态/置信度)\r\n│   │   └── RelatedModules.tsx   # 相关模块列表\r\n│   ├── GraphView.tsx            # 知识图谱可视化\r\n│   │   ├── ForceGraph.tsx       # 力导向图 (Cytoscape.js)\r\n│   │   ├── GraphControls.tsx    # 缩放/过滤/布局切换\r\n│   │   └── NodeDetail.tsx       # 节点点击详情弹出\r\n│   ├── Dashboard.tsx            # 首页仪表盘\r\n│   │   ├── StatsCards.tsx       # 统计卡片\r\n│   │   ├── HealthChart.tsx      # 健康趋势图\r\n│   │   └── RecentActivity.tsx   # 最近活动\r\n│   ├── StagingPanel.tsx         # 审核面板\r\n│   │   ├── StagingList.tsx      # 待审核列表\r\n│   │   └── DiffViewer.tsx       # 新增/修改差异对比\r\n│   ├── MemoryPanel.tsx          # 间隔重复面板\r\n│   │   ├── ReviewCard.tsx       # 复习卡片 (正面/背面翻转)\r\n│   │   └── MemoryStats.tsx      # 记忆统计\r\n│   └── SettingsPanel.tsx        # 配置管理\r\n├── hooks/\r\n│   ├── useChat.ts               # SSE流式对话\r\n│   ├── useSearch.ts             # 搜索防抖\r\n│   ├── useGraph.ts              # 图谱数据\r\n│   ├── useTree.ts               # 知识树数据\r\n│   └── useMemory.ts             # 记忆卡片\r\n├── lib/\r\n│   ├── api.ts                   # API 客户端\r\n│   ├── wikilinks.ts             # [[wikilinks]] 解析器\r\n│   └── markdown.ts              # Markdown 渲染 + 自定义插件\r\n├── styles/\r\n│   └── globals.css              # TailwindCSS\r\n└── vite.config.ts               # Vite 构建配置\r\n```\r\n\r\n",
+        "char_start": 5237,
+        "char_end": 7159
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

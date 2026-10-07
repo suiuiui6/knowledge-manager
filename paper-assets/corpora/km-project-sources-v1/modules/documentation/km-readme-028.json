@@ -1,0 +1,41 @@
+{
+  "id": "km-readme-028",
+  "category": "documentation",
+  "title": "km-readme: Development",
+  "summary": "Extractive snapshot of knowledge-manager/README.md, section or definition Development.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: Development.",
+    "details": "## Development\n\n```bash\npoetry run pytest               # 75 tests\npoetry run black src tests      # format\npoetry run mypy src             # type check\n```\n\nCurrent validation artifacts are checked into [`test-results/`](test-results/) and [`docs/validation-report-2026-05-29.md`](docs/validation-report-2026-05-29.md). They cover MCP protocol compliance, retrieval behavior, and an end-to-end extract -> review -> serve run against a real sample knowledge base.\n\n",
+    "examples": "",
+    "references": "sources/km-readme.md; km-readme:chars:12929-13394; source SHA-256 3e5706ca7be9c3305b940f286214b6508158838296e960f08c00693b52fd3f20",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-readme"
+    ],
+    "related_modules": [
+      "documentation/km-readme-027",
+      "documentation/km-readme-029"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-readme",
+    "source_spans": [
+      {
+        "external_id": "km-readme",
+        "heading_path": [
+          "Development"
+        ],
+        "excerpt": "## Development\n\n```bash\npoetry run pytest               # 75 tests\npoetry run black src tests      # format\npoetry run mypy src             # type check\n```\n\nCurrent validation artifacts are checked into [`test-results/`](test-results/) and [`docs/validation-report-2026-05-29.md`](docs/validation-report-2026-05-29.md). They cover MCP protocol compliance, retrieval behavior, and an end-to-end extract -> review -> serve run against a real sample knowledge base.\n\n",
+        "char_start": 12929,
+        "char_end": 13394
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

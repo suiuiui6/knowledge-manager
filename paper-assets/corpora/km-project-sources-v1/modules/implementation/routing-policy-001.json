@@ -1,0 +1,40 @@
+{
+  "id": "routing-policy-001",
+  "category": "implementation",
+  "title": "routing-policy: PolicyDecision",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/policy.py, section or definition PolicyDecision.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: PolicyDecision.",
+    "details": "@dataclass\nclass PolicyDecision:\n    allowed: bool\n    reasons: list[str] = field(default_factory=list)\n    mandatory_companions: list[str] = field(default_factory=list)\n",
+    "examples": "",
+    "references": "sources/routing-policy.py; routing-policy:chars:212-382; source SHA-256 fd1d389017565331ff43e5e6a855b952b927a9451513dd46d26c27750d155601",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "routing-policy"
+    ],
+    "related_modules": [
+      "implementation/routing-policy-002"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://routing-policy",
+    "source_spans": [
+      {
+        "external_id": "routing-policy",
+        "heading_path": [
+          "PolicyDecision"
+        ],
+        "excerpt": "@dataclass\nclass PolicyDecision:\n    allowed: bool\n    reasons: list[str] = field(default_factory=list)\n    mandatory_companions: list[str] = field(default_factory=list)\n",
+        "char_start": 212,
+        "char_end": 382
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-013",
+  "category": "documentation",
+  "title": "km-blueprint: Schema (schemas.py 新增)",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition Schema (schemas.py 新增).",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: Schema (schemas.py 新增).",
+    "details": "### Schema (schemas.py 新增)\r\n\r\n```python\r\nclass TreeNodeType(str, Enum):\r\n    ROOT = \"root\"\r\n    CATEGORY = \"category\"\r\n    MODULE = \"module\"\r\n    SECTION = \"section\"\r\n\r\nclass TreeNode(BaseModel):\r\n    id: str\r\n    type: TreeNodeType\r\n    title: str\r\n    summary: str = \"\"\r\n    path: str = \"\"          # 完整路径: \"auth/jwt-config#signing\"\r\n    page_range: Optional[tuple[int, int]] = None\r\n    children: list[\"TreeNode\"] = Field(default_factory=list)\r\n    # 元信息\r\n    module_count: int = 0   # 子树中的模块总数 (非module节点)\r\n    word_count: int = 0     # 子树中的总词数 (非module节点)\r\n    # module/section 特有\r\n    confidence: Optional[str] = None\r\n    status: Optional[str] = None\r\n    tags: list[str] = Field(default_factory=list)\r\n```\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:21300-22017; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-012",
+      "documentation/km-blueprint-014"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "Schema (schemas.py 新增)"
+        ],
+        "excerpt": "### Schema (schemas.py 新增)\r\n\r\n```python\r\nclass TreeNodeType(str, Enum):\r\n    ROOT = \"root\"\r\n    CATEGORY = \"category\"\r\n    MODULE = \"module\"\r\n    SECTION = \"section\"\r\n\r\nclass TreeNode(BaseModel):\r\n    id: str\r\n    type: TreeNodeType\r\n    title: str\r\n    summary: str = \"\"\r\n    path: str = \"\"          # 完整路径: \"auth/jwt-config#signing\"\r\n    page_range: Optional[tuple[int, int]] = None\r\n    children: list[\"TreeNode\"] = Field(default_factory=list)\r\n    # 元信息\r\n    module_count: int = 0   # 子树中的模块总数 (非module节点)\r\n    word_count: int = 0     # 子树中的总词数 (非module节点)\r\n    # module/section 特有\r\n    confidence: Optional[str] = None\r\n    status: Optional[str] = None\r\n    tags: list[str] = Field(default_factory=list)\r\n```\r\n\r\n",
+        "char_start": 21300,
+        "char_end": 22017
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-023",
+  "category": "documentation",
+  "title": "km-blueprint: 安全边界",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition 安全边界.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: 安全边界.",
+    "details": "## 安全边界\r\n\r\n```python\r\n# 研究引擎的安全约束\r\n\r\nclass ResearchSafety:\r\n    \"\"\"研究引擎的安全边界\"\"\"\r\n\r\n    MAX_SOURCE_SIZE = 50_000      # 单个源最多读取50KB\r\n    MAX_TOTAL_SOURCES = 10        # 单次研究最多10个源\r\n    MAX_OUTPUT_TOKENS = 5000      # 综合输出最多5000 tokens\r\n    MAX_RESEARCH_TIME_MS = 60000  # 单次研究超时60秒\r\n    FORBIDDEN_PATHS = [           # 禁止访问的路径\r\n        \"/etc/\", \"/proc/\", \"/sys/\",\r\n        \"~/.ssh/\", \"~/.aws/\", \"~/.config/\",\r\n        \"*.env\", \"*.key\", \"*.pem\",\r\n    ]\r\n\r\n    @classmethod\r\n    def validate_source(cls, source: ResearchSource) -> None:\r\n        \"\"\"验证研究源是否在安全边界内\"\"\"\r\n        if source.type in (\"code_repo\", \"doc_dir\"):\r\n            path = Path(source.path).expanduser().resolve()\r\n            for forbidden in cls.FORBIDDEN_PATHS:\r\n                if fnmatch(str(path), forbidden):\r\n                    raise ValueError(f\"Source path {path} is forbidden: matches {forbidden}\")\r\n\r\n        if source.type == \"web_search\":\r\n            assert source.allowed_domains, \"Web search requires allowed_domains\"\r\n```\r\n\r\n---\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:41774-42788; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-022",
+      "documentation/km-blueprint-024"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "安全边界"
+        ],
+        "excerpt": "## 安全边界\r\n\r\n```python\r\n# 研究引擎的安全约束\r\n\r\nclass ResearchSafety:\r\n    \"\"\"研究引擎的安全边界\"\"\"\r\n\r\n    MAX_SOURCE_SIZE = 50_000      # 单个源最多读取50KB\r\n    MAX_TOTAL_SOURCES = 10        # 单次研究最多10个源\r\n    MAX_OUTPUT_TOKENS = 5000      # 综合输出最多5000 tokens\r\n    MAX_RESEARCH_TIME_MS = 60000  # 单次研究超时60秒\r\n    FORBIDDEN_PATHS = [           # 禁止访问的路径\r\n        \"/etc/\", \"/proc/\", \"/sys/\",\r\n        \"~/.ssh/\", \"~/.aws/\", \"~/.config/\",\r\n        \"*.env\", \"*.key\", \"*.pem\",\r\n    ]\r\n\r\n    @classmethod\r\n    def validate_source(cls, source: ResearchSource) -> None:\r\n        \"\"\"验证研究源是否在安全边界内\"\"\"\r\n        if source.type in (\"code_repo\", \"doc_dir\"):\r\n            path = Path(source.path).expanduser().resolve()\r\n            for forbidden in cls.FORBIDDEN_PATHS:\r\n                if fnmatch(str(path), forbidden):\r\n                    raise ValueError(f\"Source path {path} is forbidden: matches {forbidden}\")\r\n\r\n        if source.type == \"web_search\":\r\n            assert source.allowed_domains, \"Web search requires allowed_domains\"\r\n```\r\n\r\n---\r\n\r\n",
+        "char_start": 41774,
+        "char_end": 42788
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

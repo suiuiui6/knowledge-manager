@@ -1,0 +1,38 @@
+{
+  "id": "migration-cutover-001",
+  "category": "operations",
+  "title": "migration-cutover: Migration Cutover",
+  "summary": "Extractive snapshot of knowledge-manager/docs/runbooks/migration-cutover.md, section or definition Migration Cutover.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: Migration Cutover.",
+    "details": "# Migration Cutover\n\n1. Export incumbent data and run `km --kb-path <kb-path> migrate dry-run <export.json> --source-kind <kind>`.\n2. Review `total_documents`, `creates`, `updates`, `skips`, and `errors` before importing anything.\n3. Register enterprise connectors and run source pull jobs until `/api/source/jobs` and `km source status` stabilize.\n4. Review and approve staged modules so the governed module corpus matches the incoming source set.\n5. Run `km --kb-path <kb-path> eval run <suite.json>` and compare hit rate, MRR, nDCG, recall, and failure decomposition against the incumbent baseline.\n6. Review `km --kb-path <kb-path> ops --format json` and `/api/admin/dashboard` for stale sources, review backlog, and ingestion job health.\n7. Keep a rollback bundle containing the original export, dry-run summary, eval output, and source status snapshots before switching clients.\n\nRecord the following with every cutover:\n\n- release version\n- matrix summary path\n- support bundle path\n- backup bundle path\n- operator on call\n- rollback owner\n",
+    "examples": "",
+    "references": "sources/migration-cutover.md; migration-cutover:chars:0-1047; source SHA-256 4ee45b6553aba1b882a0752d92b799067f241aacafa2abffe4de5718b81508e5",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "migration-cutover"
+    ],
+    "related_modules": [],
+    "confidence": "medium",
+    "source": "paper-corpus://migration-cutover",
+    "source_spans": [
+      {
+        "external_id": "migration-cutover",
+        "heading_path": [
+          "Migration Cutover"
+        ],
+        "excerpt": "# Migration Cutover\n\n1. Export incumbent data and run `km --kb-path <kb-path> migrate dry-run <export.json> --source-kind <kind>`.\n2. Review `total_documents`, `creates`, `updates`, `skips`, and `errors` before importing anything.\n3. Register enterprise connectors and run source pull jobs until `/api/source/jobs` and `km source status` stabilize.\n4. Review and approve staged modules so the governed module corpus matches the incoming source set.\n5. Run `km --kb-path <kb-path> eval run <suite.json>` and compare hit rate, MRR, nDCG, recall, and failure decomposition against the incumbent baseline.\n6. Review `km --kb-path <kb-path> ops --format json` and `/api/admin/dashboard` for stale sources, review backlog, and ingestion job health.\n7. Keep a rollback bundle containing the original export, dry-run summary, eval output, and source status snapshots before switching clients.\n\nRecord the following with every cutover:\n\n- release version\n- matrix summary path\n- support bundle path\n- backup bundle path\n- operator on call\n- rollback owner\n",
+        "char_start": 0,
+        "char_end": 1047
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

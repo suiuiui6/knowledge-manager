@@ -1,0 +1,33 @@
+{
+  "stage_id": "M1",
+  "verdict": "通过（限定项目内案例与初步问题定义）",
+  "criteria": [
+    {
+      "criterion": "问题真实具体",
+      "status": "满足",
+      "evidence": "Observed project sources provide an actual corpus; comparing extractive module organization under equal budget is a bounded testable question, not a claimed deployment pain"
+    },
+    {
+      "criterion": "应用场景清楚",
+      "status": "满足",
+      "evidence": "Knowledge Manager technical documentation/code case; software knowledge retrieval and context selection"
+    },
+    {
+      "criterion": "评价标准初步明确",
+      "status": "满足",
+      "evidence": "M1-topic-definition.md defines evidence coverage, ranking, context budget, latency and authoring cost; results pending"
+    }
+  ],
+  "allowed_next_stage": "M2",
+  "not_accepted": [
+    "Human approval of modules",
+    "Novelty",
+    "Real-team deployment claims",
+    "Formal performance results"
+  ],
+  "critical_gaps": [
+    "Closest-method external literature remains unverified",
+    "Independent task relevance judgments missing",
+    "Actual KM comparison and matched budget evaluation pending"
+  ]
+}

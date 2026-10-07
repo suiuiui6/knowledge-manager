@@ -1,0 +1,29 @@
+{
+  "id": "management-of-change-moc",
+  "category": "safety",
+  "title": "变更管理（MOC）与安全风险评估",
+  "summary": "任何设计、工艺、设备、材料的变更都必须经过结构化MOC流程，强制进行安全风险评估（HAZOP或JSA），防止非预期变更引发安全事故。",
+  "created_at": "2026-06-10T04:34:49.608979Z",
+  "updated_at": "2026-06-10T04:34:49.608979Z",
+  "content": {
+    "overview": "我们采用五步MOC流程，确保变更在实施前得到充分的跨专业评审和风险分析，从源头控制过程安全风险。",
+    "details": "MOC启动条件：涉及设计、工艺、设备、材料的任何改变。流程：1) 提出变更申请，附带变更原因和影响分析；2) 技术评审，设计、工艺、设备、安全、质量专业会签；3) 风险评估，根据变更等级采用HAZOP分析（对流程图、工艺参数的系统偏离分析）或JSA（针对具体作业步骤）; 4) 分级审批，重大变更需由项目总监批准；5) 实施与跟踪，变更完成后验证效果并正式关闭。未经MOC流程的变更被视为严重违章。",
+    "examples": "例：更换关键设备垫片材质，需提出变更申请，经工艺和设备技术评审，用JSA分析拆卸、安装、试压过程风险，获批后才能实施。",
+    "references": "",
+    "caveats": "低等级变更如果用JSA可能忽略系统性工艺相互影响，需对判断标准培训；现场临时变更（如临时管接）极易绕开MOC，需重点稽查。"
+  },
+  "metadata": {
+    "tags": [
+      "safety",
+      "change-management",
+      "risk-assessment",
+      "hazop"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": "",
+    "expires_at": null,
+    "review_interval_days": null,
+    "status": "published"
+  }
+}

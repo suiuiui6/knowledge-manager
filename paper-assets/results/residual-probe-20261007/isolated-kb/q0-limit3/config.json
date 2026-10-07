@@ -1,0 +1,9 @@
+{
+  "routing_policy": {
+    "mandatory_companions": {
+      "operations": [
+        "operations/single-node-deploy-001"
+      ]
+    }
+  }
+}

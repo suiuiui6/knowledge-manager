@@ -1,0 +1,28 @@
+{
+  "id": "near-miss-trend-analysis",
+  "category": "safety",
+  "title": "未遂事件（Near Miss）分析",
+  "summary": "我们跟踪未遂事件趋势，利用47起近失数据推动前置预防，重点关注吊装偏移和气瓶隐患增加。",
+  "created_at": "2026-06-10T04:51:15.106189Z",
+  "updated_at": "2026-06-10T04:51:15.106189Z",
+  "content": {
+    "overview": "我们将未遂事件视为免费的安全管理信号，通过分析其类型、分布和趋势，提前采取措施阻断事故链条，而非仅关注已发生的事故。",
+    "details": "Q2未遂事件47起，同比上升12%，其中吊装偏移15起、气瓶隐患12起、脚手架问题8起。上升表明风险暴露增多或上报意识提高。我们针对吊装偏移强化吊装方案审批和地基验收；对气瓶隐患推行每日检查和色标管理。",
+    "examples": "",
+    "references": "",
+    "caveats": "未遂事件上报依赖一线人员意识和意愿，存在漏报和选择性上报可能，需持续营造无责备上报文化来保证数据质量。"
+  },
+  "metadata": {
+    "tags": [
+      "未遂事件",
+      "近失管理",
+      "预防"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": "",
+    "expires_at": null,
+    "review_interval_days": null,
+    "status": "published"
+  }
+}

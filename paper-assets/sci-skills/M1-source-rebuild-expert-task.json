@@ -1,0 +1,49 @@
+{
+  "contract_version": "1.0",
+  "project_id": "knowledge-manager-journal-20261007",
+  "paper_family": "M",
+  "stage_id": "M1",
+  "task_id": "M1-source-rebuild-003",
+  "expert_skill": "sci-skills-data-availability",
+  "task_summary": "Build an isolated source-grounded corpus and local reproducibility package for the selected paper topic",
+  "inputs": [
+    "knowledge-manager/README.md",
+    "knowledge-manager/docs/BLUEPRINT.md",
+    "knowledge-manager/docs/runbooks/enterprise-rollout.md",
+    "knowledge-manager/docs/runbooks/migration-cutover.md",
+    "knowledge-manager/docs/runbooks/deploy-single-node.md",
+    "knowledge-manager/docs/runbooks/observability-and-alerting.md",
+    "knowledge-manager/src/knowledge_manager/schemas.py",
+    "knowledge-manager/src/knowledge_manager/policy.py",
+    "knowledge-manager/src/knowledge_manager/retrieval_eval.py",
+    "knowledge-manager/src/knowledge_manager/markdown.py"
+  ],
+  "expected_outputs": [
+    "paper-assets/corpora/km-project-sources-v1",
+    "paper-assets/scripts/rebuild_source_grounded_corpus.py",
+    "paper-assets/sci-skills/corpus-construction-methods.md"
+  ],
+  "evidence_boundaries": [
+    "Automatic extraction is disclosed",
+    "Original source spans must match exactly",
+    "No human approval or performance claim",
+    "No invented public repository or identifier"
+  ],
+  "acceptance_checks": [
+    "Snapshot hashes match originals",
+    "All module details match recorded source intervals",
+    "Project Module schema validates every output",
+    "Old knowledge bases not modified"
+  ],
+  "known_missing_items": [
+    "Human task relevance labels",
+    "External closest-method verification",
+    "Matched-budget actual-system evaluation"
+  ],
+  "manual_operation_allowed": false,
+  "optional_adapters_allowed": [
+    "local-python",
+    "local-file-import"
+  ],
+  "stage_authority": "sci-skills"
+}

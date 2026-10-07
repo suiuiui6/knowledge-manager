@@ -1,0 +1,40 @@
+{
+  "id": "km-readme-031",
+  "category": "documentation",
+  "title": "km-readme: Example knowledge base",
+  "summary": "Extractive snapshot of knowledge-manager/README.md, section or definition Example knowledge base.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: Example knowledge base.",
+    "details": "## Example knowledge base\n\nSee [`examples/sample_knowledge_base/`](examples/sample_knowledge_base/) for a small working KB you can copy as a starting point.\n\n",
+    "examples": "",
+    "references": "sources/km-readme.md; km-readme:chars:14610-14768; source SHA-256 3e5706ca7be9c3305b940f286214b6508158838296e960f08c00693b52fd3f20",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-readme"
+    ],
+    "related_modules": [
+      "documentation/km-readme-030"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-readme",
+    "source_spans": [
+      {
+        "external_id": "km-readme",
+        "heading_path": [
+          "Example knowledge base"
+        ],
+        "excerpt": "## Example knowledge base\n\nSee [`examples/sample_knowledge_base/`](examples/sample_knowledge_base/) for a small working KB you can copy as a starting point.\n\n",
+        "char_start": 14610,
+        "char_end": 14768
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

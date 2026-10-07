@@ -1,0 +1,41 @@
+{
+  "id": "module-schemas-030",
+  "category": "implementation",
+  "title": "module-schemas: ResearchSource",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/schemas.py, section or definition ResearchSource.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: ResearchSource.",
+    "details": "class ResearchSource(BaseModel):\r\n    type: Literal[\"code_repo\", \"doc_dir\", \"web_search\", \"api\"]\r\n    path: str = \"\"\r\n    include_patterns: list[str] = Field(default_factory=list)\r\n    exclude_patterns: list[str] = Field(default_factory=list)\r\n    category_hint: str = \"\"\r\n",
+    "examples": "",
+    "references": "sources/module-schemas.py; module-schemas:chars:11551-11824; source SHA-256 c857e4a99e2e152db3aca0d1a9fc458bebe20ab352e24d0ae1f144a6594904a8",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "module-schemas"
+    ],
+    "related_modules": [
+      "implementation/module-schemas-029",
+      "implementation/module-schemas-031"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://module-schemas",
+    "source_spans": [
+      {
+        "external_id": "module-schemas",
+        "heading_path": [
+          "ResearchSource"
+        ],
+        "excerpt": "class ResearchSource(BaseModel):\r\n    type: Literal[\"code_repo\", \"doc_dir\", \"web_search\", \"api\"]\r\n    path: str = \"\"\r\n    include_patterns: list[str] = Field(default_factory=list)\r\n    exclude_patterns: list[str] = Field(default_factory=list)\r\n    category_hint: str = \"\"\r\n",
+        "char_start": 11551,
+        "char_end": 11824
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

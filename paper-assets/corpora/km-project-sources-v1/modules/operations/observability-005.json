@@ -1,0 +1,40 @@
+{
+  "id": "observability-005",
+  "category": "operations",
+  "title": "observability: Minimum Alerts",
+  "summary": "Extractive snapshot of knowledge-manager/docs/runbooks/observability-and-alerting.md, section or definition Minimum Alerts.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: Minimum Alerts.",
+    "details": "## Minimum Alerts\n\n- readiness non-200 for 5 minutes\n- metrics endpoint scrape failure for 5 minutes\n- failed job count > 0\n- stale running job count > 0\n- disk free space below 15%\n",
+    "examples": "",
+    "references": "sources/observability.md; observability:chars:954-1136; source SHA-256 a7b078911060cff08b059eeabb6e515f6a8889b302c060b42f5c2e1da4969b42",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "observability"
+    ],
+    "related_modules": [
+      "operations/observability-004"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://observability",
+    "source_spans": [
+      {
+        "external_id": "observability",
+        "heading_path": [
+          "Minimum Alerts"
+        ],
+        "excerpt": "## Minimum Alerts\n\n- readiness non-200 for 5 minutes\n- metrics endpoint scrape failure for 5 minutes\n- failed job count > 0\n- stale running job count > 0\n- disk free space below 15%\n",
+        "char_start": 954,
+        "char_end": 1136
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

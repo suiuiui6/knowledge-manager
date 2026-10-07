@@ -1,0 +1,41 @@
+{
+  "id": "markdown-format-002",
+  "category": "implementation",
+  "title": "markdown-format: render_markdown_module",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/markdown.py, section or definition render_markdown_module.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: render_markdown_module.",
+    "details": "def render_markdown_module(module: Module) -> str:\n    fm = {\n        \"id\": module.id,\n        \"category\": module.category,\n        \"title\": module.title,\n        \"summary\": module.summary,\n        \"tags\": module.metadata.tags,\n        \"confidence\": module.metadata.confidence,\n        \"status\": module.metadata.status,\n        \"source\": module.metadata.source or None,\n        \"expires_at\": module.metadata.expires_at.isoformat() if module.metadata.expires_at else None,\n        \"review_interval_days\": module.metadata.review_interval_days,\n        \"related_modules\": module.metadata.related_modules or None,\n        \"created_at\": module.created_at.isoformat(),\n        \"updated_at\": module.updated_at.isoformat(),\n    }\n    fm = {k: v for k, v in fm.items() if v is not None and v != [] and v != \"\"}\n\n    fm_yaml = yaml.dump(fm, allow_unicode=True, default_flow_style=False, sort_keys=False).strip()\n\n    sections = []\n    for heading_en, field in [(\"概述\", \"overview\"), (\"细节\", \"details\"), (\"示例\", \"examples\"), (\"参考\", \"references\"), (\"注意事项\", \"caveats\")]:\n        text = getattr(module.content, field, \"\")\n        if text and text.strip():\n            sections.append(f\"# {heading_en}\\n\\n{text.strip()}\\n\")\n\n    body = \"\\n\".join(sections)\n    return f\"---\\n{fm_yaml}\\n---\\n\\n{body}\"\n",
+    "examples": "",
+    "references": "sources/markdown-format.py; markdown-format:chars:3726-5007; source SHA-256 a69114b0b0d614064365eb97cb7f22d87eee8676342c8a25fdb7be1a520732f7",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "markdown-format"
+    ],
+    "related_modules": [
+      "implementation/markdown-format-001",
+      "implementation/markdown-format-003"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://markdown-format",
+    "source_spans": [
+      {
+        "external_id": "markdown-format",
+        "heading_path": [
+          "render_markdown_module"
+        ],
+        "excerpt": "def render_markdown_module(module: Module) -> str:\n    fm = {\n        \"id\": module.id,\n        \"category\": module.category,\n        \"title\": module.title,\n        \"summary\": module.summary,\n        \"tags\": module.metadata.tags,\n        \"confidence\": module.metadata.confidence,\n        \"status\": module.metadata.status,\n        \"source\": module.metadata.source or None,\n        \"expires_at\": module.metadata.expires_at.isoformat() if module.metadata.expires_at else None,\n        \"review_interval_days\": module.metadata.review_interval_days,\n        \"related_modules\": module.metadata.related_modules or None,\n        \"created_at\": module.created_at.isoformat(),\n        \"updated_at\": module.updated_at.isoformat(),\n    }\n    fm = {k: v for k, v in fm.items() if v is not None and v != [] and v != \"\"}\n\n    fm_yaml = yaml.dump(fm, allow_unicode=True, default_flow_style=False, sort_keys=False).strip()\n\n    sections = []\n    for heading_en, field in [(\"概述\", \"overview\"), (\"细节\", \"details\"), (\"示例\", \"examples\"), (\"参考\", \"references\"), (\"注意事项\", \"caveats\")]:\n        text = getattr(module.content, field, \"\")\n        if text and text.strip():\n            sections.append(f\"# {heading_en}\\n\\n{text.strip()}\\n\")\n\n    body = \"\\n\".join(sections)\n    return f\"---\\n{fm_yaml}\\n---\\n\\n{body}\"\n",
+        "char_start": 3726,
+        "char_end": 5007
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

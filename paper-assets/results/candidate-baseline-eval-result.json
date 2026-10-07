@@ -1,0 +1,1788 @@
+{
+  "status": "candidate_not_main_result",
+  "eligible_for_main_comparison": false,
+  "eligibility_reason": "Results are exploratory until every query is author_labeled or double_checked.",
+  "query_path": "D:\\tyh\\paper-assets\\eval\\judged-queries.candidate.jsonl",
+  "query_status_counts": {
+    "candidate_needs_author_review": 30
+  },
+  "system_results": [
+    {
+      "system": "structured_module_keyword",
+      "query_count": 30,
+      "evaluable_query_count": 28,
+      "top_k": 5,
+      "MRR": 0.4708,
+      "nDCG_at_5": 0.5251,
+      "recall_at_5": 0.6964,
+      "precision_at_5": 0.1714,
+      "mean_latency_ms": 0.629,
+      "p95_latency_ms": 0.848,
+      "avg_loaded_units": 5,
+      "first_hit_rank_mean": 2.25,
+      "miss_count": 8,
+      "per_query": [
+        {
+          "query_id": "KM-ARCH-001",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "architecture/design-boundaries"
+          ],
+          "ranked_modules": [
+            "safety/incident-investigation-method",
+            "safety/site-access-control-zoning",
+            "safety/accident-investigation-4-no-pass",
+            "architecture/design-boundaries",
+            "safety/emergency-response-grading"
+          ],
+          "first_hit_rank": 4,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 0.43067655807339306,
+          "latency_ms": 0.595
+        },
+        {
+          "query_id": "KM-ARCH-002",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "architecture/git-native-storage"
+          ],
+          "ranked_modules": [
+            "safety/incident-investigation-method",
+            "safety/near-miss-trend-analysis",
+            "safety/smart-safety-helmet-pilot",
+            "safety/smart-helmet-deployment",
+            "safety/accident-investigation-4-no-pass"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": 0.0,
+          "precision_at_k": 0.0,
+          "nDCG_at_k": 0.0,
+          "latency_ms": 0.46
+        },
+        {
+          "query_id": "KM-ARCH-003",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "architecture/mcp-protocol"
+          ],
+          "ranked_modules": [
+            "architecture/design-boundaries",
+            "safety/incident-investigation-method",
+            "architecture/mcp-protocol",
+            "safety/moc-risk-assessment",
+            "safety/accident-investigation-4-no-pass"
+          ],
+          "first_hit_rank": 3,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 0.5,
+          "latency_ms": 0.446
+        },
+        {
+          "query_id": "KM-ARCH-004",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "architecture/federation"
+          ],
+          "ranked_modules": [
+            "search/chinese-segmentation",
+            "safety/site-access-and-zoning",
+            "safety/site-access-control-zoning",
+            "safety/three-level-safety-training",
+            "architecture/federation"
+          ],
+          "first_hit_rank": 5,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 0.38685280723454163,
+          "latency_ms": 0.271
+        },
+        {
+          "query_id": "KM-OPS-001",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "operations/module-lifecycle"
+          ],
+          "ranked_modules": [
+            "safety/smart-safety-helmet-pilot",
+            "safety/incident-investigation-method",
+            "operations/module-lifecycle",
+            "safety/summer-heat-prevention",
+            "safety/working-at-height-safety"
+          ],
+          "first_hit_rank": 3,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 0.5,
+          "latency_ms": 0.331
+        },
+        {
+          "query_id": "KM-SEARCH-001",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "search/ranking-pipeline"
+          ],
+          "ranked_modules": [
+            "search/ranking-pipeline",
+            "safety/risk-source-ranking-method",
+            "safety/contractor-safety-ranking",
+            "safety/major-risk-source-ranking",
+            "architecture/design-boundaries"
+          ],
+          "first_hit_rank": 1,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 1.0,
+          "latency_ms": 0.297
+        },
+        {
+          "query_id": "KM-SEARCH-002",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "search/chinese-segmentation"
+          ],
+          "ranked_modules": [
+            "safety/incident-investigation-method",
+            "safety/accident-investigation-4-no-pass",
+            "search/chinese-segmentation",
+            "safety/near-miss-management-and-analysis",
+            "safety/confined-space-management-audit"
+          ],
+          "first_hit_rank": 3,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 0.5,
+          "latency_ms": 0.44
+        },
+        {
+          "query_id": "SE-API-001",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "api/api-documentation-essentials"
+          ],
+          "ranked_modules": [
+            "safety/emergency-response-grading",
+            "safety/site-access-control-zoning",
+            "safety/smart-safety-helmet-pilot",
+            "safety/accident-investigation-4-no-pass",
+            "safety/completion-safety-documents"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": 0.0,
+          "precision_at_k": 0.0,
+          "nDCG_at_k": 0.0,
+          "latency_ms": 0.57
+        },
+        {
+          "query_id": "SE-API-002",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "api/api-rate-limiting"
+          ],
+          "ranked_modules": [
+            "safety/incident-investigation-method",
+            "safety/accident-investigation-4-no-pass",
+            "api/api-rate-limiting",
+            "safety/key-safety-kpi-monitoring",
+            "safety/moc-risk-assessment"
+          ],
+          "first_hit_rank": 3,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 0.5,
+          "latency_ms": 0.504
+        },
+        {
+          "query_id": "SE-API-003",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "api/http-status-codes"
+          ],
+          "ranked_modules": [
+            "api/http-status-codes",
+            "safety/site-access-control-zoning",
+            "safety/emergency-response-grading",
+            "safety/smart-safety-helmet-pilot",
+            "auth/access-token-presentation"
+          ],
+          "first_hit_rank": 1,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 1.0,
+          "latency_ms": 0.504
+        },
+        {
+          "query_id": "SE-AUTH-001",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "auth/authorization-code-receipt",
+            "auth/token-exchange-endpoint",
+            "auth/user-authorization-consent"
+          ],
+          "ranked_modules": [
+            "safety/site-access-and-zoning",
+            "safety/smart-safety-helmet-pilot",
+            "safety/site-access-control-zoning",
+            "safety/hot-work-permit-grading",
+            "safety/subcontractor-hse-integration"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": 0.0,
+          "precision_at_k": 0.0,
+          "nDCG_at_k": 0.0,
+          "latency_ms": 0.74
+        },
+        {
+          "query_id": "SE-AUTH-002",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "auth/access-token-presentation"
+          ],
+          "ranked_modules": [
+            "safety/accident-investigation-4-no-pass",
+            "safety/moc-risk-assessment",
+            "safety/heat-stress-prevention-protocol",
+            "safety/summer-heat-prevention",
+            "safety/confined-space-management-audit"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": 0.0,
+          "precision_at_k": 0.0,
+          "nDCG_at_k": 0.0,
+          "latency_ms": 0.526
+        },
+        {
+          "query_id": "SE-DB-001",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "database/connection-pooling"
+          ],
+          "ranked_modules": [
+            "safety/emergency-supply-configuration",
+            "safety/pre-construction-safety-permits",
+            "safety/emergency-response-grading",
+            "safety/working-at-height-safety",
+            "safety/smart-helmet-deployment"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": 0.0,
+          "precision_at_k": 0.0,
+          "nDCG_at_k": 0.0,
+          "latency_ms": 0.678
+        },
+        {
+          "query_id": "SE-DB-002",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "database/database-migrations",
+            "database/transaction-management"
+          ],
+          "ranked_modules": [
+            "safety/near-miss-trend-analysis",
+            "safety/smart-safety-helmet-pilot",
+            "safety/emergency-response-grading",
+            "safety/near-miss-management-and-analysis",
+            "safety/site-access-control-zoning"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": 0.0,
+          "precision_at_k": 0.0,
+          "nDCG_at_k": 0.0,
+          "latency_ms": 0.641
+        },
+        {
+          "query_id": "SE-DEP-001",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "deployment/blue-green-deployment",
+            "deployment/ci-cd-pipeline"
+          ],
+          "ranked_modules": [
+            "safety/incident-investigation-method",
+            "safety/accident-investigation-4-no-pass",
+            "safety/near-miss-management-and-analysis",
+            "safety/contractor-safety-performance-ranking",
+            "safety/rectification-rate-management"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": 0.0,
+          "precision_at_k": 0.0,
+          "nDCG_at_k": 0.0,
+          "latency_ms": 0.633
+        },
+        {
+          "query_id": "SE-BOUND-001",
+          "status": "candidate_needs_author_review",
+          "required_modules": [],
+          "ranked_modules": [
+            "safety/incident-investigation-method",
+            "architecture/mcp-protocol",
+            "safety/accident-investigation-4-no-pass",
+            "api/api-documentation-essentials",
+            "safety/near-miss-management-and-analysis"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": null,
+          "precision_at_k": null,
+          "nDCG_at_k": null,
+          "latency_ms": 0.301
+        },
+        {
+          "query_id": "HSE-001",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "safety/confined-space-gas-control",
+            "safety/confined-space-gas-monitoring"
+          ],
+          "ranked_modules": [
+            "safety/confined-space-gas-control",
+            "safety/confined-space-gas-monitoring",
+            "safety/confined-space-management-audit",
+            "safety/confined-space-governance",
+            "safety/site-access-and-zoning"
+          ],
+          "first_hit_rank": 1,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.4,
+          "nDCG_at_k": 1.0,
+          "latency_ms": 0.711
+        },
+        {
+          "query_id": "HSE-002",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "safety/confined-space-governance",
+            "safety/confined-space-management-audit"
+          ],
+          "ranked_modules": [
+            "safety/confined-space-governance",
+            "safety/confined-space-management-audit",
+            "safety/accident-investigation-4-no-pass",
+            "safety/incident-investigation-method",
+            "safety/confined-space-gas-monitoring"
+          ],
+          "first_hit_rank": 1,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.4,
+          "nDCG_at_k": 1.0,
+          "latency_ms": 0.728
+        },
+        {
+          "query_id": "HSE-003",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "safety/accident-investigation-4-no-pass"
+          ],
+          "ranked_modules": [
+            "safety/accident-investigation-4-no-pass",
+            "safety/incident-investigation-method",
+            "safety/management-of-change-moc",
+            "safety/moc-risk-assessment",
+            "safety/near-miss-management-and-analysis"
+          ],
+          "first_hit_rank": 1,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 1.0,
+          "latency_ms": 0.755
+        },
+        {
+          "query_id": "HSE-004",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "safety/hot-work-grading-approval"
+          ],
+          "ranked_modules": [
+            "safety/hot-work-permit-grading",
+            "safety/hot-work-grading-approval",
+            "safety/moc-risk-assessment",
+            "safety/site-access-control-zoning",
+            "safety/major-risk-source-ranking"
+          ],
+          "first_hit_rank": 2,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 0.6309297535714575,
+          "latency_ms": 0.799
+        },
+        {
+          "query_id": "HSE-005",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "safety/height-work-safety-control"
+          ],
+          "ranked_modules": [
+            "safety/working-at-height-safety",
+            "safety/height-work-safety-control",
+            "safety/summer-heat-prevention",
+            "safety/confined-space-management-audit",
+            "safety/inspection-test-plan-itp"
+          ],
+          "first_hit_rank": 2,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 0.6309297535714575,
+          "latency_ms": 0.728
+        },
+        {
+          "query_id": "HSE-006",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "safety/contractor-safety-performance-ranking",
+            "safety/contractor-safety-ranking"
+          ],
+          "ranked_modules": [
+            "safety/contractor-safety-ranking",
+            "safety/contractor-safety-performance-ranking",
+            "safety/occupational-health-examination-rate",
+            "safety/subcontractor-hse-integration",
+            "safety/key-safety-kpi-monitoring"
+          ],
+          "first_hit_rank": 1,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.4,
+          "nDCG_at_k": 1.0,
+          "latency_ms": 0.721
+        },
+        {
+          "query_id": "HSE-007",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "safety/emergency-supplies-configuration",
+            "safety/emergency-supply-configuration"
+          ],
+          "ranked_modules": [
+            "safety/emergency-supply-configuration",
+            "safety/emergency-supplies-configuration",
+            "safety/site-access-and-zoning",
+            "safety/site-access-control-zoning",
+            "safety/heat-stress-prevention-protocol"
+          ],
+          "first_hit_rank": 1,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.4,
+          "nDCG_at_k": 1.0,
+          "latency_ms": 0.667
+        },
+        {
+          "query_id": "HSE-008",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "safety/emergency-response-grading"
+          ],
+          "ranked_modules": [
+            "safety/emergency-response-grading",
+            "safety/incident-investigation-method",
+            "safety/accident-investigation-4-no-pass",
+            "safety/smart-helmet-deployment",
+            "safety/near-miss-management-and-analysis"
+          ],
+          "first_hit_rank": 1,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 1.0,
+          "latency_ms": 0.53
+        },
+        {
+          "query_id": "HSE-009",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "safety/heat-stress-prevention-protocol"
+          ],
+          "ranked_modules": [
+            "safety/heat-stress-prevention-protocol",
+            "safety/summer-heat-prevention",
+            "safety/site-access-control-zoning",
+            "safety/safety-points-incentive-scheme",
+            "safety/hot-work-grading-approval"
+          ],
+          "first_hit_rank": 1,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 1.0,
+          "latency_ms": 0.681
+        },
+        {
+          "query_id": "HSE-010",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "safety/completion-safety-documents"
+          ],
+          "ranked_modules": [
+            "safety/completion-safety-documents",
+            "safety/three-level-safety-training",
+            "safety/inspection-test-plan-itp",
+            "safety/incident-investigation-method",
+            "safety/accident-investigation-4-no-pass"
+          ],
+          "first_hit_rank": 1,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 1.0,
+          "latency_ms": 1.88
+        },
+        {
+          "query_id": "HSE-011",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "safety/confined-space-gas-control"
+          ],
+          "ranked_modules": [
+            "safety/confined-space-management-audit",
+            "safety/confined-space-governance",
+            "safety/smart-safety-helmet-pilot",
+            "safety/site-access-and-zoning",
+            "safety/confined-space-gas-control"
+          ],
+          "first_hit_rank": 5,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 0.38685280723454163,
+          "latency_ms": 0.846
+        },
+        {
+          "query_id": "HSE-012",
+          "status": "candidate_needs_author_review",
+          "required_modules": [],
+          "ranked_modules": [
+            "safety/moc-risk-assessment",
+            "safety/management-of-change-moc",
+            "safety/incident-investigation-method",
+            "safety/accident-investigation-4-no-pass",
+            "safety/near-miss-management-and-analysis"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": null,
+          "precision_at_k": null,
+          "nDCG_at_k": null,
+          "latency_ms": 0.506
+        },
+        {
+          "query_id": "MIX-001",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "auth/authorization-code-flow",
+            "auth/authorization-code-receipt"
+          ],
+          "ranked_modules": [
+            "safety/smart-safety-helmet-pilot",
+            "safety/emergency-supply-configuration",
+            "safety/emergency-supplies-configuration",
+            "safety/emergency-response-grading",
+            "auth/authorization-code-flow"
+          ],
+          "first_hit_rank": 5,
+          "recall_at_k": 0.5,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 0.23719771276929622,
+          "latency_ms": 0.518
+        },
+        {
+          "query_id": "MIX-002",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "architecture/design-boundaries",
+            "search/ranking-pipeline"
+          ],
+          "ranked_modules": [
+            "safety/smart-safety-helmet-pilot",
+            "safety/height-work-safety-control",
+            "safety/smart-helmet-deployment",
+            "safety/management-of-change-moc",
+            "safety/key-safety-kpi-monitoring"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": 0.0,
+          "precision_at_k": 0.0,
+          "nDCG_at_k": 0.0,
+          "latency_ms": 0.848
+        }
+      ]
+    },
+    {
+      "system": "bm25_keyword_chunk_baseline",
+      "query_count": 30,
+      "evaluable_query_count": 28,
+      "top_k": 5,
+      "MRR": 0.4238,
+      "nDCG_at_5": 0.4957,
+      "recall_at_5": 0.5893,
+      "precision_at_5": 0.1643,
+      "mean_latency_ms": 0.804,
+      "p95_latency_ms": 1.686,
+      "avg_loaded_units": 5,
+      "first_hit_rank_mean": 2,
+      "miss_count": 11,
+      "per_query": [
+        {
+          "query_id": "KM-ARCH-001",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "architecture/design-boundaries"
+          ],
+          "ranked_modules": [
+            "safety/incident-investigation-method",
+            "safety/site-access-control-zoning",
+            "safety/inspection-test-plan-itp",
+            "safety/accident-investigation-4-no-pass",
+            "safety/emergency-response-grading"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": 0.0,
+          "precision_at_k": 0.0,
+          "nDCG_at_k": 0.0,
+          "latency_ms": 0.691
+        },
+        {
+          "query_id": "KM-ARCH-002",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "architecture/git-native-storage"
+          ],
+          "ranked_modules": [
+            "safety/incident-investigation-method",
+            "safety/near-miss-trend-analysis",
+            "safety/smart-safety-helmet-pilot",
+            "safety/smart-helmet-deployment",
+            "safety/accident-investigation-4-no-pass"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": 0.0,
+          "precision_at_k": 0.0,
+          "nDCG_at_k": 0.0,
+          "latency_ms": 0.632
+        },
+        {
+          "query_id": "KM-ARCH-003",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "architecture/mcp-protocol"
+          ],
+          "ranked_modules": [
+            "architecture/design-boundaries",
+            "safety/incident-investigation-method",
+            "safety/moc-risk-assessment",
+            "safety/accident-investigation-4-no-pass",
+            "architecture/mcp-protocol"
+          ],
+          "first_hit_rank": 5,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 0.38685280723454163,
+          "latency_ms": 0.682
+        },
+        {
+          "query_id": "KM-ARCH-004",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "architecture/federation"
+          ],
+          "ranked_modules": [
+            "search/chinese-segmentation",
+            "safety/site-access-and-zoning",
+            "safety/site-access-control-zoning",
+            "safety/three-level-safety-training"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": 0.0,
+          "precision_at_k": 0.0,
+          "nDCG_at_k": 0.0,
+          "latency_ms": 0.602
+        },
+        {
+          "query_id": "KM-OPS-001",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "operations/module-lifecycle"
+          ],
+          "ranked_modules": [
+            "safety/smart-safety-helmet-pilot",
+            "safety/summer-heat-prevention",
+            "safety/incident-investigation-method",
+            "safety/emergency-supply-configuration",
+            "search/chinese-segmentation"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": 0.0,
+          "precision_at_k": 0.0,
+          "nDCG_at_k": 0.0,
+          "latency_ms": 0.776
+        },
+        {
+          "query_id": "KM-SEARCH-001",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "search/ranking-pipeline"
+          ],
+          "ranked_modules": [
+            "safety/risk-source-ranking-method",
+            "search/ranking-pipeline",
+            "safety/contractor-safety-ranking",
+            "safety/major-risk-source-ranking"
+          ],
+          "first_hit_rank": 2,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.4,
+          "nDCG_at_k": 1.1309297535714575,
+          "latency_ms": 0.607
+        },
+        {
+          "query_id": "KM-SEARCH-002",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "search/chinese-segmentation"
+          ],
+          "ranked_modules": [
+            "safety/incident-investigation-method",
+            "safety/accident-investigation-4-no-pass",
+            "safety/near-miss-management-and-analysis",
+            "search/chinese-segmentation",
+            "safety/confined-space-management-audit"
+          ],
+          "first_hit_rank": 4,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 0.43067655807339306,
+          "latency_ms": 0.662
+        },
+        {
+          "query_id": "SE-API-001",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "api/api-documentation-essentials"
+          ],
+          "ranked_modules": [
+            "safety/emergency-response-grading",
+            "safety/site-access-control-zoning",
+            "safety/smart-safety-helmet-pilot",
+            "safety/smart-helmet-deployment",
+            "safety/accident-investigation-4-no-pass"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": 0.0,
+          "precision_at_k": 0.0,
+          "nDCG_at_k": 0.0,
+          "latency_ms": 0.585
+        },
+        {
+          "query_id": "SE-API-002",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "api/api-rate-limiting"
+          ],
+          "ranked_modules": [
+            "safety/incident-investigation-method",
+            "safety/accident-investigation-4-no-pass",
+            "api/api-rate-limiting",
+            "safety/key-safety-kpi-monitoring"
+          ],
+          "first_hit_rank": 3,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.4,
+          "nDCG_at_k": 0.9306765580733931,
+          "latency_ms": 0.511
+        },
+        {
+          "query_id": "SE-API-003",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "api/http-status-codes"
+          ],
+          "ranked_modules": [
+            "safety/site-access-control-zoning",
+            "api/http-status-codes",
+            "safety/emergency-response-grading",
+            "safety/smart-safety-helmet-pilot",
+            "safety/hot-work-grading-approval"
+          ],
+          "first_hit_rank": 2,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 0.6309297535714575,
+          "latency_ms": 0.474
+        },
+        {
+          "query_id": "SE-AUTH-001",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "auth/authorization-code-receipt",
+            "auth/token-exchange-endpoint",
+            "auth/user-authorization-consent"
+          ],
+          "ranked_modules": [
+            "safety/site-access-and-zoning",
+            "safety/smart-safety-helmet-pilot",
+            "safety/site-access-control-zoning",
+            "safety/hot-work-permit-grading",
+            "safety/subcontractor-hse-integration"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": 0.0,
+          "precision_at_k": 0.0,
+          "nDCG_at_k": 0.0,
+          "latency_ms": 0.639
+        },
+        {
+          "query_id": "SE-AUTH-002",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "auth/access-token-presentation"
+          ],
+          "ranked_modules": [
+            "safety/accident-investigation-4-no-pass",
+            "safety/moc-risk-assessment",
+            "safety/summer-heat-prevention",
+            "safety/heat-stress-prevention-protocol",
+            "safety/incident-investigation-method"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": 0.0,
+          "precision_at_k": 0.0,
+          "nDCG_at_k": 0.0,
+          "latency_ms": 0.574
+        },
+        {
+          "query_id": "SE-DB-001",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "database/connection-pooling"
+          ],
+          "ranked_modules": [
+            "safety/emergency-supply-configuration",
+            "safety/emergency-response-grading",
+            "safety/pre-construction-safety-permits",
+            "safety/smart-helmet-deployment",
+            "safety/working-at-height-safety"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": 0.0,
+          "precision_at_k": 0.0,
+          "nDCG_at_k": 0.0,
+          "latency_ms": 0.715
+        },
+        {
+          "query_id": "SE-DB-002",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "database/database-migrations",
+            "database/transaction-management"
+          ],
+          "ranked_modules": [
+            "safety/near-miss-trend-analysis",
+            "safety/emergency-response-grading",
+            "safety/smart-safety-helmet-pilot",
+            "safety/near-miss-management-and-analysis",
+            "safety/contractor-safety-performance-ranking"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": 0.0,
+          "precision_at_k": 0.0,
+          "nDCG_at_k": 0.0,
+          "latency_ms": 0.557
+        },
+        {
+          "query_id": "SE-DEP-001",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "deployment/blue-green-deployment",
+            "deployment/ci-cd-pipeline"
+          ],
+          "ranked_modules": [
+            "safety/incident-investigation-method",
+            "safety/accident-investigation-4-no-pass",
+            "deployment/ci-cd-pipeline",
+            "safety/near-miss-management-and-analysis",
+            "safety/rectification-rate-management"
+          ],
+          "first_hit_rank": 3,
+          "recall_at_k": 0.5,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 0.3065735963827292,
+          "latency_ms": 0.644
+        },
+        {
+          "query_id": "SE-BOUND-001",
+          "status": "candidate_needs_author_review",
+          "required_modules": [],
+          "ranked_modules": [
+            "safety/incident-investigation-method",
+            "safety/accident-investigation-4-no-pass",
+            "api/api-documentation-essentials",
+            "safety/near-miss-management-and-analysis"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": null,
+          "precision_at_k": null,
+          "nDCG_at_k": null,
+          "latency_ms": 0.279
+        },
+        {
+          "query_id": "HSE-001",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "safety/confined-space-gas-control",
+            "safety/confined-space-gas-monitoring"
+          ],
+          "ranked_modules": [
+            "safety/confined-space-gas-control",
+            "safety/confined-space-gas-monitoring",
+            "safety/confined-space-management-audit",
+            "safety/confined-space-governance",
+            "safety/site-access-and-zoning"
+          ],
+          "first_hit_rank": 1,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.4,
+          "nDCG_at_k": 1.0,
+          "latency_ms": 0.733
+        },
+        {
+          "query_id": "HSE-002",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "safety/confined-space-governance",
+            "safety/confined-space-management-audit"
+          ],
+          "ranked_modules": [
+            "safety/confined-space-governance",
+            "safety/confined-space-management-audit",
+            "safety/confined-space-gas-monitoring",
+            "safety/incident-investigation-method",
+            "safety/accident-investigation-4-no-pass"
+          ],
+          "first_hit_rank": 1,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.4,
+          "nDCG_at_k": 1.0,
+          "latency_ms": 1.216
+        },
+        {
+          "query_id": "HSE-003",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "safety/accident-investigation-4-no-pass"
+          ],
+          "ranked_modules": [
+            "safety/accident-investigation-4-no-pass",
+            "safety/incident-investigation-method",
+            "safety/management-of-change-moc",
+            "safety/moc-risk-assessment",
+            "safety/near-miss-management-and-analysis"
+          ],
+          "first_hit_rank": 1,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 1.0,
+          "latency_ms": 3.653
+        },
+        {
+          "query_id": "HSE-004",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "safety/hot-work-grading-approval"
+          ],
+          "ranked_modules": [
+            "safety/hot-work-grading-approval",
+            "safety/hot-work-permit-grading",
+            "safety/moc-risk-assessment",
+            "safety/site-access-control-zoning",
+            "safety/major-risk-source-ranking"
+          ],
+          "first_hit_rank": 1,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 1.0,
+          "latency_ms": 1.686
+        },
+        {
+          "query_id": "HSE-005",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "safety/height-work-safety-control"
+          ],
+          "ranked_modules": [
+            "safety/working-at-height-safety",
+            "safety/height-work-safety-control",
+            "safety/summer-heat-prevention",
+            "safety/inspection-test-plan-itp",
+            "safety/confined-space-management-audit"
+          ],
+          "first_hit_rank": 2,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 0.6309297535714575,
+          "latency_ms": 1.032
+        },
+        {
+          "query_id": "HSE-006",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "safety/contractor-safety-performance-ranking",
+            "safety/contractor-safety-ranking"
+          ],
+          "ranked_modules": [
+            "safety/contractor-safety-ranking",
+            "safety/contractor-safety-performance-ranking",
+            "safety/occupational-health-examination-rate",
+            "safety/subcontractor-hse-integration",
+            "safety/key-safety-kpi-monitoring"
+          ],
+          "first_hit_rank": 1,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.4,
+          "nDCG_at_k": 1.0,
+          "latency_ms": 0.9
+        },
+        {
+          "query_id": "HSE-007",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "safety/emergency-supplies-configuration",
+            "safety/emergency-supply-configuration"
+          ],
+          "ranked_modules": [
+            "safety/emergency-supply-configuration",
+            "safety/emergency-supplies-configuration",
+            "safety/site-access-and-zoning",
+            "safety/site-access-control-zoning",
+            "safety/heat-stress-prevention-protocol"
+          ],
+          "first_hit_rank": 1,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.4,
+          "nDCG_at_k": 1.0,
+          "latency_ms": 1.043
+        },
+        {
+          "query_id": "HSE-008",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "safety/emergency-response-grading"
+          ],
+          "ranked_modules": [
+            "safety/emergency-response-grading",
+            "safety/incident-investigation-method",
+            "safety/near-miss-management-and-analysis",
+            "safety/emergency-drill-completion-rate",
+            "safety/smart-helmet-deployment"
+          ],
+          "first_hit_rank": 1,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 1.0,
+          "latency_ms": 0.694
+        },
+        {
+          "query_id": "HSE-009",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "safety/heat-stress-prevention-protocol"
+          ],
+          "ranked_modules": [
+            "safety/heat-stress-prevention-protocol",
+            "safety/summer-heat-prevention",
+            "safety/hot-work-grading-approval",
+            "safety/site-access-control-zoning",
+            "safety/accident-investigation-4-no-pass"
+          ],
+          "first_hit_rank": 1,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 1.0,
+          "latency_ms": 0.637
+        },
+        {
+          "query_id": "HSE-010",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "safety/completion-safety-documents"
+          ],
+          "ranked_modules": [
+            "safety/completion-safety-documents",
+            "safety/three-level-safety-training",
+            "safety/inspection-test-plan-itp",
+            "safety/height-work-safety-control",
+            "safety/incident-investigation-method"
+          ],
+          "first_hit_rank": 1,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 1.0,
+          "latency_ms": 0.735
+        },
+        {
+          "query_id": "HSE-011",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "safety/confined-space-gas-control"
+          ],
+          "ranked_modules": [
+            "safety/confined-space-management-audit",
+            "safety/confined-space-governance",
+            "safety/smart-safety-helmet-pilot",
+            "safety/confined-space-gas-control",
+            "safety/confined-space-gas-monitoring"
+          ],
+          "first_hit_rank": 4,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 0.43067655807339306,
+          "latency_ms": 0.662
+        },
+        {
+          "query_id": "HSE-012",
+          "status": "candidate_needs_author_review",
+          "required_modules": [],
+          "ranked_modules": [
+            "safety/moc-risk-assessment",
+            "safety/management-of-change-moc",
+            "safety/incident-investigation-method",
+            "safety/accident-investigation-4-no-pass",
+            "safety/near-miss-management-and-analysis"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": null,
+          "precision_at_k": null,
+          "nDCG_at_k": null,
+          "latency_ms": 0.42
+        },
+        {
+          "query_id": "MIX-001",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "auth/authorization-code-flow",
+            "auth/authorization-code-receipt"
+          ],
+          "ranked_modules": [
+            "safety/smart-safety-helmet-pilot",
+            "safety/emergency-supply-configuration",
+            "safety/emergency-supplies-configuration",
+            "safety/emergency-response-grading",
+            "safety/confined-space-gas-monitoring"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": 0.0,
+          "precision_at_k": 0.0,
+          "nDCG_at_k": 0.0,
+          "latency_ms": 0.393
+        },
+        {
+          "query_id": "MIX-002",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "architecture/design-boundaries",
+            "search/ranking-pipeline"
+          ],
+          "ranked_modules": [
+            "safety/smart-safety-helmet-pilot",
+            "safety/smart-helmet-deployment",
+            "safety/height-work-safety-control",
+            "safety/management-of-change-moc",
+            "safety/key-safety-kpi-monitoring"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": 0.0,
+          "precision_at_k": 0.0,
+          "nDCG_at_k": 0.0,
+          "latency_ms": 0.683
+        }
+      ]
+    },
+    {
+      "system": "chunk_only_keyword_baseline",
+      "query_count": 30,
+      "evaluable_query_count": 28,
+      "top_k": 5,
+      "MRR": 0.4071,
+      "nDCG_at_5": 0.4685,
+      "recall_at_5": 0.5476,
+      "precision_at_5": 0.1571,
+      "mean_latency_ms": 0.248,
+      "p95_latency_ms": 0.415,
+      "avg_loaded_units": 5,
+      "first_hit_rank_mean": 2.0625,
+      "miss_count": 12,
+      "per_query": [
+        {
+          "query_id": "KM-ARCH-001",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "architecture/design-boundaries"
+          ],
+          "ranked_modules": [
+            "safety/emergency-response-grading",
+            "safety/occupational-health-examination-rate",
+            "safety/site-access-control-zoning",
+            "safety/smart-safety-helmet-pilot",
+            "safety/confined-space-gas-monitoring"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": 0.0,
+          "precision_at_k": 0.0,
+          "nDCG_at_k": 0.0,
+          "latency_ms": 0.653
+        },
+        {
+          "query_id": "KM-ARCH-002",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "architecture/git-native-storage"
+          ],
+          "ranked_modules": [
+            "safety/near-miss-trend-analysis",
+            "safety/incident-investigation-method",
+            "safety/emergency-supply-configuration",
+            "safety/smart-helmet-deployment",
+            "safety/smart-safety-helmet-pilot"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": 0.0,
+          "precision_at_k": 0.0,
+          "nDCG_at_k": 0.0,
+          "latency_ms": 0.415
+        },
+        {
+          "query_id": "KM-ARCH-003",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "architecture/mcp-protocol"
+          ],
+          "ranked_modules": [
+            "architecture/design-boundaries",
+            "safety/moc-risk-assessment",
+            "safety/occupational-health-examination-rate",
+            "safety/subcontractor-hse-integration",
+            "architecture/mcp-protocol"
+          ],
+          "first_hit_rank": 5,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 0.38685280723454163,
+          "latency_ms": 0.342
+        },
+        {
+          "query_id": "KM-ARCH-004",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "architecture/federation"
+          ],
+          "ranked_modules": [
+            "safety/site-access-and-zoning",
+            "safety/site-access-control-zoning",
+            "search/chinese-segmentation",
+            "safety/three-level-safety-training",
+            "architecture/federation"
+          ],
+          "first_hit_rank": 5,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 0.38685280723454163,
+          "latency_ms": 0.206
+        },
+        {
+          "query_id": "KM-OPS-001",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "operations/module-lifecycle"
+          ],
+          "ranked_modules": [
+            "safety/incident-investigation-method",
+            "safety/emergency-supplies-configuration",
+            "safety/summer-heat-prevention",
+            "safety/accident-investigation-4-no-pass",
+            "safety/emergency-supply-configuration"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": 0.0,
+          "precision_at_k": 0.0,
+          "nDCG_at_k": 0.0,
+          "latency_ms": 0.259
+        },
+        {
+          "query_id": "KM-SEARCH-001",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "search/ranking-pipeline"
+          ],
+          "ranked_modules": [
+            "search/ranking-pipeline",
+            "safety/contractor-safety-ranking",
+            "safety/contractor-safety-performance-ranking",
+            "architecture/design-boundaries",
+            "safety/risk-source-ranking-method"
+          ],
+          "first_hit_rank": 1,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 1.0,
+          "latency_ms": 0.251
+        },
+        {
+          "query_id": "KM-SEARCH-002",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "search/chinese-segmentation"
+          ],
+          "ranked_modules": [
+            "safety/accident-investigation-4-no-pass",
+            "safety/incident-investigation-method",
+            "safety/occupational-health-examination-rate",
+            "safety/near-miss-trend-analysis",
+            "safety/confined-space-management-audit"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": 0.0,
+          "precision_at_k": 0.0,
+          "nDCG_at_k": 0.0,
+          "latency_ms": 0.292
+        },
+        {
+          "query_id": "SE-API-001",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "api/api-documentation-essentials"
+          ],
+          "ranked_modules": [
+            "safety/site-access-control-zoning",
+            "safety/smart-safety-helmet-pilot",
+            "safety/confined-space-gas-monitoring",
+            "safety/project-safety-permits",
+            "safety/smart-helmet-deployment"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": 0.0,
+          "precision_at_k": 0.0,
+          "nDCG_at_k": 0.0,
+          "latency_ms": 0.236
+        },
+        {
+          "query_id": "SE-API-002",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "api/api-rate-limiting"
+          ],
+          "ranked_modules": [
+            "safety/accident-investigation-4-no-pass",
+            "safety/incident-investigation-method",
+            "safety/key-safety-kpi-monitoring",
+            "api/api-rate-limiting"
+          ],
+          "first_hit_rank": 4,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.4,
+          "nDCG_at_k": 0.8175293653079347,
+          "latency_ms": 0.204
+        },
+        {
+          "query_id": "SE-API-003",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "api/http-status-codes"
+          ],
+          "ranked_modules": [
+            "api/http-status-codes",
+            "safety/hot-work-grading-approval",
+            "auth/access-token-presentation",
+            "architecture/mcp-protocol"
+          ],
+          "first_hit_rank": 1,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.4,
+          "nDCG_at_k": 1.4306765580733931,
+          "latency_ms": 0.196
+        },
+        {
+          "query_id": "SE-AUTH-001",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "auth/authorization-code-receipt",
+            "auth/token-exchange-endpoint",
+            "auth/user-authorization-consent"
+          ],
+          "ranked_modules": [
+            "safety/smart-safety-helmet-pilot",
+            "safety/height-work-safety-control",
+            "safety/emergency-response-grading",
+            "auth/authorization-code-receipt",
+            "safety/moc-risk-assessment"
+          ],
+          "first_hit_rank": 4,
+          "recall_at_k": 0.3333333333333333,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 0.20210734650054757,
+          "latency_ms": 0.257
+        },
+        {
+          "query_id": "SE-AUTH-002",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "auth/access-token-presentation"
+          ],
+          "ranked_modules": [
+            "safety/accident-investigation-4-no-pass",
+            "safety/moc-risk-assessment",
+            "safety/heat-stress-prevention-protocol",
+            "safety/completion-safety-documents",
+            "safety/emergency-drill-completion-rate"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": 0.0,
+          "precision_at_k": 0.0,
+          "nDCG_at_k": 0.0,
+          "latency_ms": 0.196
+        },
+        {
+          "query_id": "SE-DB-001",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "database/connection-pooling"
+          ],
+          "ranked_modules": [
+            "safety/emergency-supply-configuration",
+            "safety/pre-construction-safety-permits",
+            "safety/incident-investigation-method",
+            "safety/emergency-response-grading",
+            "safety/key-safety-kpi-monitoring"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": 0.0,
+          "precision_at_k": 0.0,
+          "nDCG_at_k": 0.0,
+          "latency_ms": 0.218
+        },
+        {
+          "query_id": "SE-DB-002",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "database/database-migrations",
+            "database/transaction-management"
+          ],
+          "ranked_modules": [
+            "safety/near-miss-trend-analysis",
+            "safety/contractor-safety-ranking",
+            "safety/emergency-response-grading",
+            "safety/near-miss-management-and-analysis",
+            "safety/smart-safety-helmet-pilot"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": 0.0,
+          "precision_at_k": 0.0,
+          "nDCG_at_k": 0.0,
+          "latency_ms": 0.187
+        },
+        {
+          "query_id": "SE-DEP-001",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "deployment/blue-green-deployment",
+            "deployment/ci-cd-pipeline"
+          ],
+          "ranked_modules": [
+            "safety/incident-investigation-method",
+            "safety/accident-investigation-4-no-pass",
+            "safety/rectification-rate-management",
+            "safety/contractor-safety-performance-ranking",
+            "safety/near-miss-management-and-analysis"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": 0.0,
+          "precision_at_k": 0.0,
+          "nDCG_at_k": 0.0,
+          "latency_ms": 0.221
+        },
+        {
+          "query_id": "SE-BOUND-001",
+          "status": "candidate_needs_author_review",
+          "required_modules": [],
+          "ranked_modules": [
+            "api/api-documentation-essentials",
+            "safety/incident-investigation-method",
+            "safety/accident-investigation-4-no-pass",
+            "architecture/mcp-protocol"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": null,
+          "precision_at_k": null,
+          "nDCG_at_k": null,
+          "latency_ms": 0.135
+        },
+        {
+          "query_id": "HSE-001",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "safety/confined-space-gas-control",
+            "safety/confined-space-gas-monitoring"
+          ],
+          "ranked_modules": [
+            "safety/confined-space-gas-control",
+            "safety/confined-space-gas-monitoring",
+            "safety/confined-space-governance",
+            "safety/confined-space-management-audit",
+            "safety/site-access-control-zoning"
+          ],
+          "first_hit_rank": 1,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.4,
+          "nDCG_at_k": 1.0,
+          "latency_ms": 0.24
+        },
+        {
+          "query_id": "HSE-002",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "safety/confined-space-governance",
+            "safety/confined-space-management-audit"
+          ],
+          "ranked_modules": [
+            "safety/confined-space-governance",
+            "safety/confined-space-management-audit",
+            "safety/accident-investigation-4-no-pass",
+            "safety/major-risk-source-ranking",
+            "safety/risk-source-ranking-method"
+          ],
+          "first_hit_rank": 1,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.4,
+          "nDCG_at_k": 1.0,
+          "latency_ms": 0.249
+        },
+        {
+          "query_id": "HSE-003",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "safety/accident-investigation-4-no-pass"
+          ],
+          "ranked_modules": [
+            "safety/accident-investigation-4-no-pass",
+            "safety/incident-investigation-method",
+            "safety/management-of-change-moc",
+            "safety/subcontractor-hse-integration",
+            "safety/height-work-safety-control"
+          ],
+          "first_hit_rank": 1,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 1.0,
+          "latency_ms": 0.253
+        },
+        {
+          "query_id": "HSE-004",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "safety/hot-work-grading-approval"
+          ],
+          "ranked_modules": [
+            "safety/hot-work-permit-grading",
+            "safety/hot-work-grading-approval",
+            "safety/major-risk-source-ranking",
+            "safety/management-of-change-moc",
+            "safety/confined-space-governance"
+          ],
+          "first_hit_rank": 2,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 0.6309297535714575,
+          "latency_ms": 0.232
+        },
+        {
+          "query_id": "HSE-005",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "safety/height-work-safety-control"
+          ],
+          "ranked_modules": [
+            "safety/working-at-height-safety",
+            "safety/height-work-safety-control",
+            "safety/summer-heat-prevention",
+            "safety/confined-space-governance",
+            "safety/confined-space-management-audit"
+          ],
+          "first_hit_rank": 2,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 0.6309297535714575,
+          "latency_ms": 0.224
+        },
+        {
+          "query_id": "HSE-006",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "safety/contractor-safety-performance-ranking",
+            "safety/contractor-safety-ranking"
+          ],
+          "ranked_modules": [
+            "safety/contractor-safety-ranking",
+            "safety/contractor-safety-performance-ranking",
+            "safety/subcontractor-hse-integration",
+            "safety/occupational-health-examination-rate",
+            "safety/key-safety-kpi-monitoring"
+          ],
+          "first_hit_rank": 1,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.4,
+          "nDCG_at_k": 1.0,
+          "latency_ms": 0.229
+        },
+        {
+          "query_id": "HSE-007",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "safety/emergency-supplies-configuration",
+            "safety/emergency-supply-configuration"
+          ],
+          "ranked_modules": [
+            "safety/emergency-supply-configuration",
+            "safety/emergency-supplies-configuration",
+            "safety/site-access-and-zoning",
+            "safety/hot-work-permit-grading",
+            "safety/site-access-control-zoning"
+          ],
+          "first_hit_rank": 1,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.4,
+          "nDCG_at_k": 1.0,
+          "latency_ms": 0.212
+        },
+        {
+          "query_id": "HSE-008",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "safety/emergency-response-grading"
+          ],
+          "ranked_modules": [
+            "safety/emergency-response-grading",
+            "safety/smart-helmet-deployment",
+            "safety/accident-investigation-4-no-pass",
+            "safety/contractor-safety-ranking",
+            "safety/near-miss-management-and-analysis"
+          ],
+          "first_hit_rank": 1,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 1.0,
+          "latency_ms": 0.179
+        },
+        {
+          "query_id": "HSE-009",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "safety/heat-stress-prevention-protocol"
+          ],
+          "ranked_modules": [
+            "safety/summer-heat-prevention",
+            "safety/heat-stress-prevention-protocol",
+            "safety/near-miss-management-and-analysis",
+            "safety/site-access-control-zoning",
+            "safety/confined-space-governance"
+          ],
+          "first_hit_rank": 2,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 0.6309297535714575,
+          "latency_ms": 0.229
+        },
+        {
+          "query_id": "HSE-010",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "safety/completion-safety-documents"
+          ],
+          "ranked_modules": [
+            "safety/completion-safety-documents",
+            "safety/three-level-safety-training",
+            "safety/inspection-test-plan-itp",
+            "safety/moc-risk-assessment",
+            "safety/height-work-safety-control"
+          ],
+          "first_hit_rank": 1,
+          "recall_at_k": 1.0,
+          "precision_at_k": 0.2,
+          "nDCG_at_k": 1.0,
+          "latency_ms": 0.308
+        },
+        {
+          "query_id": "HSE-011",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "safety/confined-space-gas-control"
+          ],
+          "ranked_modules": [
+            "safety/site-access-and-zoning",
+            "safety/confined-space-management-audit",
+            "safety/smart-safety-helmet-pilot",
+            "safety/confined-space-governance",
+            "safety/site-access-control-zoning"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": 0.0,
+          "precision_at_k": 0.0,
+          "nDCG_at_k": 0.0,
+          "latency_ms": 0.257
+        },
+        {
+          "query_id": "HSE-012",
+          "status": "candidate_needs_author_review",
+          "required_modules": [],
+          "ranked_modules": [
+            "safety/moc-risk-assessment",
+            "safety/management-of-change-moc",
+            "safety/accident-investigation-4-no-pass",
+            "safety/confined-space-governance",
+            "safety/three-level-safety-training"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": null,
+          "precision_at_k": null,
+          "nDCG_at_k": null,
+          "latency_ms": 0.167
+        },
+        {
+          "query_id": "MIX-001",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "auth/authorization-code-flow",
+            "auth/authorization-code-receipt"
+          ],
+          "ranked_modules": [
+            "safety/smart-safety-helmet-pilot",
+            "safety/emergency-supply-configuration",
+            "safety/emergency-supplies-configuration",
+            "safety/three-level-safety-training",
+            "safety/confined-space-gas-monitoring"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": 0.0,
+          "precision_at_k": 0.0,
+          "nDCG_at_k": 0.0,
+          "latency_ms": 0.164
+        },
+        {
+          "query_id": "MIX-002",
+          "status": "candidate_needs_author_review",
+          "required_modules": [
+            "architecture/design-boundaries",
+            "search/ranking-pipeline"
+          ],
+          "ranked_modules": [
+            "safety/smart-safety-helmet-pilot",
+            "safety/smart-helmet-deployment",
+            "safety/key-safety-kpi-monitoring",
+            "safety/emergency-drill-completion-rate",
+            "safety/height-work-safety-control"
+          ],
+          "first_hit_rank": null,
+          "recall_at_k": 0.0,
+          "precision_at_k": 0.0,
+          "nDCG_at_k": 0.0,
+          "latency_ms": 0.234
+        }
+      ]
+    }
+  ],
+  "module_count": 84,
+  "chunk_count": 131,
+  "chunk_size": 900,
+  "chunk_overlap": 150,
+  "top_k": 5
+}

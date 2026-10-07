@@ -1,0 +1,6 @@
+﻿id,candidate_title,authors_from_user_file,candidate_year,venue,candidate_url,relevance,research_role,verification_scope
+L1,A-MEM: Agentic Memory for LLM Agents,,2025,,https://arxiv.org/abs/2502.12110,候选同领域近似,候选比较：结构化记忆与关联,PENDING_VERIFICATION：在线工具未返回可用内容；题名、年份、链接均待原始来源核实
+L2,RAPTOR: Recursive Abstractive Processing for Tree-Organized Retrieval,,2024,,https://arxiv.org/abs/2401.18059,候选同领域近似,候选比较：分层组织与多粒度检索,PENDING_VERIFICATION：在线工具未返回可用内容；题名、年份、链接待核实
+L3,DocPrompting: Generating Code by Retrieving the Docs,Shuyan Zhou; Uri Alon; Frank F. Xu; Zhiruo Wang; Zhengbao Jiang; Graham Neubig,2022,,https://arxiv.org/abs/2207.05987,候选同领域近似,候选比较：文档检索支持代码任务,VERIFIED_USER_MATERIAL：来自已有reference-candidates.csv的候选条目；尚未重新核实外部来源或出版年份
+L4,A Human-Inspired Reading Agent with Gist Memory of Very Long Contexts,,2024,,,候选同领域近似,候选比较：概要与按需回读,PENDING_VERIFICATION：在线工具未返回可用内容；题名、作者、出版信息与方法待核实
+L5,Lost in the Middle: How Language Models Use Long Contexts,,2024,,https://aclanthology.org/2024.tacl-1.9/,候选同领域近似,候选比较：上下文预算及位置影响,PENDING_VERIFICATION：在线工具未返回可用内容；出版信息、链接与方法待核实

@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-058",
+  "category": "documentation",
+  "title": "km-blueprint: 总路线图",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition 总路线图.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: 总路线图.",
+    "details": "# 总路线图\r\n\r\n```\r\nPhase 5: 体验层 (6个月)\r\n  M1: Web UI 只读模式 (知识树浏览 + 模块阅读 + 知识图谱)\r\n  M2: 对话式搜索 (SSE流式 + 来源引用 + 追问建议)\r\n  M3: 知识树 + LLM推理导航 (navigate_tree)\r\n  M4: Research-on-Miss (自动研究 → staging → 审核)\r\n  M5: Markdown一等公民 + wikilinks + Obsidian导出\r\n  M6: Web UI 编辑模式 + 审核工作流\r\n\r\nPhase 6: 智能层 (6个月)\r\n  M7: 语义矛盾检测 (lint --deep)\r\n  M8: 间隔重复记忆系统 (FSRS)\r\n  M9: 自动源监控 (watch service)\r\n  M10: 可选向量搜索 (本地 embedding + RRF 融合)\r\n\r\nPhase 7: 生态层 (6个月)\r\n  M11: 插件系统 + SDK + 示例插件\r\n  M12: 多模态知识 (图片/代码仓库/会议记录)\r\n  M13: 企业功能 (SSO, 审计日志, RBAC, 合规报告)\r\n```\r\n\r\n---\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:106094-106629; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-057",
+      "documentation/km-blueprint-059"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "总路线图"
+        ],
+        "excerpt": "# 总路线图\r\n\r\n```\r\nPhase 5: 体验层 (6个月)\r\n  M1: Web UI 只读模式 (知识树浏览 + 模块阅读 + 知识图谱)\r\n  M2: 对话式搜索 (SSE流式 + 来源引用 + 追问建议)\r\n  M3: 知识树 + LLM推理导航 (navigate_tree)\r\n  M4: Research-on-Miss (自动研究 → staging → 审核)\r\n  M5: Markdown一等公民 + wikilinks + Obsidian导出\r\n  M6: Web UI 编辑模式 + 审核工作流\r\n\r\nPhase 6: 智能层 (6个月)\r\n  M7: 语义矛盾检测 (lint --deep)\r\n  M8: 间隔重复记忆系统 (FSRS)\r\n  M9: 自动源监控 (watch service)\r\n  M10: 可选向量搜索 (本地 embedding + RRF 融合)\r\n\r\nPhase 7: 生态层 (6个月)\r\n  M11: 插件系统 + SDK + 示例插件\r\n  M12: 多模态知识 (图片/代码仓库/会议记录)\r\n  M13: 企业功能 (SSO, 审计日志, RBAC, 合规报告)\r\n```\r\n\r\n---\r\n\r\n",
+        "char_start": 106094,
+        "char_end": 106629
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

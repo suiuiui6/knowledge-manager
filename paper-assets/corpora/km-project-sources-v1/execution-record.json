@@ -1,0 +1,38 @@
+{
+  "project_id": "knowledge-manager-journal-20261007",
+  "task_id": "M1-source-rebuild-003",
+  "date": "2026-10-07",
+  "python_version": "3.14.3 (tags/v3.14.3:323c59a, Feb  3 2026, 16:04:56) [MSC v.1944 64 bit (AMD64)]",
+  "commands": [
+    "python paper-assets/scripts/rebuild_source_grounded_corpus.py",
+    "python paper-assets/scripts/rebuild_source_grounded_corpus.py --verify-only",
+    "Module.model_validate for every generated module"
+  ],
+  "script": "paper-assets/scripts/rebuild_source_grounded_corpus.py",
+  "script_sha256": "883f5b65fe0e9368800ccdcc12ff4478c42edafb5c1b14bf4ebad1e9d0e8b60e",
+  "results": {
+    "source_trace_verification": {
+      "status": "PASS",
+      "verification_scope": "source integrity and extractive construction only",
+      "source_documents": 10,
+      "modules": 183,
+      "exact_source_spans_verified": 183,
+      "adjacency_links_resolvable": true,
+      "original_sources_unchanged": true,
+      "human_review_completed": false,
+      "retrieval_or_task_performance_measured": false,
+      "main_experiment_ready": false
+    },
+    "schema_validation": {
+      "status": "PASS",
+      "schema": "knowledge_manager.schemas.Module",
+      "validated_modules": 183,
+      "validation_scope": "schema compatibility; not operational retrieval or human approval"
+    }
+  },
+  "disclosures": [
+    "No external API or LLM calls during extraction",
+    "No human reviewer or main performance results invented",
+    "Original project sources preserved"
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-022",
+  "category": "documentation",
+  "title": "km-blueprint: MCP Server 集成",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition MCP Server 集成.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: MCP Server 集成.",
+    "details": "## MCP Server 集成\r\n\r\n```python\r\n# mcp_server.py 新增 tool\r\n\r\n@mcp.tool(name=\"research\")\r\ndef research_tool(query: str, depth: str = \"shallow\") -> str:\r\n    \"\"\"当知识库中没有相关知识时, 自动研究并生成草稿模块。\r\n\r\n    Args:\r\n        query: 研究问题\r\n        depth: \"shallow\" (快速, 3源以内) 或 \"deep\" (全面, 多轮综合)\r\n\r\n    Returns:\r\n        研究结果, 包含临时答案和生成的草稿模块列表\r\n    \"\"\"\r\n    researcher = Researcher(kb_path, research_config, llm_client, storage)\r\n    result = asyncio.run(researcher.research(query, depth))\r\n    return json.dumps({\r\n        \"query\": result.query,\r\n        \"temporary_answer\": result.answer_synthesis,\r\n        \"staged_modules\": result.staged_ids,\r\n        \"sources_used\": result.sources_used,\r\n        \"took_ms\": result.took_ms,\r\n        \"hint\": f\"使用 km review 审核草稿模块: {', '.join(result.staged_ids)}\",\r\n    }, indent=2)\r\n```\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:40968-41774; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-021",
+      "documentation/km-blueprint-023"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "MCP Server 集成"
+        ],
+        "excerpt": "## MCP Server 集成\r\n\r\n```python\r\n# mcp_server.py 新增 tool\r\n\r\n@mcp.tool(name=\"research\")\r\ndef research_tool(query: str, depth: str = \"shallow\") -> str:\r\n    \"\"\"当知识库中没有相关知识时, 自动研究并生成草稿模块。\r\n\r\n    Args:\r\n        query: 研究问题\r\n        depth: \"shallow\" (快速, 3源以内) 或 \"deep\" (全面, 多轮综合)\r\n\r\n    Returns:\r\n        研究结果, 包含临时答案和生成的草稿模块列表\r\n    \"\"\"\r\n    researcher = Researcher(kb_path, research_config, llm_client, storage)\r\n    result = asyncio.run(researcher.research(query, depth))\r\n    return json.dumps({\r\n        \"query\": result.query,\r\n        \"temporary_answer\": result.answer_synthesis,\r\n        \"staged_modules\": result.staged_ids,\r\n        \"sources_used\": result.sources_used,\r\n        \"took_ms\": result.took_ms,\r\n        \"hint\": f\"使用 km review 审核草稿模块: {', '.join(result.staged_ids)}\",\r\n    }, indent=2)\r\n```\r\n\r\n",
+        "char_start": 40968,
+        "char_end": 41774
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

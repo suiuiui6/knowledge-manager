@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Knowledge Manager judged query record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "query_id",
+    "corpus_id",
+    "query",
+    "task_type",
+    "scope_type",
+    "difficulty",
+    "required_modules",
+    "nice_to_have_modules",
+    "should_refuse_or_boundary_note",
+    "expected_boundary",
+    "judge_notes",
+    "edge_case_tags",
+    "status"
+  ],
+  "properties": {
+    "query_id": {
+      "type": "string",
+      "description": "Stable query id, e.g. ARCH-001 or RUN-012."
+    },
+    "corpus_id": {
+      "type": "string",
+      "description": "Must match corpus-inventory.csv."
+    },
+    "query": {
+      "type": "string",
+      "description": "User-facing query text exactly as evaluated."
+    },
+    "task_type": {
+      "type": "string",
+      "enum": ["factual", "procedure", "decision", "troubleshooting", "boundary", "synthesis"]
+    },
+    "scope_type": {
+      "type": "string",
+      "enum": ["in_scope", "out_of_scope", "partial_scope", "near_scope"]
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": ["easy", "medium", "hard"]
+    },
+    "required_modules": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Modules required for a complete answer. Use approved module ids only."
+    },
+    "nice_to_have_modules": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Helpful but non-essential modules."
+    },
+    "should_refuse_or_boundary_note": {
+      "type": "boolean",
+      "description": "True when the system should state that all or part of the query is outside the reviewed knowledge base."
+    },
+    "expected_boundary": {
+      "type": "string",
+      "description": "Expected boundary statement or empty string if not applicable."
+    },
+    "judge_notes": {
+      "type": "string",
+      "description": "Why the module labels are required or why a boundary note is expected."
+    },
+    "edge_case_tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "short_term",
+          "abbreviation",
+          "synonym",
+          "case_variant",
+          "broad_query",
+          "troubleshooting_signal_weak",
+          "boundary_confusion",
+          "multi_module_required",
+          "long_doc_derived",
+          "missing_caveat"
+        ]
+      }
+    },
+    "source_doc_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Optional source document ids used to make chunk baselines judgeable under the same evidence basis."
+    },
+    "gold_evidence_spans": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Optional short evidence span ids or descriptions for judged retrieval evaluation. Do not paste long copyrighted source text here."
+    },
+    "relevance_grade": {
+      "type": "string",
+      "enum": ["binary", "graded_0_2", "graded_0_3"],
+      "description": "Optional relevance grading scheme for this query."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["template", "candidate_needs_author_review", "author_labeled", "double_checked", "excluded"]
+    }
+  }
+}

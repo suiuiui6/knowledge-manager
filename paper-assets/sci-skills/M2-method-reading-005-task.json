@@ -1,0 +1,37 @@
+{
+  "contract_version": "1.0",
+  "project_id": "knowledge-manager-journal-20261007",
+  "paper_family": "M",
+  "stage_id": "M2",
+  "task_id": "M2-method-reading-005",
+  "expert_skill": "sci-skills-paper-deep-reading",
+  "task_summary": "Read selected mechanism sections of three closest methods and define comparison boundaries",
+  "inputs": [
+    "https://arxiv.org/abs/2502.12110",
+    "https://arxiv.org/html/2401.18059v1",
+    "https://proceedings.mlr.press/v235/lee24c.html",
+    "https://arxiv.org/abs/2601.03236",
+    "https://arxiv.org/abs/2207.05987",
+    "https://arxiv.org/abs/2104.08663"
+  ],
+  "expected_outputs": [
+    "M2-reading-cards.md",
+    "M2-method-comparison.md",
+    "M2-experiment-protocol.json"
+  ],
+  "evidence_boundaries": [
+    "Record-only access never claimed as full-paper review",
+    "No unverified superiority, novelty or reproduction"
+  ],
+  "acceptance_checks": [
+    "Primary source matches record",
+    "Method claims have section locators",
+    "Proposed work labelled unexecuted"
+  ],
+  "known_missing_items": [
+    "All experiment tables and complete limitations not fully audited"
+  ],
+  "manual_operation_allowed": false,
+  "optional_adapters_allowed": [],
+  "stage_authority": "sci-skills"
+}

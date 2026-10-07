@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-009",
+  "category": "documentation",
+  "title": "km-blueprint: SSE 流的前端消费",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition SSE 流的前端消费.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: SSE 流的前端消费.",
+    "details": "### SSE 流的前端消费\r\n\r\n```typescript\r\n// src/ui/hooks/useChat.ts\r\n\r\ninterface ChatState {\r\n  messages: ChatMessage[];\r\n  isStreaming: boolean;\r\n  currentStatus: string;\r\n  currentSources: Citation[];\r\n}\r\n\r\nfunction useChat() {\r\n  const [state, setState] = useState<ChatState>({...});\r\n\r\n  async function sendMessage(query: string, history: ChatMessage[]) {\r\n    setState(s => ({ ...s, isStreaming: true }));\r\n\r\n    const response = await fetch('/api/chat', {\r\n      method: 'POST',\r\n      headers: { 'Content-Type': 'application/json' },\r\n      body: JSON.stringify({ query, history, mode: 'precise' }),\r\n    });\r\n\r\n    const reader = response.body!.getReader();\r\n    const decoder = new TextDecoder();\r\n    let buffer = '';\r\n    let currentAnswer = '';\r\n    const sources: Citation[] = [];\r\n\r\n    while (true) {\r\n      const { done, value } = await reader.read();\r\n      if (done) break;\r\n\r\n      buffer += decoder.decode(value, { stream: true });\r\n      const lines = buffer.split('\\n');\r\n      buffer = lines.pop() || '';\r\n\r\n      for (const line of lines) {\r\n        if (!line.startsWith('data: ')) continue;\r\n        const event = JSON.parse(line.slice(6));\r\n\r\n        switch (event.type) {\r\n          case 'status':\r\n            setState(s => ({ ...s, currentStatus: event.data.message }));\r\n            break;\r\n\r\n          case 'token':\r\n            currentAnswer += event.data.text;\r\n            // 增量更新最后一条消息\r\n            setState(s => ({\r\n              ...s,\r\n              messages: s.messages.with(-1, {\r\n                ...s.messages.at(-1),\r\n                content: currentAnswer,\r\n              }),\r\n            }));\r\n            break;\r\n\r\n          case 'citation':\r\n            sources.push(event.data);\r\n            setState(s => ({ ...s, currentSources: [...sources] }));\r\n            break;\r\n\r\n          case 'done':\r\n            setState(s => ({\r\n              ...s,\r\n              isStreaming: false,\r\n              messages: s.messages.with(-1, {\r\n                ...s.messages.at(-1),\r\n                sources: event.data.sources,\r\n                followUps: event.data.follow_ups,\r\n              }),\r\n            }));\r\n            break;\r\n\r\n          case 'error':\r\n            setState(s => ({ ...s, isStreaming: false }));\r\n            break;\r\n        }\r\n      }\r\n    }\r\n  }\r\n\r\n  return { state, sendMessage };\r\n}\r\n```\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:14219-16564; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-008",
+      "documentation/km-blueprint-010"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "SSE 流的前端消费"
+        ],
+        "excerpt": "### SSE 流的前端消费\r\n\r\n```typescript\r\n// src/ui/hooks/useChat.ts\r\n\r\ninterface ChatState {\r\n  messages: ChatMessage[];\r\n  isStreaming: boolean;\r\n  currentStatus: string;\r\n  currentSources: Citation[];\r\n}\r\n\r\nfunction useChat() {\r\n  const [state, setState] = useState<ChatState>({...});\r\n\r\n  async function sendMessage(query: string, history: ChatMessage[]) {\r\n    setState(s => ({ ...s, isStreaming: true }));\r\n\r\n    const response = await fetch('/api/chat', {\r\n      method: 'POST',\r\n      headers: { 'Content-Type': 'application/json' },\r\n      body: JSON.stringify({ query, history, mode: 'precise' }),\r\n    });\r\n\r\n    const reader = response.body!.getReader();\r\n    const decoder = new TextDecoder();\r\n    let buffer = '';\r\n    let currentAnswer = '';\r\n    const sources: Citation[] = [];\r\n\r\n    while (true) {\r\n      const { done, value } = await reader.read();\r\n      if (done) break;\r\n\r\n      buffer += decoder.decode(value, { stream: true });\r\n      const lines = buffer.split('\\n');\r\n      buffer = lines.pop() || '';\r\n\r\n      for (const line of lines) {\r\n        if (!line.startsWith('data: ')) continue;\r\n        const event = JSON.parse(line.slice(6));\r\n\r\n        switch (event.type) {\r\n          case 'status':\r\n            setState(s => ({ ...s, currentStatus: event.data.message }));\r\n            break;\r\n\r\n          case 'token':\r\n            currentAnswer += event.data.text;\r\n            // 增量更新最后一条消息\r\n            setState(s => ({\r\n              ...s,\r\n              messages: s.messages.with(-1, {\r\n                ...s.messages.at(-1),\r\n                content: currentAnswer,\r\n              }),\r\n            }));\r\n            break;\r\n\r\n          case 'citation':\r\n            sources.push(event.data);\r\n            setState(s => ({ ...s, currentSources: [...sources] }));\r\n            break;\r\n\r\n          case 'done':\r\n            setState(s => ({\r\n              ...s,\r\n              isStreaming: false,\r\n              messages: s.messages.with(-1, {\r\n                ...s.messages.at(-1),\r\n                sources: event.data.sources,\r\n                followUps: event.data.follow_ups,\r\n              }),\r\n            }));\r\n            break;\r\n\r\n          case 'error':\r\n            setState(s => ({ ...s, isStreaming: false }));\r\n            break;\r\n        }\r\n      }\r\n    }\r\n  }\r\n\r\n  return { state, sendMessage };\r\n}\r\n```\r\n\r\n",
+        "char_start": 14219,
+        "char_end": 16564
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

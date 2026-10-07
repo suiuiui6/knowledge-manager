@@ -1,0 +1,41 @@
+{
+  "id": "module-schemas-011",
+  "category": "implementation",
+  "title": "module-schemas: ModuleMetadata",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/schemas.py, section or definition ModuleMetadata.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: ModuleMetadata.",
+    "details": "class ModuleMetadata(BaseModel):\n    tags: List[str] = Field(default_factory=list)\n    related_modules: List[str] = Field(default_factory=list)\n    confidence: Literal[\"high\", \"medium\", \"low\"] = \"medium\"\n    tenant_id: str = \"\"\n    workspace_id: str = \"\"\n    source: str = Field(default=\"\")\n    source_documents: List[SourceDocumentRef] = Field(default_factory=list)\n    source_spans: List[SourceSpan] = Field(default_factory=list)\n    extraction_run_id: str = \"\"\n    reviewed_by: str = \"\"\n    reviewed_at: Optional[datetime] = None\n    stale_due_to_source_change: bool = False\n    supersedes: List[str] = Field(default_factory=list)\n    derived_from: List[str] = Field(default_factory=list)\n    expires_at: Optional[datetime] = None\n    review_interval_days: Optional[int] = None\n    status: Literal[\"draft\", \"reviewed\", \"published\", \"deprecated\", \"archived\"] = \"published\"\n\n    @field_validator(\"reviewed_at\", mode=\"after\")\n    @classmethod\n    def normalize_reviewed_at(cls, value: Optional[datetime]) -> Optional[datetime]:\n        return ensure_utc_aware(value)\n",
+    "examples": "",
+    "references": "sources/module-schemas.py; module-schemas:chars:4182-5249; source SHA-256 c857e4a99e2e152db3aca0d1a9fc458bebe20ab352e24d0ae1f144a6594904a8",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "module-schemas"
+    ],
+    "related_modules": [
+      "implementation/module-schemas-010",
+      "implementation/module-schemas-012"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://module-schemas",
+    "source_spans": [
+      {
+        "external_id": "module-schemas",
+        "heading_path": [
+          "ModuleMetadata"
+        ],
+        "excerpt": "class ModuleMetadata(BaseModel):\n    tags: List[str] = Field(default_factory=list)\n    related_modules: List[str] = Field(default_factory=list)\n    confidence: Literal[\"high\", \"medium\", \"low\"] = \"medium\"\n    tenant_id: str = \"\"\n    workspace_id: str = \"\"\n    source: str = Field(default=\"\")\n    source_documents: List[SourceDocumentRef] = Field(default_factory=list)\n    source_spans: List[SourceSpan] = Field(default_factory=list)\n    extraction_run_id: str = \"\"\n    reviewed_by: str = \"\"\n    reviewed_at: Optional[datetime] = None\n    stale_due_to_source_change: bool = False\n    supersedes: List[str] = Field(default_factory=list)\n    derived_from: List[str] = Field(default_factory=list)\n    expires_at: Optional[datetime] = None\n    review_interval_days: Optional[int] = None\n    status: Literal[\"draft\", \"reviewed\", \"published\", \"deprecated\", \"archived\"] = \"published\"\n\n    @field_validator(\"reviewed_at\", mode=\"after\")\n    @classmethod\n    def normalize_reviewed_at(cls, value: Optional[datetime]) -> Optional[datetime]:\n        return ensure_utc_aware(value)\n",
+        "char_start": 4182,
+        "char_end": 5249
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

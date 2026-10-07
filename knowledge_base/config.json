@@ -1,7 +1,7 @@
 {
   "llm_providers": {
     "deepseek": {
-      "api_key": "<redacted-api-key>",
+      "api_key": "",
       "model": "deepseek-v4-pro",
       "base_url": "https://api.deepseek.com",
       "default": true,

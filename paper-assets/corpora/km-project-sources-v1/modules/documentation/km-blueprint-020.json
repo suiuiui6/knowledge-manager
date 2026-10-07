@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-020",
+  "category": "documentation",
+  "title": "km-blueprint: 数据模型",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition 数据模型.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: 数据模型.",
+    "details": "## 数据模型\r\n\r\n```python\r\n# schemas.py 新增\r\n\r\nclass ResearchSource(BaseModel):\r\n    \"\"\"单个研究源配置\"\"\"\r\n    type: Literal[\"code_repo\", \"doc_dir\", \"web_search\", \"api\"]\r\n    path: str = \"\"                          # 本地路径 或 URL\r\n    include_patterns: list[str] = Field(default_factory=list)   # [\"*.py\", \"*.md\"]\r\n    exclude_patterns: list[str] = Field(default_factory=list)   # [\"*test*\"]\r\n    category_hint: str = \"\"                 # 提取到的模块应归入哪个分类\r\n\r\nclass ResearchConfig(BaseModel):\r\n    enabled: bool = True\r\n    auto_approve_threshold: float = 0.85    # 置信度超过此值可自动批准\r\n    sources: list[ResearchSource] = Field(default_factory=list)\r\n    default_depth: Literal[\"shallow\", \"deep\"] = \"shallow\"\r\n    max_llm_calls_per_query: int = 8\r\n    max_total_tokens_per_query: int = 32000\r\n\r\nclass ResearchEvent(BaseModel):\r\n    \"\"\"记录一次研究活动\"\"\"\r\n    id: str\r\n    query: str\r\n    triggered_by: str = \"\"                  # \"search_miss\" | \"user_request\"\r\n    depth: str = \"shallow\"\r\n    sources_searched: list[str] = Field(default_factory=list)\r\n    modules_generated: list[str] = Field(default_factory=list)\r\n    llm_calls: int = 0\r\n    total_tokens: int = 0\r\n    took_ms: int = 0\r\n    status: str = \"completed\"               # \"in_progress\" | \"completed\" | \"failed\"\r\n    error: str = \"\"\r\n    created_at: datetime = Field(default_factory=utc_now)\r\n```\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:31216-32547; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-019",
+      "documentation/km-blueprint-021"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "数据模型"
+        ],
+        "excerpt": "## 数据模型\r\n\r\n```python\r\n# schemas.py 新增\r\n\r\nclass ResearchSource(BaseModel):\r\n    \"\"\"单个研究源配置\"\"\"\r\n    type: Literal[\"code_repo\", \"doc_dir\", \"web_search\", \"api\"]\r\n    path: str = \"\"                          # 本地路径 或 URL\r\n    include_patterns: list[str] = Field(default_factory=list)   # [\"*.py\", \"*.md\"]\r\n    exclude_patterns: list[str] = Field(default_factory=list)   # [\"*test*\"]\r\n    category_hint: str = \"\"                 # 提取到的模块应归入哪个分类\r\n\r\nclass ResearchConfig(BaseModel):\r\n    enabled: bool = True\r\n    auto_approve_threshold: float = 0.85    # 置信度超过此值可自动批准\r\n    sources: list[ResearchSource] = Field(default_factory=list)\r\n    default_depth: Literal[\"shallow\", \"deep\"] = \"shallow\"\r\n    max_llm_calls_per_query: int = 8\r\n    max_total_tokens_per_query: int = 32000\r\n\r\nclass ResearchEvent(BaseModel):\r\n    \"\"\"记录一次研究活动\"\"\"\r\n    id: str\r\n    query: str\r\n    triggered_by: str = \"\"                  # \"search_miss\" | \"user_request\"\r\n    depth: str = \"shallow\"\r\n    sources_searched: list[str] = Field(default_factory=list)\r\n    modules_generated: list[str] = Field(default_factory=list)\r\n    llm_calls: int = 0\r\n    total_tokens: int = 0\r\n    took_ms: int = 0\r\n    status: str = \"completed\"               # \"in_progress\" | \"completed\" | \"failed\"\r\n    error: str = \"\"\r\n    created_at: datetime = Field(default_factory=utc_now)\r\n```\r\n\r\n",
+        "char_start": 31216,
+        "char_end": 32547
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

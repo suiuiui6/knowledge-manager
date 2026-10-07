@@ -1,0 +1,40 @@
+{
+  "id": "module-schemas-072",
+  "category": "implementation",
+  "title": "module-schemas: PaginatedResponse",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/schemas.py, section or definition PaginatedResponse.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: PaginatedResponse.",
+    "details": "class PaginatedResponse(BaseModel):\r\n    items: list[dict] = Field(default_factory=list)\r\n    total: int = 0\r\n    page: int = 1\r\n    limit: int = 50\r\n    pages: int = 0\r\n",
+    "examples": "",
+    "references": "sources/module-schemas.py; module-schemas:chars:23288-23458; source SHA-256 c857e4a99e2e152db3aca0d1a9fc458bebe20ab352e24d0ae1f144a6594904a8",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "module-schemas"
+    ],
+    "related_modules": [
+      "implementation/module-schemas-071"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://module-schemas",
+    "source_spans": [
+      {
+        "external_id": "module-schemas",
+        "heading_path": [
+          "PaginatedResponse"
+        ],
+        "excerpt": "class PaginatedResponse(BaseModel):\r\n    items: list[dict] = Field(default_factory=list)\r\n    total: int = 0\r\n    page: int = 1\r\n    limit: int = 50\r\n    pages: int = 0\r\n",
+        "char_start": 23288,
+        "char_end": 23458
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

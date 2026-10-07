@@ -1,0 +1,29 @@
+{
+  "id": "emergency-supply-configuration",
+  "category": "safety",
+  "title": "应急物资配置与定期检查",
+  "summary": "每个施工区域标准配备急救箱、呼吸器、防毒面具等应急物资，并由HSE部每月1日固定检查补充。",
+  "created_at": "2026-06-10T04:46:49.392721Z",
+  "updated_at": "2026-06-10T04:46:49.392721Z",
+  "content": {
+    "overview": "我们采用标准化应急物资清单布点，并以月度周期强制检查维护，保证紧急情况下物资可用可靠。",
+    "details": "每个施工区域设置统一规格的应急物资点，配置：急救箱（含止血带、烧伤膏、洗眼液）、正压式空气呼吸器2套、防毒面具10副、应急照明灯、担架。物资种类和数量基于石化工程常见事故类型（中毒窒息、烧伤、摔伤）确定，选择正压式呼吸器而非过滤式，以应对缺氧和未知有害物环境。每月1日由HSE部组织清点、补充和校验，检查记录存档备查。",
+    "examples": "22年某项目物资点检查发现一具空气呼吸器瓶压低于25MPa，当日更换为新瓶，并在点检表上标注‘更换’及责任人。",
+    "references": "",
+    "caveats": "急救箱内药品有有效期，需关注库存轮换；正压式呼吸器面罩密封性可能因老化下降，单纯检查压力表不够，应定期做面罩密封测试。"
+  },
+  "metadata": {
+    "tags": [
+      "emergency-supply",
+      "inspection",
+      "first-aid",
+      "respiratory-protection"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": "",
+    "expires_at": null,
+    "review_interval_days": null,
+    "status": "published"
+  }
+}

@@ -2,10 +2,624 @@
   "version": "1.0",
   "description": "A curated knowledge base of our team's technical methodology — architecture decisions, implementation patterns, operational practices, and lessons learned. Each module captures HOW we approach a topic, not just what it means. Use the index to identify relevant modules, then load the ones you need. Prefer modules with higher confidence ratings. Cross-reference related modules when topics overlap.",
   "categories": {
+    "safety": {
+      "name": "safety",
+      "description": "Topics: 5-Why, 5-why, HAZOP, HSE, HSE绩效, IoT, JSA, KPI. Modules include: 事故管理“四不放过”及根本原因分析; 交工技术文件与安全记录归档; 受限空间作业气体控制标准; 受限空间作业气体检测与监护要求; 受限空间专项治理",
+      "modules": [
+        {
+          "id": "accident-investigation-4-no-pass",
+          "category": "safety",
+          "title": "事故管理“四不放过”及根本原因分析",
+          "summary": "我们严格执行“四不放过”原则，事故调查报告7个工作日内完成，其中必须包含5-Why根本原因分析和整改措施。",
+          "tags": [
+            "事故管理",
+            "四不放过",
+            "根因分析",
+            "5-Why",
+            "调查报告"
+          ],
+          "word_count": 5
+        },
+        {
+          "id": "completion-safety-documents",
+          "category": "safety",
+          "title": "交工技术文件与安全记录归档",
+          "summary": "项目开工前确定交工文件清单，强制收录所有安全相关记录（压力试验、NDT报告、热处理等），保证安全足迹完整可追溯。",
+          "tags": [
+            "safety",
+            "documentation",
+            "compliance"
+          ],
+          "word_count": 4
+        },
+        {
+          "id": "confined-space-gas-control",
+          "category": "safety",
+          "title": "受限空间作业气体控制标准",
+          "summary": "坚持“先通风、再检测、后作业”流程，设定多种气体浓度阈值，并实施2小时复测和双监护制度。",
+          "tags": [
+            "confined-space",
+            "gas-detection",
+            "permit-to-work",
+            "monitoring"
+          ],
+          "word_count": 4
+        },
+        {
+          "id": "confined-space-gas-monitoring",
+          "category": "safety",
+          "title": "受限空间作业气体检测与监护要求",
+          "summary": "我们坚持“先通风、再检测、后作业”，定义氧气、可燃气、H₂S、CO等具体容许浓度，作业中每2小时复测，配备双监护。",
+          "tags": [
+            "受限空间",
+            "气体检测",
+            "监护人",
+            "氧气浓度"
+          ],
+          "word_count": 5
+        },
+        {
+          "id": "confined-space-governance",
+          "category": "safety",
+          "title": "受限空间专项治理",
+          "summary": "我们对全部在建项目重新辨识受限空间并复核审批流程，重点防范残留油气等风险。",
+          "tags": [
+            "受限空间",
+            "风险管控",
+            "作业许可"
+          ],
+          "word_count": 6
+        },
+        {
+          "id": "confined-space-management-audit",
+          "category": "safety",
+          "title": "受限空间重新辨识与审批流程复核",
+          "summary": "我们开展受限空间专项治理，对全项目受限空间进行二次辨识并强化审批流程，以防止因辨识遗漏或程序执行松懈造成的中毒窒息事故。",
+          "tags": [
+            "受限空间",
+            "专项治理",
+            "辨识",
+            "审批流程",
+            "气体检测"
+          ],
+          "word_count": 4
+        },
+        {
+          "id": "contractor-safety-performance-ranking",
+          "category": "safety",
+          "title": "承包商安全绩效排名与末位约谈",
+          "summary": "我们每半年对全部80家承包商进行安全绩效量化排名，并对末位3家进行约谈，以市场手段倒逼承包商自主改进HSE管理。",
+          "tags": [
+            "承包商管理",
+            "HSE绩效",
+            "排名",
+            "约谈",
+            "市场倒逼"
+          ],
+          "word_count": 3
+        },
+        {
+          "id": "contractor-safety-ranking",
+          "category": "safety",
+          "title": "承包商安全绩效评价",
+          "summary": "我们对全部80家承包商进行半年安全绩效排名，末位3家约谈，以督促承包商改进安全表现。",
+          "tags": [
+            "承包商管理",
+            "绩效评价",
+            "安全排名"
+          ],
+          "word_count": 3
+        },
+        {
+          "id": "emergency-drill-completion-rate",
+          "category": "safety",
+          "title": "应急演练完成率管理",
+          "summary": "应急演练完成率Q2为85%，未达100%目标，我们将加强计划执行和考核以提升。",
+          "tags": [
+            "应急演练",
+            "完成率",
+            "计划执行"
+          ],
+          "word_count": 3
+        },
+        {
+          "id": "emergency-response-grading",
+          "category": "safety",
+          "title": "应急响应分级与上报时效",
+          "summary": "按事故严重程度划分三级响应，并规定对应的响应启动层级和严格的上报时限，实现快速分级处置。",
+          "tags": [
+            "emergency-response",
+            "reporting",
+            "severity-grading"
+          ],
+          "word_count": 4
+        },
+        {
+          "id": "emergency-supplies-configuration",
+          "category": "safety",
+          "title": "施工区域应急物资标准配置",
+          "summary": "我们在每个施工区域设置应急物资点，清单包含急救箱、空呼、防毒面具等，每月1日由HSE部检查补充。",
+          "tags": [
+            "应急物资",
+            "急救箱",
+            "空呼",
+            "月度检查"
+          ],
+          "word_count": 7
+        },
+        {
+          "id": "emergency-supply-configuration",
+          "category": "safety",
+          "title": "应急物资配置与定期检查",
+          "summary": "每个施工区域标准配备急救箱、呼吸器、防毒面具等应急物资，并由HSE部每月1日固定检查补充。",
+          "tags": [
+            "emergency-supply",
+            "inspection",
+            "first-aid",
+            "respiratory-protection"
+          ],
+          "word_count": 4
+        },
+        {
+          "id": "heat-stress-prevention-protocol",
+          "category": "safety",
+          "title": "暑期高温作业防暑降温应对机制",
+          "summary": "我们启动高温时段作业调整机制，当气温≥35°C时改变作业时间、配发防暑物资，并有标准化的药品和饮品配备清单，以防止热射病和疲劳引发的事故。",
+          "tags": [
+            "高温作业",
+            "防暑降温",
+            "时间调整",
+            "应急预案",
+            "职业健康"
+          ],
+          "word_count": 4
+        },
+        {
+          "id": "height-work-safety-control",
+          "category": "safety",
+          "title": "高处作业安全防护与脚手架验收",
+          "summary": "定义2米以上为高处作业，强制安全带高挂低用，系挂点承载力不低于15kN，脚手架实行三方联合验收挂牌。",
+          "tags": [
+            "height-work",
+            "fall-protection",
+            "scaffolding",
+            "permitting"
+          ],
+          "word_count": 4
+        },
+        {
+          "id": "hot-work-grading-approval",
+          "category": "safety",
+          "title": "动火作业分级审批与防护",
+          "summary": "将动火作业分为三级，由不同管理层级审批，并配置固定消防资源和天气限制条件，执行“十不准”制度。",
+          "tags": [
+            "hot-work",
+            "permitting",
+            "fire-prevention",
+            "approval-hierarchy"
+          ],
+          "word_count": 4
+        },
+        {
+          "id": "hot-work-permit-grading",
+          "category": "safety",
+          "title": "动火作业分级审批与防控措施",
+          "summary": "我们按风险高低将动火作业分为三级，分别由项目经理、HSE经理、施工队长审批，并执行“动火作业十不准”及风力限制。",
+          "tags": [
+            "动火作业",
+            "作业许可",
+            "分级审批",
+            "风力限制"
+          ],
+          "word_count": 6
+        },
+        {
+          "id": "incident-investigation-method",
+          "category": "safety",
+          "title": "事故调查与根本原因分析法",
+          "summary": "执行“四不放过”原则，事故调查报告须在7个工作日内完成，并采用5-Why法追溯根本原因。",
+          "tags": [
+            "incident-investigation",
+            "root-cause-analysis",
+            "5-why",
+            "closing-loop"
+          ],
+          "word_count": 4
+        },
+        {
+          "id": "inspection-test-plan-itp",
+          "category": "safety",
+          "title": "检验试验计划（ITP）与关键检查点",
+          "summary": "我们在单位工程开工前编制ITP，定义H点（停工待检点）、W点（见证点）、R点（审查点）三类强制检查点，确保质量和安全不可逆环节受控。",
+          "tags": [
+            "safety",
+            "quality",
+            "inspection",
+            "itp"
+          ],
+          "word_count": 4
+        },
+        {
+          "id": "key-safety-kpi-monitoring",
+          "category": "safety",
+          "title": "关键安全绩效指标（KPI）监控体系",
+          "summary": "我们使用百万工时伤害率（LTIFR）、可记录伤害率（TRIR）等核心KPI，并进行环比与年度目标对比，以量化安全生产趋势并驱动改进。",
+          "tags": [
+            "安全指标",
+            "KPI",
+            "LTIFR",
+            "TRIR",
+            "环比分析"
+          ],
+          "word_count": 7
+        },
+        {
+          "id": "major-risk-source-ranking",
+          "category": "safety",
+          "title": "主要风险源分级管理",
+          "summary": "我们按风险等级对TOP5风险源排序，聚焦重大风险项目，实施分级管控。",
+          "tags": [
+            "风险源",
+            "分级管控",
+            "重大风险"
+          ],
+          "word_count": 3
+        },
+        {
+          "id": "management-of-change-moc",
+          "category": "safety",
+          "title": "变更管理（MOC）与安全风险评估",
+          "summary": "任何设计、工艺、设备、材料的变更都必须经过结构化MOC流程，强制进行安全风险评估（HAZOP或JSA），防止非预期变更引发安全事故。",
+          "tags": [
+            "safety",
+            "change-management",
+            "risk-assessment",
+            "hazop"
+          ],
+          "word_count": 10
+        },
+        {
+          "id": "moc-risk-assessment",
+          "category": "safety",
+          "title": "变更管理中的安全风险评估",
+          "summary": "所有设计、工艺、设备、材料的变更强制走MOC流程，并必须完成HAZOP或JSA风险分析，分级审批后方可实施。",
+          "tags": [
+            "MOC",
+            "HAZOP",
+            "JSA",
+            "风险管理"
+          ],
+          "word_count": 6
+        },
+        {
+          "id": "near-miss-management-and-analysis",
+          "category": "safety",
+          "title": "未遂事件（Near Miss）统计与趋势分析",
+          "summary": "我们系统收集并分类未遂事件，将其视为预防重伤和死亡的重要先导性数据源，通过趋势分析驱动预防性干预。",
+          "tags": [
+            "未遂事件",
+            "near miss",
+            "趋势分析",
+            "预防",
+            "上报文化"
+          ],
+          "word_count": 4
+        },
+        {
+          "id": "near-miss-trend-analysis",
+          "category": "safety",
+          "title": "未遂事件（Near Miss）分析",
+          "summary": "我们跟踪未遂事件趋势，利用47起近失数据推动前置预防，重点关注吊装偏移和气瓶隐患增加。",
+          "tags": [
+            "未遂事件",
+            "近失管理",
+            "预防"
+          ],
+          "word_count": 3
+        },
+        {
+          "id": "occupational-health-examination-rate",
+          "category": "safety",
+          "title": "职业健康体检率管理",
+          "summary": "我们推进职业健康体检率提升，Q2达92.3%，目标≥95%，覆盖接触职业病危害员工。",
+          "tags": [
+            "职业健康",
+            "体检率",
+            "员工健康"
+          ],
+          "word_count": 3
+        },
+        {
+          "id": "pre-construction-safety-permits",
+          "category": "safety",
+          "title": "项目开工前安全许可前置",
+          "summary": "开工前必须取得安全生产许可证、危险化学品安全条件审查意见书、消防设计审查及特种设备安装告知，确保合法合规开工。",
+          "tags": [
+            "安全生产许可证",
+            "危险化学品",
+            "特种设备",
+            "消防审查"
+          ],
+          "word_count": 4
+        },
+        {
+          "id": "project-safety-permits",
+          "category": "safety",
+          "title": "项目开工前安全许可管理",
+          "summary": "所有项目现场作业前必须确保公司资质和项目级安全许可齐全、有效，防止因许可缺失造成停工或法律风险。",
+          "tags": [
+            "safety",
+            "compliance",
+            "permit"
+          ],
+          "word_count": 12
+        },
+        {
+          "id": "rectification-rate-management",
+          "category": "safety",
+          "title": "隐患整改率目标管理",
+          "summary": "我们以隐患整改率≥95%为量化目标，Q2实际94.2%，通过持续改进逼近目标。",
+          "tags": [
+            "隐患管理",
+            "整改率",
+            "目标管理"
+          ],
+          "word_count": 3
+        },
+        {
+          "id": "risk-source-ranking-method",
+          "category": "safety",
+          "title": "风险源等级排序与重大风险判定",
+          "summary": "我们采用风险等级R值对所有在建项目风险源进行排序，将R≥15定义为重大风险，优先管控TOP5风险源。",
+          "tags": [
+            "风险分析",
+            "风险矩阵",
+            "重大风险",
+            "R值",
+            "排序"
+          ],
+          "word_count": 4
+        },
+        {
+          "id": "safety-accident-investigation",
+          "category": "safety",
+          "title": "Accident investigation and 'Four No Pass' principle",
+          "summary": "We enforce a root cause-focused investigation completed within 7 working days, using the 5-Why method and the 'Four No Pass' closure rule.",
+          "tags": [
+            "accident-investigation",
+            "root-cause-analysis",
+            "lessons-learned"
+          ],
+          "word_count": 241
+        },
+        {
+          "id": "safety-confined-space-entry",
+          "category": "safety",
+          "title": "Confined space entry protocol",
+          "summary": "We enforce a strict sequence of ventilation, then gas testing with defined thresholds, periodic re-testing, and double guardian staffing for confined spaces.",
+          "tags": [
+            "confined-space",
+            "gas-testing",
+            "attendant"
+          ],
+          "word_count": 167
+        },
+        {
+          "id": "safety-emergency-response-levels",
+          "category": "safety",
+          "title": "Tiered emergency response and reporting",
+          "summary": "We operate three response levels based on incident severity, with defined activation triggers, reporting timelines, and responsible organizations.",
+          "tags": [
+            "emergency-response",
+            "reporting",
+            "incident-classification"
+          ],
+          "word_count": 229
+        },
+        {
+          "id": "safety-emergency-supply-points",
+          "category": "safety",
+          "title": "Standardized emergency supply points and inspection",
+          "summary": "We designate emergency supply points in every construction area stocked with specific equipment and mandate monthly inspections by the HSE department.",
+          "tags": [
+            "emergency-supplies",
+            "inspection",
+            "first-aid"
+          ],
+          "word_count": 162
+        },
+        {
+          "id": "safety-height-work-rules",
+          "category": "safety",
+          "title": "Height work and fall protection system",
+          "summary": "We define height work at 2 m and above, enforce 'high anchor, low use' for harnesses, mandate a 15 kN anchorage, and require joint scaffold acceptance.",
+          "tags": [
+            "height-work",
+            "fall-protection",
+            "scaffolding"
+          ],
+          "word_count": 205
+        },
+        {
+          "id": "safety-hot-work-control",
+          "category": "safety",
+          "title": "Hot work permit and control system",
+          "summary": "We use a three-tier approval hierarchy for hot work permits, strict wind speed cutoffs, and dedicated fire watch with specified fire extinguisher requirements.",
+          "tags": [
+            "hot-work",
+            "permit-system",
+            "fire-safety"
+          ],
+          "word_count": 204
+        },
+        {
+          "id": "safety-points-incentive-scheme",
+          "category": "safety",
+          "title": "安全积分制正面激励体系",
+          "summary": "我们推行安全积分制，让员工通过主动上报隐患、参与安全活动等方式获取积分并兑换奖励，以正面引导取代单纯处罚，构建全员参与的安全文化。",
+          "tags": [
+            "安全文化建设",
+            "积分制",
+            "正向激励",
+            "隐患上报",
+            "全员参与"
+          ],
+          "word_count": 3
+        },
+        {
+          "id": "safety-points-system-pilot",
+          "category": "safety",
+          "title": "员工安全积分制",
+          "summary": "我们通过正向激励推动员工主动参与安全，上报隐患和参加活动获得积分兑换奖励。",
+          "tags": [
+            "正向激励",
+            "安全管理",
+            "积分制"
+          ],
+          "word_count": 3
+        },
+        {
+          "id": "safety-site-access-control",
+          "category": "safety",
+          "title": "Closed site access and area segregation",
+          "summary": "We operate a fully enclosed construction site with facial recognition access and physical zoning to prevent unauthorized entry and control hazard exposure.",
+          "tags": [
+            "access-control",
+            "site-security",
+            "zoning"
+          ],
+          "word_count": 141
+        },
+        {
+          "id": "safety-three-level-training",
+          "category": "safety",
+          "title": "Three-level safety training for site entry",
+          "summary": "We impose mandatory three-tier safety education with fixed hourly durations before site access to ensure all personnel meet our HSE baseline.",
+          "tags": [
+            "safety-training",
+            "site-access",
+            "certification"
+          ],
+          "word_count": 134
+        },
+        {
+          "id": "site-access-and-zoning",
+          "category": "safety",
+          "title": "施工现场封闭管理与区域物理隔离",
+          "summary": "我们采用人脸识别门禁与物理围栏将施工区、预制区、办公区、生活区隔离，对高风险作业区设置电子围栏和红外报警。",
+          "tags": [
+            "门禁管理",
+            "区域隔离",
+            "电子围栏",
+            "高风险作业"
+          ],
+          "word_count": 5
+        },
+        {
+          "id": "site-access-control-zoning",
+          "category": "safety",
+          "title": "入场安全准入与分区管控",
+          "summary": "通过三级安全教育、人证合一验证和全封闭分区物理隔离，实现人员资质管控与施工作业区域风险分离。",
+          "tags": [
+            "access-control",
+            "zoning",
+            "safety-training",
+            "petrochemical"
+          ],
+          "word_count": 4
+        },
+        {
+          "id": "smart-helmet-deployment",
+          "category": "safety",
+          "title": "智能安全帽试点部署",
+          "summary": "我们在惠州项目试点智能安全帽，集成定位、脱帽检测、一键报警，首批500顶。",
+          "tags": [
+            "智能穿戴",
+            "安全监控",
+            "试点"
+          ],
+          "word_count": 3
+        },
+        {
+          "id": "smart-safety-helmet-pilot",
+          "category": "safety",
+          "title": "智能安全帽试点部署",
+          "summary": "我们在惠州项目试点500顶集成定位、脱帽检测和SOS一键报警的智能安全帽，利用IoT技术实现现场人员状态的实时监测与应急响应。",
+          "tags": [
+            "智能安全帽",
+            "IoT",
+            "定位",
+            "脱帽检测",
+            "SOS报警",
+            "试点部署"
+          ],
+          "word_count": 4
+        },
+        {
+          "id": "subcontractor-hse-integration",
+          "category": "safety",
+          "title": "分包单位HSE统一管理",
+          "summary": "严禁以包代管，将分包单位全面纳入总包方HSE体系，实行统一标准、统一培训、统一考核，从源头控制安全风险。",
+          "tags": [
+            "分包管理",
+            "HSE",
+            "安全生产许可证",
+            "三统一"
+          ],
+          "word_count": 4
+        },
+        {
+          "id": "summer-heat-prevention",
+          "category": "safety",
+          "title": "暑期防暑降温措施",
+          "summary": "高温期间（≥35°C）我们调整作业时间，配备防暑药品和饮品，预防热射病。",
+          "tags": [
+            "防暑降温",
+            "职业健康",
+            "季节性措施"
+          ],
+          "word_count": 3
+        },
+        {
+          "id": "three-level-safety-training",
+          "category": "safety",
+          "title": "三级安全教育实施要求",
+          "summary": "我们执行三级安全教育制度，所有进场人员必须逐级培训、考试合格后方可上岗，特种作业人员须人证合一。",
+          "tags": [
+            "三级安全教育",
+            "入场管理",
+            "培训",
+            "石化施工"
+          ],
+          "word_count": 6
+        },
+        {
+          "id": "working-at-height-safety",
+          "category": "safety",
+          "title": "高处作业安全带使用与脚手架验收",
+          "summary": "我们定义坠落基准面2m以上为高处作业，安全带“高挂低用”并确保挂点承载力≥15kN，脚手架需三方联合验收挂牌。",
+          "tags": [
+            "高处作业",
+            "安全带",
+            "脚手架验收",
+            "挂点承载力"
+          ],
+          "word_count": 7
+        }
+      ]
+    },
     "general": {
       "name": "general",
-      "description": "Topics: abstention, auth, caveats, connection-pool, cross-content, database, direct-hit, evaluation. Modules include: Phase5 Test Module; Retrieval Evaluation Rubric Overview; P5 Verify Updated; Overall Pass Criteria Summary; Retrieval Scoring Algorithm",
+      "description": "Topics: abstention, auth, caching, caveats, connection-pool, cross-content, database, direct-hit. Modules include: P5 Reject Test; Phase5 Test Module; Redis Caching with 1-Hour TTL; Retrieval Evaluation Rubric Overview; Overall Pass Criteria Summary",
       "modules": [
+        {
+          "id": "p5reject",
+          "category": "general",
+          "title": "P5 Reject Test",
+          "summary": "Testing rejection",
+          "tags": [],
+          "word_count": 12
+        },
         {
           "id": "p5test",
           "category": "general",
@@ -13,6 +627,19 @@
           "summary": "Integration test for Phase 5 verify.",
           "tags": [],
           "word_count": 15
+        },
+        {
+          "id": "redis-caching-ttl",
+          "category": "general",
+          "title": "Redis Caching with 1-Hour TTL",
+          "summary": "We use Redis as our caching layer with a default TTL of 1 hour for cached entries.",
+          "tags": [
+            "redis",
+            "caching",
+            "ttl",
+            "infrastructure"
+          ],
+          "word_count": 100
         },
         {
           "id": "evaluation-rubric-overview",
@@ -381,11 +1008,11 @@
   },
   "graph": {},
   "stats": {
-    "total_modules": 28,
-    "total_words": 2901,
-    "categories": 5,
-    "last_updated": "2026-06-09T14:20:01.081120Z"
+    "total_modules": 77,
+    "total_words": 4675,
+    "categories": 6,
+    "last_updated": "2026-06-10T04:52:52.608210Z"
   },
-  "updated_at": "2026-06-09T14:20:01.081125Z",
+  "updated_at": "2026-06-10T04:52:52.608210Z",
   "tree": null
 }

@@ -1,0 +1,41 @@
+{
+  "id": "markdown-format-003",
+  "category": "implementation",
+  "title": "markdown-format: validate_frontmatter",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/markdown.py, section or definition validate_frontmatter.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: validate_frontmatter.",
+    "details": "def validate_frontmatter(fm: dict) -> list[str]:\n    errors = []\n    if not fm.get(\"id\"):\n        errors.append(\"Missing required field: id\")\n    if not fm.get(\"title\") or len(str(fm.get(\"title\", \"\"))) < 5:\n        errors.append(\"title must be >= 5 characters\")\n    if fm.get(\"confidence\") not in (None, \"high\", \"medium\", \"low\"):\n        errors.append(\"confidence must be high/medium/low\")\n    if fm.get(\"status\") not in (None, \"draft\", \"reviewed\", \"published\", \"deprecated\", \"archived\"):\n        errors.append(\"Invalid status value\")\n    if fm.get(\"category\") and not isinstance(fm.get(\"category\"), str):\n        errors.append(\"category must be a string\")\n    return errors\n",
+    "examples": "",
+    "references": "sources/markdown-format.py; markdown-format:chars:5009-5684; source SHA-256 a69114b0b0d614064365eb97cb7f22d87eee8676342c8a25fdb7be1a520732f7",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "markdown-format"
+    ],
+    "related_modules": [
+      "implementation/markdown-format-002",
+      "implementation/markdown-format-004"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://markdown-format",
+    "source_spans": [
+      {
+        "external_id": "markdown-format",
+        "heading_path": [
+          "validate_frontmatter"
+        ],
+        "excerpt": "def validate_frontmatter(fm: dict) -> list[str]:\n    errors = []\n    if not fm.get(\"id\"):\n        errors.append(\"Missing required field: id\")\n    if not fm.get(\"title\") or len(str(fm.get(\"title\", \"\"))) < 5:\n        errors.append(\"title must be >= 5 characters\")\n    if fm.get(\"confidence\") not in (None, \"high\", \"medium\", \"low\"):\n        errors.append(\"confidence must be high/medium/low\")\n    if fm.get(\"status\") not in (None, \"draft\", \"reviewed\", \"published\", \"deprecated\", \"archived\"):\n        errors.append(\"Invalid status value\")\n    if fm.get(\"category\") and not isinstance(fm.get(\"category\"), str):\n        errors.append(\"category must be a string\")\n    return errors\n",
+        "char_start": 5009,
+        "char_end": 5684
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

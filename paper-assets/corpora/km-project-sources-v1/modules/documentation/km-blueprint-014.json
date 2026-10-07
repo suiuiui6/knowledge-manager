@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-014",
+  "category": "documentation",
+  "title": "km-blueprint: 方式A：从 Markdown 标题提取",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition 方式A：从 Markdown 标题提取.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: 方式A：从 Markdown 标题提取.",
+    "details": "### 方式A：从 Markdown 标题提取\r\n\r\n```python\r\n# src/knowledge_manager/tree_builder.py (新文件)\r\n\r\ndef build_tree_from_markdown(md_text: str, category: str) -> TreeNode:\r\n    \"\"\"\r\n    解析 Markdown 标题层级:\r\n\r\n    # 认证与授权          → category 节点\r\n    ## JWT配置            → module 节点\r\n    ### 签名算法选择      → section 节点 (挂在 module 下)\r\n    ### 过期策略          → section 节点\r\n    ## OAuth2.0流程       → module 节点\r\n\r\n    规则:\r\n    - # (H1) = category\r\n    - ## (H2) = module\r\n    - ### (H3) 及更深 = section\r\n    - 同级的 module 按出现顺序排列\r\n    \"\"\"\r\n    lines = md_text.split('\\n')\r\n    root = TreeNode(id=\"root\", type=TreeNodeType.ROOT, title=\"Root\")\r\n    stack = [(0, root)]  # (heading_level, node)\r\n\r\n    current_module = None\r\n\r\n    for line in lines:\r\n        match = re.match(r'^(#{1,6})\\s+(.+)$', line)\r\n        if not match:\r\n            continue\r\n\r\n        level = len(match.group(1))\r\n        title = match.group(2).strip()\r\n        node_id = slugify(title)\r\n\r\n        # 弹出所有不比当前层级更深的节点\r\n        while stack and stack[-1][0] >= level:\r\n            stack.pop()\r\n\r\n        parent = stack[-1][1]\r\n\r\n        if level == 1:\r\n            # H1 = category\r\n            node = TreeNode(\r\n                id=node_id,\r\n                type=TreeNodeType.CATEGORY,\r\n                title=title,\r\n                path=node_id,\r\n            )\r\n            parent.children.append(node)\r\n            stack.append((level, node))\r\n            current_module = None\r\n\r\n        elif level == 2:\r\n            # H2 = module\r\n            node = TreeNode(\r\n                id=node_id,\r\n                type=TreeNodeType.MODULE,\r\n                title=title,\r\n                path=f\"{parent.path}/{node_id}\",\r\n            )\r\n            parent.children.append(node)\r\n            stack.append((level, node))\r\n            current_module = node\r\n\r\n        else:\r\n            # H3+ = section, 挂在最近的 module 下\r\n            if current_module:\r\n                node = TreeNode(\r\n                    id=f\"{current_module.id}#{node_id}\",\r\n                    type=TreeNodeType.SECTION,\r\n                    title=title,\r\n                    path=f\"{current_module.path}#{node_id}\",\r\n                )\r\n                current_module.children.append(node)\r\n                stack.append((level, node))\r\n\r\n    return root\r\n\r\ndef slugify(title: str) -> str:\r\n    \"\"\"中文标题 → kebab-case id\"\"\"\r\n    # 中英混合 → 拼音化 + slug\r\n    ...\r\n```\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:22032-24397; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-013",
+      "documentation/km-blueprint-015"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "方式A：从 Markdown 标题提取"
+        ],
+        "excerpt": "### 方式A：从 Markdown 标题提取\r\n\r\n```python\r\n# src/knowledge_manager/tree_builder.py (新文件)\r\n\r\ndef build_tree_from_markdown(md_text: str, category: str) -> TreeNode:\r\n    \"\"\"\r\n    解析 Markdown 标题层级:\r\n\r\n    # 认证与授权          → category 节点\r\n    ## JWT配置            → module 节点\r\n    ### 签名算法选择      → section 节点 (挂在 module 下)\r\n    ### 过期策略          → section 节点\r\n    ## OAuth2.0流程       → module 节点\r\n\r\n    规则:\r\n    - # (H1) = category\r\n    - ## (H2) = module\r\n    - ### (H3) 及更深 = section\r\n    - 同级的 module 按出现顺序排列\r\n    \"\"\"\r\n    lines = md_text.split('\\n')\r\n    root = TreeNode(id=\"root\", type=TreeNodeType.ROOT, title=\"Root\")\r\n    stack = [(0, root)]  # (heading_level, node)\r\n\r\n    current_module = None\r\n\r\n    for line in lines:\r\n        match = re.match(r'^(#{1,6})\\s+(.+)$', line)\r\n        if not match:\r\n            continue\r\n\r\n        level = len(match.group(1))\r\n        title = match.group(2).strip()\r\n        node_id = slugify(title)\r\n\r\n        # 弹出所有不比当前层级更深的节点\r\n        while stack and stack[-1][0] >= level:\r\n            stack.pop()\r\n\r\n        parent = stack[-1][1]\r\n\r\n        if level == 1:\r\n            # H1 = category\r\n            node = TreeNode(\r\n                id=node_id,\r\n                type=TreeNodeType.CATEGORY,\r\n                title=title,\r\n                path=node_id,\r\n            )\r\n            parent.children.append(node)\r\n            stack.append((level, node))\r\n            current_module = None\r\n\r\n        elif level == 2:\r\n            # H2 = module\r\n            node = TreeNode(\r\n                id=node_id,\r\n                type=TreeNodeType.MODULE,\r\n                title=title,\r\n                path=f\"{parent.path}/{node_id}\",\r\n            )\r\n            parent.children.append(node)\r\n            stack.append((level, node))\r\n            current_module = node\r\n\r\n        else:\r\n            # H3+ = section, 挂在最近的 module 下\r\n            if current_module:\r\n                node = TreeNode(\r\n                    id=f\"{current_module.id}#{node_id}\",\r\n                    type=TreeNodeType.SECTION,\r\n                    title=title,\r\n                    path=f\"{current_module.path}#{node_id}\",\r\n                )\r\n                current_module.children.append(node)\r\n                stack.append((level, node))\r\n\r\n    return root\r\n\r\ndef slugify(title: str) -> str:\r\n    \"\"\"中文标题 → kebab-case id\"\"\"\r\n    # 中英混合 → 拼音化 + slug\r\n    ...\r\n```\r\n\r\n",
+        "char_start": 22032,
+        "char_end": 24397
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

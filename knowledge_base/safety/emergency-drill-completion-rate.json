@@ -1,0 +1,28 @@
+{
+  "id": "emergency-drill-completion-rate",
+  "category": "safety",
+  "title": "应急演练完成率管理",
+  "summary": "应急演练完成率Q2为85%，未达100%目标，我们将加强计划执行和考核以提升。",
+  "created_at": "2026-06-10T04:51:15.106200Z",
+  "updated_at": "2026-06-10T04:51:15.106201Z",
+  "content": {
+    "overview": "我们设定应急演练完成率100%的目标，通过季度跟踪发现执行滞后，正在强化计划刚性约束，确保每项应急演练按期举行。",
+    "details": "Q2完成率85%，主要因部分项目工期紧张而推迟或合并演练场次。Q3我们将要求各项目提前制定详细计划并报备，安环部按月通报，未完成项目需书面说明原因。",
+    "examples": "",
+    "references": "",
+    "caveats": "完成率指标仅反映演练数量，还需关注演练质量和复盘改进，避免为完成指标而走过场。"
+  },
+  "metadata": {
+    "tags": [
+      "应急演练",
+      "完成率",
+      "计划执行"
+    ],
+    "related_modules": [],
+    "confidence": "medium",
+    "source": "",
+    "expires_at": null,
+    "review_interval_days": null,
+    "status": "published"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "id": "module-schemas-008",
+  "category": "implementation",
+  "title": "module-schemas: SourceSyncState",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/schemas.py, section or definition SourceSyncState.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: SourceSyncState.",
+    "details": "class SourceSyncState(BaseModel):\n    model_config = ConfigDict(extra=\"forbid\")\n\n    last_cursor: str = \"\"\n    last_synced_at: Optional[datetime] = None\n    last_error: str = \"\"\n    page_versions: Dict[str, str] = Field(default_factory=dict)\n\n    @field_validator(\"last_synced_at\", mode=\"after\")\n    @classmethod\n    def normalize_last_synced_at(cls, value: Optional[datetime]) -> Optional[datetime]:\n        return ensure_utc_aware(value)\n",
+    "examples": "",
+    "references": "sources/module-schemas.py; module-schemas:chars:2136-2576; source SHA-256 c857e4a99e2e152db3aca0d1a9fc458bebe20ab352e24d0ae1f144a6594904a8",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "module-schemas"
+    ],
+    "related_modules": [
+      "implementation/module-schemas-007",
+      "implementation/module-schemas-009"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://module-schemas",
+    "source_spans": [
+      {
+        "external_id": "module-schemas",
+        "heading_path": [
+          "SourceSyncState"
+        ],
+        "excerpt": "class SourceSyncState(BaseModel):\n    model_config = ConfigDict(extra=\"forbid\")\n\n    last_cursor: str = \"\"\n    last_synced_at: Optional[datetime] = None\n    last_error: str = \"\"\n    page_versions: Dict[str, str] = Field(default_factory=dict)\n\n    @field_validator(\"last_synced_at\", mode=\"after\")\n    @classmethod\n    def normalize_last_synced_at(cls, value: Optional[datetime]) -> Optional[datetime]:\n        return ensure_utc_aware(value)\n",
+        "char_start": 2136,
+        "char_end": 2576
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

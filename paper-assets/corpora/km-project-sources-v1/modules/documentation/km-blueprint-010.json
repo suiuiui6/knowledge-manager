@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-010",
+  "category": "documentation",
+  "title": "km-blueprint: 知识图谱可视化",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition 知识图谱可视化.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: 知识图谱可视化.",
+    "details": "### 知识图谱可视化\r\n\r\n```typescript\r\n// src/ui/components/GraphView/ForceGraph.tsx\r\n\r\ninterface GraphNode {\r\n  id: string;           // \"auth/jwt-config\"\r\n  label: string;        // \"JWT配置\"\r\n  category: string;     // \"auth\"\r\n  status: string;       // \"published\" | \"deprecated\" | \"archived\"\r\n  confidence: string;   // \"high\" | \"medium\" | \"low\"\r\n  inDegree: number;     // 被引用次数\r\n  outDegree: number;    // 引用次数\r\n  // 可视化属性\r\n  size: number;         // 与被引用次数成正比\r\n  color: string;        // category → 颜色映射\r\n}\r\n\r\ninterface GraphEdge {\r\n  source: string;       // \"auth/jwt-config\"\r\n  target: string;       // \"auth/token-rotation\"\r\n  weight: number;       // 0.0-1.0\r\n  label?: string;       // 可选边标签\r\n}\r\n\r\nfunction ForceGraph({ nodes, edges, onNodeClick }) {\r\n  useEffect(() => {\r\n    const cy = cytoscape({\r\n      container: containerRef.current,\r\n      elements: [\r\n        ...nodes.map(n => ({\r\n          data: { id: n.id, label: n.label, ...n },\r\n        })),\r\n        ...edges.map((e, i) => ({\r\n          data: {\r\n            id: `e${i}`,\r\n            source: e.source,\r\n            target: e.target,\r\n            weight: e.weight,\r\n          },\r\n        })),\r\n      ],\r\n      style: [\r\n        {\r\n          selector: 'node',\r\n          style: {\r\n            'label': 'data(label)',\r\n            'width': 'mapData(size, 5, 80, 20, 80)',\r\n            'height': 'mapData(size, 5, 80, 20, 80)',\r\n            'background-color': 'data(color)',\r\n            'border-width': 2,\r\n            'border-color': '#fff',\r\n            'font-size': '10px',\r\n            'text-valign': 'bottom',\r\n            'text-halign': 'center',\r\n            'text-margin-y': 8,\r\n          },\r\n        },\r\n        {\r\n          selector: 'node[status=\"deprecated\"]',\r\n          style: { 'border-color': '#f59e0b', 'border-style': 'dashed' },\r\n        },\r\n        {\r\n          selector: 'node[status=\"archived\"]',\r\n          style: { 'opacity': 0.4 },\r\n        },\r\n        {\r\n          selector: 'edge',\r\n          style: {\r\n            'width': 'mapData(weight, 0, 1, 1, 5)',\r\n            'line-color': '#94a3b8',\r\n            'target-arrow-color': '#94a3b8',\r\n            'target-arrow-shape': 'triangle',\r\n            'curve-style': 'bezier',\r\n            'opacity': 0.6,\r\n          },\r\n        },\r\n      ],\r\n      layout: {\r\n        name: 'cose',           // 力导向布局\r\n        animate: true,\r\n        nodeRepulsion: 8000,\r\n        idealEdgeLength: 120,\r\n        gravity: 0.3,\r\n      },\r\n    });\r\n\r\n    cy.on('click', 'node', (evt) => {\r\n      const nodeId = evt.target.id();\r\n      onNodeClick(nodeId);\r\n    });\r\n\r\n    // 悬停时高亮邻居节点\r\n    cy.on('mouseover', 'node', (evt) => {\r\n      const node = evt.target;\r\n      const neighborhood = node.closedNeighborhood();\r\n      cy.elements().difference(neighborhood).addClass('dimmed');\r\n    });\r\n    cy.on('mouseout', 'node', () => {\r\n      cy.elements().removeClass('dimmed');\r\n    });\r\n\r\n    return () => cy.destroy();\r\n  }, [nodes, edges]);\r\n\r\n  return <div ref={containerRef} style={{ width: '100%', height: '600px' }} />;\r\n}\r\n```\r\n\r\n---\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:16564-19624; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-009",
+      "documentation/km-blueprint-011"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "知识图谱可视化"
+        ],
+        "excerpt": "### 知识图谱可视化\r\n\r\n```typescript\r\n// src/ui/components/GraphView/ForceGraph.tsx\r\n\r\ninterface GraphNode {\r\n  id: string;           // \"auth/jwt-config\"\r\n  label: string;        // \"JWT配置\"\r\n  category: string;     // \"auth\"\r\n  status: string;       // \"published\" | \"deprecated\" | \"archived\"\r\n  confidence: string;   // \"high\" | \"medium\" | \"low\"\r\n  inDegree: number;     // 被引用次数\r\n  outDegree: number;    // 引用次数\r\n  // 可视化属性\r\n  size: number;         // 与被引用次数成正比\r\n  color: string;        // category → 颜色映射\r\n}\r\n\r\ninterface GraphEdge {\r\n  source: string;       // \"auth/jwt-config\"\r\n  target: string;       // \"auth/token-rotation\"\r\n  weight: number;       // 0.0-1.0\r\n  label?: string;       // 可选边标签\r\n}\r\n\r\nfunction ForceGraph({ nodes, edges, onNodeClick }) {\r\n  useEffect(() => {\r\n    const cy = cytoscape({\r\n      container: containerRef.current,\r\n      elements: [\r\n        ...nodes.map(n => ({\r\n          data: { id: n.id, label: n.label, ...n },\r\n        })),\r\n        ...edges.map((e, i) => ({\r\n          data: {\r\n            id: `e${i}`,\r\n            source: e.source,\r\n            target: e.target,\r\n            weight: e.weight,\r\n          },\r\n        })),\r\n      ],\r\n      style: [\r\n        {\r\n          selector: 'node',\r\n          style: {\r\n            'label': 'data(label)',\r\n            'width': 'mapData(size, 5, 80, 20, 80)',\r\n            'height': 'mapData(size, 5, 80, 20, 80)',\r\n            'background-color': 'data(color)',\r\n            'border-width': 2,\r\n            'border-color': '#fff',\r\n            'font-size': '10px',\r\n            'text-valign': 'bottom',\r\n            'text-halign': 'center',\r\n            'text-margin-y': 8,\r\n          },\r\n        },\r\n        {\r\n          selector: 'node[status=\"deprecated\"]',\r\n          style: { 'border-color': '#f59e0b', 'border-style': 'dashed' },\r\n        },\r\n        {\r\n          selector: 'node[status=\"archived\"]',\r\n          style: { 'opacity': 0.4 },\r\n        },\r\n        {\r\n          selector: 'edge',\r\n          style: {\r\n            'width': 'mapData(weight, 0, 1, 1, 5)',\r\n            'line-color': '#94a3b8',\r\n            'target-arrow-color': '#94a3b8',\r\n            'target-arrow-shape': 'triangle',\r\n            'curve-style': 'bezier',\r\n            'opacity': 0.6,\r\n          },\r\n        },\r\n      ],\r\n      layout: {\r\n        name: 'cose',           // 力导向布局\r\n        animate: true,\r\n        nodeRepulsion: 8000,\r\n        idealEdgeLength: 120,\r\n        gravity: 0.3,\r\n      },\r\n    });\r\n\r\n    cy.on('click', 'node', (evt) => {\r\n      const nodeId = evt.target.id();\r\n      onNodeClick(nodeId);\r\n    });\r\n\r\n    // 悬停时高亮邻居节点\r\n    cy.on('mouseover', 'node', (evt) => {\r\n      const node = evt.target;\r\n      const neighborhood = node.closedNeighborhood();\r\n      cy.elements().difference(neighborhood).addClass('dimmed');\r\n    });\r\n    cy.on('mouseout', 'node', () => {\r\n      cy.elements().removeClass('dimmed');\r\n    });\r\n\r\n    return () => cy.destroy();\r\n  }, [nodes, edges]);\r\n\r\n  return <div ref={containerRef} style={{ width: '100%', height: '600px' }} />;\r\n}\r\n```\r\n\r\n---\r\n\r\n",
+        "char_start": 16564,
+        "char_end": 19624
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

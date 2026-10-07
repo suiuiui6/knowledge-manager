@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-043",
+  "category": "documentation",
+  "title": "km-blueprint: 数据模型",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition 数据模型.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: 数据模型.",
+    "details": "### 数据模型\r\n\r\n```python\r\nclass WatchSource(BaseModel):\r\n    id: str\r\n    type: Literal[\"github\", \"rss\", \"local\", \"arxiv\", \"webhook\"]\r\n    enabled: bool = True\r\n    # 源配置\r\n    config: dict = Field(default_factory=dict)\r\n    # e.g. github: {\"repo\": \"org/backend\", \"branch\": \"main\", \"paths\": [\"docs/**\"]}\r\n    # e.g. rss: {\"url\": \"https://...\", \"last_etag\": \"...\"}\r\n    # e.g. local: {\"path\": \"../shared-docs\", \"patterns\": [\"*.md\"]}\r\n    # e.g. arxiv: {\"query\": \"cat:cs.AI\", \"max_results\": 10}\r\n    # 知识提取配置\r\n    extraction: WatchExtractionConfig\r\n\r\nclass WatchExtractionConfig(BaseModel):\r\n    category: str = \"\"          # 提取的模块归入哪个分类\r\n    auto_categorize: bool = False   # 是否让LLM自动分类\r\n    chunk_size: int = 8000\r\n    max_modules_per_item: int = 3\r\n    # 审核策略\r\n    auto_approve: bool = False     # 是否自动批准 (高风险源不要开)\r\n    notify_on_new: bool = True     # 新模块是否通知\r\n    notify_webhook: str = \"\"       # 通知的 webhook URL\r\n\r\nclass WatchEvent(BaseModel):\r\n    \"\"\"记录一次监控处理\"\"\"\r\n    id: str\r\n    source_id: str\r\n    triggered_at: datetime\r\n    trigger_type: str          # \"schedule\" | \"webhook\" | \"manual\"\r\n    items_found: int = 0       # 发现的新条目数\r\n    items_processed: int = 0   # 成功处理的条目数\r\n    modules_generated: int = 0 # 生成的模块数\r\n    errors: list[str] = Field(default_factory=list)\r\n    took_ms: int = 0\r\n    cursor_after: str = \"\"     # 处理后的游标位置\r\n```\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:80560-81905; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-042",
+      "documentation/km-blueprint-044"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "数据模型"
+        ],
+        "excerpt": "### 数据模型\r\n\r\n```python\r\nclass WatchSource(BaseModel):\r\n    id: str\r\n    type: Literal[\"github\", \"rss\", \"local\", \"arxiv\", \"webhook\"]\r\n    enabled: bool = True\r\n    # 源配置\r\n    config: dict = Field(default_factory=dict)\r\n    # e.g. github: {\"repo\": \"org/backend\", \"branch\": \"main\", \"paths\": [\"docs/**\"]}\r\n    # e.g. rss: {\"url\": \"https://...\", \"last_etag\": \"...\"}\r\n    # e.g. local: {\"path\": \"../shared-docs\", \"patterns\": [\"*.md\"]}\r\n    # e.g. arxiv: {\"query\": \"cat:cs.AI\", \"max_results\": 10}\r\n    # 知识提取配置\r\n    extraction: WatchExtractionConfig\r\n\r\nclass WatchExtractionConfig(BaseModel):\r\n    category: str = \"\"          # 提取的模块归入哪个分类\r\n    auto_categorize: bool = False   # 是否让LLM自动分类\r\n    chunk_size: int = 8000\r\n    max_modules_per_item: int = 3\r\n    # 审核策略\r\n    auto_approve: bool = False     # 是否自动批准 (高风险源不要开)\r\n    notify_on_new: bool = True     # 新模块是否通知\r\n    notify_webhook: str = \"\"       # 通知的 webhook URL\r\n\r\nclass WatchEvent(BaseModel):\r\n    \"\"\"记录一次监控处理\"\"\"\r\n    id: str\r\n    source_id: str\r\n    triggered_at: datetime\r\n    trigger_type: str          # \"schedule\" | \"webhook\" | \"manual\"\r\n    items_found: int = 0       # 发现的新条目数\r\n    items_processed: int = 0   # 成功处理的条目数\r\n    modules_generated: int = 0 # 生成的模块数\r\n    errors: list[str] = Field(default_factory=list)\r\n    took_ms: int = 0\r\n    cursor_after: str = \"\"     # 处理后的游标位置\r\n```\r\n\r\n",
+        "char_start": 80560,
+        "char_end": 81905
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

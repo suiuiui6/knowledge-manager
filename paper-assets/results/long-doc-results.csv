@@ -1,0 +1,2 @@
+doc_id,corpus_id,char_count,chunk_size,overlap,chunk_count,json_retry_count,raw_module_count,deduplicated_module_count,approved_module_count,duplicate_module_count,format_failure_count,boundary_failure_count,manual_quality_notes,status
+LONG-001,TBD,TBD,TBD,TBD,TBD,TBD,TBD,TBD,TBD,TBD,TBD,TBD,"Template row. Run extractor and manual review before filling.",template_not_measured

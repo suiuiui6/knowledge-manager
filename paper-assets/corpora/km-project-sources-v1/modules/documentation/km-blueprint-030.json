@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-030",
+  "category": "documentation",
+  "title": "km-blueprint: 不是字符串比较, 是语义理解",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition 不是字符串比较, 是语义理解.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: 不是字符串比较, 是语义理解.",
+    "details": "## 不是字符串比较, 是语义理解\r\n\r\n简单矛盾（结构化lint能发现） vs 深层矛盾（需要LLM理解）：\r\n\r\n```\r\n简单: 模块A字段X=24, 模块B字段X=1     ← grep能发现\r\n深层: 模块A说\"我们选的微服务\",          ← 需要理解两段文字在讲同一件事\r\n      模块B说\"我们回归了单体\"           但得出相反结论\r\n```\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:56933-57128; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-029",
+      "documentation/km-blueprint-031"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "不是字符串比较, 是语义理解"
+        ],
+        "excerpt": "## 不是字符串比较, 是语义理解\r\n\r\n简单矛盾（结构化lint能发现） vs 深层矛盾（需要LLM理解）：\r\n\r\n```\r\n简单: 模块A字段X=24, 模块B字段X=1     ← grep能发现\r\n深层: 模块A说\"我们选的微服务\",          ← 需要理解两段文字在讲同一件事\r\n      模块B说\"我们回归了单体\"           但得出相反结论\r\n```\r\n\r\n",
+        "char_start": 56933,
+        "char_end": 57128
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

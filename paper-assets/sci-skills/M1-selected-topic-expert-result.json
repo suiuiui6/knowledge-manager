@@ -1,0 +1,51 @@
+{
+  "contract_version": "1.0",
+  "expert_skill": "sci-skills-literature-search",
+  "project_id": "knowledge-manager-journal-20261007",
+  "paper_family": "M",
+  "stage_id": "M1",
+  "task_id": "M1-selected-topic-recon-002",
+  "task_status": "PROVISIONAL",
+  "inputs_reviewed": [
+    "M1-topic-definition.md",
+    "knowledge-manager source files",
+    "paper-assets/scripts/run_candidate_baseline_eval.py"
+  ],
+  "outputs": [
+    "M2-literature-candidates.csv",
+    "M2-search-log.json",
+    "M2-preliminary-comparison.md"
+  ],
+  "evidence_status": [
+    {
+      "label": "VERIFIED_USER_MATERIAL",
+      "claim": "Candidate evaluator uses module-text BM25 proxy, not KM runtime search"
+    },
+    {
+      "label": "AI_INFERENCE",
+      "claim": "Team knowledge governance and task evidence coverage as candidate differentiation"
+    },
+    {
+      "label": "PENDING_VERIFICATION",
+      "claim": "Web tools returned no usable source content; all external literature remains unverified; previous verified metadata claims withdrawn"
+    }
+  ],
+  "assumptions": [
+    "Software technical knowledge is provisional main application domain"
+  ],
+  "author_input_needed": [
+    "Origin, original locations and permitted use of existing corpus"
+  ],
+  "manual_actions": [],
+  "quality_checks": [
+    "Reviewed local evaluation implementation",
+    "Withdrawn unsupported external verification claims",
+    "Candidate literature distinguished from verified local code",
+    "No systematic coverage or reproduction claimed"
+  ],
+  "conflicts": [],
+  "conflict_resolution_status": "NOT_REQUIRED",
+  "merge_permission": "orchestrator_only",
+  "recommended_next_action": "Confirm corpus origin and original document locations",
+  "stage_acceptance_recommendation": "REPAIR"
+}

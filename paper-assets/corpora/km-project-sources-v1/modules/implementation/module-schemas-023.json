@@ -1,0 +1,41 @@
+{
+  "id": "module-schemas-023",
+  "category": "implementation",
+  "title": "module-schemas: StagingMeta",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/schemas.py, section or definition StagingMeta.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: StagingMeta.",
+    "details": "class StagingMeta(BaseModel):\r\n    module_id: str\r\n    status: Literal[\"pending\", \"approved\", \"changes-requested\"] = \"pending\"\r\n    submitted_by: str = \"\"\r\n    submitted_at: datetime = Field(default_factory=utc_now)\r\n    reviews: List[ReviewRecord] = Field(default_factory=list)\r\n\r\n    def approval_count(self) -> int:\r\n        return sum(1 for r in self.reviews if r.action == \"approved\")\r\n",
+    "examples": "",
+    "references": "sources/module-schemas.py; module-schemas:chars:10009-10400; source SHA-256 c857e4a99e2e152db3aca0d1a9fc458bebe20ab352e24d0ae1f144a6594904a8",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "module-schemas"
+    ],
+    "related_modules": [
+      "implementation/module-schemas-022",
+      "implementation/module-schemas-024"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://module-schemas",
+    "source_spans": [
+      {
+        "external_id": "module-schemas",
+        "heading_path": [
+          "StagingMeta"
+        ],
+        "excerpt": "class StagingMeta(BaseModel):\r\n    module_id: str\r\n    status: Literal[\"pending\", \"approved\", \"changes-requested\"] = \"pending\"\r\n    submitted_by: str = \"\"\r\n    submitted_at: datetime = Field(default_factory=utc_now)\r\n    reviews: List[ReviewRecord] = Field(default_factory=list)\r\n\r\n    def approval_count(self) -> int:\r\n        return sum(1 for r in self.reviews if r.action == \"approved\")\r\n",
+        "char_start": 10009,
+        "char_end": 10400
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

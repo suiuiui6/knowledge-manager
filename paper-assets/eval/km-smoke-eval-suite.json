@@ -1,0 +1,61 @@
+{
+  "name": "km-built-in-kb-smoke",
+  "cases": [
+    {
+      "id": "arch-design-boundaries",
+      "query": "KM anti goals no vector database no SQL no web server",
+      "required_modules": ["architecture/design-boundaries"],
+      "category": "architecture",
+      "task_type": "decision",
+      "top_k": 5
+    },
+    {
+      "id": "arch-federation",
+      "query": "multi knowledge base federation namespace isolation",
+      "required_modules": ["architecture/federation"],
+      "category": "architecture",
+      "task_type": "factual",
+      "top_k": 5
+    },
+    {
+      "id": "arch-git-native-storage",
+      "query": "git native JSON storage files over database",
+      "required_modules": ["architecture/git-native-storage"],
+      "category": "architecture",
+      "task_type": "decision",
+      "top_k": 5
+    },
+    {
+      "id": "arch-mcp-protocol",
+      "query": "MCP protocol stdio not HTTP server",
+      "required_modules": ["architecture/mcp-protocol"],
+      "category": "architecture",
+      "task_type": "factual",
+      "top_k": 5
+    },
+    {
+      "id": "ops-module-lifecycle",
+      "query": "module lifecycle draft reviewed published deprecated archived",
+      "required_modules": ["operations/module-lifecycle"],
+      "category": "operations",
+      "task_type": "procedure",
+      "top_k": 5
+    },
+    {
+      "id": "search-chinese-segmentation",
+      "query": "Chinese segmentation jieba CJK search",
+      "required_modules": ["search/chinese-segmentation"],
+      "category": "search",
+      "task_type": "factual",
+      "top_k": 5
+    },
+    {
+      "id": "search-ranking-pipeline",
+      "query": "search ranking pipeline BM25 heuristic confidence Bayesian",
+      "required_modules": ["search/ranking-pipeline"],
+      "category": "search",
+      "task_type": "factual",
+      "top_k": 5
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "id": "safety-emergency-supply-points",
+  "category": "safety",
+  "title": "Standardized emergency supply points and inspection",
+  "summary": "We designate emergency supply points in every construction area stocked with specific equipment and mandate monthly inspections by the HSE department.",
+  "created_at": "2026-06-10T04:28:47.935291Z",
+  "updated_at": "2026-06-10T04:28:47.935291Z",
+  "content": {
+    "overview": "We maintain standardized emergency material stations across the site to guarantee immediate access to first aid and rescue equipment. Each point holds a defined kit, and the HSE department verifies and replenishes supplies on the 1st of every month.",
+    "details": "Standard inventory per point: first aid kit (including tourniquets, burn cream, eye wash), 2 sets of positive-pressure SCBA, 10 chemical cartridge respirators, emergency lighting, and a stretcher. We chose this specific list based on common site injury profiles and the need for immediate self-rescue capability until professional responders arrive. Monthly inspections on a fixed date enforce stock accountability; any missing or expired items must be replaced same day.",
+    "examples": "Inspection checklist for 1st March: count SCBA sets, check pressure gauges, verify expiration of burn cream, test emergency lights, sign off.",
+    "references": "Site HSE plan, equipment maintenance log.",
+    "caveats": "SCBA cylinders must be hydrotested periodically. Emergency lights require quarterly battery discharge cycles. Relying solely on monthly checks may miss consumption between inspections; users should report usage immediately."
+  },
+  "metadata": {
+    "tags": [
+      "emergency-supplies",
+      "inspection",
+      "first-aid"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": "",
+    "expires_at": null,
+    "review_interval_days": null,
+    "status": "published"
+  }
+}

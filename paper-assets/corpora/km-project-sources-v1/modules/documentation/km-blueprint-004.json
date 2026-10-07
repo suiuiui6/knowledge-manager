@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-004",
+  "category": "documentation",
+  "title": "km-blueprint: 服务模式",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition 服务模式.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: 服务模式.",
+    "details": "### 服务模式\r\n\r\n```bash\r\n# 纯MCP模式 (现有, 不变)\r\nkm serve\r\n\r\n# MCP + Web UI 模式 (新增)\r\nkm serve --ui                    # 仅 localhost\r\nkm serve --ui --host 0.0.0.0    # 局域网可访问\r\nkm serve --ui --port 8420        # 自定义端口\r\n```\r\n\r\n内部实现：一个进程同时运行 FastMCP (stdio) 和 FastAPI (HTTP + WebSocket)。两个协议共享同一个 Storage 实例和 ModuleCache。\r\n\r\n```\r\n┌────────────────────────────────────────────┐\r\n│                 km serve --ui               │\r\n│                                             │\r\n│  ┌──────────────┐    ┌──────────────────┐  │\r\n│  │  FastMCP      │    │  FastAPI          │  │\r\n│  │  (stdio)      │    │  (localhost:8420) │  │\r\n│  │               │    │                   │  │\r\n│  │  resources:   │    │  GET /api/        │  │\r\n│  │   index       │    │   health          │  │\r\n│  │   health      │    │                   │  │\r\n│  │   stats       │    │  GET /api/index   │  │\r\n│  │   changelog   │    │  GET /api/modules │  │\r\n│  │               │    │  GET /api/modules/ │  │\r\n│  │  tools:       │    │   :cat/:id        │  │\r\n│  │   load_module │    │                   │  │\r\n│  │   search      │    │  POST /api/search │  │\r\n│  │   expand      │    │  POST /api/chat   │  │\r\n│  │   deep_search │    │   (SSE stream)    │  │\r\n│  │   graph       │    │                   │  │\r\n│  │   federated   │    │  GET /api/graph   │  │\r\n│  │               │    │  GET /api/tree    │  │\r\n│  └──────────────┘    │                   │  │\r\n│                       │  WebSocket /ws    │  │\r\n│                       │   (live updates)  │  │\r\n│                       └──────────────────┘  │\r\n│                                             │\r\n│  共享: Storage, ModuleCache, RankModel      │\r\n└────────────────────────────────────────────┘\r\n```\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:1015-2726; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-003",
+      "documentation/km-blueprint-005"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "服务模式"
+        ],
+        "excerpt": "### 服务模式\r\n\r\n```bash\r\n# 纯MCP模式 (现有, 不变)\r\nkm serve\r\n\r\n# MCP + Web UI 模式 (新增)\r\nkm serve --ui                    # 仅 localhost\r\nkm serve --ui --host 0.0.0.0    # 局域网可访问\r\nkm serve --ui --port 8420        # 自定义端口\r\n```\r\n\r\n内部实现：一个进程同时运行 FastMCP (stdio) 和 FastAPI (HTTP + WebSocket)。两个协议共享同一个 Storage 实例和 ModuleCache。\r\n\r\n```\r\n┌────────────────────────────────────────────┐\r\n│                 km serve --ui               │\r\n│                                             │\r\n│  ┌──────────────┐    ┌──────────────────┐  │\r\n│  │  FastMCP      │    │  FastAPI          │  │\r\n│  │  (stdio)      │    │  (localhost:8420) │  │\r\n│  │               │    │                   │  │\r\n│  │  resources:   │    │  GET /api/        │  │\r\n│  │   index       │    │   health          │  │\r\n│  │   health      │    │                   │  │\r\n│  │   stats       │    │  GET /api/index   │  │\r\n│  │   changelog   │    │  GET /api/modules │  │\r\n│  │               │    │  GET /api/modules/ │  │\r\n│  │  tools:       │    │   :cat/:id        │  │\r\n│  │   load_module │    │                   │  │\r\n│  │   search      │    │  POST /api/search │  │\r\n│  │   expand      │    │  POST /api/chat   │  │\r\n│  │   deep_search │    │   (SSE stream)    │  │\r\n│  │   graph       │    │                   │  │\r\n│  │   federated   │    │  GET /api/graph   │  │\r\n│  │               │    │  GET /api/tree    │  │\r\n│  └──────────────┘    │                   │  │\r\n│                       │  WebSocket /ws    │  │\r\n│                       │   (live updates)  │  │\r\n│                       └──────────────────┘  │\r\n│                                             │\r\n│  共享: Storage, ModuleCache, RankModel      │\r\n└────────────────────────────────────────────┘\r\n```\r\n\r\n",
+        "char_start": 1015,
+        "char_end": 2726
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

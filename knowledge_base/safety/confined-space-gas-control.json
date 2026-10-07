@@ -1,0 +1,29 @@
+{
+  "id": "confined-space-gas-control",
+  "category": "safety",
+  "title": "受限空间作业气体控制标准",
+  "summary": "坚持“先通风、再检测、后作业”流程，设定多种气体浓度阈值，并实施2小时复测和双监护制度。",
+  "created_at": "2026-06-10T04:46:49.392699Z",
+  "updated_at": "2026-06-10T04:46:49.392699Z",
+  "content": {
+    "overview": "我们制定了严格的受限空间气体检测标准和动态监测程序，以实时的气体数据驱动作业许可，确保氧气、可燃气体、硫化氢和一氧化碳浓度始终处于安全限值内。",
+    "details": "作业前30分钟内必须进行气体检测，氧气含量须在19.5%-23.5%，可燃气体浓度低于爆炸下限的10%，H₂S低于10mg/m³，CO低于30mg/m³。作业期间每2小时复测一次，数据记录在作业票上。每班至少配备2名经培训的监护人员，其中1人负责气体监测和记录。选型上采用直读式四合一检测仪，而非逐项单独检测，以提升效率。",
+    "examples": "在储罐内壁防腐作业中，监护人每2小时使用四合一检测仪记录数据，当可燃气体浓度短时接近5%LEL时立即指挥人员撤出，加强通风直至浓度降至1%LEL以下。",
+    "references": "",
+    "caveats": "检测仪的定期校准若超期，可能导致读数偏差；某些化学品挥发出的气体可能不在四合一检测范围内，需针对特定介质增加专项检测（如苯、氨等）。"
+  },
+  "metadata": {
+    "tags": [
+      "confined-space",
+      "gas-detection",
+      "permit-to-work",
+      "monitoring"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": "",
+    "expires_at": null,
+    "review_interval_days": null,
+    "status": "published"
+  }
+}

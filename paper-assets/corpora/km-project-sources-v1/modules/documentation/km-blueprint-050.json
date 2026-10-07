@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-050",
+  "category": "documentation",
+  "title": "km-blueprint: 设计目标",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition 设计目标.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: 设计目标.",
+    "details": "## 设计目标\r\n\r\nknowledge-manager 不可能覆盖所有团队的工具链。插件系统让社区贡献集成, 保持核心轻量。\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:97314-97381; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-049",
+      "documentation/km-blueprint-051"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "设计目标"
+        ],
+        "excerpt": "## 设计目标\r\n\r\nknowledge-manager 不可能覆盖所有团队的工具链。插件系统让社区贡献集成, 保持核心轻量。\r\n\r\n",
+        "char_start": 97314,
+        "char_end": 97381
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

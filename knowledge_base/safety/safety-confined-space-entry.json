@@ -1,0 +1,28 @@
+{
+  "id": "safety-confined-space-entry",
+  "category": "safety",
+  "title": "Confined space entry protocol",
+  "summary": "We enforce a strict sequence of ventilation, then gas testing with defined thresholds, periodic re-testing, and double guardian staffing for confined spaces.",
+  "created_at": "2026-06-10T04:28:47.935273Z",
+  "updated_at": "2026-06-10T04:28:47.935273Z",
+  "content": {
+    "overview": "Our confined space work follows the mandatory 'ventilate, detect, then enter' principle, with precise gas concentration limits and frequent re-testing to maintain a safe atmosphere, supported by two or more dedicated attendants per shift.",
+    "details": "Gas testing is done within 30 minutes before entry: O₂ must be 19.5%–23.5%, combustible gas <10% LEL, H₂S <10 mg/m³, CO <30 mg/m³. Continuous ventilation remains during occupancy. We re-test every 2 hours and immediately after any interruption. We require at least two attendants per entry shift to ensure rescue readiness and communication redundancy. This exceeds typical single-guardian practices because confined space rescues are high-risk and require immediate backup.",
+    "examples": "Pre-entry gas readings logged: O₂ 20.9%, LEL 3%, H₂S 2 ppm, CO 5 ppm ↔ all passes. Attendants: one at entry point, one at communication station.",
+    "references": "Confined space permit procedure, GB 50484-2019, company HSE manual.",
+    "caveats": "Gas detectors must be bump-tested daily. If any gas concentration exceeds limit during work, immediate evacuation is required. Attendants must never enter for rescue without proper PPE and authorization."
+  },
+  "metadata": {
+    "tags": [
+      "confined-space",
+      "gas-testing",
+      "attendant"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": "",
+    "expires_at": null,
+    "review_interval_days": null,
+    "status": "published"
+  }
+}

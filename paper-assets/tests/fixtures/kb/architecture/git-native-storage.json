@@ -1,0 +1,13 @@
+{
+  "id": "git-native-storage",
+  "category": "architecture",
+  "title": "Git native storage",
+  "summary": "Knowledge modules are JSON files tracked in Git.",
+  "content": {
+    "overview": "Git is used for review and audit.",
+    "details": "JSON module files can be diffed and versioned.",
+    "examples": "",
+    "references": "",
+    "caveats": ""
+  }
+}

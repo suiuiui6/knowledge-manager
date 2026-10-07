@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-034",
+  "category": "documentation",
+  "title": "km-blueprint: 设计理念",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition 设计理念.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: 设计理念.",
+    "details": "## 设计理念\r\n\r\n知识库的终极价值——不是被LLM检索到, 而是被**团队成员内化**。如果每个人都不知道库里有什么, 每次遇到问题都要重新搜索, 那知识库只是\"外部存储\", 不是\"第二大脑\"。\r\n\r\n间隔重复把关键知识从\"库里有\"变成\"脑子里有\"。\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:68621-68752; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-033",
+      "documentation/km-blueprint-035"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "设计理念"
+        ],
+        "excerpt": "## 设计理念\r\n\r\n知识库的终极价值——不是被LLM检索到, 而是被**团队成员内化**。如果每个人都不知道库里有什么, 每次遇到问题都要重新搜索, 那知识库只是\"外部存储\", 不是\"第二大脑\"。\r\n\r\n间隔重复把关键知识从\"库里有\"变成\"脑子里有\"。\r\n\r\n",
+        "char_start": 68621,
+        "char_end": 68752
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

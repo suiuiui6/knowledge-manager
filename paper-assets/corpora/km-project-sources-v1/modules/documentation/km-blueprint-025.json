@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-025",
+  "category": "documentation",
+  "title": "km-blueprint: Markdown 格式规范",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition Markdown 格式规范.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: Markdown 格式规范.",
+    "details": "## Markdown 格式规范\r\n\r\n```markdown\r\n---\r\nid: jwt-config\r\ncategory: auth\r\ntitle: JWT Token 配置\r\nsummary: 我们使用RS256非对称签名的JWT，Access Token过期时间24小时，Refresh Token 7天\r\ntags: [auth, jwt, security, api]\r\nconfidence: high\r\nstatus: published\r\nsource: internal-runbook\r\nexpires_at: null\r\nreview_interval_days: 90\r\nrelated_modules:\r\n  - auth/token-rotation\r\n  - auth/oauth-flow\r\n  - deployment/secrets-management\r\ncreated_at: \"2026-05-28T10:00:00Z\"\r\nupdated_at: \"2026-06-01T14:30:00Z\"\r\n---\r\n\r\n# 概述\r\n\r\n我们选择 [[RS256]] 而非 HS256 作为JWT签名算法。核心原因：在微服务架构下，\r\n多个服务需要独立验证JWT签名，但不能共享对称密钥。\r\n\r\n## 决策背景\r\n\r\n2025年Q2从单体迁移到微服务时，我们面临JWT签名方案的选择：\r\n\r\n| 方案 | 优点 | 缺点 | 我们的评估 |\r\n|------|------|------|-----------|\r\n| HS256 | 简单, 速度快 | 需要共享密钥, 安全风险 | ❌ 不适用于多服务 |\r\n| RS256 | 非对称, 公钥可分发 | 签名速度慢 ~10x | ✅ 安全优先 |\r\n| EdDSA | 更快更安全 | 库支持不成熟 | ⏳ 未来考虑 |\r\n\r\n详见 [[auth/oauth-flow]]\r\n\r\n# 实现细节\r\n\r\n## Token 结构\r\n\r\n\\`\\`\\`json\r\n{\r\n  \"sub\": \"user_123\",\r\n  \"iat\": 1717200000,\r\n  \"exp\": 1717286400,\r\n  \"scope\": [\"read\", \"write\"],\r\n  \"jti\": \"unique-token-id\"\r\n}\r\n\\`\\`\\`\r\n\r\n## 关键配置\r\n\r\n\\`\\`\\`python\r\n# settings.py\r\nJWT_ALGORITHM = \"RS256\"\r\nJWT_ACCESS_TOKEN_EXPIRE_HOURS = 24\r\nJWT_REFRESH_TOKEN_EXPIRE_DAYS = 7\r\nJWT_KEY_PATH = \"/etc/secrets/jwt-private.pem\"\r\nJWKS_ENDPOINT = \"https://api.example.com/.well-known/jwks.json\"\r\n\\`\\`\\`\r\n\r\n## 黑名单机制\r\n\r\n使用 Redis 管理已撤销的 Token, key 格式为 `bl:jti:{jti}`,\r\nTTL 与 token 剩余有效期一致。详见 [[deployment/redis-config]]\r\n\r\n# 注意事项\r\n\r\n- **性能**: RS256签名比HS256慢约10x, 不要在热路径频繁生成token。\r\n  登录时生成一次, 后续用refresh token续期。\r\n- **JWKS缓存**: JWKS端点需要CDN缓存 (TTL: 1小时),\r\n  否则每次token验证都请求JWKS会显著增加延迟。\r\n- **密钥轮换**: 私钥每年轮换一次, 轮换期间同时发布新旧两个公钥到JWKS。\r\n- **调试陷阱**: 本地开发时如果遇到 \"Invalid token\" 错误,\r\n  检查系统时间是否同步 (JWT的 `iat` 验证需要时钟偏差 < 30秒)。\r\n```\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:43304-44985; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-024",
+      "documentation/km-blueprint-026"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "Markdown 格式规范"
+        ],
+        "excerpt": "## Markdown 格式规范\r\n\r\n```markdown\r\n---\r\nid: jwt-config\r\ncategory: auth\r\ntitle: JWT Token 配置\r\nsummary: 我们使用RS256非对称签名的JWT，Access Token过期时间24小时，Refresh Token 7天\r\ntags: [auth, jwt, security, api]\r\nconfidence: high\r\nstatus: published\r\nsource: internal-runbook\r\nexpires_at: null\r\nreview_interval_days: 90\r\nrelated_modules:\r\n  - auth/token-rotation\r\n  - auth/oauth-flow\r\n  - deployment/secrets-management\r\ncreated_at: \"2026-05-28T10:00:00Z\"\r\nupdated_at: \"2026-06-01T14:30:00Z\"\r\n---\r\n\r\n# 概述\r\n\r\n我们选择 [[RS256]] 而非 HS256 作为JWT签名算法。核心原因：在微服务架构下，\r\n多个服务需要独立验证JWT签名，但不能共享对称密钥。\r\n\r\n## 决策背景\r\n\r\n2025年Q2从单体迁移到微服务时，我们面临JWT签名方案的选择：\r\n\r\n| 方案 | 优点 | 缺点 | 我们的评估 |\r\n|------|------|------|-----------|\r\n| HS256 | 简单, 速度快 | 需要共享密钥, 安全风险 | ❌ 不适用于多服务 |\r\n| RS256 | 非对称, 公钥可分发 | 签名速度慢 ~10x | ✅ 安全优先 |\r\n| EdDSA | 更快更安全 | 库支持不成熟 | ⏳ 未来考虑 |\r\n\r\n详见 [[auth/oauth-flow]]\r\n\r\n# 实现细节\r\n\r\n## Token 结构\r\n\r\n\\`\\`\\`json\r\n{\r\n  \"sub\": \"user_123\",\r\n  \"iat\": 1717200000,\r\n  \"exp\": 1717286400,\r\n  \"scope\": [\"read\", \"write\"],\r\n  \"jti\": \"unique-token-id\"\r\n}\r\n\\`\\`\\`\r\n\r\n## 关键配置\r\n\r\n\\`\\`\\`python\r\n# settings.py\r\nJWT_ALGORITHM = \"RS256\"\r\nJWT_ACCESS_TOKEN_EXPIRE_HOURS = 24\r\nJWT_REFRESH_TOKEN_EXPIRE_DAYS = 7\r\nJWT_KEY_PATH = \"/etc/secrets/jwt-private.pem\"\r\nJWKS_ENDPOINT = \"https://api.example.com/.well-known/jwks.json\"\r\n\\`\\`\\`\r\n\r\n## 黑名单机制\r\n\r\n使用 Redis 管理已撤销的 Token, key 格式为 `bl:jti:{jti}`,\r\nTTL 与 token 剩余有效期一致。详见 [[deployment/redis-config]]\r\n\r\n# 注意事项\r\n\r\n- **性能**: RS256签名比HS256慢约10x, 不要在热路径频繁生成token。\r\n  登录时生成一次, 后续用refresh token续期。\r\n- **JWKS缓存**: JWKS端点需要CDN缓存 (TTL: 1小时),\r\n  否则每次token验证都请求JWKS会显著增加延迟。\r\n- **密钥轮换**: 私钥每年轮换一次, 轮换期间同时发布新旧两个公钥到JWKS。\r\n- **调试陷阱**: 本地开发时如果遇到 \"Invalid token\" 错误,\r\n  检查系统时间是否同步 (JWT的 `iat` 验证需要时钟偏差 < 30秒)。\r\n```\r\n\r\n",
+        "char_start": 43304,
+        "char_end": 44985
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

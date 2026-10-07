@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-035",
+  "category": "documentation",
+  "title": "km-blueprint: 数据模型",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition 数据模型.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: 数据模型.",
+    "details": "## 数据模型\r\n\r\n```python\r\n# schemas.py 新增\r\n\r\nclass ReviewGrade(int, Enum):\r\n    AGAIN = 1    # 完全忘记\r\n    HARD = 2     # 回忆起部分, 很困难\r\n    GOOD = 3     # 正确回忆, 有些犹豫\r\n    EASY = 4     # 轻松正确回忆\r\n\r\nclass MemoryCard(BaseModel):\r\n    id: str\r\n    module_key: str        # \"auth/jwt-config\"\r\n    module_title: str\r\n    category: str\r\n    # 卡片内容\r\n    front: str             # 问题/提示\r\n    back: str              # 答案/内容\r\n    source_field: str      # 从模块的哪个字段生成: \"content.details\"\r\n    # FSRS 状态\r\n    fsrs_state: dict = Field(default_factory=dict)\r\n    # {\r\n    #   \"stability\": 0.0,       # 记忆稳定性 (天)\r\n    #   \"difficulty\": 0.0,      # 卡片难度 (0-1)\r\n    #   \"elapsed_days\": 0,      # 自上次复习以来的天数\r\n    #   \"scheduled_days\": 0,    # 计划的下次复习间隔\r\n    #   \"reps\": 0,              # 总复习次数\r\n    #   \"lapses\": 0,            # 遗忘次数\r\n    #   \"last_review\": null,    # 上次复习日期\r\n    #   \"due\": null,            # 下次到期日期\r\n    # }\r\n    # 元数据\r\n    created_at: datetime = Field(default_factory=utc_now)\r\n    last_review_at: Optional[datetime] = None\r\n    next_review_at: Optional[datetime] = None\r\n    review_count: int = 0\r\n    total_grade_sum: int = 0    # 用于计算平均掌握度\r\n\r\nclass MemoryStats(BaseModel):\r\n    total_cards: int = 0\r\n    due_today: int = 0\r\n    due_this_week: int = 0\r\n    avg_retention: float = 0.0    # 预测的90天记忆保留率\r\n    streak_days: int = 0          # 连续复习天数\r\n    total_reviews: int = 0\r\n    cards_by_category: dict[str, int] = Field(default_factory=dict)\r\n```\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:68752-70193; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-034",
+      "documentation/km-blueprint-036"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "数据模型"
+        ],
+        "excerpt": "## 数据模型\r\n\r\n```python\r\n# schemas.py 新增\r\n\r\nclass ReviewGrade(int, Enum):\r\n    AGAIN = 1    # 完全忘记\r\n    HARD = 2     # 回忆起部分, 很困难\r\n    GOOD = 3     # 正确回忆, 有些犹豫\r\n    EASY = 4     # 轻松正确回忆\r\n\r\nclass MemoryCard(BaseModel):\r\n    id: str\r\n    module_key: str        # \"auth/jwt-config\"\r\n    module_title: str\r\n    category: str\r\n    # 卡片内容\r\n    front: str             # 问题/提示\r\n    back: str              # 答案/内容\r\n    source_field: str      # 从模块的哪个字段生成: \"content.details\"\r\n    # FSRS 状态\r\n    fsrs_state: dict = Field(default_factory=dict)\r\n    # {\r\n    #   \"stability\": 0.0,       # 记忆稳定性 (天)\r\n    #   \"difficulty\": 0.0,      # 卡片难度 (0-1)\r\n    #   \"elapsed_days\": 0,      # 自上次复习以来的天数\r\n    #   \"scheduled_days\": 0,    # 计划的下次复习间隔\r\n    #   \"reps\": 0,              # 总复习次数\r\n    #   \"lapses\": 0,            # 遗忘次数\r\n    #   \"last_review\": null,    # 上次复习日期\r\n    #   \"due\": null,            # 下次到期日期\r\n    # }\r\n    # 元数据\r\n    created_at: datetime = Field(default_factory=utc_now)\r\n    last_review_at: Optional[datetime] = None\r\n    next_review_at: Optional[datetime] = None\r\n    review_count: int = 0\r\n    total_grade_sum: int = 0    # 用于计算平均掌握度\r\n\r\nclass MemoryStats(BaseModel):\r\n    total_cards: int = 0\r\n    due_today: int = 0\r\n    due_this_week: int = 0\r\n    avg_retention: float = 0.0    # 预测的90天记忆保留率\r\n    streak_days: int = 0          # 连续复习天数\r\n    total_reviews: int = 0\r\n    cards_by_category: dict[str, int] = Field(default_factory=dict)\r\n```\r\n\r\n",
+        "char_start": 68752,
+        "char_end": 70193
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

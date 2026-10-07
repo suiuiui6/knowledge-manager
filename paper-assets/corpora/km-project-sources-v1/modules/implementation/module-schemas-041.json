@@ -1,0 +1,41 @@
+{
+  "id": "module-schemas-041",
+  "category": "implementation",
+  "title": "module-schemas: UnmatchedQueryEntry",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/schemas.py, section or definition UnmatchedQueryEntry.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: UnmatchedQueryEntry.",
+    "details": "class UnmatchedQueryEntry(BaseModel):\r\n    query_hash: str\r\n    query_terms: List[str] = Field(default_factory=list)\r\n    count: int = 0\r\n",
+    "examples": "",
+    "references": "sources/module-schemas.py; module-schemas:chars:16313-16451; source SHA-256 c857e4a99e2e152db3aca0d1a9fc458bebe20ab352e24d0ae1f144a6594904a8",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "module-schemas"
+    ],
+    "related_modules": [
+      "implementation/module-schemas-040",
+      "implementation/module-schemas-042"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://module-schemas",
+    "source_spans": [
+      {
+        "external_id": "module-schemas",
+        "heading_path": [
+          "UnmatchedQueryEntry"
+        ],
+        "excerpt": "class UnmatchedQueryEntry(BaseModel):\r\n    query_hash: str\r\n    query_terms: List[str] = Field(default_factory=list)\r\n    count: int = 0\r\n",
+        "char_start": 16313,
+        "char_end": 16451
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

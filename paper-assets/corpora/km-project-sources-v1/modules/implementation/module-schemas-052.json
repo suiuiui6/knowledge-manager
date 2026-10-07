@@ -1,0 +1,41 @@
+{
+  "id": "module-schemas-052",
+  "category": "implementation",
+  "title": "module-schemas: SourceBacklogEntry",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/schemas.py, section or definition SourceBacklogEntry.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: SourceBacklogEntry.",
+    "details": "class SourceBacklogEntry(BaseModel):\n    source_id: str\n    source_type: str = \"\"\n    last_synced_at: Optional[datetime] = None\n    tracked_pages: int = 0\n    stale_module_count: int = 0\n    sync_error: str = \"\"\n",
+    "examples": "",
+    "references": "sources/module-schemas.py; module-schemas:chars:18875-19087; source SHA-256 c857e4a99e2e152db3aca0d1a9fc458bebe20ab352e24d0ae1f144a6594904a8",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "module-schemas"
+    ],
+    "related_modules": [
+      "implementation/module-schemas-051",
+      "implementation/module-schemas-053"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://module-schemas",
+    "source_spans": [
+      {
+        "external_id": "module-schemas",
+        "heading_path": [
+          "SourceBacklogEntry"
+        ],
+        "excerpt": "class SourceBacklogEntry(BaseModel):\n    source_id: str\n    source_type: str = \"\"\n    last_synced_at: Optional[datetime] = None\n    tracked_pages: int = 0\n    stale_module_count: int = 0\n    sync_error: str = \"\"\n",
+        "char_start": 18875,
+        "char_end": 19087
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-031",
+  "category": "documentation",
+  "title": "km-blueprint: 检测维度",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition 检测维度.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: 检测维度.",
+    "details": "## 检测维度\r\n\r\n```python\r\nclass ContradictionType(str, Enum):\r\n    FACT = \"fact\"                    # 事实数字/配置矛盾\r\n    DECISION = \"decision\"            # 架构决策矛盾\r\n    TIMELINE = \"timeline\"            # 时间线断裂 (A说已迁移, B说还在用旧的)\r\n    TERMINOLOGY = \"terminology\"      # 同一事物不同名称\r\n    STALE_REFERENCE = \"stale_ref\"   # 引用了已废弃/归档的模块\r\n\r\nclass Severity(str, Enum):\r\n    ERROR = \"error\"      # 明确矛盾, 必须解决\r\n    WARNING = \"warning\"  # 可能矛盾, 需要确认\r\n    INFO = \"info\"        # 建议改进, 不影响正确性\r\n\r\nclass Contradiction(BaseModel):\r\n    id: str\r\n    type: ContradictionType\r\n    severity: Severity\r\n    modules: list[str]              # 涉及的模块 [\"auth/jwt-config\", \"auth/oauth-flow\"]\r\n    description: str                # 人类可读的描述\r\n    evidence: list[ContradictionEvidence]  # 具体证据\r\n    suggestion: str                 # 修复建议\r\n    auto_fixable: bool = False      # 是否可以自动修复\r\n    auto_fix_description: str = \"\"  # 自动修复会做什么\r\n\r\nclass ContradictionEvidence(BaseModel):\r\n    module_key: str\r\n    field: str                      # \"content.details\"\r\n    excerpt: str                    # 原文摘录 (矛盾点周围文字)\r\n    claim: str                      # LLM提取的核心声明\r\n```\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:57128-58252; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-030",
+      "documentation/km-blueprint-032"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "检测维度"
+        ],
+        "excerpt": "## 检测维度\r\n\r\n```python\r\nclass ContradictionType(str, Enum):\r\n    FACT = \"fact\"                    # 事实数字/配置矛盾\r\n    DECISION = \"decision\"            # 架构决策矛盾\r\n    TIMELINE = \"timeline\"            # 时间线断裂 (A说已迁移, B说还在用旧的)\r\n    TERMINOLOGY = \"terminology\"      # 同一事物不同名称\r\n    STALE_REFERENCE = \"stale_ref\"   # 引用了已废弃/归档的模块\r\n\r\nclass Severity(str, Enum):\r\n    ERROR = \"error\"      # 明确矛盾, 必须解决\r\n    WARNING = \"warning\"  # 可能矛盾, 需要确认\r\n    INFO = \"info\"        # 建议改进, 不影响正确性\r\n\r\nclass Contradiction(BaseModel):\r\n    id: str\r\n    type: ContradictionType\r\n    severity: Severity\r\n    modules: list[str]              # 涉及的模块 [\"auth/jwt-config\", \"auth/oauth-flow\"]\r\n    description: str                # 人类可读的描述\r\n    evidence: list[ContradictionEvidence]  # 具体证据\r\n    suggestion: str                 # 修复建议\r\n    auto_fixable: bool = False      # 是否可以自动修复\r\n    auto_fix_description: str = \"\"  # 自动修复会做什么\r\n\r\nclass ContradictionEvidence(BaseModel):\r\n    module_key: str\r\n    field: str                      # \"content.details\"\r\n    excerpt: str                    # 原文摘录 (矛盾点周围文字)\r\n    claim: str                      # LLM提取的核心声明\r\n```\r\n\r\n",
+        "char_start": 57128,
+        "char_end": 58252
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

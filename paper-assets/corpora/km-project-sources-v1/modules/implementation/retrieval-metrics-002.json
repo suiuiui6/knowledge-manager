@@ -1,0 +1,40 @@
+{
+  "id": "retrieval-metrics-002",
+  "category": "implementation",
+  "title": "retrieval-metrics: score_ranked_case",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/retrieval_eval.py, section or definition score_ranked_case.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: score_ranked_case.",
+    "details": "def score_ranked_case(required_modules: list[str], found_modules: list[str]) -> RankedCaseSummary:\n    required_set = set(required_modules)\n    hit_positions = [idx + 1 for idx, module_key in enumerate(found_modules) if module_key in required_set]\n    first_hit_rank = hit_positions[0] if hit_positions else None\n    mrr = 1.0 / first_hit_rank if first_hit_rank else 0.0\n\n    hits = [1 if module_key in required_set else 0 for module_key in found_modules]\n    dcg = sum(rel / math.log2(idx + 2) for idx, rel in enumerate(hits))\n    ideal_hits = [1] * min(len(required_modules), len(found_modules))\n    idcg = sum(rel / math.log2(idx + 2) for idx, rel in enumerate(ideal_hits))\n    recall = len(required_set & set(found_modules)) / len(required_set) if required_set else 0.0\n\n    return RankedCaseSummary(\n        first_hit_rank=first_hit_rank,\n        mrr=mrr,\n        ndcg_at_k=(dcg / idcg) if idcg else 0.0,\n        recall_at_k=recall,\n    )\n",
+    "examples": "",
+    "references": "sources/retrieval-metrics.py; retrieval-metrics:chars:235-1179; source SHA-256 eb886154589d35786510a7931efe2acfff6fbfae409284ab3b085ba055c58aaa",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "retrieval-metrics"
+    ],
+    "related_modules": [
+      "implementation/retrieval-metrics-001"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://retrieval-metrics",
+    "source_spans": [
+      {
+        "external_id": "retrieval-metrics",
+        "heading_path": [
+          "score_ranked_case"
+        ],
+        "excerpt": "def score_ranked_case(required_modules: list[str], found_modules: list[str]) -> RankedCaseSummary:\n    required_set = set(required_modules)\n    hit_positions = [idx + 1 for idx, module_key in enumerate(found_modules) if module_key in required_set]\n    first_hit_rank = hit_positions[0] if hit_positions else None\n    mrr = 1.0 / first_hit_rank if first_hit_rank else 0.0\n\n    hits = [1 if module_key in required_set else 0 for module_key in found_modules]\n    dcg = sum(rel / math.log2(idx + 2) for idx, rel in enumerate(hits))\n    ideal_hits = [1] * min(len(required_modules), len(found_modules))\n    idcg = sum(rel / math.log2(idx + 2) for idx, rel in enumerate(ideal_hits))\n    recall = len(required_set & set(found_modules)) / len(required_set) if required_set else 0.0\n\n    return RankedCaseSummary(\n        first_hit_rank=first_hit_rank,\n        mrr=mrr,\n        ndcg_at_k=(dcg / idcg) if idcg else 0.0,\n        recall_at_k=recall,\n    )\n",
+        "char_start": 235,
+        "char_end": 1179
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

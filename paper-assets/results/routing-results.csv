@@ -1,0 +1,2 @@
+scenario_id,corpus_id,query,expected_modules,actual_modules,correct_module_selection,irrelevant_overload,should_boundary_note,boundary_note_present,notes,status
+ROUTE-001,TBD,TBD,TBD,TBD,TBD,TBD,TBD,TBD,"Template row. Fill from controlled routing run logs.",template_not_measured

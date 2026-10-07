@@ -1,0 +1,40 @@
+{
+  "id": "km-blueprint-059",
+  "category": "documentation",
+  "title": "km-blueprint: 不做的事",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition 不做的事.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: 不做的事.",
+    "details": "## 不做的事\r\n\r\n| 不做 | 理由 |\r\n|------|------|\r\n| 迁移到数据库 | 文件系统+Git是可审计性的根基, 也是区别于所有竞品的护城河 |\r\n| 引入向量数据库 (Milvus/Qdrant) | 100K模块以下内存 numpy 足够, 引入外部基础设施增加运维负担 |\r\n| 独立 Web 服务器进程 | `km serve --ui` 一站式, MCP + HTTP 同进程共享状态 |\r\n| 实时协同编辑 (CRDT/OT) | Git 就是异步协作的最佳协议, 实时编辑是分布式系统的泥潭 |\r\n| SaaS 托管版 | 本地优先是哲学选择, 数据主权不可妥协 |\r\n| 前端框架强制要求 | 零构建回退UI保证 `pip install` 后立即可用 |\r\n\r\n---\r\n\r\n*蓝图版本: v3.0 | 日期: 2026-06-09 | 基于 PageIndex + llm-wiki 深度竞争分析*\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:106629-107053; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-058"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "不做的事"
+        ],
+        "excerpt": "## 不做的事\r\n\r\n| 不做 | 理由 |\r\n|------|------|\r\n| 迁移到数据库 | 文件系统+Git是可审计性的根基, 也是区别于所有竞品的护城河 |\r\n| 引入向量数据库 (Milvus/Qdrant) | 100K模块以下内存 numpy 足够, 引入外部基础设施增加运维负担 |\r\n| 独立 Web 服务器进程 | `km serve --ui` 一站式, MCP + HTTP 同进程共享状态 |\r\n| 实时协同编辑 (CRDT/OT) | Git 就是异步协作的最佳协议, 实时编辑是分布式系统的泥潭 |\r\n| SaaS 托管版 | 本地优先是哲学选择, 数据主权不可妥协 |\r\n| 前端框架强制要求 | 零构建回退UI保证 `pip install` 后立即可用 |\r\n\r\n---\r\n\r\n*蓝图版本: v3.0 | 日期: 2026-06-09 | 基于 PageIndex + llm-wiki 深度竞争分析*\r\n",
+        "char_start": 106629,
+        "char_end": 107053
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "id": "km-readme-022",
+  "category": "documentation",
+  "title": "km-readme: Production Verification",
+  "summary": "Extractive snapshot of knowledge-manager/README.md, section or definition Production Verification.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: Production Verification.",
+    "details": "## Production Verification\n\nBefore production cutover, verify both:\n\n- `python scripts/verify_install_smoke.py`\n\n```bash\nRELEASE_DIR=/opt/knowledge-manager/release-artifacts/run-$(date +%Y%m%d%H%M%S)\ninstall -d -o km -g km \"$RELEASE_DIR\"\npython3.11 /opt/knowledge-manager/scripts/verify_install_smoke.py --project-root /opt/knowledge-manager --python python3.11 --format json > \"$RELEASE_DIR\"/verify-install-smoke.json\n/opt/knowledge-manager/.venv/bin/km --kb-path /opt/knowledge-manager/kb verify-production-readiness --matrix-summary <fresh-matrix-summary.json> > \"$RELEASE_DIR\"/verify-production-readiness.json\n/opt/knowledge-manager/.venv/bin/km --kb-path /opt/knowledge-manager/kb verify-deployment --base-url http://127.0.0.1:8420 --matrix-summary <fresh-matrix-summary.json> --format json > \"$RELEASE_DIR\"/verify-deployment.json\n/opt/knowledge-manager/.venv/bin/km --kb-path /opt/knowledge-manager/kb support bundle --output-dir \"$RELEASE_DIR\" --matrix-summary <fresh-matrix-summary.json>\npython3.11 /opt/knowledge-manager/scripts/collect_host_deploy_proof.py --output-dir \"$RELEASE_DIR\"\npython3.11 /opt/knowledge-manager/scripts/verify_release_artifacts.py --release-dir \"$RELEASE_DIR\"\npython3.11 /opt/knowledge-manager/scripts/collect_release_evidence.py --release-dir \"$RELEASE_DIR\" --kb-path /opt/knowledge-manager/kb --base-url http://127.0.0.1:8420 --matrix-summary <fresh-matrix-summary.json>\n# host-deploy-proof.json is written into $RELEASE_DIR by collect_host_deploy_proof.py\n# verify-release-artifacts.json is written into $RELEASE_DIR by verify_release_artifacts.py\n```\n\n",
+    "examples": "",
+    "references": "sources/km-readme.md; km-readme:chars:7773-9363; source SHA-256 3e5706ca7be9c3305b940f286214b6508158838296e960f08c00693b52fd3f20",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-readme"
+    ],
+    "related_modules": [
+      "documentation/km-readme-021",
+      "documentation/km-readme-023"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-readme",
+    "source_spans": [
+      {
+        "external_id": "km-readme",
+        "heading_path": [
+          "Production Verification"
+        ],
+        "excerpt": "## Production Verification\n\nBefore production cutover, verify both:\n\n- `python scripts/verify_install_smoke.py`\n\n```bash\nRELEASE_DIR=/opt/knowledge-manager/release-artifacts/run-$(date +%Y%m%d%H%M%S)\ninstall -d -o km -g km \"$RELEASE_DIR\"\npython3.11 /opt/knowledge-manager/scripts/verify_install_smoke.py --project-root /opt/knowledge-manager --python python3.11 --format json > \"$RELEASE_DIR\"/verify-install-smoke.json\n/opt/knowledge-manager/.venv/bin/km --kb-path /opt/knowledge-manager/kb verify-production-readiness --matrix-summary <fresh-matrix-summary.json> > \"$RELEASE_DIR\"/verify-production-readiness.json\n/opt/knowledge-manager/.venv/bin/km --kb-path /opt/knowledge-manager/kb verify-deployment --base-url http://127.0.0.1:8420 --matrix-summary <fresh-matrix-summary.json> --format json > \"$RELEASE_DIR\"/verify-deployment.json\n/opt/knowledge-manager/.venv/bin/km --kb-path /opt/knowledge-manager/kb support bundle --output-dir \"$RELEASE_DIR\" --matrix-summary <fresh-matrix-summary.json>\npython3.11 /opt/knowledge-manager/scripts/collect_host_deploy_proof.py --output-dir \"$RELEASE_DIR\"\npython3.11 /opt/knowledge-manager/scripts/verify_release_artifacts.py --release-dir \"$RELEASE_DIR\"\npython3.11 /opt/knowledge-manager/scripts/collect_release_evidence.py --release-dir \"$RELEASE_DIR\" --kb-path /opt/knowledge-manager/kb --base-url http://127.0.0.1:8420 --matrix-summary <fresh-matrix-summary.json>\n# host-deploy-proof.json is written into $RELEASE_DIR by collect_host_deploy_proof.py\n# verify-release-artifacts.json is written into $RELEASE_DIR by verify_release_artifacts.py\n```\n\n",
+        "char_start": 7773,
+        "char_end": 9363
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

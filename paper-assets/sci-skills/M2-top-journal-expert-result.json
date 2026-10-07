@@ -1,0 +1,59 @@
+{
+  "contract_version": "1.0",
+  "expert_skill": "sci-skills-paper-deep-reading",
+  "project_id": "knowledge-manager-journal-20261007",
+  "paper_family": "M",
+  "stage_id": "M2",
+  "task_id": "M2-top-journal-audit-006",
+  "task_status": "PROVISIONAL",
+  "inputs_reviewed": [
+    "project-state.json",
+    "M2-literature-verified-20261007.json",
+    "M2-references.bib",
+    "J1-J3 publisher HTML main texts",
+    "J4 journal metadata and author preprint v3",
+    "J5 publisher metadata/abstract",
+    "Temporal Validity v1 selected sections",
+    "STALE v1 selected sections and Appendix A",
+    "Recall Is Not Enough v2 selected main-text sections"
+  ],
+  "outputs": [
+    "paper-assets/sci-skills/M2-top-journal-feasibility-audit.md",
+    "paper-assets/sci-skills/M2-top-journal-reading-cards.md"
+  ],
+  "evidence_status": [
+    "Verified primary source locators and reading boundaries recorded in audit",
+    "No supplement audit or experimental reproduction",
+    "Research hypothesis and project fit are AI analysis; novelty unproven",
+    "Direct specialist workflow executed by current assistant; no separate agent or human specialist claimed"
+  ],
+  "assumptions": [
+    "Software version evolution is a candidate application boundary, not a confirmed residual research gap"
+  ],
+  "author_input_needed": [],
+  "manual_actions": [],
+  "quality_checks": [
+    "Journal articles separated from preprints and conferences",
+    "Author limitations separated from our interpretation",
+    "ReadAgent pages checked against official PMLR record",
+    "Wrong Context-Picker arXiv pairing withdrawn",
+    "Atlas incomplete reading explicitly disclosed",
+    "Exact contract fields supplied"
+  ],
+  "conflicts": [
+    {
+      "conflict_id": "hyperrag-gain-001",
+      "claim": "Improvement over GraphRAG",
+      "locator": "Abstract/Overall Results versus Discussion",
+      "values": [
+        "6.3%",
+        "5.3%"
+      ],
+      "resolution": "Unresolved; excluded from feasibility conclusion"
+    }
+  ],
+  "conflict_resolution_status": "UNRESOLVED",
+  "merge_permission": "orchestrator_only",
+  "recommended_next_action": "Identify a reproducible residual failure on real versioned software tasks against strong existing solutions before fixing the topic",
+  "stage_acceptance_recommendation": "REPAIR"
+}

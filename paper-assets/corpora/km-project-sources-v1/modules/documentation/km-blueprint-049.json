@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-049",
+  "category": "documentation",
+  "title": "km-blueprint: RRF 融合集成",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition RRF 融合集成.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: RRF 融合集成.",
+    "details": "### RRF 融合集成\r\n\r\n```python\r\n# storage.py 中 search_modules 的改造\r\n\r\ndef search_modules(\r\n    query: str,\r\n    kb_path: Path,\r\n    category: str = None,\r\n    limit: int = 10,\r\n    boost_ids: list[str] = None,\r\n    include_archived: bool = False,\r\n    vector_index: VectorIndex = None,  # 新增\r\n    vector_weight: float = 0.25,       # 新增\r\n) -> list[SearchResult]:\r\n    \"\"\"\r\n    搜索主函数: 关键词 + 树推理 + 向量 (可选) → RRF 融合\r\n    \"\"\"\r\n\r\n    # 1. 关键词搜索 (现有逻辑)\r\n    keyword_results = _keyword_search(\r\n        query, kb_path, category, boost_ids, include_archived, limit=limit*2\r\n    )\r\n\r\n    # 2. 向量搜索 (可选)\r\n    vector_results = []\r\n    if vector_index is not None:\r\n        raw_vector = vector_index.search(query, top_k=limit*2)\r\n        # 过滤 (category, archive, 等)\r\n        vector_results = _post_filter_vector_results(raw_vector, kb_path, category, include_archived)\r\n\r\n    # 3. RRF 融合\r\n    if vector_results:\r\n        fused = _rrf_fuse(\r\n            keyword=keyword_results,\r\n            vector=vector_results,\r\n            k_keyword=60,\r\n            k_vector=120,  # 向量噪声多, 大k平滑\r\n            weight_keyword=1.0 - vector_weight,\r\n            weight_vector=vector_weight,\r\n        )\r\n    else:\r\n        fused = keyword_results\r\n\r\n    # 4. 贝叶斯调整 + 截断\r\n    return _apply_bayesian_and_truncate(fused, limit, query, kb_path)\r\n\r\n\r\ndef _rrf_fuse(\r\n    keyword: list[ScoredModule],\r\n    vector: list[tuple[str, float]],\r\n    k_keyword: int = 60,\r\n    k_vector: int = 120,\r\n    weight_keyword: float = 0.75,\r\n    weight_vector: float = 0.25,\r\n) -> list[ScoredModule]:\r\n    \"\"\"\r\n    Reciprocal Rank Fusion:\r\n\r\n    score(module) = Σ w_i / (k_i + rank_i)\r\n\r\n    其中:\r\n    - w_i = 该路的权重\r\n    - k_i = 该路的平滑参数 (大k = 排名差异影响小)\r\n    - rank_i = 模块在该路中的排名 (从1开始)\r\n    \"\"\"\r\n\r\n    # 构建排名映射\r\n    keyword_rank = {\r\n        f\"{r.module.category}/{r.module.id}\": i + 1\r\n        for i, r in enumerate(keyword)\r\n    }\r\n    vector_rank = {\r\n        key: i + 1\r\n        for i, (key, _) in enumerate(vector)\r\n    }\r\n\r\n    all_keys = set(keyword_rank.keys()) | set(vector_rank.keys())\r\n\r\n    scores = {}\r\n    for key in all_keys:\r\n        score = 0.0\r\n        if key in keyword_rank:\r\n            score += weight_keyword / (k_keyword + keyword_rank[key])\r\n        if key in vector_rank:\r\n            score += weight_vector / (k_vector + vector_rank[key])\r\n        scores[key] = score\r\n\r\n    # 排序\r\n    sorted_keys = sorted(scores, key=scores.get, reverse=True)\r\n\r\n    # 重建 ScoredModule 列表\r\n    keyword_map = {\r\n        f\"{r.module.category}/{r.module.id}\": r\r\n        for r in keyword\r\n    }\r\n    module_map = {}\r\n    for key in sorted_keys:\r\n        if key in keyword_map:\r\n            module_map[key] = keyword_map[key]\r\n        else:\r\n            # 纯向量召回的结果, 需要加载模块\r\n            parts = key.split(\"/\", 1)\r\n            mod = load_module(parts[1], parts[0], kb_path)\r\n            if mod:\r\n                module_map[key] = ScoredModule(\r\n                    module=mod,\r\n                    score=float(scores[key]),\r\n                    source=\"vector\",\r\n                    highlights=None,\r\n                )\r\n\r\n    return [module_map[key] for key in sorted_keys if key in module_map]\r\n```\r\n\r\n---\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:94144-97299; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-048",
+      "documentation/km-blueprint-050"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "RRF 融合集成"
+        ],
+        "excerpt": "### RRF 融合集成\r\n\r\n```python\r\n# storage.py 中 search_modules 的改造\r\n\r\ndef search_modules(\r\n    query: str,\r\n    kb_path: Path,\r\n    category: str = None,\r\n    limit: int = 10,\r\n    boost_ids: list[str] = None,\r\n    include_archived: bool = False,\r\n    vector_index: VectorIndex = None,  # 新增\r\n    vector_weight: float = 0.25,       # 新增\r\n) -> list[SearchResult]:\r\n    \"\"\"\r\n    搜索主函数: 关键词 + 树推理 + 向量 (可选) → RRF 融合\r\n    \"\"\"\r\n\r\n    # 1. 关键词搜索 (现有逻辑)\r\n    keyword_results = _keyword_search(\r\n        query, kb_path, category, boost_ids, include_archived, limit=limit*2\r\n    )\r\n\r\n    # 2. 向量搜索 (可选)\r\n    vector_results = []\r\n    if vector_index is not None:\r\n        raw_vector = vector_index.search(query, top_k=limit*2)\r\n        # 过滤 (category, archive, 等)\r\n        vector_results = _post_filter_vector_results(raw_vector, kb_path, category, include_archived)\r\n\r\n    # 3. RRF 融合\r\n    if vector_results:\r\n        fused = _rrf_fuse(\r\n            keyword=keyword_results,\r\n            vector=vector_results,\r\n            k_keyword=60,\r\n            k_vector=120,  # 向量噪声多, 大k平滑\r\n            weight_keyword=1.0 - vector_weight,\r\n            weight_vector=vector_weight,\r\n        )\r\n    else:\r\n        fused = keyword_results\r\n\r\n    # 4. 贝叶斯调整 + 截断\r\n    return _apply_bayesian_and_truncate(fused, limit, query, kb_path)\r\n\r\n\r\ndef _rrf_fuse(\r\n    keyword: list[ScoredModule],\r\n    vector: list[tuple[str, float]],\r\n    k_keyword: int = 60,\r\n    k_vector: int = 120,\r\n    weight_keyword: float = 0.75,\r\n    weight_vector: float = 0.25,\r\n) -> list[ScoredModule]:\r\n    \"\"\"\r\n    Reciprocal Rank Fusion:\r\n\r\n    score(module) = Σ w_i / (k_i + rank_i)\r\n\r\n    其中:\r\n    - w_i = 该路的权重\r\n    - k_i = 该路的平滑参数 (大k = 排名差异影响小)\r\n    - rank_i = 模块在该路中的排名 (从1开始)\r\n    \"\"\"\r\n\r\n    # 构建排名映射\r\n    keyword_rank = {\r\n        f\"{r.module.category}/{r.module.id}\": i + 1\r\n        for i, r in enumerate(keyword)\r\n    }\r\n    vector_rank = {\r\n        key: i + 1\r\n        for i, (key, _) in enumerate(vector)\r\n    }\r\n\r\n    all_keys = set(keyword_rank.keys()) | set(vector_rank.keys())\r\n\r\n    scores = {}\r\n    for key in all_keys:\r\n        score = 0.0\r\n        if key in keyword_rank:\r\n            score += weight_keyword / (k_keyword + keyword_rank[key])\r\n        if key in vector_rank:\r\n            score += weight_vector / (k_vector + vector_rank[key])\r\n        scores[key] = score\r\n\r\n    # 排序\r\n    sorted_keys = sorted(scores, key=scores.get, reverse=True)\r\n\r\n    # 重建 ScoredModule 列表\r\n    keyword_map = {\r\n        f\"{r.module.category}/{r.module.id}\": r\r\n        for r in keyword\r\n    }\r\n    module_map = {}\r\n    for key in sorted_keys:\r\n        if key in keyword_map:\r\n            module_map[key] = keyword_map[key]\r\n        else:\r\n            # 纯向量召回的结果, 需要加载模块\r\n            parts = key.split(\"/\", 1)\r\n            mod = load_module(parts[1], parts[0], kb_path)\r\n            if mod:\r\n                module_map[key] = ScoredModule(\r\n                    module=mod,\r\n                    score=float(scores[key]),\r\n                    source=\"vector\",\r\n                    highlights=None,\r\n                )\r\n\r\n    return [module_map[key] for key in sorted_keys if key in module_map]\r\n```\r\n\r\n---\r\n\r\n",
+        "char_start": 94144,
+        "char_end": 97299
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

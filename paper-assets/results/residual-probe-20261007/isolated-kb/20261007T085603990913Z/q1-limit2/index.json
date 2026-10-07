@@ -1,0 +1,100 @@
+{
+  "version": "1.0",
+  "description": "",
+  "categories": {
+    "operations": {
+      "name": "operations",
+      "description": "",
+      "modules": [
+        {
+          "id": "single-node-deploy-001",
+          "category": "operations",
+          "title": "single-node-deploy: Prerequisites",
+          "summary": "Extractive snapshot of knowledge-manager/docs/runbooks/deploy-single-node.md, section or definition Prerequisites.",
+          "tags": [
+            "paper-case-study",
+            "extractive",
+            "single-node-deploy"
+          ],
+          "word_count": 57
+        },
+        {
+          "id": "single-node-deploy-002",
+          "category": "operations",
+          "title": "single-node-deploy: Install",
+          "summary": "Extractive snapshot of knowledge-manager/docs/runbooks/deploy-single-node.md, section or definition Install.",
+          "tags": [
+            "paper-case-study",
+            "extractive",
+            "single-node-deploy"
+          ],
+          "word_count": 212
+        },
+        {
+          "id": "single-node-deploy-003",
+          "category": "operations",
+          "title": "single-node-deploy: Verify",
+          "summary": "Extractive snapshot of knowledge-manager/docs/runbooks/deploy-single-node.md, section or definition Verify.",
+          "tags": [
+            "paper-case-study",
+            "extractive",
+            "single-node-deploy"
+          ],
+          "word_count": 165
+        },
+        {
+          "id": "single-node-deploy-004",
+          "category": "operations",
+          "title": "single-node-deploy: Infrastructure Verification",
+          "summary": "Extractive snapshot of knowledge-manager/docs/runbooks/deploy-single-node.md, section or definition Infrastructure Verification.",
+          "tags": [
+            "paper-case-study",
+            "extractive",
+            "single-node-deploy"
+          ],
+          "word_count": 70
+        },
+        {
+          "id": "single-node-deploy-005",
+          "category": "operations",
+          "title": "single-node-deploy: Rollback",
+          "summary": "Extractive snapshot of knowledge-manager/docs/runbooks/deploy-single-node.md, section or definition Rollback.",
+          "tags": [
+            "paper-case-study",
+            "extractive",
+            "single-node-deploy"
+          ],
+          "word_count": 75
+        }
+      ]
+    }
+  },
+  "graph": {
+    "operations/single-node-deploy-001": [
+      "operations/single-node-deploy-002"
+    ],
+    "operations/single-node-deploy-002": [
+      "operations/single-node-deploy-001",
+      "operations/single-node-deploy-003"
+    ],
+    "operations/single-node-deploy-003": [
+      "operations/single-node-deploy-002",
+      "operations/single-node-deploy-004"
+    ],
+    "operations/single-node-deploy-004": [
+      "operations/single-node-deploy-003",
+      "operations/single-node-deploy-005"
+    ],
+    "operations/single-node-deploy-005": [
+      "operations/single-node-deploy-004"
+    ]
+  },
+  "stats": {
+    "total_modules": 5,
+    "total_words": 579,
+    "categories": 1,
+    "last_updated": "2026-10-07T08:56:06.245698Z"
+  },
+  "updated_at": "2026-10-07T08:56:06.245699Z",
+  "tree": null
+}

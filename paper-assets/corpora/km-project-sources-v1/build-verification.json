@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "verification_scope": "source integrity and extractive construction only",
+  "source_documents": 10,
+  "modules": 183,
+  "exact_source_spans_verified": 183,
+  "adjacency_links_resolvable": true,
+  "original_sources_unchanged": true,
+  "human_review_completed": false,
+  "retrieval_or_task_performance_measured": false,
+  "main_experiment_ready": false
+}

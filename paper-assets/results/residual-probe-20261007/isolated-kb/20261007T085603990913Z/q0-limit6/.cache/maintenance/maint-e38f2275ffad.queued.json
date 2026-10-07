@@ -1,0 +1,60 @@
+{
+  "job_id": "maint-e38f2275ffad",
+  "action": "module_saved",
+  "payload": {
+    "module": {
+      "id": "single-node-deploy-002",
+      "category": "operations",
+      "title": "single-node-deploy: Install",
+      "summary": "Extractive snapshot of knowledge-manager/docs/runbooks/deploy-single-node.md, section or definition Install.",
+      "created_at": "2026-10-07T07:45:03.140359Z",
+      "updated_at": "2026-10-07T07:45:03.140359Z",
+      "content": {
+        "overview": "Verbatim project-source evidence unit: Install.",
+        "details": "## Install\n\n```bash\ngit clone <repo-url> /opt/knowledge-manager\ncd /opt/knowledge-manager\ngit checkout <release-ref>\ngetent group km >/dev/null || groupadd --system km\nid -u km >/dev/null 2>&1 || useradd --system --home /opt/knowledge-manager --shell /sbin/nologin --gid km km\ninstall -d -o km -g km /opt/knowledge-manager /opt/knowledge-manager/kb /opt/knowledge-manager/release-artifacts /var/log/knowledge-manager\nchown -R km:km /opt/knowledge-manager /var/log/knowledge-manager\npython3.11 -m venv /opt/knowledge-manager/.venv\n/opt/knowledge-manager/.venv/bin/pip install --upgrade pip\n/opt/knowledge-manager/.venv/bin/pip install --no-cache-dir --force-reinstall .\n/opt/knowledge-manager/.venv/bin/km --version\n/opt/knowledge-manager/.venv/bin/km init /opt/knowledge-manager/kb\ninstall -m 0644 deploy/systemd/knowledge-manager-api.service /etc/systemd/system/knowledge-manager-api.service\ninstall -m 0644 deploy/systemd/knowledge-manager-worker.service /etc/systemd/system/knowledge-manager-worker.service\ninstall -m 0644 deploy/caddy/Caddyfile /etc/caddy/Caddyfile\ninstall -m 0644 deploy/logrotate/knowledge-manager /etc/logrotate.d/knowledge-manager\ninstall -m 0644 .env.production.example /opt/knowledge-manager/.env.production\necho \"Review /opt/knowledge-manager/.env.production and confirm KM_KB_PATH, KM_UI_HOST, KM_UI_PORT, and KM_LOG_LEVEL before starting services.\"\nsystemctl daemon-reload\nsystemctl enable --now caddy\nsystemctl enable --now knowledge-manager-api knowledge-manager-worker\nsystemctl reload caddy\n```\n\nFor an existing deployment with a populated KB, keep the existing `/opt/knowledge-manager/kb` tree or restore it from a known-good backup instead of re-running `km init`.\n\nBefore exposing the service publicly, replace the placeholder host in `deploy/caddy/Caddyfile` with your real domain and keep the site label scheme-free so Caddy can manage automatic HTTPS for the real site.\n\n",
+        "examples": "",
+        "references": "sources/single-node-deploy.md; single-node-deploy:chars:161-2072; source SHA-256 c5ddb61a71a4bc324be1a620bbdbcca2f5d2808ab007da1f7d9a2c995197b91d",
+        "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+      },
+      "metadata": {
+        "tags": [
+          "paper-case-study",
+          "extractive",
+          "single-node-deploy"
+        ],
+        "related_modules": [
+          "operations/single-node-deploy-001",
+          "operations/single-node-deploy-003"
+        ],
+        "confidence": "medium",
+        "tenant_id": "",
+        "workspace_id": "",
+        "source": "paper-corpus://single-node-deploy",
+        "source_documents": [],
+        "source_spans": [
+          {
+            "external_id": "single-node-deploy",
+            "heading_path": [
+              "Install"
+            ],
+            "excerpt": "## Install\n\n```bash\ngit clone <repo-url> /opt/knowledge-manager\ncd /opt/knowledge-manager\ngit checkout <release-ref>\ngetent group km >/dev/null || groupadd --system km\nid -u km >/dev/null 2>&1 || useradd --system --home /opt/knowledge-manager --shell /sbin/nologin --gid km km\ninstall -d -o km -g km /opt/knowledge-manager /opt/knowledge-manager/kb /opt/knowledge-manager/release-artifacts /var/log/knowledge-manager\nchown -R km:km /opt/knowledge-manager /var/log/knowledge-manager\npython3.11 -m venv /opt/knowledge-manager/.venv\n/opt/knowledge-manager/.venv/bin/pip install --upgrade pip\n/opt/knowledge-manager/.venv/bin/pip install --no-cache-dir --force-reinstall .\n/opt/knowledge-manager/.venv/bin/km --version\n/opt/knowledge-manager/.venv/bin/km init /opt/knowledge-manager/kb\ninstall -m 0644 deploy/systemd/knowledge-manager-api.service /etc/systemd/system/knowledge-manager-api.service\ninstall -m 0644 deploy/systemd/knowledge-manager-worker.service /etc/systemd/system/knowledge-manager-worker.service\ninstall -m 0644 deploy/caddy/Caddyfile /etc/caddy/Caddyfile\ninstall -m 0644 deploy/logrotate/knowledge-manager /etc/logrotate.d/knowledge-manager\ninstall -m 0644 .env.production.example /opt/knowledge-manager/.env.production\necho \"Review /opt/knowledge-manager/.env.production and confirm KM_KB_PATH, KM_UI_HOST, KM_UI_PORT, and KM_LOG_LEVEL before starting services.\"\nsystemctl daemon-reload\nsystemctl enable --now caddy\nsystemctl enable --now knowledge-manager-api knowledge-manager-worker\nsystemctl reload caddy\n```\n\nFor an existing deployment with a populated KB, keep the existing `/opt/knowledge-manager/kb` tree or restore it from a known-good backup instead of re-running `km init`.\n\nBefore exposing the service publicly, replace the placeholder host in `deploy/caddy/Caddyfile` with your real domain and keep the site label scheme-free so Caddy can manage automatic HTTPS for the real site.\n\n",
+            "char_start": 161,
+            "char_end": 2072
+          }
+        ],
+        "extraction_run_id": "source-grounded-v1",
+        "reviewed_by": "",
+        "reviewed_at": null,
+        "stale_due_to_source_change": false,
+        "supersedes": [],
+        "derived_from": [],
+        "expires_at": null,
+        "review_interval_days": null,
+        "status": "draft"
+      }
+    },
+    "existed": false
+  },
+  "status": "queued",
+  "queued_at": "2026-10-07T08:56:05.338679+00:00"
+}

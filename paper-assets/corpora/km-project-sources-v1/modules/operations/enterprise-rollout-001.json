@@ -1,0 +1,38 @@
+{
+  "id": "enterprise-rollout-001",
+  "category": "operations",
+  "title": "enterprise-rollout: Enterprise Rollout",
+  "summary": "Extractive snapshot of knowledge-manager/docs/runbooks/enterprise-rollout.md, section or definition Enterprise Rollout.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: Enterprise Rollout.",
+    "details": "# Enterprise Rollout\n\n1. Initialize the KB with `km init <kb-path>` and confirm `index.json`, `config.json`, `.staging/`, and `.sources/` are present.\n2. Register enterprise sources with least-privilege credentials:\n   `km --kb-path <kb-path> source add-confluence ...`\n   `km --kb-path <kb-path> source add-notion ...`\n3. Pull sources until `km --kb-path <kb-path> source status` shows current cursors and no `last_error`.\n4. Review staged modules and reject anything without clear provenance.\n5. Run `km --kb-path <kb-path> eval run <suite.json>` and require acceptable hit rate plus failure decomposition.\n6. Inspect `km --kb-path <kb-path> ops` and exported backlogs before enabling production agents.\n7. Enable auth middleware only after signed-token validation passes in staging.\n8. Keep `km --kb-path <kb-path> rebuild` and enterprise test suite in the release gate.\n\nRecord the following with every cutover:\n\n- release version\n- matrix summary path\n- support bundle path\n- backup bundle path\n- operator on call\n- rollback owner\n",
+    "examples": "",
+    "references": "sources/enterprise-rollout.md; enterprise-rollout:chars:0-1036; source SHA-256 32961639b9d5cf07f0267d24d0743d4a7a8af9dceac72a5a29744e88432c991a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "enterprise-rollout"
+    ],
+    "related_modules": [],
+    "confidence": "medium",
+    "source": "paper-corpus://enterprise-rollout",
+    "source_spans": [
+      {
+        "external_id": "enterprise-rollout",
+        "heading_path": [
+          "Enterprise Rollout"
+        ],
+        "excerpt": "# Enterprise Rollout\n\n1. Initialize the KB with `km init <kb-path>` and confirm `index.json`, `config.json`, `.staging/`, and `.sources/` are present.\n2. Register enterprise sources with least-privilege credentials:\n   `km --kb-path <kb-path> source add-confluence ...`\n   `km --kb-path <kb-path> source add-notion ...`\n3. Pull sources until `km --kb-path <kb-path> source status` shows current cursors and no `last_error`.\n4. Review staged modules and reject anything without clear provenance.\n5. Run `km --kb-path <kb-path> eval run <suite.json>` and require acceptable hit rate plus failure decomposition.\n6. Inspect `km --kb-path <kb-path> ops` and exported backlogs before enabling production agents.\n7. Enable auth middleware only after signed-token validation passes in staging.\n8. Keep `km --kb-path <kb-path> rebuild` and enterprise test suite in the release gate.\n\nRecord the following with every cutover:\n\n- release version\n- matrix summary path\n- support bundle path\n- backup bundle path\n- operator on call\n- rollback owner\n",
+        "char_start": 0,
+        "char_end": 1036
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

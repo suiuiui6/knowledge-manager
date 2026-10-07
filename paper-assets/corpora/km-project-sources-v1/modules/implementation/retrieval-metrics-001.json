@@ -1,0 +1,40 @@
+{
+  "id": "retrieval-metrics-001",
+  "category": "implementation",
+  "title": "retrieval-metrics: RankedCaseSummary",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/retrieval_eval.py, section or definition RankedCaseSummary.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: RankedCaseSummary.",
+    "details": "class RankedCaseSummary(BaseModel):\n    first_hit_rank: int | None = None\n    mrr: float = 0.0\n    ndcg_at_k: float = 0.0\n    recall_at_k: float = 0.0\n",
+    "examples": "",
+    "references": "sources/retrieval-metrics.py; retrieval-metrics:chars:82-233; source SHA-256 eb886154589d35786510a7931efe2acfff6fbfae409284ab3b085ba055c58aaa",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "retrieval-metrics"
+    ],
+    "related_modules": [
+      "implementation/retrieval-metrics-002"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://retrieval-metrics",
+    "source_spans": [
+      {
+        "external_id": "retrieval-metrics",
+        "heading_path": [
+          "RankedCaseSummary"
+        ],
+        "excerpt": "class RankedCaseSummary(BaseModel):\n    first_hit_rank: int | None = None\n    mrr: float = 0.0\n    ndcg_at_k: float = 0.0\n    recall_at_k: float = 0.0\n",
+        "char_start": 82,
+        "char_end": 233
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

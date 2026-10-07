@@ -1,0 +1,41 @@
+{
+  "id": "module-schemas-040",
+  "category": "implementation",
+  "title": "module-schemas: ModuleUsageEntry",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/schemas.py, section or definition ModuleUsageEntry.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: ModuleUsageEntry.",
+    "details": "class ModuleUsageEntry(BaseModel):\r\n    module_id: str\r\n    category: str\r\n    title: str\r\n    load_count: int = 0\r\n    trend: str = \"stable\"  # \"up\", \"down\", \"stable\"\r\n",
+    "examples": "",
+    "references": "sources/module-schemas.py; module-schemas:chars:16140-16309; source SHA-256 c857e4a99e2e152db3aca0d1a9fc458bebe20ab352e24d0ae1f144a6594904a8",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "module-schemas"
+    ],
+    "related_modules": [
+      "implementation/module-schemas-039",
+      "implementation/module-schemas-041"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://module-schemas",
+    "source_spans": [
+      {
+        "external_id": "module-schemas",
+        "heading_path": [
+          "ModuleUsageEntry"
+        ],
+        "excerpt": "class ModuleUsageEntry(BaseModel):\r\n    module_id: str\r\n    category: str\r\n    title: str\r\n    load_count: int = 0\r\n    trend: str = \"stable\"  # \"up\", \"down\", \"stable\"\r\n",
+        "char_start": 16140,
+        "char_end": 16309
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

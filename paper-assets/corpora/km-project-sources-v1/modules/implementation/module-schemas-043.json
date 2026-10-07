@@ -1,0 +1,41 @@
+{
+  "id": "module-schemas-043",
+  "category": "implementation",
+  "title": "module-schemas: UsageStats",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/schemas.py, section or definition UsageStats.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: UsageStats.",
+    "details": "class UsageStats(BaseModel):\r\n    period_days: int = 30\r\n    total_searches: int = 0\r\n    total_loads: int = 0\r\n    conversion_rate: float = 0.0\r\n    total_sessions: int = 0\r\n    avg_searches_per_session: float = 0.0\r\n    top_modules: List[ModuleUsageEntry] = Field(default_factory=list)\r\n    unmatched_queries: List[UnmatchedQueryEntry] = Field(default_factory=list)\r\n    daily_activity: List[DailyActivityPoint] = Field(default_factory=list)\r\n",
+    "examples": "",
+    "references": "sources/module-schemas.py; module-schemas:chars:16555-17000; source SHA-256 c857e4a99e2e152db3aca0d1a9fc458bebe20ab352e24d0ae1f144a6594904a8",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "module-schemas"
+    ],
+    "related_modules": [
+      "implementation/module-schemas-042",
+      "implementation/module-schemas-044"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://module-schemas",
+    "source_spans": [
+      {
+        "external_id": "module-schemas",
+        "heading_path": [
+          "UsageStats"
+        ],
+        "excerpt": "class UsageStats(BaseModel):\r\n    period_days: int = 30\r\n    total_searches: int = 0\r\n    total_loads: int = 0\r\n    conversion_rate: float = 0.0\r\n    total_sessions: int = 0\r\n    avg_searches_per_session: float = 0.0\r\n    top_modules: List[ModuleUsageEntry] = Field(default_factory=list)\r\n    unmatched_queries: List[UnmatchedQueryEntry] = Field(default_factory=list)\r\n    daily_activity: List[DailyActivityPoint] = Field(default_factory=list)\r\n",
+        "char_start": 16555,
+        "char_end": 17000
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

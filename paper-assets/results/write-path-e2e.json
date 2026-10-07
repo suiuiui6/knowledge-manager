@@ -1,0 +1,13 @@
+{
+  "status": "template_not_measured",
+  "note": "Fill after running create/update/review/approve/search-after-write/load-after-write/delete or archive.",
+  "steps": [
+    { "step": "create_module", "command_or_api": "TBD", "expected": "module enters staging or draft state", "observed": "TBD" },
+    { "step": "update_module", "command_or_api": "TBD", "expected": "module content changes are persisted and reviewable", "observed": "TBD" },
+    { "step": "review_module", "command_or_api": "TBD", "expected": "review decision is recorded", "observed": "TBD" },
+    { "step": "approve_module", "command_or_api": "TBD", "expected": "module moves to approved store and index updates", "observed": "TBD" },
+    { "step": "search_after_write", "command_or_api": "TBD", "expected": "new or updated module is discoverable", "observed": "TBD" },
+    { "step": "load_after_write", "command_or_api": "TBD", "expected": "MCP or CLI can load the approved module", "observed": "TBD" },
+    { "step": "delete_or_archive", "command_or_api": "TBD", "expected": "removed or archived module no longer appears as active knowledge", "observed": "TBD" }
+  ]
+}

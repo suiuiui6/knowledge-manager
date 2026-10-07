@@ -1,0 +1,41 @@
+{
+  "id": "module-schemas-068",
+  "category": "implementation",
+  "title": "module-schemas: TreeNode",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/schemas.py, section or definition TreeNode.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: TreeNode.",
+    "details": "class TreeNode(BaseModel):\r\n    id: str\r\n    type: TreeNodeType\r\n    title: str\r\n    summary: str = \"\"\r\n    path: str = \"\"\r\n    page_range: Optional[tuple[int, int]] = None\r\n    children: list[\"TreeNode\"] = Field(default_factory=list)\r\n    module_count: int = 0\r\n    word_count: int = 0\r\n    confidence: Optional[str] = None\r\n    status: Optional[str] = None\r\n    tags: list[str] = Field(default_factory=list)\r\n",
+    "examples": "",
+    "references": "sources/module-schemas.py; module-schemas:chars:22432-22843; source SHA-256 c857e4a99e2e152db3aca0d1a9fc458bebe20ab352e24d0ae1f144a6594904a8",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "module-schemas"
+    ],
+    "related_modules": [
+      "implementation/module-schemas-067",
+      "implementation/module-schemas-069"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://module-schemas",
+    "source_spans": [
+      {
+        "external_id": "module-schemas",
+        "heading_path": [
+          "TreeNode"
+        ],
+        "excerpt": "class TreeNode(BaseModel):\r\n    id: str\r\n    type: TreeNodeType\r\n    title: str\r\n    summary: str = \"\"\r\n    path: str = \"\"\r\n    page_range: Optional[tuple[int, int]] = None\r\n    children: list[\"TreeNode\"] = Field(default_factory=list)\r\n    module_count: int = 0\r\n    word_count: int = 0\r\n    confidence: Optional[str] = None\r\n    status: Optional[str] = None\r\n    tags: list[str] = Field(default_factory=list)\r\n",
+        "char_start": 22432,
+        "char_end": 22843
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

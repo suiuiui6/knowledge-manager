@@ -1,0 +1,28 @@
+{
+  "id": "rectification-rate-management",
+  "category": "safety",
+  "title": "隐患整改率目标管理",
+  "summary": "我们以隐患整改率≥95%为量化目标，Q2实际94.2%，通过持续改进逼近目标。",
+  "created_at": "2026-06-10T04:51:15.106195Z",
+  "updated_at": "2026-06-10T04:51:15.106195Z",
+  "content": {
+    "overview": "我们采用指标驱动的方式管理隐患整改，设定年度目标并跟踪季度达成率，识别未闭环原因并推动解决。",
+    "details": "Q2隐患整改率94.2%，环比提升2.7个百分点，但仍未达到≥95%的目标。差距主要因部分隐患需要采购备件或协调停产窗口，导致整改周期延长。我们正优化流程，允许在停批前采取临时管控措施，并纳入整改率计算。",
+    "examples": "",
+    "references": "",
+    "caveats": "片面追求整改率可能导致隐患整改质量下降，或临时措施被滥用；需配合验证环节确保真正消除风险。"
+  },
+  "metadata": {
+    "tags": [
+      "隐患管理",
+      "整改率",
+      "目标管理"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": "",
+    "expires_at": null,
+    "review_interval_days": null,
+    "status": "published"
+  }
+}

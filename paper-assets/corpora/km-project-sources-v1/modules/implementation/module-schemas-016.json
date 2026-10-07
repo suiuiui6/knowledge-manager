@@ -1,0 +1,41 @@
+{
+  "id": "module-schemas-016",
+  "category": "implementation",
+  "title": "module-schemas: Index",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/schemas.py, section or definition Index.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: Index.",
+    "details": "class Index(BaseModel):\r\n    version: str = \"1.0\"\r\n    description: str = \"\"\r\n    categories: Dict[str, IndexCategory] = Field(default_factory=dict)\r\n    graph: Dict[str, List[str]] = Field(default_factory=dict)\r\n    stats: IndexStats = Field(default_factory=IndexStats)\r\n    updated_at: datetime = Field(default_factory=utc_now)\r\n    tree: Optional[Any] = None\r\n\r\n    def add_module(self, module: Module) -> None:\r\n        if module.category not in self.categories:\r\n            self.categories[module.category] = IndexCategory(name=module.category)\r\n        summary = IndexModuleSummary(\r\n            id=module.id,\r\n            category=module.category,\r\n            title=module.title,\r\n            summary=module.summary,\r\n            tags=module.metadata.tags,\r\n            word_count=module.word_count(),\r\n        )\r\n        cat = self.categories[module.category]\r\n        existing_ids = [m.id for m in cat.modules]\r\n        if summary.id not in existing_ids:\r\n            cat.modules.append(summary)\r\n        module_key = f\"{module.category}/{module.id}\"\r\n        if module.metadata.related_modules:\r\n            self.graph[module_key] = list(module.metadata.related_modules)\r\n        elif module_key in self.graph:\r\n            del self.graph[module_key]\r\n        self._refresh_stats()\r\n\r\n    def remove_module(self, module_id: str, category: str) -> bool:\r\n        if category not in self.categories:\r\n            return False\r\n        cat = self.categories[category]\r\n        original_len = len(cat.modules)\r\n        cat.modules = [m for m in cat.modules if m.id != module_id]\r\n        self._refresh_stats()\r\n        removed = len(cat.modules) < original_len\r\n        if removed:\r\n            module_key = f\"{category}/{module_id}\"\r\n            self.graph.pop(module_key, None)\r\n            for key in self.graph:\r\n                self.graph[key] = [r for r in self.graph[key] if r != module_key]\r\n        return removed\r\n\r\n    def _refresh_stats(self) -> None:\r\n        total_modules = sum(len(c.modules) for c in self.categories.values())\r\n        total_words = sum(m.word_count for c in self.categories.values() for m in c.modules)\r\n        self.stats = IndexStats(\r\n            total_modules=total_modules,\r\n            total_words=total_words,\r\n            categories=len(self.categories),\r\n        )\r\n        self.updated_at = utc_now()\r\n",
+    "examples": "",
+    "references": "sources/module-schemas.py; module-schemas:chars:6587-8941; source SHA-256 c857e4a99e2e152db3aca0d1a9fc458bebe20ab352e24d0ae1f144a6594904a8",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "module-schemas"
+    ],
+    "related_modules": [
+      "implementation/module-schemas-015",
+      "implementation/module-schemas-017"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://module-schemas",
+    "source_spans": [
+      {
+        "external_id": "module-schemas",
+        "heading_path": [
+          "Index"
+        ],
+        "excerpt": "class Index(BaseModel):\r\n    version: str = \"1.0\"\r\n    description: str = \"\"\r\n    categories: Dict[str, IndexCategory] = Field(default_factory=dict)\r\n    graph: Dict[str, List[str]] = Field(default_factory=dict)\r\n    stats: IndexStats = Field(default_factory=IndexStats)\r\n    updated_at: datetime = Field(default_factory=utc_now)\r\n    tree: Optional[Any] = None\r\n\r\n    def add_module(self, module: Module) -> None:\r\n        if module.category not in self.categories:\r\n            self.categories[module.category] = IndexCategory(name=module.category)\r\n        summary = IndexModuleSummary(\r\n            id=module.id,\r\n            category=module.category,\r\n            title=module.title,\r\n            summary=module.summary,\r\n            tags=module.metadata.tags,\r\n            word_count=module.word_count(),\r\n        )\r\n        cat = self.categories[module.category]\r\n        existing_ids = [m.id for m in cat.modules]\r\n        if summary.id not in existing_ids:\r\n            cat.modules.append(summary)\r\n        module_key = f\"{module.category}/{module.id}\"\r\n        if module.metadata.related_modules:\r\n            self.graph[module_key] = list(module.metadata.related_modules)\r\n        elif module_key in self.graph:\r\n            del self.graph[module_key]\r\n        self._refresh_stats()\r\n\r\n    def remove_module(self, module_id: str, category: str) -> bool:\r\n        if category not in self.categories:\r\n            return False\r\n        cat = self.categories[category]\r\n        original_len = len(cat.modules)\r\n        cat.modules = [m for m in cat.modules if m.id != module_id]\r\n        self._refresh_stats()\r\n        removed = len(cat.modules) < original_len\r\n        if removed:\r\n            module_key = f\"{category}/{module_id}\"\r\n            self.graph.pop(module_key, None)\r\n            for key in self.graph:\r\n                self.graph[key] = [r for r in self.graph[key] if r != module_key]\r\n        return removed\r\n\r\n    def _refresh_stats(self) -> None:\r\n        total_modules = sum(len(c.modules) for c in self.categories.values())\r\n        total_words = sum(m.word_count for c in self.categories.values() for m in c.modules)\r\n        self.stats = IndexStats(\r\n            total_modules=total_modules,\r\n            total_words=total_words,\r\n            categories=len(self.categories),\r\n        )\r\n        self.updated_at = utc_now()\r\n",
+        "char_start": 6587,
+        "char_end": 8941
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

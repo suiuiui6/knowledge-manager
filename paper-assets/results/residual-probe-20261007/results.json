@@ -1,0 +1,864 @@
+{
+  "execution_status": "EXECUTED_LOCAL",
+  "executed_at_utc": "2026-10-07T08:56:08.758217+00:00",
+  "study_type": "Exploratory controlled mechanism diagnostics, not publication efficacy evaluation",
+  "historical_version_selection": {
+    "status": "EXECUTED_LOCAL",
+    "changed_file_commits_examined": 21,
+    "distinct_function_versions": 15,
+    "query_conditions": 19,
+    "labels": "Exact historical source-function hashes; revision and symbol given, not semantic QA gold",
+    "counts": {
+      "mixed_correct": 1,
+      "latest_correct": 1,
+      "version_filter_correct": 19
+    },
+    "tasks": [
+      {
+        "revision": "32bd2299c533bbe9198e6985cf3c966ce003bfee",
+        "expected_hash": "91c0482197bcfd487491efd9fdca0dad3ef85ec3d356b22a2ebe8e4c25283bc9",
+        "query": "search_modules routing policy mandatory companion stale sources limit",
+        "symbol_given": "search_modules",
+        "mixed_bm25_hash": "ec1714424a10da9ee5d669aef5fa9ab83d6ab2242b48c158e32f9b7d8d6fc30a",
+        "latest_only_hash": "358f71a1a3a32ab86fe98ac263083f82fa3fe396bb2cff2e68d7efb2a2800844",
+        "version_filter_bm25_hash": "91c0482197bcfd487491efd9fdca0dad3ef85ec3d356b22a2ebe8e4c25283bc9",
+        "mixed_correct": false,
+        "latest_correct": false,
+        "version_filter_correct": true
+      },
+      {
+        "revision": "b0e9b3cd8b1c151d7afb549685a24566653629d2",
+        "expected_hash": "f72fe27feb3facffaf029564b4c2a798818e78b7ba3476ff84f303cce032bbc8",
+        "query": "search_modules routing policy mandatory companion stale sources limit",
+        "symbol_given": "search_modules",
+        "mixed_bm25_hash": "ec1714424a10da9ee5d669aef5fa9ab83d6ab2242b48c158e32f9b7d8d6fc30a",
+        "latest_only_hash": "358f71a1a3a32ab86fe98ac263083f82fa3fe396bb2cff2e68d7efb2a2800844",
+        "version_filter_bm25_hash": "f72fe27feb3facffaf029564b4c2a798818e78b7ba3476ff84f303cce032bbc8",
+        "mixed_correct": false,
+        "latest_correct": false,
+        "version_filter_correct": true
+      },
+      {
+        "revision": "60958c90b38dd83f81b400c26ab214fccde04c79",
+        "expected_hash": "a7568529b3a7908383d129144301975dad5619688326f0d0d44c9c90ab32c687",
+        "query": "search_modules routing policy mandatory companion stale sources limit",
+        "symbol_given": "search_modules",
+        "mixed_bm25_hash": "ec1714424a10da9ee5d669aef5fa9ab83d6ab2242b48c158e32f9b7d8d6fc30a",
+        "latest_only_hash": "358f71a1a3a32ab86fe98ac263083f82fa3fe396bb2cff2e68d7efb2a2800844",
+        "version_filter_bm25_hash": "a7568529b3a7908383d129144301975dad5619688326f0d0d44c9c90ab32c687",
+        "mixed_correct": false,
+        "latest_correct": false,
+        "version_filter_correct": true
+      },
+      {
+        "revision": "a5970f4e79dded531769d304a0306f994b969301",
+        "expected_hash": "0d4a9cecde8e3cc0b0d7bb3e1684a7f23b960e8b5c0b946140be643e3560cee4",
+        "query": "search_modules routing policy mandatory companion stale sources limit",
+        "symbol_given": "search_modules",
+        "mixed_bm25_hash": "ec1714424a10da9ee5d669aef5fa9ab83d6ab2242b48c158e32f9b7d8d6fc30a",
+        "latest_only_hash": "358f71a1a3a32ab86fe98ac263083f82fa3fe396bb2cff2e68d7efb2a2800844",
+        "version_filter_bm25_hash": "0d4a9cecde8e3cc0b0d7bb3e1684a7f23b960e8b5c0b946140be643e3560cee4",
+        "mixed_correct": false,
+        "latest_correct": false,
+        "version_filter_correct": true
+      },
+      {
+        "revision": "56748fb782f4e298db671c966846079c2e6d58c5",
+        "expected_hash": "94e080fadfc3dee2c2cf98d93b3168d3a4a5727f54addcf425bca28e9af0419f",
+        "query": "search_modules routing policy mandatory companion stale sources limit",
+        "symbol_given": "search_modules",
+        "mixed_bm25_hash": "ec1714424a10da9ee5d669aef5fa9ab83d6ab2242b48c158e32f9b7d8d6fc30a",
+        "latest_only_hash": "358f71a1a3a32ab86fe98ac263083f82fa3fe396bb2cff2e68d7efb2a2800844",
+        "version_filter_bm25_hash": "94e080fadfc3dee2c2cf98d93b3168d3a4a5727f54addcf425bca28e9af0419f",
+        "mixed_correct": false,
+        "latest_correct": false,
+        "version_filter_correct": true
+      },
+      {
+        "revision": "252f459d84c4053549c59ef29810f81e745ac70e",
+        "expected_hash": "399c8c0fe2c4b1f24055a9caa355012fe900afc62460fc3f0534f15dadb49dd8",
+        "query": "search_modules routing policy mandatory companion stale sources limit",
+        "symbol_given": "search_modules",
+        "mixed_bm25_hash": "ec1714424a10da9ee5d669aef5fa9ab83d6ab2242b48c158e32f9b7d8d6fc30a",
+        "latest_only_hash": "358f71a1a3a32ab86fe98ac263083f82fa3fe396bb2cff2e68d7efb2a2800844",
+        "version_filter_bm25_hash": "399c8c0fe2c4b1f24055a9caa355012fe900afc62460fc3f0534f15dadb49dd8",
+        "mixed_correct": false,
+        "latest_correct": false,
+        "version_filter_correct": true
+      },
+      {
+        "revision": "eb29c4c7f11c2457cd3fe3c17da4a27211be01e1",
+        "expected_hash": "22a5ed5026b9ceb6d7ea225a0eb9071c32ef0de080802dfb2aa85e49c8b51c30",
+        "query": "search_modules routing policy mandatory companion stale sources limit",
+        "symbol_given": "search_modules",
+        "mixed_bm25_hash": "ec1714424a10da9ee5d669aef5fa9ab83d6ab2242b48c158e32f9b7d8d6fc30a",
+        "latest_only_hash": "358f71a1a3a32ab86fe98ac263083f82fa3fe396bb2cff2e68d7efb2a2800844",
+        "version_filter_bm25_hash": "22a5ed5026b9ceb6d7ea225a0eb9071c32ef0de080802dfb2aa85e49c8b51c30",
+        "mixed_correct": false,
+        "latest_correct": false,
+        "version_filter_correct": true
+      },
+      {
+        "revision": "9f1cda6ecc70064e6723cf176aed041a8c957dab",
+        "expected_hash": "22a5ed5026b9ceb6d7ea225a0eb9071c32ef0de080802dfb2aa85e49c8b51c30",
+        "query": "search_modules routing policy mandatory companion stale sources limit",
+        "symbol_given": "search_modules",
+        "mixed_bm25_hash": "ec1714424a10da9ee5d669aef5fa9ab83d6ab2242b48c158e32f9b7d8d6fc30a",
+        "latest_only_hash": "358f71a1a3a32ab86fe98ac263083f82fa3fe396bb2cff2e68d7efb2a2800844",
+        "version_filter_bm25_hash": "22a5ed5026b9ceb6d7ea225a0eb9071c32ef0de080802dfb2aa85e49c8b51c30",
+        "mixed_correct": false,
+        "latest_correct": false,
+        "version_filter_correct": true
+      },
+      {
+        "revision": "45e47bfd04ad3bf40908453ac3898be6c14e1576",
+        "expected_hash": "71c217646d5074f12c14a371c80d92deb75411737c5779d9c2fecf5eb89cb6d3",
+        "query": "search_modules routing policy mandatory companion stale sources limit",
+        "symbol_given": "search_modules",
+        "mixed_bm25_hash": "ec1714424a10da9ee5d669aef5fa9ab83d6ab2242b48c158e32f9b7d8d6fc30a",
+        "latest_only_hash": "358f71a1a3a32ab86fe98ac263083f82fa3fe396bb2cff2e68d7efb2a2800844",
+        "version_filter_bm25_hash": "71c217646d5074f12c14a371c80d92deb75411737c5779d9c2fecf5eb89cb6d3",
+        "mixed_correct": false,
+        "latest_correct": false,
+        "version_filter_correct": true
+      },
+      {
+        "revision": "519c25bd57950f7f888c7c78d0dc127eef693d37",
+        "expected_hash": "a825bb4792034ca942ff150abcc93ed47c531bf91319a99d4ffac112763c45a6",
+        "query": "search_modules routing policy mandatory companion stale sources limit",
+        "symbol_given": "search_modules",
+        "mixed_bm25_hash": "ec1714424a10da9ee5d669aef5fa9ab83d6ab2242b48c158e32f9b7d8d6fc30a",
+        "latest_only_hash": "358f71a1a3a32ab86fe98ac263083f82fa3fe396bb2cff2e68d7efb2a2800844",
+        "version_filter_bm25_hash": "a825bb4792034ca942ff150abcc93ed47c531bf91319a99d4ffac112763c45a6",
+        "mixed_correct": false,
+        "latest_correct": false,
+        "version_filter_correct": true
+      },
+      {
+        "revision": "3080e69382f886b2d1b1674e5c5c07f2392d70c3",
+        "expected_hash": "3b782a74eb5fef6b5518124bcc1aefaf643eebc4ae4d6097e545e093745dbda3",
+        "query": "search_modules routing policy mandatory companion stale sources limit",
+        "symbol_given": "search_modules",
+        "mixed_bm25_hash": "ec1714424a10da9ee5d669aef5fa9ab83d6ab2242b48c158e32f9b7d8d6fc30a",
+        "latest_only_hash": "358f71a1a3a32ab86fe98ac263083f82fa3fe396bb2cff2e68d7efb2a2800844",
+        "version_filter_bm25_hash": "3b782a74eb5fef6b5518124bcc1aefaf643eebc4ae4d6097e545e093745dbda3",
+        "mixed_correct": false,
+        "latest_correct": false,
+        "version_filter_correct": true
+      },
+      {
+        "revision": "2d5c2f9c14b024ec4c7a8609adae42aac2bd06c7",
+        "expected_hash": "2c33498d4c6af2aa32d19c53dea87eacd35e5f66b6929a3b6a1806f93792a7c9",
+        "query": "search_modules routing policy mandatory companion stale sources limit",
+        "symbol_given": "search_modules",
+        "mixed_bm25_hash": "ec1714424a10da9ee5d669aef5fa9ab83d6ab2242b48c158e32f9b7d8d6fc30a",
+        "latest_only_hash": "358f71a1a3a32ab86fe98ac263083f82fa3fe396bb2cff2e68d7efb2a2800844",
+        "version_filter_bm25_hash": "2c33498d4c6af2aa32d19c53dea87eacd35e5f66b6929a3b6a1806f93792a7c9",
+        "mixed_correct": false,
+        "latest_correct": false,
+        "version_filter_correct": true
+      },
+      {
+        "revision": "3e92d8737204a6b02115fd2df459945f3c8b95fa",
+        "expected_hash": "1a6fe4010f562c0bc8b6fc1e955c304939ffcc550f1ff10afc5487e2fd23bb68",
+        "query": "search_modules routing policy mandatory companion stale sources limit",
+        "symbol_given": "search_modules",
+        "mixed_bm25_hash": "ec1714424a10da9ee5d669aef5fa9ab83d6ab2242b48c158e32f9b7d8d6fc30a",
+        "latest_only_hash": "358f71a1a3a32ab86fe98ac263083f82fa3fe396bb2cff2e68d7efb2a2800844",
+        "version_filter_bm25_hash": "1a6fe4010f562c0bc8b6fc1e955c304939ffcc550f1ff10afc5487e2fd23bb68",
+        "mixed_correct": false,
+        "latest_correct": false,
+        "version_filter_correct": true
+      },
+      {
+        "revision": "fd0036339dc12e2849b4c39e971e43d6578d658d",
+        "expected_hash": "1a6fe4010f562c0bc8b6fc1e955c304939ffcc550f1ff10afc5487e2fd23bb68",
+        "query": "search_modules routing policy mandatory companion stale sources limit",
+        "symbol_given": "search_modules",
+        "mixed_bm25_hash": "ec1714424a10da9ee5d669aef5fa9ab83d6ab2242b48c158e32f9b7d8d6fc30a",
+        "latest_only_hash": "358f71a1a3a32ab86fe98ac263083f82fa3fe396bb2cff2e68d7efb2a2800844",
+        "version_filter_bm25_hash": "1a6fe4010f562c0bc8b6fc1e955c304939ffcc550f1ff10afc5487e2fd23bb68",
+        "mixed_correct": false,
+        "latest_correct": false,
+        "version_filter_correct": true
+      },
+      {
+        "revision": "16c67e08b728c7f46c852767ab23cd4285330cab",
+        "expected_hash": "1a6fe4010f562c0bc8b6fc1e955c304939ffcc550f1ff10afc5487e2fd23bb68",
+        "query": "search_modules routing policy mandatory companion stale sources limit",
+        "symbol_given": "search_modules",
+        "mixed_bm25_hash": "ec1714424a10da9ee5d669aef5fa9ab83d6ab2242b48c158e32f9b7d8d6fc30a",
+        "latest_only_hash": "358f71a1a3a32ab86fe98ac263083f82fa3fe396bb2cff2e68d7efb2a2800844",
+        "version_filter_bm25_hash": "1a6fe4010f562c0bc8b6fc1e955c304939ffcc550f1ff10afc5487e2fd23bb68",
+        "mixed_correct": false,
+        "latest_correct": false,
+        "version_filter_correct": true
+      },
+      {
+        "revision": "10ff0048bdcd17bc4b886b5888bdd6249be13bdf",
+        "expected_hash": "1a6fe4010f562c0bc8b6fc1e955c304939ffcc550f1ff10afc5487e2fd23bb68",
+        "query": "search_modules routing policy mandatory companion stale sources limit",
+        "symbol_given": "search_modules",
+        "mixed_bm25_hash": "ec1714424a10da9ee5d669aef5fa9ab83d6ab2242b48c158e32f9b7d8d6fc30a",
+        "latest_only_hash": "358f71a1a3a32ab86fe98ac263083f82fa3fe396bb2cff2e68d7efb2a2800844",
+        "version_filter_bm25_hash": "1a6fe4010f562c0bc8b6fc1e955c304939ffcc550f1ff10afc5487e2fd23bb68",
+        "mixed_correct": false,
+        "latest_correct": false,
+        "version_filter_correct": true
+      },
+      {
+        "revision": "7afdff39e18e3dde20a451dce9427e841424e6cb",
+        "expected_hash": "166548c332eab50ea89feb38e5c76472e38a673321ad330381fde1c9a193989e",
+        "query": "search_modules routing policy mandatory companion stale sources limit",
+        "symbol_given": "search_modules",
+        "mixed_bm25_hash": "ec1714424a10da9ee5d669aef5fa9ab83d6ab2242b48c158e32f9b7d8d6fc30a",
+        "latest_only_hash": "358f71a1a3a32ab86fe98ac263083f82fa3fe396bb2cff2e68d7efb2a2800844",
+        "version_filter_bm25_hash": "166548c332eab50ea89feb38e5c76472e38a673321ad330381fde1c9a193989e",
+        "mixed_correct": false,
+        "latest_correct": false,
+        "version_filter_correct": true
+      },
+      {
+        "revision": "c541f1e7e2346439a7846faf2467aea8e1cf4e64",
+        "expected_hash": "ec1714424a10da9ee5d669aef5fa9ab83d6ab2242b48c158e32f9b7d8d6fc30a",
+        "query": "search_modules routing policy mandatory companion stale sources limit",
+        "symbol_given": "search_modules",
+        "mixed_bm25_hash": "ec1714424a10da9ee5d669aef5fa9ab83d6ab2242b48c158e32f9b7d8d6fc30a",
+        "latest_only_hash": "358f71a1a3a32ab86fe98ac263083f82fa3fe396bb2cff2e68d7efb2a2800844",
+        "version_filter_bm25_hash": "ec1714424a10da9ee5d669aef5fa9ab83d6ab2242b48c158e32f9b7d8d6fc30a",
+        "mixed_correct": true,
+        "latest_correct": false,
+        "version_filter_correct": true
+      },
+      {
+        "revision": "e69e8d3ee0418288209704040d3b1e6654accdd3",
+        "expected_hash": "358f71a1a3a32ab86fe98ac263083f82fa3fe396bb2cff2e68d7efb2a2800844",
+        "query": "search_modules routing policy mandatory companion stale sources limit",
+        "symbol_given": "search_modules",
+        "mixed_bm25_hash": "ec1714424a10da9ee5d669aef5fa9ab83d6ab2242b48c158e32f9b7d8d6fc30a",
+        "latest_only_hash": "358f71a1a3a32ab86fe98ac263083f82fa3fe396bb2cff2e68d7efb2a2800844",
+        "version_filter_bm25_hash": "358f71a1a3a32ab86fe98ac263083f82fa3fe396bb2cff2e68d7efb2a2800844",
+        "mixed_correct": false,
+        "latest_correct": true,
+        "version_filter_correct": true
+      }
+    ],
+    "skipped": [
+      {
+        "revision": "0c4dc241d51afa442d22a48f4673b1404b747da0",
+        "reason": "search_modules absent"
+      },
+      {
+        "revision": "05fa5c227d4b9c29b0262fd80f2454590b8470de",
+        "reason": "search_modules absent"
+      }
+    ],
+    "limitation": "Known revision membership makes filtering trivial; correlated versions of one symbol, not independent tasks"
+  },
+  "mandatory_companion_truncation": {
+    "status": "EXECUTED_LOCAL",
+    "label_status": "Controlled config derived from explicit Prerequisites section",
+    "fixture_root": "paper-assets/results/residual-probe-20261007/isolated-kb/20261007T085603990913Z",
+    "search_function_source": "paper-assets\\results\\residual-probe-20261007\\inputs\\knowledge-manager\\src\\knowledge_manager\\storage.py",
+    "corpus_module_count": 5,
+    "declared_companion": "operations/single-node-deploy-001",
+    "capacity_unit": "module count, not reader tokens",
+    "conditions": [
+      {
+        "query": "single-node-deploy install",
+        "limit_modules": 1,
+        "actual_km": [
+          "operations/single-node-deploy-002"
+        ],
+        "actual_has_companion": false,
+        "actual_sources": [
+          {
+            "key": "operations/single-node-deploy-002",
+            "source": "direct",
+            "reasons": [
+              "intent:how-to"
+            ]
+          }
+        ],
+        "wide_ranking": [
+          "operations/single-node-deploy-002",
+          "operations/single-node-deploy-001",
+          "operations/single-node-deploy-005",
+          "operations/single-node-deploy-003",
+          "operations/single-node-deploy-004"
+        ],
+        "simple_declared_group_control": [],
+        "control_has_complete_pair": false,
+        "control_abstained_due_to_capacity": true
+      },
+      {
+        "query": "single-node-deploy install",
+        "limit_modules": 2,
+        "actual_km": [
+          "operations/single-node-deploy-002",
+          "operations/single-node-deploy-001"
+        ],
+        "actual_has_companion": true,
+        "actual_sources": [
+          {
+            "key": "operations/single-node-deploy-002",
+            "source": "direct",
+            "reasons": [
+              "intent:how-to"
+            ]
+          },
+          {
+            "key": "operations/single-node-deploy-001",
+            "source": "direct",
+            "reasons": [
+              "intent:how-to"
+            ]
+          }
+        ],
+        "wide_ranking": [
+          "operations/single-node-deploy-002",
+          "operations/single-node-deploy-001",
+          "operations/single-node-deploy-005",
+          "operations/single-node-deploy-003",
+          "operations/single-node-deploy-004"
+        ],
+        "simple_declared_group_control": [
+          "operations/single-node-deploy-002",
+          "operations/single-node-deploy-001"
+        ],
+        "control_has_complete_pair": true,
+        "control_abstained_due_to_capacity": false
+      },
+      {
+        "query": "single-node-deploy install",
+        "limit_modules": 3,
+        "actual_km": [
+          "operations/single-node-deploy-002",
+          "operations/single-node-deploy-001",
+          "operations/single-node-deploy-005"
+        ],
+        "actual_has_companion": true,
+        "actual_sources": [
+          {
+            "key": "operations/single-node-deploy-002",
+            "source": "direct",
+            "reasons": [
+              "intent:how-to"
+            ]
+          },
+          {
+            "key": "operations/single-node-deploy-001",
+            "source": "direct",
+            "reasons": [
+              "intent:how-to"
+            ]
+          },
+          {
+            "key": "operations/single-node-deploy-005",
+            "source": "direct",
+            "reasons": [
+              "intent:how-to"
+            ]
+          }
+        ],
+        "wide_ranking": [
+          "operations/single-node-deploy-002",
+          "operations/single-node-deploy-001",
+          "operations/single-node-deploy-005",
+          "operations/single-node-deploy-003",
+          "operations/single-node-deploy-004"
+        ],
+        "simple_declared_group_control": [
+          "operations/single-node-deploy-002",
+          "operations/single-node-deploy-001",
+          "operations/single-node-deploy-005"
+        ],
+        "control_has_complete_pair": true,
+        "control_abstained_due_to_capacity": false
+      },
+      {
+        "query": "single-node-deploy install",
+        "limit_modules": 6,
+        "actual_km": [
+          "operations/single-node-deploy-002",
+          "operations/single-node-deploy-001",
+          "operations/single-node-deploy-005",
+          "operations/single-node-deploy-003",
+          "operations/single-node-deploy-004"
+        ],
+        "actual_has_companion": true,
+        "actual_sources": [
+          {
+            "key": "operations/single-node-deploy-002",
+            "source": "direct",
+            "reasons": [
+              "intent:how-to"
+            ]
+          },
+          {
+            "key": "operations/single-node-deploy-001",
+            "source": "direct",
+            "reasons": [
+              "intent:how-to"
+            ]
+          },
+          {
+            "key": "operations/single-node-deploy-005",
+            "source": "direct",
+            "reasons": [
+              "intent:how-to"
+            ]
+          },
+          {
+            "key": "operations/single-node-deploy-003",
+            "source": "direct",
+            "reasons": [
+              "intent:how-to"
+            ]
+          },
+          {
+            "key": "operations/single-node-deploy-004",
+            "source": "direct",
+            "reasons": [
+              "intent:how-to"
+            ]
+          }
+        ],
+        "wide_ranking": [
+          "operations/single-node-deploy-002",
+          "operations/single-node-deploy-001",
+          "operations/single-node-deploy-005",
+          "operations/single-node-deploy-003",
+          "operations/single-node-deploy-004"
+        ],
+        "simple_declared_group_control": [
+          "operations/single-node-deploy-002",
+          "operations/single-node-deploy-001",
+          "operations/single-node-deploy-005",
+          "operations/single-node-deploy-003",
+          "operations/single-node-deploy-004"
+        ],
+        "control_has_complete_pair": true,
+        "control_abstained_due_to_capacity": false
+      },
+      {
+        "query": "systemctl install",
+        "limit_modules": 1,
+        "actual_km": [
+          "operations/single-node-deploy-002"
+        ],
+        "actual_has_companion": false,
+        "actual_sources": [
+          {
+            "key": "operations/single-node-deploy-002",
+            "source": "direct",
+            "reasons": [
+              "intent:general"
+            ]
+          }
+        ],
+        "wide_ranking": [
+          "operations/single-node-deploy-002",
+          "operations/single-node-deploy-003",
+          "operations/single-node-deploy-005",
+          "operations/single-node-deploy-004",
+          "operations/single-node-deploy-001"
+        ],
+        "simple_declared_group_control": [],
+        "control_has_complete_pair": false,
+        "control_abstained_due_to_capacity": true
+      },
+      {
+        "query": "systemctl install",
+        "limit_modules": 2,
+        "actual_km": [
+          "operations/single-node-deploy-002",
+          "operations/single-node-deploy-003"
+        ],
+        "actual_has_companion": false,
+        "actual_sources": [
+          {
+            "key": "operations/single-node-deploy-002",
+            "source": "direct",
+            "reasons": [
+              "intent:general"
+            ]
+          },
+          {
+            "key": "operations/single-node-deploy-003",
+            "source": "direct",
+            "reasons": [
+              "intent:general"
+            ]
+          }
+        ],
+        "wide_ranking": [
+          "operations/single-node-deploy-002",
+          "operations/single-node-deploy-003",
+          "operations/single-node-deploy-005",
+          "operations/single-node-deploy-004",
+          "operations/single-node-deploy-001"
+        ],
+        "simple_declared_group_control": [
+          "operations/single-node-deploy-002",
+          "operations/single-node-deploy-001"
+        ],
+        "control_has_complete_pair": true,
+        "control_abstained_due_to_capacity": false
+      },
+      {
+        "query": "systemctl install",
+        "limit_modules": 3,
+        "actual_km": [
+          "operations/single-node-deploy-002",
+          "operations/single-node-deploy-003",
+          "operations/single-node-deploy-005"
+        ],
+        "actual_has_companion": false,
+        "actual_sources": [
+          {
+            "key": "operations/single-node-deploy-002",
+            "source": "direct",
+            "reasons": [
+              "intent:general"
+            ]
+          },
+          {
+            "key": "operations/single-node-deploy-003",
+            "source": "direct",
+            "reasons": [
+              "intent:general"
+            ]
+          },
+          {
+            "key": "operations/single-node-deploy-005",
+            "source": "direct",
+            "reasons": [
+              "intent:general"
+            ]
+          }
+        ],
+        "wide_ranking": [
+          "operations/single-node-deploy-002",
+          "operations/single-node-deploy-003",
+          "operations/single-node-deploy-005",
+          "operations/single-node-deploy-004",
+          "operations/single-node-deploy-001"
+        ],
+        "simple_declared_group_control": [
+          "operations/single-node-deploy-002",
+          "operations/single-node-deploy-001",
+          "operations/single-node-deploy-003"
+        ],
+        "control_has_complete_pair": true,
+        "control_abstained_due_to_capacity": false
+      },
+      {
+        "query": "systemctl install",
+        "limit_modules": 6,
+        "actual_km": [
+          "operations/single-node-deploy-002",
+          "operations/single-node-deploy-003",
+          "operations/single-node-deploy-005",
+          "operations/single-node-deploy-004",
+          "operations/single-node-deploy-001"
+        ],
+        "actual_has_companion": true,
+        "actual_sources": [
+          {
+            "key": "operations/single-node-deploy-002",
+            "source": "direct",
+            "reasons": [
+              "intent:general"
+            ]
+          },
+          {
+            "key": "operations/single-node-deploy-003",
+            "source": "direct",
+            "reasons": [
+              "intent:general"
+            ]
+          },
+          {
+            "key": "operations/single-node-deploy-005",
+            "source": "direct",
+            "reasons": [
+              "intent:general"
+            ]
+          },
+          {
+            "key": "operations/single-node-deploy-004",
+            "source": "direct",
+            "reasons": [
+              "intent:general"
+            ]
+          },
+          {
+            "key": "operations/single-node-deploy-001",
+            "source": "direct",
+            "reasons": [
+              "intent:general"
+            ]
+          }
+        ],
+        "wide_ranking": [
+          "operations/single-node-deploy-002",
+          "operations/single-node-deploy-003",
+          "operations/single-node-deploy-005",
+          "operations/single-node-deploy-004",
+          "operations/single-node-deploy-001"
+        ],
+        "simple_declared_group_control": [
+          "operations/single-node-deploy-002",
+          "operations/single-node-deploy-001",
+          "operations/single-node-deploy-003",
+          "operations/single-node-deploy-005",
+          "operations/single-node-deploy-004"
+        ],
+        "control_has_complete_pair": true,
+        "control_abstained_due_to_capacity": false
+      },
+      {
+        "query": "install service deployment",
+        "limit_modules": 1,
+        "actual_km": [
+          "operations/single-node-deploy-002"
+        ],
+        "actual_has_companion": false,
+        "actual_sources": [
+          {
+            "key": "operations/single-node-deploy-002",
+            "source": "direct",
+            "reasons": [
+              "intent:general"
+            ]
+          }
+        ],
+        "wide_ranking": [
+          "operations/single-node-deploy-002",
+          "operations/single-node-deploy-005",
+          "operations/single-node-deploy-003",
+          "operations/single-node-deploy-001",
+          "operations/single-node-deploy-004"
+        ],
+        "simple_declared_group_control": [],
+        "control_has_complete_pair": false,
+        "control_abstained_due_to_capacity": true
+      },
+      {
+        "query": "install service deployment",
+        "limit_modules": 2,
+        "actual_km": [
+          "operations/single-node-deploy-002",
+          "operations/single-node-deploy-005"
+        ],
+        "actual_has_companion": false,
+        "actual_sources": [
+          {
+            "key": "operations/single-node-deploy-002",
+            "source": "direct",
+            "reasons": [
+              "intent:general"
+            ]
+          },
+          {
+            "key": "operations/single-node-deploy-005",
+            "source": "direct",
+            "reasons": [
+              "intent:general"
+            ]
+          }
+        ],
+        "wide_ranking": [
+          "operations/single-node-deploy-002",
+          "operations/single-node-deploy-005",
+          "operations/single-node-deploy-003",
+          "operations/single-node-deploy-001",
+          "operations/single-node-deploy-004"
+        ],
+        "simple_declared_group_control": [
+          "operations/single-node-deploy-002",
+          "operations/single-node-deploy-001"
+        ],
+        "control_has_complete_pair": true,
+        "control_abstained_due_to_capacity": false
+      },
+      {
+        "query": "install service deployment",
+        "limit_modules": 3,
+        "actual_km": [
+          "operations/single-node-deploy-002",
+          "operations/single-node-deploy-005",
+          "operations/single-node-deploy-003"
+        ],
+        "actual_has_companion": false,
+        "actual_sources": [
+          {
+            "key": "operations/single-node-deploy-002",
+            "source": "direct",
+            "reasons": [
+              "intent:general"
+            ]
+          },
+          {
+            "key": "operations/single-node-deploy-005",
+            "source": "direct",
+            "reasons": [
+              "intent:general"
+            ]
+          },
+          {
+            "key": "operations/single-node-deploy-003",
+            "source": "direct",
+            "reasons": [
+              "intent:general"
+            ]
+          }
+        ],
+        "wide_ranking": [
+          "operations/single-node-deploy-002",
+          "operations/single-node-deploy-005",
+          "operations/single-node-deploy-003",
+          "operations/single-node-deploy-001",
+          "operations/single-node-deploy-004"
+        ],
+        "simple_declared_group_control": [
+          "operations/single-node-deploy-002",
+          "operations/single-node-deploy-001",
+          "operations/single-node-deploy-005"
+        ],
+        "control_has_complete_pair": true,
+        "control_abstained_due_to_capacity": false
+      },
+      {
+        "query": "install service deployment",
+        "limit_modules": 6,
+        "actual_km": [
+          "operations/single-node-deploy-002",
+          "operations/single-node-deploy-005",
+          "operations/single-node-deploy-003",
+          "operations/single-node-deploy-001",
+          "operations/single-node-deploy-004"
+        ],
+        "actual_has_companion": true,
+        "actual_sources": [
+          {
+            "key": "operations/single-node-deploy-002",
+            "source": "direct",
+            "reasons": [
+              "intent:general"
+            ]
+          },
+          {
+            "key": "operations/single-node-deploy-005",
+            "source": "direct",
+            "reasons": [
+              "intent:general"
+            ]
+          },
+          {
+            "key": "operations/single-node-deploy-003",
+            "source": "direct",
+            "reasons": [
+              "intent:general"
+            ]
+          },
+          {
+            "key": "operations/single-node-deploy-001",
+            "source": "direct",
+            "reasons": [
+              "intent:general"
+            ]
+          },
+          {
+            "key": "operations/single-node-deploy-004",
+            "source": "related",
+            "reasons": [
+              "intent:general",
+              "graph_related:operations/single-node-deploy-003"
+            ]
+          }
+        ],
+        "wide_ranking": [
+          "operations/single-node-deploy-002",
+          "operations/single-node-deploy-005",
+          "operations/single-node-deploy-003",
+          "operations/single-node-deploy-001",
+          "operations/single-node-deploy-004"
+        ],
+        "simple_declared_group_control": [
+          "operations/single-node-deploy-002",
+          "operations/single-node-deploy-001",
+          "operations/single-node-deploy-005",
+          "operations/single-node-deploy-003",
+          "operations/single-node-deploy-004"
+        ],
+        "control_has_complete_pair": true,
+        "control_abstained_due_to_capacity": false
+      }
+    ],
+    "network_model_calls": 0,
+    "limitation": "One document; declared rule is analyst configured; no deployment or agent execution"
+  },
+  "source_span_stamping": {
+    "status": "EXECUTED_LOCAL",
+    "conditions": [
+      {
+        "key": "operations/single-node-deploy-001",
+        "original_unit_start": 26,
+        "original_unit_end": 161,
+        "stamped_start": 0,
+        "stamped_end": 200,
+        "stamped_excerpt_is_valid_page_slice": true,
+        "stamped_span_covers_entire_unit": true,
+        "exact_substring_control_covers_unit": true
+      },
+      {
+        "key": "operations/single-node-deploy-002",
+        "original_unit_start": 161,
+        "original_unit_end": 2072,
+        "stamped_start": 0,
+        "stamped_end": 200,
+        "stamped_excerpt_is_valid_page_slice": true,
+        "stamped_span_covers_entire_unit": false,
+        "exact_substring_control_covers_unit": true
+      },
+      {
+        "key": "operations/single-node-deploy-003",
+        "original_unit_start": 2072,
+        "original_unit_end": 4276,
+        "stamped_start": 0,
+        "stamped_end": 200,
+        "stamped_excerpt_is_valid_page_slice": true,
+        "stamped_span_covers_entire_unit": false,
+        "exact_substring_control_covers_unit": true
+      },
+      {
+        "key": "operations/single-node-deploy-004",
+        "original_unit_start": 4276,
+        "original_unit_end": 4752,
+        "stamped_start": 0,
+        "stamped_end": 200,
+        "stamped_excerpt_is_valid_page_slice": true,
+        "stamped_span_covers_entire_unit": false,
+        "exact_substring_control_covers_unit": true
+      },
+      {
+        "key": "operations/single-node-deploy-005",
+        "original_unit_start": 4752,
+        "original_unit_end": 5341,
+        "stamped_start": 0,
+        "stamped_end": 200,
+        "stamped_excerpt_is_valid_page_slice": true,
+        "stamped_span_covers_entire_unit": false,
+        "exact_substring_control_covers_unit": true
+      }
+    ],
+    "stamp_function_source": "paper-assets\\results\\residual-probe-20261007\\inputs\\knowledge-manager\\src\\knowledge_manager\\source_ingestion.py",
+    "limitation": "Controlled local page wrapper, no live ingestion; literal full-unit containment, not entailment",
+    "stamped_complete_count": 1,
+    "exact_substring_complete_count": 5
+  },
+  "independent_scope": "One repository / one runbook",
+  "formal_inference": "None; no p values or general performance claims"
+}

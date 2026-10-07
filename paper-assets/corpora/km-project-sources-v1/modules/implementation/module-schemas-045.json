@@ -1,0 +1,41 @@
+{
+  "id": "module-schemas-045",
+  "category": "implementation",
+  "title": "module-schemas: OrphanEntry",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/schemas.py, section or definition OrphanEntry.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: OrphanEntry.",
+    "details": "class OrphanEntry(BaseModel):\r\n    module_id: str\r\n    category: str\r\n    title: str\r\n    status: str = \"published\"\r\n",
+    "examples": "",
+    "references": "sources/module-schemas.py; module-schemas:chars:17186-17303; source SHA-256 c857e4a99e2e152db3aca0d1a9fc458bebe20ab352e24d0ae1f144a6594904a8",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "module-schemas"
+    ],
+    "related_modules": [
+      "implementation/module-schemas-044",
+      "implementation/module-schemas-046"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://module-schemas",
+    "source_spans": [
+      {
+        "external_id": "module-schemas",
+        "heading_path": [
+          "OrphanEntry"
+        ],
+        "excerpt": "class OrphanEntry(BaseModel):\r\n    module_id: str\r\n    category: str\r\n    title: str\r\n    status: str = \"published\"\r\n",
+        "char_start": 17186,
+        "char_end": 17303
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

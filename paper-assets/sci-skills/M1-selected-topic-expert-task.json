@@ -1,0 +1,39 @@
+{
+  "contract_version": "1.0",
+  "project_id": "knowledge-manager-journal-20261007",
+  "paper_family": "M",
+  "stage_id": "M1",
+  "task_id": "M1-selected-topic-recon-002",
+  "expert_skill": "sci-skills-literature-search",
+  "task_summary": "For selected topic 1, verify adjacent literature and refine problem boundaries; M2 work provisional until M1 accepted",
+  "inputs": [
+    "M1-topic-definition.md",
+    "knowledge-manager source files",
+    "paper-assets/scripts/run_candidate_baseline_eval.py"
+  ],
+  "expected_outputs": [
+    "M2-literature-candidates.csv",
+    "M2-search-log.json",
+    "M2-preliminary-comparison.md"
+  ],
+  "evidence_boundaries": [
+    "No novelty claim from abstracts alone",
+    "No formal result from candidate labels or module-BM25 proxy",
+    "No systematic coverage claim"
+  ],
+  "acceptance_checks": [
+    "Original-source record matches title/authors",
+    "Verification scope recorded",
+    "Research hypotheses distinguished from observed facts"
+  ],
+  "known_missing_items": [
+    "Source document provenance and rights",
+    "Real task requirements",
+    "Full-text closest-method review"
+  ],
+  "manual_operation_allowed": true,
+  "optional_adapters_allowed": [
+    "local-file-import"
+  ],
+  "stage_authority": "sci-skills"
+}

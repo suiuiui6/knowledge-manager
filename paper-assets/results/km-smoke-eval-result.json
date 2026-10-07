@@ -1,0 +1,226 @@
+{
+  "name": "km-built-in-kb-smoke",
+  "total_cases": 7,
+  "passed_cases": 7,
+  "top_k": 5,
+  "hit_rate": 100.0,
+  "suppression_failure_rate": 0.0,
+  "baseline_win_rate": 0.0,
+  "false_positive_rate": 0.0,
+  "false_negative_rate": 0.0,
+  "avg_context_tokens": 978,
+  "avg_first_hit_rank": 1.0,
+  "avg_mrr": 1.0,
+  "avg_ndcg_at_k": 1.0,
+  "avg_recall_at_k": 1.0,
+  "policy_failure_rate": 0.0,
+  "retrieval_failure_rate": 0.0,
+  "risk_level_summary": {
+    "unspecified": {
+      "total_cases": 7,
+      "passed_cases": 7,
+      "suppressed_failures": 0
+    }
+  },
+  "task_type_summary": {
+    "decision": {
+      "total_cases": 2,
+      "passed_cases": 2,
+      "suppressed_failures": 0
+    },
+    "factual": {
+      "total_cases": 4,
+      "passed_cases": 4,
+      "suppressed_failures": 0
+    },
+    "procedure": {
+      "total_cases": 1,
+      "passed_cases": 1,
+      "suppressed_failures": 0
+    }
+  },
+  "results": [
+    {
+      "case_id": "arch-design-boundaries",
+      "query": "KM anti goals no vector database no SQL no web server",
+      "required_modules": [
+        "architecture/design-boundaries"
+      ],
+      "found_modules": [
+        "architecture/design-boundaries",
+        "architecture/mcp-protocol",
+        "architecture/git-native-storage",
+        "architecture/federation"
+      ],
+      "missing_modules": [],
+      "policy_suppressed_modules": [],
+      "baseline_found_modules": [
+        "architecture/design-boundaries",
+        "architecture/mcp-protocol",
+        "architecture/git-native-storage",
+        "architecture/federation"
+      ],
+      "context_tokens": 1252,
+      "first_hit_rank": 1,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0,
+      "recall_at_k": 1.0,
+      "failure_type": "none",
+      "passed": true
+    },
+    {
+      "case_id": "arch-federation",
+      "query": "multi knowledge base federation namespace isolation",
+      "required_modules": [
+        "architecture/federation"
+      ],
+      "found_modules": [
+        "architecture/federation",
+        "architecture/git-native-storage",
+        "architecture/mcp-protocol",
+        "architecture/design-boundaries"
+      ],
+      "missing_modules": [],
+      "policy_suppressed_modules": [],
+      "baseline_found_modules": [
+        "architecture/federation",
+        "architecture/git-native-storage",
+        "architecture/mcp-protocol",
+        "architecture/design-boundaries"
+      ],
+      "context_tokens": 1252,
+      "first_hit_rank": 1,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0,
+      "recall_at_k": 1.0,
+      "failure_type": "none",
+      "passed": true
+    },
+    {
+      "case_id": "arch-git-native-storage",
+      "query": "git native JSON storage files over database",
+      "required_modules": [
+        "architecture/git-native-storage"
+      ],
+      "found_modules": [
+        "architecture/git-native-storage",
+        "architecture/design-boundaries",
+        "architecture/mcp-protocol",
+        "architecture/federation"
+      ],
+      "missing_modules": [],
+      "policy_suppressed_modules": [],
+      "baseline_found_modules": [
+        "architecture/git-native-storage",
+        "architecture/design-boundaries",
+        "architecture/mcp-protocol",
+        "architecture/federation"
+      ],
+      "context_tokens": 1252,
+      "first_hit_rank": 1,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0,
+      "recall_at_k": 1.0,
+      "failure_type": "none",
+      "passed": true
+    },
+    {
+      "case_id": "arch-mcp-protocol",
+      "query": "MCP protocol stdio not HTTP server",
+      "required_modules": [
+        "architecture/mcp-protocol"
+      ],
+      "found_modules": [
+        "architecture/mcp-protocol",
+        "architecture/design-boundaries",
+        "architecture/federation",
+        "architecture/git-native-storage"
+      ],
+      "missing_modules": [],
+      "policy_suppressed_modules": [],
+      "baseline_found_modules": [
+        "architecture/mcp-protocol",
+        "architecture/design-boundaries",
+        "architecture/federation",
+        "architecture/git-native-storage"
+      ],
+      "context_tokens": 1252,
+      "first_hit_rank": 1,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0,
+      "recall_at_k": 1.0,
+      "failure_type": "none",
+      "passed": true
+    },
+    {
+      "case_id": "ops-module-lifecycle",
+      "query": "module lifecycle draft reviewed published deprecated archived",
+      "required_modules": [
+        "operations/module-lifecycle"
+      ],
+      "found_modules": [
+        "operations/module-lifecycle"
+      ],
+      "missing_modules": [],
+      "policy_suppressed_modules": [],
+      "baseline_found_modules": [
+        "operations/module-lifecycle"
+      ],
+      "context_tokens": 349,
+      "first_hit_rank": 1,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0,
+      "recall_at_k": 1.0,
+      "failure_type": "none",
+      "passed": true
+    },
+    {
+      "case_id": "search-chinese-segmentation",
+      "query": "Chinese segmentation jieba CJK search",
+      "required_modules": [
+        "search/chinese-segmentation"
+      ],
+      "found_modules": [
+        "search/chinese-segmentation",
+        "search/ranking-pipeline"
+      ],
+      "missing_modules": [],
+      "policy_suppressed_modules": [],
+      "baseline_found_modules": [
+        "search/chinese-segmentation",
+        "search/ranking-pipeline"
+      ],
+      "context_tokens": 743,
+      "first_hit_rank": 1,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0,
+      "recall_at_k": 1.0,
+      "failure_type": "none",
+      "passed": true
+    },
+    {
+      "case_id": "search-ranking-pipeline",
+      "query": "search ranking pipeline BM25 heuristic confidence Bayesian",
+      "required_modules": [
+        "search/ranking-pipeline"
+      ],
+      "found_modules": [
+        "search/ranking-pipeline",
+        "search/chinese-segmentation"
+      ],
+      "missing_modules": [],
+      "policy_suppressed_modules": [],
+      "baseline_found_modules": [
+        "search/ranking-pipeline",
+        "search/chinese-segmentation"
+      ],
+      "context_tokens": 743,
+      "first_hit_rank": 1,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0,
+      "recall_at_k": 1.0,
+      "failure_type": "none",
+      "passed": true
+    }
+  ]
+}

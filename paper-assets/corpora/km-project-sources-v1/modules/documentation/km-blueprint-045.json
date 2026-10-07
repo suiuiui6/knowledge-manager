@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-045",
+  "category": "documentation",
+  "title": "km-blueprint: 调度器",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition 调度器.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: 调度器.",
+    "details": "### 调度器\r\n\r\n```python\r\n# src/knowledge_manager/watch_scheduler.py (新文件)\r\n\r\nclass WatchScheduler:\r\n    \"\"\"后台调度器, 定期轮询所有监控源\"\"\"\r\n\r\n    # 默认轮询间隔\r\n    DEFAULT_INTERVALS = {\r\n        \"github\": 300,    # 5分钟\r\n        \"rss\": 600,       # 10分钟\r\n        \"local\": 120,     # 2分钟 (文件系统监控用 watchdog 事件)\r\n        \"arxiv\": 86400,   # 每天 (arXiv 每天更新一次)\r\n    }\r\n\r\n    def __init__(self, kb_path: Path, config: WatchConfig):\r\n        self.kb_path = kb_path\r\n        self.config = config\r\n        self.scheduler = AsyncIOScheduler()\r\n        self.watchers: dict[str, Any] = {}  # source_id → watcher instance\r\n\r\n    async def start(self):\r\n        \"\"\"启动所有监控源的后台调度\"\"\"\r\n        for source in self.config.sources:\r\n            if not source.enabled:\r\n                continue\r\n\r\n            # 创建 watcher 实例\r\n            watcher = self._create_watcher(source)\r\n            self.watchers[source.id] = watcher\r\n\r\n            # 注册定时任务\r\n            interval = self.DEFAULT_INTERVALS.get(source.type, 600)\r\n            self.scheduler.add_job(\r\n                self._poll_source,\r\n                'interval',\r\n                seconds=interval,\r\n                args=[source.id],\r\n                id=f\"watch_{source.id}\",\r\n                next_run_time=datetime.now() + timedelta(seconds=5),  # 启动5秒后首次运行\r\n            )\r\n\r\n        self.scheduler.start()\r\n\r\n    async def _poll_source(self, source_id: str):\r\n        \"\"\"轮询单个监控源\"\"\"\r\n        watcher = self.watchers.get(source_id)\r\n        if not watcher:\r\n            return\r\n\r\n        try:\r\n            event = await watcher.poll()\r\n            self._record_event(event)\r\n\r\n            if event.modules_generated > 0:\r\n                # 通知用户\r\n                self._notify_new_modules(event)\r\n\r\n            # 更新游标\r\n            self._update_cursor(source_id, event.cursor_after)\r\n\r\n        except Exception as e:\r\n            logger.error(f\"Watch source {source_id} failed: {e}\")\r\n\r\n    def _notify_new_modules(self, event: WatchEvent):\r\n        \"\"\"通知用户有新模块待审核\"\"\"\r\n        source = self._get_source(event.source_id)\r\n        if source and source.extraction.notify_on_new:\r\n            message = (\r\n                f\"📥 Watch [{source.id}] 发现 {event.modules_generated} 个新知识模块, \"\r\n                f\"来自 {event.items_processed} 个变更。\\n\"\r\n                f\"运行 `km review` 审核。\"\r\n            )\r\n            # CLI 输出\r\n            console.print(f\"[green]{message}[/green]\")\r\n            # Webhook 通知\r\n            if source.extraction.notify_webhook:\r\n                self._send_webhook(source.extraction.notify_webhook, message)\r\n```\r\n\r\n---\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:85803-88352; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-044",
+      "documentation/km-blueprint-046"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "调度器"
+        ],
+        "excerpt": "### 调度器\r\n\r\n```python\r\n# src/knowledge_manager/watch_scheduler.py (新文件)\r\n\r\nclass WatchScheduler:\r\n    \"\"\"后台调度器, 定期轮询所有监控源\"\"\"\r\n\r\n    # 默认轮询间隔\r\n    DEFAULT_INTERVALS = {\r\n        \"github\": 300,    # 5分钟\r\n        \"rss\": 600,       # 10分钟\r\n        \"local\": 120,     # 2分钟 (文件系统监控用 watchdog 事件)\r\n        \"arxiv\": 86400,   # 每天 (arXiv 每天更新一次)\r\n    }\r\n\r\n    def __init__(self, kb_path: Path, config: WatchConfig):\r\n        self.kb_path = kb_path\r\n        self.config = config\r\n        self.scheduler = AsyncIOScheduler()\r\n        self.watchers: dict[str, Any] = {}  # source_id → watcher instance\r\n\r\n    async def start(self):\r\n        \"\"\"启动所有监控源的后台调度\"\"\"\r\n        for source in self.config.sources:\r\n            if not source.enabled:\r\n                continue\r\n\r\n            # 创建 watcher 实例\r\n            watcher = self._create_watcher(source)\r\n            self.watchers[source.id] = watcher\r\n\r\n            # 注册定时任务\r\n            interval = self.DEFAULT_INTERVALS.get(source.type, 600)\r\n            self.scheduler.add_job(\r\n                self._poll_source,\r\n                'interval',\r\n                seconds=interval,\r\n                args=[source.id],\r\n                id=f\"watch_{source.id}\",\r\n                next_run_time=datetime.now() + timedelta(seconds=5),  # 启动5秒后首次运行\r\n            )\r\n\r\n        self.scheduler.start()\r\n\r\n    async def _poll_source(self, source_id: str):\r\n        \"\"\"轮询单个监控源\"\"\"\r\n        watcher = self.watchers.get(source_id)\r\n        if not watcher:\r\n            return\r\n\r\n        try:\r\n            event = await watcher.poll()\r\n            self._record_event(event)\r\n\r\n            if event.modules_generated > 0:\r\n                # 通知用户\r\n                self._notify_new_modules(event)\r\n\r\n            # 更新游标\r\n            self._update_cursor(source_id, event.cursor_after)\r\n\r\n        except Exception as e:\r\n            logger.error(f\"Watch source {source_id} failed: {e}\")\r\n\r\n    def _notify_new_modules(self, event: WatchEvent):\r\n        \"\"\"通知用户有新模块待审核\"\"\"\r\n        source = self._get_source(event.source_id)\r\n        if source and source.extraction.notify_on_new:\r\n            message = (\r\n                f\"📥 Watch [{source.id}] 发现 {event.modules_generated} 个新知识模块, \"\r\n                f\"来自 {event.items_processed} 个变更。\\n\"\r\n                f\"运行 `km review` 审核。\"\r\n            )\r\n            # CLI 输出\r\n            console.print(f\"[green]{message}[/green]\")\r\n            # Webhook 通知\r\n            if source.extraction.notify_webhook:\r\n                self._send_webhook(source.extraction.notify_webhook, message)\r\n```\r\n\r\n---\r\n\r\n",
+        "char_start": 85803,
+        "char_end": 88352
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

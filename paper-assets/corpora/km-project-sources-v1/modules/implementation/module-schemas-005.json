@@ -1,0 +1,41 @@
+{
+  "id": "module-schemas-005",
+  "category": "implementation",
+  "title": "module-schemas: SourceSpan",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/schemas.py, section or definition SourceSpan.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: SourceSpan.",
+    "details": "class SourceSpan(BaseModel):\n    external_id: str\n    heading_path: List[str] = Field(default_factory=list)\n    excerpt: str = \"\"\n    char_start: int = Field(default=0, ge=0)\n    char_end: int = Field(default=0, ge=0)\n\n    @model_validator(mode=\"after\")\n    def validate_char_range(self) -> \"SourceSpan\":\n        if self.char_end < self.char_start:\n            raise ValueError(\"char_end must be greater than or equal to char_start\")\n        return self\n",
+    "examples": "",
+    "references": "sources/module-schemas.py; module-schemas:chars:1248-1702; source SHA-256 c857e4a99e2e152db3aca0d1a9fc458bebe20ab352e24d0ae1f144a6594904a8",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "module-schemas"
+    ],
+    "related_modules": [
+      "implementation/module-schemas-004",
+      "implementation/module-schemas-006"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://module-schemas",
+    "source_spans": [
+      {
+        "external_id": "module-schemas",
+        "heading_path": [
+          "SourceSpan"
+        ],
+        "excerpt": "class SourceSpan(BaseModel):\n    external_id: str\n    heading_path: List[str] = Field(default_factory=list)\n    excerpt: str = \"\"\n    char_start: int = Field(default=0, ge=0)\n    char_end: int = Field(default=0, ge=0)\n\n    @model_validator(mode=\"after\")\n    def validate_char_range(self) -> \"SourceSpan\":\n        if self.char_end < self.char_start:\n            raise ValueError(\"char_end must be greater than or equal to char_start\")\n        return self\n",
+        "char_start": 1248,
+        "char_end": 1702
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

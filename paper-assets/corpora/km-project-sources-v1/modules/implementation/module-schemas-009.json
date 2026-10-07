@@ -1,0 +1,41 @@
+{
+  "id": "module-schemas-009",
+  "category": "implementation",
+  "title": "module-schemas: SourceDefinition",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/schemas.py, section or definition SourceDefinition.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: SourceDefinition.",
+    "details": "class SourceDefinition(BaseModel):\n    model_config = ConfigDict(extra=\"forbid\")\n\n    id: str\n    type: Literal[\"confluence\", \"notion\"] = \"confluence\"\n    enabled: bool = True\n    tenant_id: str = \"\"\n    workspace_id: str = \"\"\n    confluence: Optional[ConfluenceSourceConfig] = None\n    notion: Optional[NotionSourceConfig] = None\n    sync: SourceSyncState = Field(default_factory=SourceSyncState)\n\n    @model_validator(mode=\"after\")\n    def validate_source_config(self) -> \"SourceDefinition\":\n        if self.type == \"confluence\":\n            if self.confluence is None:\n                raise ValueError(\"confluence config is required for confluence sources\")\n            if self.notion is not None:\n                raise ValueError(\"notion config must be omitted for confluence sources\")\n        if self.type == \"notion\":\n            if self.notion is None:\n                raise ValueError(\"notion config is required for notion sources\")\n            if self.confluence is not None:\n                raise ValueError(\"confluence config must be omitted for notion sources\")\n        return self\n",
+    "examples": "",
+    "references": "sources/module-schemas.py; module-schemas:chars:2578-3672; source SHA-256 c857e4a99e2e152db3aca0d1a9fc458bebe20ab352e24d0ae1f144a6594904a8",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "module-schemas"
+    ],
+    "related_modules": [
+      "implementation/module-schemas-008",
+      "implementation/module-schemas-010"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://module-schemas",
+    "source_spans": [
+      {
+        "external_id": "module-schemas",
+        "heading_path": [
+          "SourceDefinition"
+        ],
+        "excerpt": "class SourceDefinition(BaseModel):\n    model_config = ConfigDict(extra=\"forbid\")\n\n    id: str\n    type: Literal[\"confluence\", \"notion\"] = \"confluence\"\n    enabled: bool = True\n    tenant_id: str = \"\"\n    workspace_id: str = \"\"\n    confluence: Optional[ConfluenceSourceConfig] = None\n    notion: Optional[NotionSourceConfig] = None\n    sync: SourceSyncState = Field(default_factory=SourceSyncState)\n\n    @model_validator(mode=\"after\")\n    def validate_source_config(self) -> \"SourceDefinition\":\n        if self.type == \"confluence\":\n            if self.confluence is None:\n                raise ValueError(\"confluence config is required for confluence sources\")\n            if self.notion is not None:\n                raise ValueError(\"notion config must be omitted for confluence sources\")\n        if self.type == \"notion\":\n            if self.notion is None:\n                raise ValueError(\"notion config is required for notion sources\")\n            if self.confluence is not None:\n                raise ValueError(\"confluence config must be omitted for notion sources\")\n        return self\n",
+        "char_start": 2578,
+        "char_end": 3672
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

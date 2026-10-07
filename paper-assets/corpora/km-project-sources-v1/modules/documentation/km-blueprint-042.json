@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-042",
+  "category": "documentation",
+  "title": "km-blueprint: 后台服务架构",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition 后台服务架构.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: 后台服务架构.",
+    "details": "### 后台服务架构\r\n\r\n```bash\r\n# 启动监控守护进程\r\nkm watch serve &\r\n\r\n# 注册监控源\r\nkm watch add github --repo org/backend --path \"docs/**\" --category backend\r\nkm watch add github --repo org/backend --path \"rfcs/**\" --category decisions\r\nkm watch add rss --url \"https://engineering.blog.com/feed.xml\" --category external\r\nkm watch add local --path \"../shared-docs\" --category general --auto-categorize\r\nkm watch add arxiv --query \"cat:cs.AI AND (rag OR knowledge)\" --category research\r\n\r\n# 管理\r\nkm watch list       # 列出所有监控源\r\nkm watch status     # 查看每个源的最近处理状态\r\nkm watch logs       # 查看处理历史\r\nkm watch run --now  # 立即触发所有源的全量拉取\r\nkm watch remove github/org-backend  # 移除监控源\r\n```\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:79901-80560; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-041",
+      "documentation/km-blueprint-043"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "后台服务架构"
+        ],
+        "excerpt": "### 后台服务架构\r\n\r\n```bash\r\n# 启动监控守护进程\r\nkm watch serve &\r\n\r\n# 注册监控源\r\nkm watch add github --repo org/backend --path \"docs/**\" --category backend\r\nkm watch add github --repo org/backend --path \"rfcs/**\" --category decisions\r\nkm watch add rss --url \"https://engineering.blog.com/feed.xml\" --category external\r\nkm watch add local --path \"../shared-docs\" --category general --auto-categorize\r\nkm watch add arxiv --query \"cat:cs.AI AND (rag OR knowledge)\" --category research\r\n\r\n# 管理\r\nkm watch list       # 列出所有监控源\r\nkm watch status     # 查看每个源的最近处理状态\r\nkm watch logs       # 查看处理历史\r\nkm watch run --now  # 立即触发所有源的全量拉取\r\nkm watch remove github/org-backend  # 移除监控源\r\n```\r\n\r\n",
+        "char_start": 79901,
+        "char_end": 80560
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

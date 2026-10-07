@@ -1,0 +1,41 @@
+{
+  "id": "routing-policy-002",
+  "category": "implementation",
+  "title": "routing-policy: merge_agent_routing_policy",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/policy.py, section or definition merge_agent_routing_policy.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: merge_agent_routing_policy.",
+    "details": "def merge_agent_routing_policy(\n    base: RoutingPolicyConfig, override: AgentRoutingPolicyConfig | None\n) -> RoutingPolicyConfig:\n    if override is None:\n        return base\n    return RoutingPolicyConfig(\n        category_priorities={**base.category_priorities, **override.category_priorities},\n        task_type_category_priorities={\n            **base.task_type_category_priorities,\n            **override.task_type_category_priorities,\n        },\n        task_type_allowed_statuses={\n            **base.task_type_allowed_statuses,\n            **override.task_type_allowed_statuses,\n        },\n        mandatory_companions={**base.mandatory_companions, **override.mandatory_companions},\n        risk_level_companions={**base.risk_level_companions, **override.risk_level_companions},\n        risk_level_allowed_statuses={\n            **base.risk_level_allowed_statuses,\n            **override.risk_level_allowed_statuses,\n        },\n        suppress_stale_sources=(\n            override.suppress_stale_sources\n            if override.suppress_stale_sources is not None\n            else base.suppress_stale_sources\n        ),\n        suppress_expired=(\n            override.suppress_expired\n            if override.suppress_expired is not None\n            else base.suppress_expired\n        ),\n        agent_overrides=base.agent_overrides,\n    )\n",
+    "examples": "",
+    "references": "sources/routing-policy.py; routing-policy:chars:384-1733; source SHA-256 fd1d389017565331ff43e5e6a855b952b927a9451513dd46d26c27750d155601",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "routing-policy"
+    ],
+    "related_modules": [
+      "implementation/routing-policy-001",
+      "implementation/routing-policy-003"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://routing-policy",
+    "source_spans": [
+      {
+        "external_id": "routing-policy",
+        "heading_path": [
+          "merge_agent_routing_policy"
+        ],
+        "excerpt": "def merge_agent_routing_policy(\n    base: RoutingPolicyConfig, override: AgentRoutingPolicyConfig | None\n) -> RoutingPolicyConfig:\n    if override is None:\n        return base\n    return RoutingPolicyConfig(\n        category_priorities={**base.category_priorities, **override.category_priorities},\n        task_type_category_priorities={\n            **base.task_type_category_priorities,\n            **override.task_type_category_priorities,\n        },\n        task_type_allowed_statuses={\n            **base.task_type_allowed_statuses,\n            **override.task_type_allowed_statuses,\n        },\n        mandatory_companions={**base.mandatory_companions, **override.mandatory_companions},\n        risk_level_companions={**base.risk_level_companions, **override.risk_level_companions},\n        risk_level_allowed_statuses={\n            **base.risk_level_allowed_statuses,\n            **override.risk_level_allowed_statuses,\n        },\n        suppress_stale_sources=(\n            override.suppress_stale_sources\n            if override.suppress_stale_sources is not None\n            else base.suppress_stale_sources\n        ),\n        suppress_expired=(\n            override.suppress_expired\n            if override.suppress_expired is not None\n            else base.suppress_expired\n        ),\n        agent_overrides=base.agent_overrides,\n    )\n",
+        "char_start": 384,
+        "char_end": 1733
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

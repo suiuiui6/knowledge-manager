@@ -1,0 +1,53 @@
+{
+  "contract_version": "1.0",
+  "expert_skill": "sci-skills-literature-search",
+  "project_id": "knowledge-manager-journal-20261007",
+  "paper_family": "M",
+  "stage_id": "M1",
+  "task_id": "M1-topic-recon-001",
+  "task_status": "PROVISIONAL",
+  "inputs_reviewed": [
+    "knowledge-manager/README.md",
+    "knowledge-manager/src/knowledge_manager/schemas.py",
+    "knowledge-manager/src/knowledge_manager/policy.py",
+    "knowledge-manager/src/knowledge_manager/storage.py",
+    "knowledge-manager/src/knowledge_manager/mcp_server.py",
+    "paper-assets/eval/judged-queries.candidate.jsonl",
+    "paper-assets/eval/judged-queries.author-review.json",
+    "paper-assets/results/main-comparison.md"
+  ],
+  "outputs": [
+    "paper-assets/sci-skills/topic-candidates.json"
+  ],
+  "evidence_status": [
+    {
+      "label": "VERIFIED_USER_MATERIAL",
+      "claim": "30 candidate queries; all author decisions empty; author-labeled file absent; main comparison is a template"
+    },
+    {
+      "label": "AI_INFERENCE",
+      "claim": "Three topic candidates; originality, real deployment pain and performance benefits remain unverified"
+    },
+    {
+      "label": "PENDING_VERIFICATION",
+      "claim": "Platform-native web search and arXiv open attempts returned no usable source content; no external literature verified in this task"
+    }
+  ],
+  "assumptions": [
+    "Knowledge Manager is the primary research code; user confirmation pending"
+  ],
+  "author_input_needed": [
+    "Confirm Knowledge Manager as research object and choose a topic"
+  ],
+  "manual_actions": [],
+  "quality_checks": [
+    "Read source implementations rather than relying only on README",
+    "Separated templates and candidate dry-run from formal evidence",
+    "No systematic search, full-text review or external source verification claimed"
+  ],
+  "conflicts": [],
+  "conflict_resolution_status": "NOT_REQUIRED",
+  "merge_permission": "orchestrator_only",
+  "recommended_next_action": "Confirm research object and select candidate direction",
+  "stage_acceptance_recommendation": "REPAIR"
+}

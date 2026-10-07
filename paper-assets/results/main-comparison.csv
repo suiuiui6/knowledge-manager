@@ -1,0 +1,4 @@
+system,corpus_id,query_count,top_k,MRR,nDCG_at_5,recall_at_5,precision_at_5,mean_latency_ms,p95_latency_ms,avg_loaded_units,avg_context_tokens,first_hit_rank_mean,false_positive_rate,false_negative_rate,boundary_detection_rate,notes,status
+Knowledge Manager,TBD,TBD,5,TBD,TBD,TBD,TBD,TBD,TBD,TBD,TBD,TBD,TBD,TBD,TBD,"Run after corpus-inventory.csv and judged-queries.jsonl are finalized.",template_not_measured
+BM25 keyword chunk baseline,TBD,TBD,5,TBD,TBD,TBD,TBD,TBD,TBD,TBD,TBD,TBD,TBD,TBD,TBD,"Run on the same corpus and judged queries. Do not tune queries per system.",template_not_measured
+chunk-only retrieval baseline,TBD,TBD,5,TBD,TBD,TBD,TBD,TBD,TBD,TBD,TBD,TBD,TBD,TBD,TBD,"Run on the same corpus and judged queries. Record chunk size and overlap.",template_not_measured

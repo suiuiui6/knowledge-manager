@@ -1,0 +1,55 @@
+{
+  "contract_version": "1.0",
+  "project_id": "knowledge-manager-journal-20261007",
+  "paper_family": "M",
+  "stage_id": "M2",
+  "task_id": "M2-method-reading-005",
+  "expert_skill": "sci-skills-paper-deep-reading",
+  "task_status": "PARTIAL",
+  "inputs_reviewed": [
+    "https://arxiv.org/abs/2502.12110",
+    "https://arxiv.org/html/2401.18059v1",
+    "https://proceedings.mlr.press/v235/lee24c.html",
+    "https://arxiv.org/abs/2601.03236",
+    "https://arxiv.org/abs/2207.05987",
+    "https://arxiv.org/abs/2104.08663"
+  ],
+  "outputs": [
+    "M2-reading-cards.md",
+    "M2-method-comparison.md",
+    "M2-experiment-protocol.json"
+  ],
+  "evidence_status": [
+    {
+      "label": "VERIFIED_SOURCE",
+      "claim": "Six primary records; three selected-method reviews, with depths documented"
+    },
+    {
+      "label": "VERIFIED_USER_MATERIAL",
+      "claim": "Actual KM module-count selection and post-selection companion expansion; candidate evaluator uses proxy"
+    },
+    {
+      "label": "AI_INFERENCE",
+      "claim": "Engineering-case evaluation and traceable matched-budget packing as candidate contribution"
+    },
+    {
+      "label": "NOT_EXECUTED",
+      "claim": "Proposed budget packing and formal experiment groups"
+    }
+  ],
+  "assumptions": [
+    "Single-project documentation/code case, not long-dialogue reproduction"
+  ],
+  "author_input_needed": [],
+  "manual_actions": [],
+  "quality_checks": [
+    "Primary source matches record",
+    "Method claims have section locators",
+    "Proposed work labelled unexecuted"
+  ],
+  "conflicts": [],
+  "conflict_resolution_status": "NOT_REQUIRED",
+  "merge_permission": "orchestrator_only",
+  "recommended_next_action": "Proceed to bounded M3 method/protocol design; full closest-method experiments remain follow-up reading",
+  "stage_acceptance_recommendation": "NOT_ASSESSED"
+}

@@ -1,0 +1,34 @@
+{
+  "stage_id": "M2",
+  "verdict": "通过（有限方法分析范围）",
+  "criteria": [
+    {
+      "criterion": "能够明确本文相对谁改进",
+      "status": "满足",
+      "evidence": "B1/B2/B3/实际KM为计划实验对照；近邻记忆方案是核实的相关工作但未复现"
+    },
+    {
+      "criterion": "不足具体而非泛泛",
+      "status": "满足",
+      "evidence": "本地top-k与追加关联并非token预算；旧评测为代理；自动草稿没有人工审核效应证据"
+    },
+    {
+      "criterion": "改进方向与后续方案一致",
+      "status": "满足",
+      "evidence": "以共同源证据、预算、受控关联和案例边界设计后续方法"
+    }
+  ],
+  "next_stage": "M3",
+  "not_accepted": [
+    "First-of-kind novelty",
+    "Performance superiority",
+    "Systematic literature completeness",
+    "Reproduced external baselines",
+    "Human-reviewed main labels"
+  ],
+  "remaining_research_tasks": [
+    "精读更多最近邻实验与局限",
+    "独立任务验证与强对照",
+    "实际算法和实验实现"
+  ]
+}

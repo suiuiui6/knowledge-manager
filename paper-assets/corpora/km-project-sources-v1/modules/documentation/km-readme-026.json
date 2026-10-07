@@ -1,0 +1,41 @@
+{
+  "id": "km-readme-026",
+  "category": "documentation",
+  "title": "km-readme: Configuration",
+  "summary": "Extractive snapshot of knowledge-manager/README.md, section or definition Configuration.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: Configuration.",
+    "details": "## Configuration\n\n`config.json` example:\n\n```json\n{\n  \"llm_providers\": {\n    \"deepseek\": {\n      \"api_key\": \"sk-...\",\n      \"model\": \"deepseek-v4-pro\",\n      \"base_url\": \"https://api.deepseek.com\",\n      \"default\": true,\n      \"temperature\": 0.3,\n      \"max_tokens\": 4096\n    },\n    \"claude\": {\n      \"api_key\": \"sk-ant-...\",\n      \"model\": \"claude-sonnet-4-6\",\n      \"default\": false\n    }\n  },\n  \"extraction\": {\n    \"provider\": \"deepseek\",\n    \"max_modules_per_extraction\": 10\n  },\n  \"cache\": {\n    \"enabled\": true,\n    \"max_modules\": 50\n  }\n}\n```\n\n`config.json` is gitignored — never commit API keys.\n\n",
+    "examples": "",
+    "references": "sources/km-readme.md; km-readme:chars:12023-12628; source SHA-256 3e5706ca7be9c3305b940f286214b6508158838296e960f08c00693b52fd3f20",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-readme"
+    ],
+    "related_modules": [
+      "documentation/km-readme-025",
+      "documentation/km-readme-027"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-readme",
+    "source_spans": [
+      {
+        "external_id": "km-readme",
+        "heading_path": [
+          "Configuration"
+        ],
+        "excerpt": "## Configuration\n\n`config.json` example:\n\n```json\n{\n  \"llm_providers\": {\n    \"deepseek\": {\n      \"api_key\": \"sk-...\",\n      \"model\": \"deepseek-v4-pro\",\n      \"base_url\": \"https://api.deepseek.com\",\n      \"default\": true,\n      \"temperature\": 0.3,\n      \"max_tokens\": 4096\n    },\n    \"claude\": {\n      \"api_key\": \"sk-ant-...\",\n      \"model\": \"claude-sonnet-4-6\",\n      \"default\": false\n    }\n  },\n  \"extraction\": {\n    \"provider\": \"deepseek\",\n    \"max_modules_per_extraction\": 10\n  },\n  \"cache\": {\n    \"enabled\": true,\n    \"max_modules\": 50\n  }\n}\n```\n\n`config.json` is gitignored — never commit API keys.\n\n",
+        "char_start": 12023,
+        "char_end": 12628
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "contract_version": "1.0",
+  "expert_skill": "sci-skills-statistical-reporting",
+  "project_id": "knowledge-manager-journal-20261007",
+  "paper_family": "M",
+  "stage_id": "M2",
+  "task_id": "M2-residual-probe-007",
+  "task_status": "PROVISIONAL",
+  "inputs_reviewed": ["knowledge-manager Git history", "knowledge-manager current Python source snapshot", "paper-assets/corpora/km-project-sources-v1 single-node deployment sources/modules", "M2-top-journal-feasibility-audit.md"],
+  "outputs": ["paper-assets/sci-skills/M2-residual-failure-probe-plan.md", "paper-assets/scripts/probe_residual_failures.py", "paper-assets/results/residual-probe-20261007/results.json", "paper-assets/results/residual-probe-20261007/execution-record.yaml", "paper-assets/sci-skills/M2-residual-failure-findings.md"],
+  "evidence_status": ["EXECUTED_LOCAL: real KM function executions in isolated source/data copies", "VERIFIED_USER_MATERIAL: source snapshots and Git text hashes", "AI_INFERENCE: all observed controlled failures admit simple controls; no distinct contribution established", "Controlled analyst queries/configuration, no organic task logs or human gold labels", "Current assistant directly executed specialist workflow; no separate analyst claimed"],
+  "assumptions": ["Version and symbol are explicit in historical selection probe", "Declared prerequisite is supplied by analyst from source heading", "Literal containment is not semantic entailment", "All conditions from one repository/runbook are dependent"],
+  "author_input_needed": [],
+  "manual_actions": [],
+  "quality_checks": ["Pre-execution plan retained", "Local source snapshots and hashes recorded", "Failure and successful control conditions reported", "Infeasible capacity conditions separated", "No p values, causal claims, external-method superiority or agent efficacy claims", "Original product source and KB preserved"],
+  "conflicts": [],
+  "conflict_resolution_status": "NOT_REQUIRED",
+  "merge_permission": "orchestrator_only",
+  "recommended_next_action": "Expand to replayable cross-file multistep software tasks and look for failures that remain after simple version and prerequisite rules",
+  "stage_acceptance_recommendation": "REPAIR"
+}

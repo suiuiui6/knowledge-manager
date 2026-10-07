@@ -1,0 +1,41 @@
+{
+  "id": "module-schemas-046",
+  "category": "implementation",
+  "title": "module-schemas: BrokenLinkEntry",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/schemas.py, section or definition BrokenLinkEntry.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: BrokenLinkEntry.",
+    "details": "class BrokenLinkEntry(BaseModel):\r\n    source: str  # \"category/module_id\"\r\n    target: str  # broken reference\r\n    target_status: str = \"missing\"  # \"missing\", \"deprecated\", \"archived\"\r\n",
+    "examples": "",
+    "references": "sources/module-schemas.py; module-schemas:chars:17307-17495; source SHA-256 c857e4a99e2e152db3aca0d1a9fc458bebe20ab352e24d0ae1f144a6594904a8",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "module-schemas"
+    ],
+    "related_modules": [
+      "implementation/module-schemas-045",
+      "implementation/module-schemas-047"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://module-schemas",
+    "source_spans": [
+      {
+        "external_id": "module-schemas",
+        "heading_path": [
+          "BrokenLinkEntry"
+        ],
+        "excerpt": "class BrokenLinkEntry(BaseModel):\r\n    source: str  # \"category/module_id\"\r\n    target: str  # broken reference\r\n    target_status: str = \"missing\"  # \"missing\", \"deprecated\", \"archived\"\r\n",
+        "char_start": 17307,
+        "char_end": 17495
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

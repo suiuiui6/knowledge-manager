@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-005",
+  "category": "documentation",
+  "title": "km-blueprint: REST API 设计",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition REST API 设计.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: REST API 设计.",
+    "details": "### REST API 设计\r\n\r\n```\r\n# 知识库概览\r\nGET  /api/health              → KBHealthReport (JSON)\r\nGET  /api/stats               → UsageStats (JSON)\r\nGET  /api/index               → Index (JSON, 不含模块全文)\r\n\r\n# 知识树 (新)\r\nGET  /api/tree                → TreeNode (层次化树结构)\r\nGET  /api/tree/:cat/:id       → TreeNode (以该模块为根的子树)\r\n\r\n# 模块操作\r\nGET  /api/modules             → list[ModuleSummary] (?category=&status=&tag=&page=&limit=)\r\nGET  /api/modules/:cat/:id    → Module (JSON 全文, 含 content)\r\nGET  /api/modules/:cat/:id.md → Module (Markdown 全文, 含 frontmatter)\r\n\r\n# 搜索\r\nPOST /api/search              → SearchResponse\r\n  Body: { \"query\": \"...\", \"category\": \"\", \"include_archived\": false, \"top_k\": 10 }\r\n  Response: { \"results\": [...], \"intent\": \"how-to\", \"took_ms\": 12 }\r\n\r\n# 对话式搜索\r\nPOST /api/chat                → SSE stream\r\n  Body: { \"query\": \"...\", \"history\": [...], \"mode\": \"precise|creative\" }\r\n  SSE events:\r\n    - event: status    data: {\"stage\": \"intent_classification\", \"intent\": \"reference\"}\r\n    - event: status    data: {\"stage\": \"tree_navigation\", \"path\": [\"auth\", \"auth/jwt-config\"]}\r\n    - event: status    data: {\"stage\": \"keyword_search\", \"candidates\": 15}\r\n    - event: status    data: {\"stage\": \"reranking\", \"method\": \"rrf\"}\r\n    - event: token     data: {\"text\": \"JWT\", \"source\": null}\r\n    - event: token     data: {\"text\": \" token\", \"source\": null}\r\n    - event: token     data: {\"text\": \" 过期时间\", \"source\": \"auth/jwt-config\"}\r\n    - event: citation  data: {\"module\": \"auth/jwt-config\", \"title\": \"JWT配置\", \"snippet\": \"...\"}\r\n    - event: done      data: {\"took_ms\": 2340, \"sources\": [...]}\r\n\r\n# 知识图谱\r\nGET  /api/graph               → GraphData (nodes + edges, 前端可视化用)\r\nGET  /api/graph/:cat/:id      → GraphData (以该模块为中心的局部图)\r\n\r\n# 推荐\r\nGET  /api/recommendations     → RecommendationReport\r\n\r\n# 审核 (需要认证时才开启)\r\nGET  /api/staging             → list[StagingEntry]\r\nPOST /api/staging/:id/approve\r\nPOST /api/staging/:id/reject\r\nPOST /api/staging/:id/request-changes   Body: { \"comment\": \"...\" }\r\n\r\n# 研究 (Research-on-Miss)\r\nPOST /api/research            → SSE stream\r\n  Body: { \"query\": \"...\", \"depth\": \"shallow|deep\" }\r\n  SSE events 流式返回研究进度\r\n\r\n# 记忆 (间隔重复)\r\nGET  /api/memory/today        → list[ReviewCard]\r\nPOST /api/memory/grade        Body: { \"card_id\": \"...\", \"grade\": 1-4 }\r\n\r\n# 配置\r\nGET  /api/config              → Config (API keys已脱敏)\r\nPUT  /api/config              → Config (部分更新)\r\n\r\n# 插件\r\nGET  /api/plugins             → list[PluginInfo]\r\nPOST /api/plugins/:name/enable\r\nPOST /api/plugins/:name/disable\r\n```\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:2726-5237; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-004",
+      "documentation/km-blueprint-006"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "REST API 设计"
+        ],
+        "excerpt": "### REST API 设计\r\n\r\n```\r\n# 知识库概览\r\nGET  /api/health              → KBHealthReport (JSON)\r\nGET  /api/stats               → UsageStats (JSON)\r\nGET  /api/index               → Index (JSON, 不含模块全文)\r\n\r\n# 知识树 (新)\r\nGET  /api/tree                → TreeNode (层次化树结构)\r\nGET  /api/tree/:cat/:id       → TreeNode (以该模块为根的子树)\r\n\r\n# 模块操作\r\nGET  /api/modules             → list[ModuleSummary] (?category=&status=&tag=&page=&limit=)\r\nGET  /api/modules/:cat/:id    → Module (JSON 全文, 含 content)\r\nGET  /api/modules/:cat/:id.md → Module (Markdown 全文, 含 frontmatter)\r\n\r\n# 搜索\r\nPOST /api/search              → SearchResponse\r\n  Body: { \"query\": \"...\", \"category\": \"\", \"include_archived\": false, \"top_k\": 10 }\r\n  Response: { \"results\": [...], \"intent\": \"how-to\", \"took_ms\": 12 }\r\n\r\n# 对话式搜索\r\nPOST /api/chat                → SSE stream\r\n  Body: { \"query\": \"...\", \"history\": [...], \"mode\": \"precise|creative\" }\r\n  SSE events:\r\n    - event: status    data: {\"stage\": \"intent_classification\", \"intent\": \"reference\"}\r\n    - event: status    data: {\"stage\": \"tree_navigation\", \"path\": [\"auth\", \"auth/jwt-config\"]}\r\n    - event: status    data: {\"stage\": \"keyword_search\", \"candidates\": 15}\r\n    - event: status    data: {\"stage\": \"reranking\", \"method\": \"rrf\"}\r\n    - event: token     data: {\"text\": \"JWT\", \"source\": null}\r\n    - event: token     data: {\"text\": \" token\", \"source\": null}\r\n    - event: token     data: {\"text\": \" 过期时间\", \"source\": \"auth/jwt-config\"}\r\n    - event: citation  data: {\"module\": \"auth/jwt-config\", \"title\": \"JWT配置\", \"snippet\": \"...\"}\r\n    - event: done      data: {\"took_ms\": 2340, \"sources\": [...]}\r\n\r\n# 知识图谱\r\nGET  /api/graph               → GraphData (nodes + edges, 前端可视化用)\r\nGET  /api/graph/:cat/:id      → GraphData (以该模块为中心的局部图)\r\n\r\n# 推荐\r\nGET  /api/recommendations     → RecommendationReport\r\n\r\n# 审核 (需要认证时才开启)\r\nGET  /api/staging             → list[StagingEntry]\r\nPOST /api/staging/:id/approve\r\nPOST /api/staging/:id/reject\r\nPOST /api/staging/:id/request-changes   Body: { \"comment\": \"...\" }\r\n\r\n# 研究 (Research-on-Miss)\r\nPOST /api/research            → SSE stream\r\n  Body: { \"query\": \"...\", \"depth\": \"shallow|deep\" }\r\n  SSE events 流式返回研究进度\r\n\r\n# 记忆 (间隔重复)\r\nGET  /api/memory/today        → list[ReviewCard]\r\nPOST /api/memory/grade        Body: { \"card_id\": \"...\", \"grade\": 1-4 }\r\n\r\n# 配置\r\nGET  /api/config              → Config (API keys已脱敏)\r\nPUT  /api/config              → Config (部分更新)\r\n\r\n# 插件\r\nGET  /api/plugins             → list[PluginInfo]\r\nPOST /api/plugins/:name/enable\r\nPOST /api/plugins/:name/disable\r\n```\r\n\r\n",
+        "char_start": 2726,
+        "char_end": 5237
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

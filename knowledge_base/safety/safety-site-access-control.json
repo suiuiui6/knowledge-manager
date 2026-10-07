@@ -1,0 +1,28 @@
+{
+  "id": "safety-site-access-control",
+  "category": "safety",
+  "title": "Closed site access and area segregation",
+  "summary": "We operate a fully enclosed construction site with facial recognition access and physical zoning to prevent unauthorized entry and control hazard exposure.",
+  "created_at": "2026-06-10T04:28:47.935257Z",
+  "updated_at": "2026-06-10T04:28:47.935257Z",
+  "content": {
+    "overview": "We implement complete physical closure of the construction site, enforcing identity-based entry via facial recognition terminals, and segregate work zones (construction, prefabrication, office, living) with physical barriers to minimize interaction between hazardous and non-hazardous areas.",
+    "details": "Hazardous operation zones (high-altitude, confined spaces, hot work) are further protected with standalone electronic fences and infrared alarms. This layered access control reduces the risk of unauthorized personnel entering high-risk areas and aids in emergency mustering. We chose facial recognition over simpler badge systems for higher identity assurance and real-time attendance tracking.",
+    "examples": "Facial recognition turnstiles at main gate. Electronic fence with infrared beam interruption alerts for unauthorized entry into a live hot work area.",
+    "references": "Company site security and HSE plan.",
+    "caveats": "System requires stable power and network; regular maintenance needed to avoid false alarms or lockouts. Physical segregation must be checked after storms or heavy vehicle movements."
+  },
+  "metadata": {
+    "tags": [
+      "access-control",
+      "site-security",
+      "zoning"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": "",
+    "expires_at": null,
+    "review_interval_days": null,
+    "status": "published"
+  }
+}

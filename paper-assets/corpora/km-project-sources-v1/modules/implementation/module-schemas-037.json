@@ -1,0 +1,41 @@
+{
+  "id": "module-schemas-037",
+  "category": "implementation",
+  "title": "module-schemas: ModuleHealth",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/schemas.py, section or definition ModuleHealth.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: ModuleHealth.",
+    "details": "class ModuleHealth(BaseModel):\r\n    module_id: str\r\n    category: str\r\n    title: str\r\n    status: str\r\n    score: HealthScore = Field(default_factory=HealthScore)\r\n    issues: List[str] = Field(default_factory=list)  # \"zombie\", \"stale\", \"expired\", \"incomplete\"\r\n    last_load: Optional[datetime] = None\r\n    load_count_30d: int = 0\r\n    days_since_update: int = 0\r\n",
+    "examples": "",
+    "references": "sources/module-schemas.py; module-schemas:chars:15247-15614; source SHA-256 c857e4a99e2e152db3aca0d1a9fc458bebe20ab352e24d0ae1f144a6594904a8",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "module-schemas"
+    ],
+    "related_modules": [
+      "implementation/module-schemas-036",
+      "implementation/module-schemas-038"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://module-schemas",
+    "source_spans": [
+      {
+        "external_id": "module-schemas",
+        "heading_path": [
+          "ModuleHealth"
+        ],
+        "excerpt": "class ModuleHealth(BaseModel):\r\n    module_id: str\r\n    category: str\r\n    title: str\r\n    status: str\r\n    score: HealthScore = Field(default_factory=HealthScore)\r\n    issues: List[str] = Field(default_factory=list)  # \"zombie\", \"stale\", \"expired\", \"incomplete\"\r\n    last_load: Optional[datetime] = None\r\n    load_count_30d: int = 0\r\n    days_since_update: int = 0\r\n",
+        "char_start": 15247,
+        "char_end": 15614
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

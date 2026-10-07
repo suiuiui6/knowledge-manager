@@ -1,0 +1,41 @@
+{
+  "id": "observability-004",
+  "category": "operations",
+  "title": "observability: Release Evidence Verdict",
+  "summary": "Extractive snapshot of knowledge-manager/docs/runbooks/observability-and-alerting.md, section or definition Release Evidence Verdict.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: Release Evidence Verdict.",
+    "details": "## Release Evidence Verdict\n\n- Inspect `release-support-bundle.json` before cutover and confirm `complete == true`.\n- Confirm `backup_restore_drill_within_30_days == true` before cutover.\n- Treat any non-empty `missing` list as a failed release-evidence gate until the absent artifact is generated or attached.\n\n",
+    "examples": "",
+    "references": "sources/observability.md; observability:chars:642-954; source SHA-256 a7b078911060cff08b059eeabb6e515f6a8889b302c060b42f5c2e1da4969b42",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "observability"
+    ],
+    "related_modules": [
+      "operations/observability-003",
+      "operations/observability-005"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://observability",
+    "source_spans": [
+      {
+        "external_id": "observability",
+        "heading_path": [
+          "Release Evidence Verdict"
+        ],
+        "excerpt": "## Release Evidence Verdict\n\n- Inspect `release-support-bundle.json` before cutover and confirm `complete == true`.\n- Confirm `backup_restore_drill_within_30_days == true` before cutover.\n- Treat any non-empty `missing` list as a failed release-evidence gate until the absent artifact is generated or attached.\n\n",
+        "char_start": 642,
+        "char_end": 954
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

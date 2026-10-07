@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="470" viewBox="0 0 1200 470">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#43616B"/>
+    </marker>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#EEF7F8"/>
+      <stop offset="1" stop-color="#FFF7ED"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="1200" height="470" rx="24" fill="url(#bg)"/>
+  <text x="600" y="52" text-anchor="middle" font-size="30" font-weight="800" fill="#173B45">Knowledge Manager 知识流转与按需加载路径</text>
+  
+    <rect x="60" y="96" width="145" height="92" rx="16" fill="#F8FAFC" stroke="#7AA6B2" stroke-width="2"/>
+    <text x="132.5" y="136" text-anchor="middle" font-size="24" font-weight="700" fill="#173B45">原始文档</text>
+    <text x="132.5" y="164" text-anchor="middle" font-size="15" fill="#5B6770">raw text</text>
+    <rect x="245" y="96" width="145" height="92" rx="16" fill="#F8FAFC" stroke="#7AA6B2" stroke-width="2"/>
+    <text x="317.5" y="136" text-anchor="middle" font-size="24" font-weight="700" fill="#173B45">抽取</text>
+    <text x="317.5" y="164" text-anchor="middle" font-size="15" fill="#5B6770">extract</text>
+    <rect x="430" y="96" width="145" height="92" rx="16" fill="#F8FAFC" stroke="#7AA6B2" stroke-width="2"/>
+    <text x="502.5" y="136" text-anchor="middle" font-size="24" font-weight="700" fill="#173B45">.staging</text>
+    <text x="502.5" y="164" text-anchor="middle" font-size="15" fill="#5B6770">candidate modules</text>
+    <rect x="615" y="96" width="145" height="92" rx="16" fill="#F8FAFC" stroke="#7AA6B2" stroke-width="2"/>
+    <text x="687.5" y="136" text-anchor="middle" font-size="24" font-weight="700" fill="#173B45">人工审核</text>
+    <text x="687.5" y="164" text-anchor="middle" font-size="15" fill="#5B6770">review / approve</text>
+    <rect x="800" y="96" width="145" height="92" rx="16" fill="#F8FAFC" stroke="#7AA6B2" stroke-width="2"/>
+    <text x="872.5" y="136" text-anchor="middle" font-size="24" font-weight="700" fill="#173B45">正式知识库</text>
+    <text x="872.5" y="164" text-anchor="middle" font-size="15" fill="#5B6770">JSON modules + index</text>
+    <rect x="985" y="96" width="145" height="92" rx="16" fill="#F8FAFC" stroke="#7AA6B2" stroke-width="2"/>
+    <text x="1057.5" y="136" text-anchor="middle" font-size="24" font-weight="700" fill="#173B45">CLI / MCP 服务</text>
+    <text x="1057.5" y="164" text-anchor="middle" font-size="15" fill="#5B6770">serve</text>
+  
+    <line x1="210" y1="142" x2="240" y2="142" stroke="#43616B" stroke-width="3" marker-end="url(#arrow)"/>
+    <line x1="395" y1="142" x2="425" y2="142" stroke="#43616B" stroke-width="3" marker-end="url(#arrow)"/>
+    <line x1="580" y1="142" x2="610" y2="142" stroke="#43616B" stroke-width="3" marker-end="url(#arrow)"/>
+    <line x1="765" y1="142" x2="795" y2="142" stroke="#43616B" stroke-width="3" marker-end="url(#arrow)"/>
+    <line x1="950" y1="142" x2="980" y2="142" stroke="#43616B" stroke-width="3" marker-end="url(#arrow)"/>
+  <line x1="872" y1="190" x2="872" y2="288" stroke="#43616B" stroke-width="3" stroke-dasharray="7 7" marker-end="url(#arrow)"/>
+  
+    <rect x="90" y="300" width="300" height="90" rx="14" fill="#FFFFFF" stroke="2F6F73" stroke-width="2"/>
+    <text x="240" y="334" text-anchor="middle" font-size="23" font-weight="700" fill="2F6F73">结构化模块字段</text>
+    <text x="240" y="365" text-anchor="middle" font-size="16" fill="#4B5563">overview / details / examples / references / caveats</text>
+    <rect x="430" y="300" width="300" height="90" rx="14" fill="#FFFFFF" stroke="234D63" stroke-width="2"/>
+    <text x="580" y="334" text-anchor="middle" font-size="23" font-weight="700" fill="234D63">治理边界</text>
+    <text x="580" y="365" text-anchor="middle" font-size="16" fill="#4B5563">人工确认、Git diff、版本追踪、caveat 保留</text>
+    <rect x="770" y="300" width="300" height="90" rx="14" fill="#FFFFFF" stroke="B66A2C" stroke-width="2"/>
+    <text x="920" y="334" text-anchor="middle" font-size="23" font-weight="700" fill="B66A2C">按需加载</text>
+    <text x="920" y="365" text-anchor="middle" font-size="16" fill="#4B5563">先读索引，再搜索模块，最后加载少量相关模块</text>
+  <text x="600" y="435" text-anchor="middle" font-size="15" fill="#64748B">知识先经过 staging 与人工审核，再以 JSON/index 服务给 CLI 和 MCP；运行时按任务加载模块，而非整库注入。</text>
+</svg>

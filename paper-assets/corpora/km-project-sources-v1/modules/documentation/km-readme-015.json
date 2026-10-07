@@ -1,0 +1,41 @@
+{
+  "id": "km-readme-015",
+  "category": "documentation",
+  "title": "km-readme: 3. Extract modules from raw notes",
+  "summary": "Extractive snapshot of knowledge-manager/README.md, section or definition 3. Extract modules from raw notes.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: 3. Extract modules from raw notes.",
+    "details": "### 3. Extract modules from raw notes\n\n```bash\nkm --kb-path ./my_kb add notes.txt -c auth\n```\n\nThe LLM reads `notes.txt`, chunks it when needed, returns up to `max_modules_per_extraction` structured modules, and writes them to `.staging/`.\n\n",
+    "examples": "",
+    "references": "sources/km-readme.md; km-readme:chars:4458-4699; source SHA-256 3e5706ca7be9c3305b940f286214b6508158838296e960f08c00693b52fd3f20",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-readme"
+    ],
+    "related_modules": [
+      "documentation/km-readme-014",
+      "documentation/km-readme-016"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-readme",
+    "source_spans": [
+      {
+        "external_id": "km-readme",
+        "heading_path": [
+          "3. Extract modules from raw notes"
+        ],
+        "excerpt": "### 3. Extract modules from raw notes\n\n```bash\nkm --kb-path ./my_kb add notes.txt -c auth\n```\n\nThe LLM reads `notes.txt`, chunks it when needed, returns up to `max_modules_per_extraction` structured modules, and writes them to `.staging/`.\n\n",
+        "char_start": 4458,
+        "char_end": 4699
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "id": "km-readme-020",
+  "category": "documentation",
+  "title": "km-readme: Runtime Environment Contract",
+  "summary": "Extractive snapshot of knowledge-manager/README.md, section or definition Runtime Environment Contract.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: Runtime Environment Contract.",
+    "details": "## Runtime Environment Contract\n\nDeployment-owned process settings are read from environment variables:\n\n- `KM_KB_PATH`\n- `KM_UI_HOST`\n- `KM_UI_PORT`\n- `KM_LOG_LEVEL`\n\n`KM_UI_PORT` must be an integer TCP port. `KM_LOG_LEVEL` must be one of `DEBUG`, `INFO`, `WARNING`, `ERROR`, or `CRITICAL`.\n\nSecurity mode, tenancy, and MCP exposure remain application config and stay in `kb/config.json`.\n\n",
+    "examples": "",
+    "references": "sources/km-readme.md; km-readme:chars:6956-7347; source SHA-256 3e5706ca7be9c3305b940f286214b6508158838296e960f08c00693b52fd3f20",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-readme"
+    ],
+    "related_modules": [
+      "documentation/km-readme-019",
+      "documentation/km-readme-021"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-readme",
+    "source_spans": [
+      {
+        "external_id": "km-readme",
+        "heading_path": [
+          "Runtime Environment Contract"
+        ],
+        "excerpt": "## Runtime Environment Contract\n\nDeployment-owned process settings are read from environment variables:\n\n- `KM_KB_PATH`\n- `KM_UI_HOST`\n- `KM_UI_PORT`\n- `KM_LOG_LEVEL`\n\n`KM_UI_PORT` must be an integer TCP port. `KM_LOG_LEVEL` must be one of `DEBUG`, `INFO`, `WARNING`, `ERROR`, or `CRITICAL`.\n\nSecurity mode, tenancy, and MCP exposure remain application config and stay in `kb/config.json`.\n\n",
+        "char_start": 6956,
+        "char_end": 7347
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

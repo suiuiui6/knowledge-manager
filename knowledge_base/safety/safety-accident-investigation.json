@@ -1,0 +1,28 @@
+{
+  "id": "safety-accident-investigation",
+  "category": "safety",
+  "title": "Accident investigation and 'Four No Pass' principle",
+  "summary": "We enforce a root cause-focused investigation completed within 7 working days, using the 5-Why method and the 'Four No Pass' closure rule.",
+  "created_at": "2026-06-10T04:28:47.935299Z",
+  "updated_at": "2026-06-10T04:28:47.935299Z",
+  "content": {
+    "overview": "All incidents undergo mandatory investigation following the 'Four No Pass' principle: no closure until the direct and root causes are identified, responsible persons are handled, corrective measures are implemented, and all relevant personnel are re-educated. Investigations are documented within 7 working days.",
+    "details": "We require both direct cause analysis and a 5-Why root cause analysis to prevent superficial fixes. The 7-day deadline ensures timely learning and corrective action, balancing thoroughness with urgency. The 'Four No Pass' principle creates a systematic loop: investigation → accountability → correction → awareness, so that similar events are prevented through organizational learning, not just punishment. Choosing the 5-Why method over more complex techniques (like TapRooT) keeps the investigation simple and participative at site level, though for major events a formal root cause analysis team may augment.",
+    "examples": "After a scaffolding collapse, 5-Why: Why did scaffold fall? Ledger missing pin. Why pin missing? Not installed during erection. Why not installed? Crew skipped after lunch. Why skipped? No post-break pre-use inspection. Why no inspection? Superintendent not enforcing checklist. Corrective actions: enforce checklist sign-off, retrain crew, add post-break inspection to JSA. Investigation report issued within 5 working days.",
+    "references": "Company incident management procedure, GB 50484-2019.",
+    "caveats": "5-Why can stop too early if not facilitated by an experienced person; must be paired with evidence collection. The 7-day deadline may be challenging for complex incidents; extensions should be justified. Emphasis on education over blame can be misinterpreted as leniency if accountability is not clearly addressed."
+  },
+  "metadata": {
+    "tags": [
+      "accident-investigation",
+      "root-cause-analysis",
+      "lessons-learned"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": "",
+    "expires_at": null,
+    "review_interval_days": null,
+    "status": "published"
+  }
+}

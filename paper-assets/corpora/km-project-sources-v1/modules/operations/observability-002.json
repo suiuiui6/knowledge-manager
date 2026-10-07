@@ -1,0 +1,41 @@
+{
+  "id": "observability-002",
+  "category": "operations",
+  "title": "observability: Minimum Verified Surfaces",
+  "summary": "Extractive snapshot of knowledge-manager/docs/runbooks/observability-and-alerting.md, section or definition Minimum Verified Surfaces.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: Minimum Verified Surfaces.",
+    "details": "## Minimum Verified Surfaces\n\n- `curl -fsS http://127.0.0.1:8420/api/ready`\n- `curl -fsS http://127.0.0.1:8420/api/metrics`\n- `km --kb-path <kb> verify-deployment --base-url http://127.0.0.1:8420 --matrix-summary <fresh-matrix-summary.json> --format json`\n- `km --kb-path <kb> support bundle --output-dir <dir> --matrix-summary <fresh-matrix-summary.json>`\n\n",
+    "examples": "",
+    "references": "sources/observability.md; observability:chars:45-403; source SHA-256 a7b078911060cff08b059eeabb6e515f6a8889b302c060b42f5c2e1da4969b42",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "observability"
+    ],
+    "related_modules": [
+      "operations/observability-001",
+      "operations/observability-003"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://observability",
+    "source_spans": [
+      {
+        "external_id": "observability",
+        "heading_path": [
+          "Minimum Verified Surfaces"
+        ],
+        "excerpt": "## Minimum Verified Surfaces\n\n- `curl -fsS http://127.0.0.1:8420/api/ready`\n- `curl -fsS http://127.0.0.1:8420/api/metrics`\n- `km --kb-path <kb> verify-deployment --base-url http://127.0.0.1:8420 --matrix-summary <fresh-matrix-summary.json> --format json`\n- `km --kb-path <kb> support bundle --output-dir <dir> --matrix-summary <fresh-matrix-summary.json>`\n\n",
+        "char_start": 45,
+        "char_end": 403
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

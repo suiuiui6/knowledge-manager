@@ -1,0 +1,28 @@
+{
+  "id": "safety-three-level-training",
+  "category": "safety",
+  "title": "Three-level safety training for site entry",
+  "summary": "We impose mandatory three-tier safety education with fixed hourly durations before site access to ensure all personnel meet our HSE baseline.",
+  "created_at": "2026-06-10T04:28:47.935245Z",
+  "updated_at": "2026-06-10T04:28:47.935247Z",
+  "content": {
+    "overview": "We require all incoming personnel to complete company-level, project-level, and team-level safety training and pass examinations to ensure consistent hazard awareness and compliance with our site HSE rules.",
+    "details": "Company-level training: minimum 24 hours. Project-level: minimum 16 hours. Team-level: minimum 8 hours. Special operations personnel must hold valid certificates matching their work; we enforce one-to-one matching of person and license. This structured cascade ensures that generic safety policies, project-specific risks, and daily task hazards are covered sequentially, providing a layered defense against ignorance-based incidents.",
+    "examples": "Training hours: company ≥24h, project ≥16h, team ≥8h. Special workers: welding, electrical, scaffolding, etc., must present current certificates and pass on-site verification before starting work.",
+    "references": "GB 50484-2019, company QHSE management system.",
+    "caveats": "Training must be documented and refreshed periodically; failing to verify certificate authenticity could lead to unqualified personnel accessing critical tasks."
+  },
+  "metadata": {
+    "tags": [
+      "safety-training",
+      "site-access",
+      "certification"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": "",
+    "expires_at": null,
+    "review_interval_days": null,
+    "status": "published"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "id": "module-schemas-026",
+  "category": "implementation",
+  "title": "module-schemas: ContradictionType",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/schemas.py, section or definition ContradictionType.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: ContradictionType.",
+    "details": "class ContradictionType(str, Enum):\r\n    FACT = \"fact\"\r\n    DECISION = \"decision\"\r\n    TIMELINE = \"timeline\"\r\n    TERMINOLOGY = \"terminology\"\r\n    STALE_REFERENCE = \"stale_ref\"\r\n",
+    "examples": "",
+    "references": "sources/module-schemas.py; module-schemas:chars:10749-10927; source SHA-256 c857e4a99e2e152db3aca0d1a9fc458bebe20ab352e24d0ae1f144a6594904a8",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "module-schemas"
+    ],
+    "related_modules": [
+      "implementation/module-schemas-025",
+      "implementation/module-schemas-027"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://module-schemas",
+    "source_spans": [
+      {
+        "external_id": "module-schemas",
+        "heading_path": [
+          "ContradictionType"
+        ],
+        "excerpt": "class ContradictionType(str, Enum):\r\n    FACT = \"fact\"\r\n    DECISION = \"decision\"\r\n    TIMELINE = \"timeline\"\r\n    TERMINOLOGY = \"terminology\"\r\n    STALE_REFERENCE = \"stale_ref\"\r\n",
+        "char_start": 10749,
+        "char_end": 10927
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

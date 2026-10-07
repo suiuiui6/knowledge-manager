@@ -1,0 +1,41 @@
+{
+  "id": "km-blueprint-055",
+  "category": "documentation",
+  "title": "km-blueprint: 图片理解",
+  "summary": "Extractive snapshot of knowledge-manager/docs/BLUEPRINT.md, section or definition 图片理解.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: 图片理解.",
+    "details": "## 图片理解\r\n\r\n```bash\r\nkm add architecture.png -c architecture\r\n  → LLM Vision 分析图片\r\n  → 生成模块: \"微服务架构图 (2026 Q1)\"\r\n    overview: \"当前生产环境的微服务拓扑...\"\r\n    details: \"共有6个服务: API Gateway (Kong), Auth Service, ...\"\r\n    examples: \"[图片: architecture.png] (base64 embedded for local, path ref for KB)\"\r\n```\r\n\r\n```python\r\nasync def extract_from_image(\r\n    image_path: Path,\r\n    category: str,\r\n    llm_client,\r\n) -> list[Module]:\r\n    \"\"\"从图片中提取知识模块\"\"\"\r\n\r\n    # 读取图片\r\n    image_data = base64.b64encode(image_path.read_bytes()).decode()\r\n\r\n    prompt = \"\"\"\\\r\n分析这张图片, 提取其中的知识。\r\n\r\n如果是架构图/流程图:\r\n- 识别关键组件和它们之间的关系\r\n- 提取数据流向\r\n- 标注技术栈选择\r\n\r\n如果是截图:\r\n- 提取关键信息和上下文\r\n- 标注操作步骤\r\n\r\n返回JSON数组的模块。每个模块的 examples 字段包含 \"图片: <filename>\" 引用。\r\n\"\"\"\r\n\r\n    response = await llm_client.complete_vision(prompt, [image_data])\r\n    ...\r\n```\r\n\r\n",
+    "examples": "",
+    "references": "sources/km-blueprint.md; km-blueprint:chars:104636-105439; source SHA-256 6c63be22cca8f0345d2fc9f565be344e3841c685ac90f8ccddba7fb5a4184a9a",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-blueprint"
+    ],
+    "related_modules": [
+      "documentation/km-blueprint-054",
+      "documentation/km-blueprint-056"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-blueprint",
+    "source_spans": [
+      {
+        "external_id": "km-blueprint",
+        "heading_path": [
+          "图片理解"
+        ],
+        "excerpt": "## 图片理解\r\n\r\n```bash\r\nkm add architecture.png -c architecture\r\n  → LLM Vision 分析图片\r\n  → 生成模块: \"微服务架构图 (2026 Q1)\"\r\n    overview: \"当前生产环境的微服务拓扑...\"\r\n    details: \"共有6个服务: API Gateway (Kong), Auth Service, ...\"\r\n    examples: \"[图片: architecture.png] (base64 embedded for local, path ref for KB)\"\r\n```\r\n\r\n```python\r\nasync def extract_from_image(\r\n    image_path: Path,\r\n    category: str,\r\n    llm_client,\r\n) -> list[Module]:\r\n    \"\"\"从图片中提取知识模块\"\"\"\r\n\r\n    # 读取图片\r\n    image_data = base64.b64encode(image_path.read_bytes()).decode()\r\n\r\n    prompt = \"\"\"\\\r\n分析这张图片, 提取其中的知识。\r\n\r\n如果是架构图/流程图:\r\n- 识别关键组件和它们之间的关系\r\n- 提取数据流向\r\n- 标注技术栈选择\r\n\r\n如果是截图:\r\n- 提取关键信息和上下文\r\n- 标注操作步骤\r\n\r\n返回JSON数组的模块。每个模块的 examples 字段包含 \"图片: <filename>\" 引用。\r\n\"\"\"\r\n\r\n    response = await llm_client.complete_vision(prompt, [image_data])\r\n    ...\r\n```\r\n\r\n",
+        "char_start": 104636,
+        "char_end": 105439
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

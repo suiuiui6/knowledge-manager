@@ -1,0 +1,41 @@
+{
+  "id": "module-schemas-051",
+  "category": "implementation",
+  "title": "module-schemas: RecommendationReport",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/schemas.py, section or definition RecommendationReport.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: RecommendationReport.",
+    "details": "class RecommendationReport(BaseModel):\n    generated_at: datetime = Field(default_factory=utc_now)\n    archive_candidates: List[Recommendation] = Field(default_factory=list)\n    enrichment_needed: List[Recommendation] = Field(default_factory=list)\n    suggested_links: List[Recommendation] = Field(default_factory=list)\n    review_reminders: List[Recommendation] = Field(default_factory=list)\n",
+    "examples": "",
+    "references": "sources/module-schemas.py; module-schemas:chars:18480-18873; source SHA-256 c857e4a99e2e152db3aca0d1a9fc458bebe20ab352e24d0ae1f144a6594904a8",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "module-schemas"
+    ],
+    "related_modules": [
+      "implementation/module-schemas-050",
+      "implementation/module-schemas-052"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://module-schemas",
+    "source_spans": [
+      {
+        "external_id": "module-schemas",
+        "heading_path": [
+          "RecommendationReport"
+        ],
+        "excerpt": "class RecommendationReport(BaseModel):\n    generated_at: datetime = Field(default_factory=utc_now)\n    archive_candidates: List[Recommendation] = Field(default_factory=list)\n    enrichment_needed: List[Recommendation] = Field(default_factory=list)\n    suggested_links: List[Recommendation] = Field(default_factory=list)\n    review_reminders: List[Recommendation] = Field(default_factory=list)\n",
+        "char_start": 18480,
+        "char_end": 18873
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

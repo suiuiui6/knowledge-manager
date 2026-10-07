@@ -1,0 +1,28 @@
+{
+  "id": "safety-hot-work-control",
+  "category": "safety",
+  "title": "Hot work permit and control system",
+  "summary": "We use a three-tier approval hierarchy for hot work permits, strict wind speed cutoffs, and dedicated fire watch with specified fire extinguisher requirements.",
+  "created_at": "2026-06-10T04:28:47.935266Z",
+  "updated_at": "2026-06-10T04:28:47.935266Z",
+  "content": {
+    "overview": "We enforce a graded approval process for hot work based on risk level, coupled with mandatory fire extinguisher deployment, a dedicated fire watch, and weather-dependent stopping rules to prevent uncontrolled fires and explosions.",
+    "details": "Approval escalation: Level I hot work (highest risk) authorized by project manager; Level II by HSE manager; Level III by construction team leader. Every hot work point must have at least two dry powder extinguishers (≥8 kg each) and a dedicated fire watcher. Outdoor hot work at height is prohibited when wind exceeds Force 5; all outdoor hot work stops at wind Force 6. We chose this specific wind threshold based on industry data showing rapid flame spread beyond these levels. The 'Ten Prohibitions of Hot Work' serve as binary go/no-go rules before any permit is issued.",
+    "examples": "Extinguisher spec: 2 × 8 kg dry powder. Wind rule: >5 Beaufort no elevated outdoor hot work; >6 Beaufort no any outdoor hot work. Approval chain example: for welding on a live process line, project manager must sign.",
+    "references": "Company hot work procedure, GB 50484-2019.",
+    "caveats": "Fire watch must remain until 30 minutes after work completion to detect smoldering. Wind speed must be measured on site, not relying on regional forecasts. Extinguishers must be inspected monthly."
+  },
+  "metadata": {
+    "tags": [
+      "hot-work",
+      "permit-system",
+      "fire-safety"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": "",
+    "expires_at": null,
+    "review_interval_days": null,
+    "status": "published"
+  }
+}

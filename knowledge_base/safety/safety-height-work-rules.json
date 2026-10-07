@@ -1,0 +1,28 @@
+{
+  "id": "safety-height-work-rules",
+  "category": "safety",
+  "title": "Height work and fall protection system",
+  "summary": "We define height work at 2 m and above, enforce 'high anchor, low use' for harnesses, mandate a 15 kN anchorage, and require joint scaffold acceptance.",
+  "created_at": "2026-06-10T04:28:47.935279Z",
+  "updated_at": "2026-06-10T04:28:47.935279Z",
+  "content": {
+    "overview": "Our criteria for height work start at 2 m above the base surface. We require full-body harnesses tied off above the user ('high anchor, low use') to reduce fall distance and impact force, with anchor points rated to at least 15 kN, and scaffolding is only released for use after a three-party joint inspection.",
+    "details": "The 2 m threshold aligns with national standards, triggering all fall protection measures. The 'high anchor, low use' rule ensures that any fall is arrested as soon as possible, minimizing free-fall energy. Choosing a 15 kN anchorage requirement (rather than the minimum 10 kN often cited in other standards) provides an extra safety margin for dynamic loads. After scaffold erection, the project technical lead, safety officer, and erection team leader must jointly inspect and hang a green tag before use; this shared accountability prevents premature or unsafe use.",
+    "examples": "Harness anchorage point: structural steel member verified to 15 kN static strength. Scaffold tag system: green tag (passed), red tag (do not use). Joint inspection checklist signed by the three named roles.",
+    "references": "GB 50484-2019, company scaffolding procedure.",
+    "caveats": "Anchorage points must be inspected before each use. Scaffold tags can degrade; physical condition of the tag does not replace re-inspection after weather events or modifications."
+  },
+  "metadata": {
+    "tags": [
+      "height-work",
+      "fall-protection",
+      "scaffolding"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": "",
+    "expires_at": null,
+    "review_interval_days": null,
+    "status": "published"
+  }
+}

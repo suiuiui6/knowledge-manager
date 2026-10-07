@@ -1,0 +1,16 @@
+{
+  "project_id": "knowledge-manager-journal-20261007",
+  "stage_id": "M2",
+  "review_date": "2026-10-07",
+  "authority": "sci-skills orchestrator",
+  "decision": "PARTIALLY_PASSED_REOPENED",
+  "evidence": ["M2-top-journal-feasibility-audit.md", "M2-top-journal-expert-result.json"],
+  "criteria": [
+    {"criterion":"能够明确本文相对谁改进","status":"PARTIAL","reason":"Existing solutions identified; distinct residual failure relative to strongest relevant solutions not established"},
+    {"criterion":"不足具体而非泛泛","status":"PARTIAL","reason":"Source-specific limitations located; project-specific counterpart remains a hypothesis"},
+    {"criterion":"改进方向与后续方案一致","status":"NOT_PASSED","reason":"Broad budget packing candidate overlaps prior work; proposed software-version boundary requires verification"}
+  ],
+  "history_policy": "Earlier M2-stage-review.json retained; this review supersedes its current transition decision",
+  "next_stage": "M2",
+  "next_action": "Find a reproducible residual failure using real versioned software tasks and strong relevant baselines"
+}

@@ -1,0 +1,41 @@
+{
+  "id": "module-schemas-055",
+  "category": "implementation",
+  "title": "module-schemas: OpsReport",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/schemas.py, section or definition OpsReport.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: OpsReport.",
+    "details": "class OpsReport(BaseModel):\n    generated_at: datetime = Field(default_factory=utc_now)\n    source_backlog: List[SourceBacklogEntry] = Field(default_factory=list)\n    lifecycle_backlog: LifecycleBacklog = Field(default_factory=LifecycleBacklog)\n    policy_suppressed_modules: List[PolicySuppressedModule] = Field(default_factory=list)\n",
+    "examples": "",
+    "references": "sources/module-schemas.py; module-schemas:chars:19410-19745; source SHA-256 c857e4a99e2e152db3aca0d1a9fc458bebe20ab352e24d0ae1f144a6594904a8",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "module-schemas"
+    ],
+    "related_modules": [
+      "implementation/module-schemas-054",
+      "implementation/module-schemas-056"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://module-schemas",
+    "source_spans": [
+      {
+        "external_id": "module-schemas",
+        "heading_path": [
+          "OpsReport"
+        ],
+        "excerpt": "class OpsReport(BaseModel):\n    generated_at: datetime = Field(default_factory=utc_now)\n    source_backlog: List[SourceBacklogEntry] = Field(default_factory=list)\n    lifecycle_backlog: LifecycleBacklog = Field(default_factory=LifecycleBacklog)\n    policy_suppressed_modules: List[PolicySuppressedModule] = Field(default_factory=list)\n",
+        "char_start": 19410,
+        "char_end": 19745
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

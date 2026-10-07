@@ -1,0 +1,40 @@
+{
+  "id": "km-readme-001",
+  "category": "documentation",
+  "title": "km-readme: Knowledge Manager",
+  "summary": "Extractive snapshot of knowledge-manager/README.md, section or definition Knowledge Manager.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: Knowledge Manager.",
+    "details": "# Knowledge Manager\n\nTurn messy notes into structured modules that LLMs can load on demand via MCP.\n\nKnowledge Manager is a git-native knowledge system for agentic workflows. It stores knowledge as inspectable JSON modules, maintains a lightweight index, and serves both through a CLI and MCP server.\n\n**Who It’s For:** Teams running AI-assisted engineering workflows who want reusable, reviewable project knowledge without operating a full RAG stack.\n\n- **Structured modules, not chunks.** Preserve intent with explicit sections (`overview`, `details`, `examples`, `references`, `caveats`).\n- **Git-native JSON storage.** Plain files, atomic writes, and easy review in pull requests.\n- **MCP-ready retrieval.** Expose index + module loading tools so clients can choose what to read at runtime.\n\n",
+    "examples": "",
+    "references": "sources/km-readme.md; km-readme:chars:0-796; source SHA-256 3e5706ca7be9c3305b940f286214b6508158838296e960f08c00693b52fd3f20",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-readme"
+    ],
+    "related_modules": [
+      "documentation/km-readme-002"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-readme",
+    "source_spans": [
+      {
+        "external_id": "km-readme",
+        "heading_path": [
+          "Knowledge Manager"
+        ],
+        "excerpt": "# Knowledge Manager\n\nTurn messy notes into structured modules that LLMs can load on demand via MCP.\n\nKnowledge Manager is a git-native knowledge system for agentic workflows. It stores knowledge as inspectable JSON modules, maintains a lightweight index, and serves both through a CLI and MCP server.\n\n**Who It’s For:** Teams running AI-assisted engineering workflows who want reusable, reviewable project knowledge without operating a full RAG stack.\n\n- **Structured modules, not chunks.** Preserve intent with explicit sections (`overview`, `details`, `examples`, `references`, `caveats`).\n- **Git-native JSON storage.** Plain files, atomic writes, and easy review in pull requests.\n- **MCP-ready retrieval.** Expose index + module loading tools so clients can choose what to read at runtime.\n\n",
+        "char_start": 0,
+        "char_end": 796
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

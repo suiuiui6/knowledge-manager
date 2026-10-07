@@ -1,0 +1,41 @@
+{
+  "id": "module-schemas-006",
+  "category": "implementation",
+  "title": "module-schemas: ConfluenceSourceConfig",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/schemas.py, section or definition ConfluenceSourceConfig.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: ConfluenceSourceConfig.",
+    "details": "class ConfluenceSourceConfig(BaseModel):\n    model_config = ConfigDict(extra=\"forbid\")\n\n    base_url: str\n    space_key: str\n    email: str\n    api_token_env: str\n    root_page_id: str = \"\"\n    category: str = \"general\"\n    page_limit: int = 25\n",
+    "examples": "",
+    "references": "sources/module-schemas.py; module-schemas:chars:1704-1949; source SHA-256 c857e4a99e2e152db3aca0d1a9fc458bebe20ab352e24d0ae1f144a6594904a8",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "module-schemas"
+    ],
+    "related_modules": [
+      "implementation/module-schemas-005",
+      "implementation/module-schemas-007"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://module-schemas",
+    "source_spans": [
+      {
+        "external_id": "module-schemas",
+        "heading_path": [
+          "ConfluenceSourceConfig"
+        ],
+        "excerpt": "class ConfluenceSourceConfig(BaseModel):\n    model_config = ConfigDict(extra=\"forbid\")\n\n    base_url: str\n    space_key: str\n    email: str\n    api_token_env: str\n    root_page_id: str = \"\"\n    category: str = \"general\"\n    page_limit: int = 25\n",
+        "char_start": 1704,
+        "char_end": 1949
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

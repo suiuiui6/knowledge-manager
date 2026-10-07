@@ -1,0 +1,41 @@
+{
+  "id": "km-readme-021",
+  "category": "documentation",
+  "title": "km-readme: Migration Note",
+  "summary": "Extractive snapshot of knowledge-manager/README.md, section or definition Migration Note.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: Migration Note.",
+    "details": "## Migration Note\n\nBefore this change, commands without `--kb-path` defaulted to the current working directory.\nAfter this change, commands without `--kb-path` resolve the KB path from `KM_KB_PATH` first and fall back to the current working directory only when `KM_KB_PATH` is unset.\nAny shell profile, service unit, or automation that exports `KM_KB_PATH` therefore changes the default KB target for bare `km ...` commands.\n\n",
+    "examples": "",
+    "references": "sources/km-readme.md; km-readme:chars:7347-7773; source SHA-256 3e5706ca7be9c3305b940f286214b6508158838296e960f08c00693b52fd3f20",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-readme"
+    ],
+    "related_modules": [
+      "documentation/km-readme-020",
+      "documentation/km-readme-022"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-readme",
+    "source_spans": [
+      {
+        "external_id": "km-readme",
+        "heading_path": [
+          "Migration Note"
+        ],
+        "excerpt": "## Migration Note\n\nBefore this change, commands without `--kb-path` defaulted to the current working directory.\nAfter this change, commands without `--kb-path` resolve the KB path from `KM_KB_PATH` first and fall back to the current working directory only when `KM_KB_PATH` is unset.\nAny shell profile, service unit, or automation that exports `KM_KB_PATH` therefore changes the default KB target for bare `km ...` commands.\n\n",
+        "char_start": 7347,
+        "char_end": 7773
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

@@ -1,0 +1,19 @@
+contract_version: "1.0"
+execution_status: EXECUTED_LOCAL
+sample_unit: "One repository and one runbook; correlated controlled diagnostic conditions"
+input_files: ["input-manifest.json", "inputs/paper-assets/corpora/km-project-sources-v1/sources/single-node-deploy.md", "inputs/knowledge-manager/src/knowledge_manager/storage.py", "inputs/knowledge-manager/src/knowledge_manager/source_ingestion.py"]
+analysis_source: ["../../scripts/probe_residual_failures.py"]
+software_version: "Python 3.14.3; exact package versions in environment.json"
+environment_notes:
+  - "Current dirty worktree source captured separately from historical Git revisions"
+  - "No network model or source-service calls; no package installation"
+random_seed: null
+execution_log: ["execution-rerun.log"]
+output_files: ["results.json", "history-candidates.json", "environment.json"]
+assumptions_checked:
+  - "All tested source excerpts exist verbatim in captured source"
+  - "Limit 1 cannot retain a two-module prerequisite pair"
+  - "Known revision and symbol define version-selection labels"
+deviations_from_plan:
+  - "Five source modules exist; limit 6 is an above-corpus capacity control"
+executed_on: "2026-10-07"

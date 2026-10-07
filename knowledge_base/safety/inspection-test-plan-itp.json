@@ -1,0 +1,29 @@
+{
+  "id": "inspection-test-plan-itp",
+  "category": "safety",
+  "title": "检验试验计划（ITP）与关键检查点",
+  "summary": "我们在单位工程开工前编制ITP，定义H点（停工待检点）、W点（见证点）、R点（审查点）三类强制检查点，确保质量和安全不可逆环节受控。",
+  "created_at": "2026-06-10T04:34:49.608986Z",
+  "updated_at": "2026-06-10T04:34:49.608987Z",
+  "content": {
+    "overview": "ITP是施工阶段安全质量管控的基线工具，通过设定法定和合同要求的检查见证节点，防止漏检和越点施工。",
+    "details": "ITP至少明确：检验点类型——H点（施工方停止，待监理/业主检查合格后方可继续）、W点（通知后方可继续，可在线见证）、R点（资料审查点）；检验依据——设计文件、适用标准规范、合同技术附件；检验比例——无损检测（RT/UT/MT/PT）比例严格按设计要求和标准规范，绝不降低比例。ITP需在单位工程开工前签批完成，施工班组据此执行。",
+    "examples": "典型ITP中，压力管道焊接后无损检测设为H点（必须停工待检片评审合格才允许下步），防腐涂层厚度检测设为W点（通知后见证），焊工资质审查设为R点。",
+    "references": "",
+    "caveats": "若ITP未明确列出标准中隐含的检验点，可能被业主/监理额外要求增设，造成工期压力；H点未及时通知检验就覆盖作业，将面临返工和不符合项报告。"
+  },
+  "metadata": {
+    "tags": [
+      "safety",
+      "quality",
+      "inspection",
+      "itp"
+    ],
+    "related_modules": [],
+    "confidence": "high",
+    "source": "",
+    "expires_at": null,
+    "review_interval_days": null,
+    "status": "published"
+  }
+}

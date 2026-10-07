@@ -1,0 +1,41 @@
+{
+  "id": "module-schemas-027",
+  "category": "implementation",
+  "title": "module-schemas: Severity",
+  "summary": "Extractive snapshot of knowledge-manager/src/knowledge_manager/schemas.py, section or definition Severity.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: Severity.",
+    "details": "class Severity(str, Enum):\r\n    ERROR = \"error\"\r\n    WARNING = \"warning\"\r\n    INFO = \"info\"\r\n",
+    "examples": "",
+    "references": "sources/module-schemas.py; module-schemas:chars:10931-11024; source SHA-256 c857e4a99e2e152db3aca0d1a9fc458bebe20ab352e24d0ae1f144a6594904a8",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "module-schemas"
+    ],
+    "related_modules": [
+      "implementation/module-schemas-026",
+      "implementation/module-schemas-028"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://module-schemas",
+    "source_spans": [
+      {
+        "external_id": "module-schemas",
+        "heading_path": [
+          "Severity"
+        ],
+        "excerpt": "class Severity(str, Enum):\r\n    ERROR = \"error\"\r\n    WARNING = \"warning\"\r\n    INFO = \"info\"\r\n",
+        "char_start": 10931,
+        "char_end": 11024
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

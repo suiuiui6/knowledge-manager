@@ -1,0 +1,41 @@
+{
+  "id": "km-readme-004",
+  "category": "documentation",
+  "title": "km-readme: 2. Configure your provider",
+  "summary": "Extractive snapshot of knowledge-manager/README.md, section or definition 2. Configure your provider.",
+  "created_at": "2026-10-07T07:45:03.140359+00:00",
+  "updated_at": "2026-10-07T07:45:03.140359+00:00",
+  "content": {
+    "overview": "Verbatim project-source evidence unit: 2. Configure your provider.",
+    "details": "### 2. Configure your provider\n\n```bash\nkm --kb-path ./my_kb config set llm_providers.deepseek.api_key \"sk-...\"\n```\n\n",
+    "examples": "",
+    "references": "sources/km-readme.md; km-readme:chars:1331-1448; source SHA-256 3e5706ca7be9c3305b940f286214b6508158838296e960f08c00693b52fd3f20",
+    "caveats": "Automatically extracted; no human approval recorded. The excerpt describes project documentation or code, not verified deployment or performance. Adjacency links are not semantic relevance labels."
+  },
+  "metadata": {
+    "tags": [
+      "paper-case-study",
+      "extractive",
+      "km-readme"
+    ],
+    "related_modules": [
+      "documentation/km-readme-003",
+      "documentation/km-readme-005"
+    ],
+    "confidence": "medium",
+    "source": "paper-corpus://km-readme",
+    "source_spans": [
+      {
+        "external_id": "km-readme",
+        "heading_path": [
+          "2. Configure your provider"
+        ],
+        "excerpt": "### 2. Configure your provider\n\n```bash\nkm --kb-path ./my_kb config set llm_providers.deepseek.api_key \"sk-...\"\n```\n\n",
+        "char_start": 1331,
+        "char_end": 1448
+      }
+    ],
+    "extraction_run_id": "source-grounded-v1",
+    "status": "draft"
+  }
+}

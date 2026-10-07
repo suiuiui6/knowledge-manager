@@ -1,0 +1,15 @@
+{
+  "python": "3.14.3 (tags/v3.14.3:323c59a, Feb  3 2026, 16:04:56) [MSC v.1944 64 bit (AMD64)]",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "executable": "D:\\Python\\python.exe",
+  "packages": {
+    "pydantic": "2.13.4",
+    "snowballstemmer": "2.2.0",
+    "jieba": "0.42.1",
+    "mcp": "1.27.2",
+    "httpx": "0.27.2"
+  },
+  "repo_head": "e69e8d3ee0418288209704040d3b1e6654accdd3",
+  "repo_commit_count": 59,
+  "worktree_status": " M README.md\n M docs/runbooks/enterprise-rollout.md\n M docs/runbooks/migration-cutover.md\n M src/knowledge_manager/admin_views.py\n M src/knowledge_manager/audit.py\n M src/knowledge_manager/auth.py\n M src/knowledge_manager/cache.py\n M src/knowledge_manager/chat.py\n M src/knowledge_manager/cli.py\n M src/knowledge_manager/dual_view.py\n M src/knowledge_manager/extractor.py\n M src/knowledge_manager/http_server.py\n M src/knowledge_manager/ingestion_jobs.py\n M src/knowledge_manager/mcp_server.py\n M src/knowledge_manager/ops_export.py\n M src/knowledge_manager/schemas.py\n M src/knowledge_manager/source_ingestion.py\n M src/knowledge_manager/storage.py\n M tests/test_cache.py\n M tests/test_cli.py\n M tests/test_http_server.py\n M tests/test_ingestion_jobs.py\n M tests/test_mcp_server.py\n M tests/test_ops_export.py\n M tests/test_storage.py\n"
+}
