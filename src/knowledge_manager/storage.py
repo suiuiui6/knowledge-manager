@@ -1,3 +1,4 @@
+import copy
 import hashlib
 import json
 import math
@@ -10,6 +11,12 @@ from typing import Any, Dict, List, Mapping, NamedTuple, Optional, cast
 
 from snowballstemmer import stemmer as _snowball_stemmer  # type: ignore[import-untyped]
 
+from knowledge_manager.materialized_views import (
+    invalidate_materialized_views,
+    load_fresh_materialized_view,
+    store_materialized_view,
+)
+from knowledge_manager.module_cache import ModuleCache
 from knowledge_manager.policy import evaluate_module_policy, merge_agent_routing_policy
 from knowledge_manager.schemas import (
     Config,
@@ -32,6 +39,8 @@ _QUALITY_PARTIAL = 1
 
 # BM25 parameters
 _BM25_K1 = 1.2
+_SEARCH_EVENTS_CACHE: dict[str, tuple[int, int, list[dict[str, Any]]]] = {}
+_PRIORS_CACHE: dict[str, tuple[tuple[int, str], Dict[str, Dict[str, float]]]] = {}
 _BM25_B = 0.75
 
 # Graph expansion discount (applied to heuristic score of triggering module)
@@ -68,6 +77,8 @@ _INTENT_PATTERNS: Dict[str, List[str]] = {
         r"\bsyntax\b", r"\breference\b", r"\bdocumentation\b",
     ],
 }
+
+_MODULE_CACHE = ModuleCache()
 
 
 def _stem(word: str) -> str:
@@ -113,6 +124,97 @@ def _field_stems(text: str) -> set[str]:
     return stems
 
 
+def _search_document_from_module(module: Module) -> dict[str, Any]:
+    return {
+        "category": module.category,
+        "module_id": module.id,
+        "title": module.title,
+        "summary": module.summary,
+        "overview": module.content.overview,
+        "details": module.content.details,
+        "examples": module.content.examples,
+        "references": module.content.references,
+        "caveats": module.content.caveats,
+        "tags": list(module.metadata.tags),
+        "related_modules": list(module.metadata.related_modules),
+        "confidence": module.metadata.confidence,
+        "tenant_id": module.metadata.tenant_id,
+        "workspace_id": module.metadata.workspace_id,
+        "stale_due_to_source_change": module.metadata.stale_due_to_source_change,
+        "expires_at": module.metadata.expires_at.isoformat() if module.metadata.expires_at else None,
+        "status": module.metadata.status,
+        "created_at": module.created_at.isoformat(),
+        "updated_at": module.updated_at.isoformat(),
+        "field_stems": {
+            "title": sorted(_field_stems(module.title)),
+            "tag": sorted({s for tag in module.metadata.tags for s in _stem(tag).split()}),
+            "summary": sorted(_field_stems(module.summary)),
+            "overview": sorted(_field_stems(module.content.overview)),
+            "details": sorted(_field_stems(module.content.details)),
+            "examples": sorted(_field_stems(module.content.examples)),
+            "caveats": sorted(_field_stems(module.content.caveats)),
+        },
+    }
+
+
+def _document_full_text(document: Mapping[str, Any]) -> str:
+    return " ".join(
+        [
+            str(document.get("title", "")),
+            " ".join(str(tag) for tag in document.get("tags", [])),
+            str(document.get("summary", "")),
+            str(document.get("overview", "")),
+            str(document.get("details", "")),
+            str(document.get("examples", "")),
+            str(document.get("references", "")),
+            str(document.get("caveats", "")),
+        ]
+    )
+
+
+def _module_from_search_document(document: Mapping[str, Any]) -> Module:
+    return Module.model_validate(
+        {
+            "id": document["module_id"],
+            "category": document["category"],
+            "title": document.get("title", ""),
+            "summary": document.get("summary", ""),
+            "created_at": document.get("created_at"),
+            "updated_at": document.get("updated_at"),
+            "content": {
+                "overview": document.get("overview", ""),
+                "details": document.get("details", ""),
+                "examples": document.get("examples", ""),
+                "references": document.get("references", ""),
+                "caveats": document.get("caveats", ""),
+            },
+            "metadata": {
+                "tags": document.get("tags", []),
+                "related_modules": document.get("related_modules", []),
+                "confidence": document.get("confidence", "medium"),
+                "tenant_id": document.get("tenant_id", ""),
+                "workspace_id": document.get("workspace_id", ""),
+                "stale_due_to_source_change": document.get("stale_due_to_source_change", False),
+                "expires_at": document.get("expires_at"),
+                "status": document.get("status", "published"),
+            },
+        }
+    )
+
+
+def _projection_doc_visible_to_tenant(document: Mapping[str, Any], tenant: TenantContext | None) -> bool:
+    if tenant is None:
+        return True
+    module_tenant = str(document.get("tenant_id", ""))
+    if module_tenant == tenant.tenant_id:
+        return True
+    return tenant.allow_global_reads and not module_tenant
+
+
+def _document_key(document: Mapping[str, Any]) -> str:
+    return f"{document.get('category', '')}/{document.get('module_id', '')}"
+
+
 def _atomic_write(path: Path, data: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".tmp")
@@ -120,20 +222,163 @@ def _atomic_write(path: Path, data: str) -> None:
     os.replace(tmp, path)
 
 
-def save_module(module: Module, kb_path: Path) -> None:
-    path = module.to_file_path(kb_path)
-    existed = path.exists()
-    _atomic_write(path, module.model_dump_json(indent=2))
+def _invalidate_module_cache(kb_path: Path) -> None:
+    _MODULE_CACHE.invalidate(kb_path)
+
+
+def _module_set_fingerprint(kb_path: Path) -> tuple[int, int]:
+    files = [
+        path
+        for path in kb_path.rglob("*.json")
+        if path.name != "index.json" and not any(part.startswith(".") for part in path.relative_to(kb_path).parts[:-1])
+    ]
+    total_mtime = sum(int(path.stat().st_mtime_ns) for path in files)
+    return len(files), total_mtime
+
+
+def _upsert_index_entry(module: Module, kb_path: Path) -> None:
+    index = load_index(kb_path) or Index()
+    index.remove_module(module.id, module.category)
+    index.add_module(module)
+    save_index(index, kb_path)
+
+
+def _remove_index_entry(module_id: str, category: str, kb_path: Path) -> None:
+    index = load_index(kb_path)
+    if index is None:
+        return
+    removed = index.remove_module(module_id, category)
+    if removed:
+        save_index(index, kb_path)
+
+
+def _run_noncritical_save_side_effects(module: Module, kb_path: Path, existed: bool) -> None:
     # M5: also write Markdown
     try:
         from knowledge_manager.sync import MarkdownSync
+
         MarkdownSync.sync_on_save(module, kb_path)
     except Exception:
         pass
-    # Emit webhook event
+
     event = "module.updated" if existed else "module.created"
-    from knowledge_manager.webhooks import emit_event
-    emit_event(kb_path, event, module.id, module.category, {"title": module.title})
+    try:
+        from knowledge_manager.webhooks import emit_event
+
+        emit_event(kb_path, event, module.id, module.category, {"title": module.title})
+    except Exception:
+        pass
+
+    try:
+        from knowledge_manager.lexical_index import update_lexical_index_for_module
+
+        update_lexical_index_for_module(kb_path, module)
+    except Exception:
+        pass
+
+    try:
+        from knowledge_manager.search_projection import update_search_projection_for_module
+
+        update_search_projection_for_module(kb_path, module)
+    except Exception:
+        pass
+
+    try:
+        from knowledge_manager.recommendation_index import update_recommendation_index_for_module
+
+        update_recommendation_index_for_module(kb_path, module)
+    except Exception:
+        pass
+
+
+def _run_noncritical_delete_side_effects(module_id: str, category: str, kb_path: Path) -> None:
+    try:
+        from knowledge_manager.webhooks import emit_event
+
+        emit_event(kb_path, "module.deleted", module_id, category)
+    except Exception:
+        pass
+
+    try:
+        from knowledge_manager.lexical_index import delete_lexical_index_for_module
+
+        delete_lexical_index_for_module(kb_path, category, module_id)
+    except Exception:
+        pass
+
+    try:
+        from knowledge_manager.search_projection import remove_search_projection_for_module
+
+        remove_search_projection_for_module(kb_path, category, module_id)
+    except Exception:
+        pass
+
+    try:
+        from knowledge_manager.recommendation_index import remove_recommendation_index_for_module
+
+        remove_recommendation_index_for_module(kb_path, category, module_id)
+    except Exception:
+        pass
+
+
+def run_deferred_maintenance_action(kb_path: Path, action: str, payload: Mapping[str, Any]) -> None:
+    if action == "module_saved":
+        module_payload = payload.get("module")
+        if module_payload is None:
+            raise ValueError("module_saved maintenance payload requires module")
+        module = Module.model_validate(module_payload)
+        _run_noncritical_save_side_effects(module, kb_path, bool(payload.get("existed")))
+        return
+    if action == "module_deleted":
+        module_id = str(payload.get("module_id") or "")
+        category = str(payload.get("category") or "")
+        if not module_id or not category:
+            raise ValueError("module_deleted maintenance payload requires module_id and category")
+        _run_noncritical_delete_side_effects(module_id, category, kb_path)
+        return
+    raise ValueError(f"Unsupported maintenance action: {action}")
+
+
+def schedule_maintenance_job(kb_path: Path, action: str, payload: dict[str, Any]) -> dict[str, Any]:
+    from knowledge_manager.job_worker import enqueue_local_maintenance
+
+    return enqueue_local_maintenance(kb_path, action=action, payload=payload)
+
+
+def save_module(
+    module: Module,
+    kb_path: Path,
+    defer_noncritical: bool = True,
+    maintenance_state: list[dict[str, Any]] | None = None,
+) -> None:
+    path = module.to_file_path(kb_path)
+    existed = path.exists()
+    if existed:
+        existing = load_module(module.id, module.category, kb_path)
+        if existing is not None:
+            before = existing.model_dump(mode="json")
+            after = module.model_dump(mode="json")
+            before.pop("updated_at", None)
+            after.pop("updated_at", None)
+            if before != after:
+                module.updated_at = datetime.now(timezone.utc)
+            else:
+                module.updated_at = existing.updated_at
+    _atomic_write(path, module.model_dump_json(indent=2))
+    _upsert_index_entry(module, kb_path)
+    _invalidate_module_cache(kb_path)
+    invalidate_materialized_views(kb_path)
+    if defer_noncritical:
+        state = schedule_maintenance_job(
+            kb_path,
+            action="module_saved",
+            payload={"module": module.model_dump(mode="json"), "existed": existed},
+        )
+    else:
+        _run_noncritical_save_side_effects(module, kb_path, existed)
+        state = {"deferred": False, "action": "module_saved"}
+    if maintenance_state is not None:
+        maintenance_state.append(state)
 
 
 def load_module(module_id: str, category: str, kb_path: Path) -> Optional[Module]:
@@ -143,30 +388,53 @@ def load_module(module_id: str, category: str, kb_path: Path) -> Optional[Module
     return Module.model_validate_json(path.read_text(encoding="utf-8"))
 
 
-def delete_module(module_id: str, category: str, kb_path: Path) -> bool:
+def delete_module(
+    module_id: str,
+    category: str,
+    kb_path: Path,
+    defer_noncritical: bool = True,
+    maintenance_state: list[dict[str, Any]] | None = None,
+) -> bool:
     path = kb_path / category / f"{module_id}.json"
     if not path.exists():
         return False
     path.unlink()
-    from knowledge_manager.webhooks import emit_event
-    emit_event(kb_path, "module.deleted", module_id, category)
+    _remove_index_entry(module_id, category, kb_path)
+    _invalidate_module_cache(kb_path)
+    invalidate_materialized_views(kb_path)
+    if defer_noncritical:
+        state = schedule_maintenance_job(
+            kb_path,
+            action="module_deleted",
+            payload={"module_id": module_id, "category": category},
+        )
+    else:
+        _run_noncritical_delete_side_effects(module_id, category, kb_path)
+        state = {"deferred": False, "action": "module_deleted"}
+    if maintenance_state is not None:
+        maintenance_state.append(state)
     return True
 
 
 def list_modules(kb_path: Path, tenant: TenantContext | None = None) -> List[Module]:
     if not kb_path.exists():
         return []
-    modules = []
-    for json_file in kb_path.rglob("*.json"):
-        if json_file.name == "index.json":
-            continue
-        try:
-            module = Module.model_validate_json(json_file.read_text(encoding="utf-8"))
-            if module_visible_to_tenant(module, tenant):
-                modules.append(module)
-        except Exception:
-            pass
-    return modules
+    fingerprint = _module_set_fingerprint(kb_path)
+    modules = _MODULE_CACHE.get(kb_path, fingerprint)
+    if modules is None:
+        loaded: list[Module] = []
+        for json_file in kb_path.rglob("*.json"):
+            if json_file.name == "index.json":
+                continue
+            if any(part.startswith(".") for part in json_file.relative_to(kb_path).parts[:-1]):
+                continue
+            try:
+                loaded.append(Module.model_validate_json(json_file.read_text(encoding="utf-8")))
+            except Exception:
+                pass
+        _MODULE_CACHE.put(kb_path, fingerprint, loaded)
+        modules = loaded
+    return [module for module in modules if module_visible_to_tenant(module, tenant)]
 
 
 def get_supersession_chain(module_id: str, category: str, kb_path: Path) -> list[str]:
@@ -315,6 +583,70 @@ def _bm25_scores(query: str, modules: List[Module]) -> Dict[str, float]:
     return scores
 
 
+def _bm25_scores_for_documents(query: str, documents: list[Mapping[str, Any]]) -> Dict[str, float]:
+    """Compute BM25 scores directly from search documents."""
+    if not documents or not query.strip():
+        return {}
+
+    query_stems: List[str] = []
+    for w in _WORD_RE.findall(query.lower()):
+        query_stems.extend(_stem(w).split())
+    if not query_stems:
+        return {}
+
+    doc_tfs: List[Dict[str, int]] = []
+    doc_keys: List[str] = []
+    df: Dict[str, int] = {}
+    doc_lengths: List[int] = []
+
+    for document in documents:
+        stored_stems = document.get("stems", [])
+        if stored_stems:
+            stemmed = [str(stem) for stem in stored_stems]
+        else:
+            text = _document_full_text(document)
+            words = [w.lower() for w in _WORD_RE.findall(text)]
+            stemmed = []
+            for w in words:
+                stemmed.extend(_stem(w).split())
+
+        tf: Dict[str, int] = {}
+        for s in stemmed:
+            tf[s] = tf.get(s, 0) + 1
+
+        doc_tfs.append(tf)
+        doc_keys.append(_document_key(document))
+        doc_lengths.append(len(stemmed))
+
+        for term in set(stemmed):
+            df[term] = df.get(term, 0) + 1
+
+    total_len = sum(doc_lengths)
+    if total_len == 0:
+        return {}
+
+    avgdl = total_len / len(documents)
+    scores: Dict[str, float] = {}
+    for i, tf_map in enumerate(doc_tfs):
+        score = 0.0
+        dl = doc_lengths[i]
+        for term in query_stems:
+            df_t = df.get(term, 0)
+            if df_t == 0:
+                continue
+            idf = math.log((len(documents) - df_t + 0.5) / (df_t + 0.5) + 1)
+            tf = tf_map.get(term, 0)
+            if tf == 0:
+                continue
+            score += (
+                idf
+                * (tf * (_BM25_K1 + 1))
+                / (tf + _BM25_K1 * (1 - _BM25_B + _BM25_B * dl / avgdl))
+            )
+        scores[doc_keys[i]] = score
+    return scores
+
+
 def search_modules(
     query: str,
     kb_path: Path,
@@ -328,6 +660,38 @@ def search_modules(
     enable_vector_fallback: bool = False,
     tenant: TenantContext | None = None,
 ) -> List[SearchResult]:
+    candidate_set: set[str] | None = None
+    use_projection = False
+    projection_documents: dict[str, dict[str, Any]] = {}
+    raw_query_terms = _WORD_RE.findall(query.lower())
+    if raw_query_terms and all(len(term) >= 5 or _CJK_RE.search(term) for term in raw_query_terms):
+        try:
+            from knowledge_manager.search_projection import (
+                build_search_projection,
+                load_search_projection_readonly,
+                projection_document_complete,
+                query_search_projection,
+            )
+
+            candidate_keys = query_search_projection(kb_path, query)
+            if candidate_keys:
+                candidate_cap = max(limit * 20, 200)
+                candidate_set = set(candidate_keys[:candidate_cap])
+                projection_payload = load_search_projection_readonly(kb_path)
+                if projection_payload is None:
+                    projection_payload = build_search_projection(kb_path)
+                projection_documents = projection_payload.get("documents", {})
+                if any(
+                    (document := projection_documents.get(key)) is None or not projection_document_complete(document)
+                    for key in candidate_set
+                ):
+                    projection_payload = build_search_projection(kb_path)
+                    projection_documents = projection_payload.get("documents", {})
+                use_projection = bool(projection_documents)
+        except Exception:
+            candidate_set = None
+            projection_documents = {}
+
     terms: list[str] = []
     for w in _WORD_RE.findall(query.lower()):
         if _CJK_RE.search(w):
@@ -339,7 +703,39 @@ def search_modules(
     if not terms:
         return []
 
-    all_modules = list_modules(kb_path, tenant=tenant)
+    def _document_field_stems(document: Mapping[str, Any]) -> dict[str, set[str]]:
+        stored = document.get("field_stems", {})
+        computed = {
+            "title": _field_stems(str(document.get("title", ""))),
+            "tag": {s for tag in document.get("tags", []) for s in _stem(str(tag)).split()},
+            "summary": _field_stems(str(document.get("summary", ""))),
+            "overview": _field_stems(str(document.get("overview", ""))),
+            "details": _field_stems(str(document.get("details", ""))),
+            "examples": _field_stems(str(document.get("examples", ""))),
+            "caveats": _field_stems(str(document.get("caveats", ""))),
+        }
+        for field_name, values in stored.items():
+            computed[field_name] = set(values)
+        return computed
+
+    candidate_items: list[tuple[str, dict[str, Any], dict[str, set[str]]]] = []
+    if use_projection and candidate_set is not None:
+        for key in sorted(candidate_set):
+            document = projection_documents.get(key)
+            if document is None or not _projection_doc_visible_to_tenant(document, tenant):
+                continue
+            candidate_items.append((key, document, _document_field_stems(document)))
+    else:
+        all_modules = list_modules(kb_path, tenant=tenant)
+        if candidate_set is not None:
+            all_modules = [
+                module
+                for module in all_modules
+                if f"{module.category}/{module.id}" in candidate_set
+            ]
+        for module in all_modules:
+            document = _search_document_from_module(module)
+            candidate_items.append((_document_key(document), document, _document_field_stems(document)))
     cfg = _load_config_safe(kb_path)
     user_synonyms: Dict[str, List[str]] = cfg.synonyms if cfg else {}
     routing_policy: RoutingPolicyConfig = cfg.routing_policy if cfg else RoutingPolicyConfig()
@@ -358,21 +754,40 @@ def search_modules(
             risk_allowed_set = set(risk_allowed)
             allowed_statuses = risk_allowed_set if allowed_statuses is None else allowed_statuses & risk_allowed_set
 
-    if not include_archived:
-        all_modules = [m for m in all_modules if m.metadata.status != "archived"]
-    all_modules = [
-        m
-        for m in all_modules
-        if evaluate_module_policy(m, effective_policy, allowed_statuses=allowed_statuses).allowed
+    def _document_allowed_by_policy(document: Mapping[str, Any]) -> bool:
+        status = str(document.get("status", "published"))
+        if not include_archived and status == "archived":
+            return False
+        if allowed_statuses is not None and status not in allowed_statuses:
+            return False
+        if effective_policy.suppress_stale_sources and document.get("stale_due_to_source_change"):
+            return False
+        if effective_policy.suppress_expired:
+            expires_at = document.get("expires_at")
+            if expires_at:
+                try:
+                    expires = datetime.fromisoformat(str(expires_at))
+                    if expires.tzinfo is None:
+                        expires = expires.replace(tzinfo=timezone.utc)
+                    if expires <= datetime.now(timezone.utc):
+                        return False
+                except ValueError:
+                    pass
+        return True
+
+    candidate_items = [
+        item
+        for item in candidate_items
+        if _document_allowed_by_policy(item[1])
     ]
-    bm25 = _bm25_scores(query, all_modules)
+    bm25 = _bm25_scores_for_documents(query, [item[1] for item in candidate_items])
 
     # Build tag synonym map from co-occurring tags across all modules
     tag_synonyms: Dict[str, set[str]] = {}
-    for m in all_modules:
+    for _module_key, document, _field_stem_map in candidate_items:
         tag_words = set()
-        for tag in m.metadata.tags:
-            tag_words.update(_WORD_RE.findall(tag.lower()))
+        for tag in document.get("tags", []):
+            tag_words.update(_WORD_RE.findall(str(tag).lower()))
         for tw in tag_words:
             if tw not in tag_synonyms:
                 tag_synonyms[tw] = set()
@@ -393,9 +808,10 @@ def search_modules(
 
     # Build adjacency graph from module metadata (always fresh, no index dependency)
     graph: Dict[str, List[str]] = {}
-    for m in all_modules:
-        if m.metadata.related_modules:
-            graph[f"{m.category}/{m.id}"] = list(m.metadata.related_modules)
+    for module_key, document, _field_stem_map in candidate_items:
+        related_modules = list(document.get("related_modules", []))
+        if related_modules:
+            graph[module_key] = related_modules
 
     def score_term(
         term: str,
@@ -449,7 +865,7 @@ def search_modules(
         partial = re.compile(re.escape(syn), re.IGNORECASE) if len(syn) < 5 else None
         patterns.append((syn, word_boundary, partial, weight))
 
-    scored: List[tuple[float, float, int, Module, str, list[str]]] = []
+    scored: List[tuple[float, float, int, str, dict[str, Any], str, list[str]]] = []
     prioritized_categories = list(effective_policy.category_priorities.get(intent, []))
     if task_type:
         for category_name in reversed(effective_policy.task_type_category_priorities.get(task_type, [])):
@@ -460,24 +876,15 @@ def search_modules(
         category_name: max(0, len(prioritized_categories) - index) * 4
         for index, category_name in enumerate(prioritized_categories)
     }
-    for module in all_modules:
+    for module_key, document, field_stems in candidate_items:
         fields: dict[str, str | list[str]] = {
-            "title": module.title,
-            "tag": module.metadata.tags,
-            "summary": module.summary,
-            "overview": module.content.overview,
-            "details": module.content.details,
-            "examples": module.content.examples,
-            "caveats": module.content.caveats,
-        }
-        field_stems = {
-            "title": _field_stems(module.title),
-            "tag": {s for tag in module.metadata.tags for s in _stem(tag).split()},
-            "summary": _field_stems(module.summary),
-            "overview": _field_stems(module.content.overview),
-            "details": _field_stems(module.content.details),
-            "examples": _field_stems(module.content.examples),
-            "caveats": _field_stems(module.content.caveats),
+            "title": str(document.get("title", "")),
+            "tag": list(document.get("tags", [])),
+            "summary": str(document.get("summary", "")),
+            "overview": str(document.get("overview", "")),
+            "details": str(document.get("details", "")),
+            "examples": str(document.get("examples", "")),
+            "caveats": str(document.get("caveats", "")),
         }
         score = 0
         best_quality = 0
@@ -488,24 +895,24 @@ def search_modules(
             score += int(term_score * weight)
             best_quality = max(best_quality, quality)
 
-        if score > 0 and module.category in category_priority_bonus:
-            score += category_priority_bonus[module.category]
-            reasons.append(f"category_priority:{module.category}")
+        category_name = str(document.get("category", ""))
+        if score > 0 and category_name in category_priority_bonus:
+            score += category_priority_bonus[category_name]
+            reasons.append(f"category_priority:{category_name}")
         if score > 0:
             reasons.append(f"intent:{intent}")
-        if score > 0 and task_type and module.category in effective_policy.task_type_category_priorities.get(task_type, []):
+        if score > 0 and task_type and category_name in effective_policy.task_type_category_priorities.get(task_type, []):
             reasons.append(f"task_type:{task_type}")
         if score > 0 and agent_id:
             reasons.append(f"agent:{agent_id}")
 
         if score > 0:
-            scored.append((bm25.get(module.id, 0.0), score, best_quality, module, "direct", reasons))
+            scored.append((bm25.get(module_key, 0.0), score, best_quality, module_key, document, "direct", reasons))
 
     # 1-hop graph expansion: add related modules with discounted scores
     direct_matches = list(scored)
-    direct_ids = {m.id for _, _, _, m, _, _ in direct_matches}
-    for bm25_score, heur_score, _, trigger_module, _, trigger_reasons in direct_matches:
-        module_key = f"{trigger_module.category}/{trigger_module.id}"
+    direct_keys = {module_key for _, _, _, module_key, _, _, _ in direct_matches}
+    for _bm25_score, heur_score, _, module_key, trigger_document, _, trigger_reasons in direct_matches:
         for neighbor_ref in graph.get(module_key, []):
             # Parse optional edge weight: "category/id:0.8" → weight=0.8 (default 1.0)
             edge_weight = 1.0
@@ -521,10 +928,18 @@ def search_modules(
             if len(parts) != 2:
                 continue
             n_cat, n_id = parts
-            if n_id in direct_ids:
+            neighbor_key = f"{n_cat}/{n_id}"
+            if neighbor_key in direct_keys:
                 continue
-            neighbor = load_module(n_id, n_cat, kb_path)
-            if neighbor is None:
+            neighbor_document = projection_documents.get(neighbor_key) if use_projection else None
+            if neighbor_document is not None:
+                expanded_document = neighbor_document
+            else:
+                neighbor = load_module(n_id, n_cat, kb_path)
+                if neighbor is None:
+                    continue
+                expanded_document = _search_document_from_module(neighbor)
+            if not _projection_doc_visible_to_tenant(expanded_document, tenant):
                 continue
             expanded_heuristic = heur_score * _EXPANSION_DISCOUNT * edge_weight
             expanded_bm25 = bm25.get(n_id, 0.0)
@@ -533,16 +948,21 @@ def search_modules(
                     expanded_bm25,
                     expanded_heuristic,
                     0,
-                    neighbor,
+                    neighbor_key,
+                    expanded_document,
                     "related",
                     trigger_reasons + [f"graph_related:{module_key}"],
                 )
             )
-            direct_ids.add(n_id)
+            direct_keys.add(neighbor_key)
 
     # Filter by category if specified
     if category is not None:
-        scored = [(b, s, q, m, src, reasons) for b, s, q, m, src, reasons in scored if m.category == category]
+        scored = [
+            (b, s, q, module_key, document, src, reasons)
+            for b, s, q, module_key, document, src, reasons in scored
+            if document.get("category") == category
+        ]
 
     # Compute Bayesian priors from historical telemetry (if available)
     priors = compute_bayesian_priors(kb_path)
@@ -550,9 +970,8 @@ def search_modules(
     for t in terms:
         query_stems.extend(_stem(t).split())
 
-    def _bayesian_bonus(module: Module) -> float:
+    def _bayesian_bonus(module_key: str) -> float:
         """Average P(module_id | query_term) across all query terms."""
-        module_key = f"{module.category}/{module.id}"
         total = 0.0
         count = 0
         for term in query_stems:
@@ -564,13 +983,13 @@ def search_modules(
     # Session boost: 1.2x multiplier for recently loaded modules in this session
     boost_set = set(boost_ids) if boost_ids else set()
 
-    def _session_boost(module_id: str, heur_score: float) -> float:
-        return heur_score * 1.2 if module_id in boost_set else heur_score
+    def _session_boost(module_key: str, module_id: str, heur_score: float) -> float:
+        return heur_score * 1.2 if module_key in boost_set or module_id in boost_set else heur_score
 
-    def _effective_confidence(module: Module) -> float:
+    def _effective_confidence(document: Mapping[str, Any]) -> float:
         """Deprecated modules get confidence penalty (treated as low)."""
-        conf = module.metadata.confidence
-        if module.metadata.status == "deprecated":
+        conf = str(document.get("confidence", "medium"))
+        if document.get("status") == "deprecated":
             conf = "low"
         return _CONFIDENCE_WEIGHT.get(conf, 0.85)
 
@@ -578,14 +997,18 @@ def search_modules(
     # Secondary: match quality. Tertiary: Bayesian prior. Fourth: BM25.
     scored.sort(
         key=lambda item: (
-            _session_boost(item[3].id, item[1]) * _effective_confidence(item[3]),
+            _session_boost(item[3], str(item[4].get("module_id", "")), item[1]) * _effective_confidence(item[4]),
             item[2],
             _bayesian_bonus(item[3]),
             item[0],
         ),
         reverse=True,
     )
-    results = [SearchResult(module, source, reasons) for _, _, _, module, source, reasons in scored]
+    scored_results = scored[:limit]
+    results = [
+        SearchResult(_module_from_search_document(document), source, reasons)
+        for _, _, _, _, document, source, reasons in scored_results
+    ]
 
     if enable_vector_fallback:
         from knowledge_manager.vector_index import VectorIndex
@@ -609,7 +1032,11 @@ def search_modules(
         if len(parts) != 2:
             continue
         comp_category, comp_id = parts
-        companion = load_module(comp_id, comp_category, kb_path)
+        companion_document = projection_documents.get(companion_key) if use_projection else None
+        if companion_document is not None:
+            companion = _module_from_search_document(companion_document)
+        else:
+            companion = load_module(comp_id, comp_category, kb_path)
         if companion is None:
             continue
         companion_decision = evaluate_module_policy(
@@ -771,6 +1198,7 @@ def sanitize_config(config: Config) -> Config:
 
 def save_index(index: Index, kb_path: Path) -> None:
     _atomic_write(kb_path / "index.json", index.model_dump_json(indent=2))
+    invalidate_materialized_views(kb_path)
 
 
 def load_index(kb_path: Path) -> Optional[Index]:
@@ -781,6 +1209,7 @@ def load_index(kb_path: Path) -> Optional[Index]:
 
 
 def rebuild_index(kb_path: Path) -> Index:
+    _invalidate_module_cache(kb_path)
     index = load_index(kb_path) or Index()
     index.categories.clear()
     for module in list_modules(kb_path):
@@ -799,11 +1228,19 @@ def rebuild_index(kb_path: Path) -> Index:
             parts.append(f"Modules include: {'; '.join(titles[:5])}")
         cat.description = ". ".join(parts)
     save_index(index, kb_path)
+    try:
+        from knowledge_manager.lexical_index import build_lexical_index
+
+        build_lexical_index(kb_path)
+    except Exception:
+        pass
+    invalidate_materialized_views(kb_path)
     return index
 
 
 def save_to_staging(module: Module, staging_path: Path) -> None:
     _atomic_write(staging_path / f"{module.id}.json", module.model_dump_json(indent=2))
+    invalidate_materialized_views(staging_path.parent)
 
 
 def load_from_staging(module_id: str, staging_path: Path) -> Optional[Module]:
@@ -827,6 +1264,7 @@ def list_staging(staging_path: Path) -> List[Module]:
 
 def save_staging_meta(meta: StagingMeta, staging_path: Path) -> None:
     _atomic_write(staging_path / f"{meta.module_id}.meta.json", meta.model_dump_json(indent=2))
+    invalidate_materialized_views(staging_path.parent)
 
 
 def load_staging_meta(module_id: str, staging_path: Path) -> StagingMeta | None:
@@ -840,6 +1278,7 @@ def delete_staging_meta(module_id: str, staging_path: Path) -> None:
     path = staging_path / f"{module_id}.meta.json"
     if path.exists():
         path.unlink()
+        invalidate_materialized_views(staging_path.parent)
 
 
 def list_staging_meta(staging_path: Path) -> List[StagingMeta]:
@@ -859,7 +1298,9 @@ def approve_from_staging(module_id: str, staging_path: Path, kb_path: Path) -> N
     if module is None:
         raise FileNotFoundError(f"Staging module not found: {module_id}")
     save_module(module, kb_path)
+    _invalidate_module_cache(kb_path)
     (staging_path / f"{module_id}.json").unlink()
+    invalidate_materialized_views(kb_path)
 
 
 # --- Telemetry & Bayesian ranking ---
@@ -911,8 +1352,11 @@ def record_search_event(
         "query_terms": query_stems,
         "results_shown": results_shown,
     }
-    with open(tdir / "search_events.jsonl", "a", encoding="utf-8") as f:
+    events_file = tdir / "search_events.jsonl"
+    with open(events_file, "a", encoding="utf-8") as f:
         f.write(json.dumps(event, ensure_ascii=False) + "\n")
+    cache_key = str(events_file)
+    _SEARCH_EVENTS_CACHE.pop(cache_key, None)
 
 
 def record_load_event(
@@ -929,32 +1373,58 @@ def record_load_event(
         "module_id": module_id,
         "category": category,
     }
-    with open(tdir / "search_events.jsonl", "a", encoding="utf-8") as f:
+    events_file = tdir / "search_events.jsonl"
+    with open(events_file, "a", encoding="utf-8") as f:
         f.write(json.dumps(event, ensure_ascii=False) + "\n")
+    cache_key = str(events_file)
+    _SEARCH_EVENTS_CACHE.pop(cache_key, None)
+    _PRIORS_CACHE.pop(cache_key, None)
+    invalidate_materialized_views(kb_path, ["health", "recommendations"])
 
 
-def load_search_events(kb_path: Path) -> List[dict]:
-    """Load all telemetry events from disk."""
+def _load_search_events_payload(kb_path: Path) -> list[dict[str, Any]]:
     tdir = _telemetry_dir(kb_path)
     events_file = tdir / "search_events.jsonl"
     if not events_file.exists():
         return []
-    events = []
+    stat = events_file.stat()
+    cache_key = str(events_file)
+    cached = _SEARCH_EVENTS_CACHE.get(cache_key)
+    if cached is not None:
+        cached_mtime_ns, cached_size, cached_events = cached
+        if cached_mtime_ns == int(stat.st_mtime_ns) and cached_size == int(stat.st_size):
+            return cached_events
+    events: list[dict[str, Any]] = []
     for line in events_file.read_text(encoding="utf-8").strip().split("\n"):
         if line:
             try:
                 events.append(json.loads(line))
             except json.JSONDecodeError:
                 pass
+    _SEARCH_EVENTS_CACHE[cache_key] = (int(stat.st_mtime_ns), int(stat.st_size), events)
     return events
+
+
+def load_search_events_readonly(kb_path: Path) -> list[dict[str, Any]]:
+    """Load telemetry events using a parsed in-process cache when the file is unchanged."""
+    return _load_search_events_payload(kb_path)
+
+
+def load_search_events(kb_path: Path) -> List[dict]:
+    """Load all telemetry events from disk."""
+    return copy.deepcopy(load_search_events_readonly(kb_path))
 
 
 def save_rank_model(priors: Dict[str, Dict[str, float]], event_count: int, kb_path: Path) -> None:
     """Persist computed Bayesian priors to disk for fast reload."""
     tdir = _telemetry_dir(kb_path)
     tdir.mkdir(parents=True, exist_ok=True)
+    events = load_search_events_readonly(kb_path)
+    load_events = [event for event in events if event.get("type") == "load"]
     model = {
         "event_count": event_count,
+        "load_event_count": len(load_events),
+        "latest_load_timestamp": load_events[-1]["timestamp"] if load_events else "",
         "smoothing": _BAYESIAN_SMOOTHING,
         "priors": priors,
     }
@@ -962,15 +1432,27 @@ def save_rank_model(priors: Dict[str, Dict[str, float]], event_count: int, kb_pa
         json.dump(model, f, indent=2)
 
 
-def load_rank_model(kb_path: Path, expected_event_count: int) -> Dict[str, Dict[str, float]] | None:
+def load_rank_model(
+    kb_path: Path,
+    expected_event_count: int,
+    *,
+    expected_load_event_count: int | None = None,
+    expected_latest_load_timestamp: str | None = None,
+) -> Dict[str, Dict[str, float]] | None:
     """Load cached Bayesian priors if event count matches (i.e., cache is fresh)."""
     model_file = _telemetry_dir(kb_path) / "rank_model.json"
     if not model_file.exists():
         return None
     try:
         model = json.loads(model_file.read_text(encoding="utf-8"))
-        if model.get("event_count") != expected_event_count:
-            return None
+        if expected_load_event_count is not None:
+            if model.get("load_event_count", model.get("event_count")) != expected_load_event_count:
+                return None
+            if (model.get("latest_load_timestamp", "") or "") != (expected_latest_load_timestamp or ""):
+                return None
+        else:
+            if model.get("event_count") != expected_event_count:
+                return None
         return model.get("priors", {})
     except (json.JSONDecodeError, KeyError):
         return None
@@ -983,13 +1465,30 @@ def compute_bayesian_priors(kb_path: Path) -> Dict[str, Dict[str, float]]:
     Uses time-window matching: a load confirms the most recent prior search whose
     results contained the loaded module.
     """
-    events = load_search_events(kb_path)
+    events_file = _telemetry_dir(kb_path) / "search_events.jsonl"
+    events = load_search_events_readonly(kb_path)
     if not events:
         return {}
-
-    # Return cached priors if event count hasn't changed
-    cached = load_rank_model(kb_path, len(events))
+    load_events = [event for event in events if event.get("type") == "load"]
+    load_fingerprint = (
+        len(load_events),
+        str(load_events[-1].get("timestamp", "")) if load_events else "",
+    )
+    cache_key = str(events_file)
+    cached = _PRIORS_CACHE.get(cache_key)
     if cached is not None:
+        cached_load_fingerprint, cached_priors = cached
+        if cached_load_fingerprint == load_fingerprint:
+            return cached_priors
+
+    cached = load_rank_model(
+        kb_path,
+        len(events),
+        expected_load_event_count=load_fingerprint[0],
+        expected_latest_load_timestamp=load_fingerprint[1],
+    )
+    if cached is not None:
+        _PRIORS_CACHE[cache_key] = (load_fingerprint, cached)
         return cached
 
     searches: List[dict] = []
@@ -1049,6 +1548,7 @@ def compute_bayesian_priors(kb_path: Path) -> Dict[str, Dict[str, float]]:
 
     # Persist to disk cache
     save_rank_model(priors, len(events), kb_path)
+    _PRIORS_CACHE[cache_key] = (load_fingerprint, priors)
     return priors
 
 
@@ -1088,88 +1588,93 @@ def _freshness_score(module: Any, now: datetime | None = None) -> float:
         return 0.0
 
 
-def _usage_score(module_id: str, category: str, kb_path: Path) -> float:
+def _load_event_stats(kb_path: Path) -> dict[tuple[str, str], dict[str, Any]]:
+    from datetime import timedelta
+
+    now = datetime.now(timezone.utc)
+    cutoff_30 = now - timedelta(days=30)
+    stats: dict[tuple[str, str], dict[str, Any]] = {}
+    for evt in load_search_events_readonly(kb_path):
+        if evt.get("type") != "load":
+            continue
+        module_id = evt.get("module_id")
+        category = evt.get("category")
+        if not module_id or not category:
+            continue
+        try:
+            ts = datetime.fromisoformat(evt["timestamp"])
+        except (ValueError, KeyError):
+            continue
+        key = (str(module_id), str(category))
+        current = stats.setdefault(key, {"latest_load": None, "load_count_30d": 0})
+        if ts >= cutoff_30:
+            current["load_count_30d"] += 1
+        latest = current["latest_load"]
+        if latest is None or ts > latest:
+            current["latest_load"] = ts
+    return stats
+
+
+def _usage_score(
+    module_id: str,
+    category: str,
+    kb_path: Path,
+    load_stats: Mapping[tuple[str, str], Mapping[str, Any]] | None = None,
+) -> float:
     """Score module usage based on recent load events (0-100)."""
     from datetime import timedelta
-    events = load_search_events(kb_path)
+
+    if load_stats is None:
+        load_stats = _load_event_stats(kb_path)
+    record = load_stats.get((module_id, category))
+    if record is None:
+        return 0.0
+    latest_load = record.get("latest_load")
+    if latest_load is None:
+        return 0.0
+
     now = datetime.now(timezone.utc)
     cutoff_30 = now - timedelta(days=30)
     cutoff_60 = now - timedelta(days=60)
     cutoff_90 = now - timedelta(days=90)
-
-    latest_load = None
-    load_count_30d = 0
-
-    for evt in events:
-        if evt.get("type") != "load":
-            continue
-        if evt.get("module_id") != module_id:
-            continue
-        if evt.get("category") != category:
-            continue
-        try:
-            ts = datetime.fromisoformat(evt["timestamp"])
-        except (ValueError, KeyError):
-            continue
-        if ts >= cutoff_30:
-            load_count_30d += 1
-        if latest_load is None or ts > latest_load:
-            latest_load = ts
-
-    if latest_load is None:
-        return 0.0
-
     if latest_load >= cutoff_30:
         return 100.0
-    elif latest_load >= cutoff_60:
+    if latest_load >= cutoff_60:
         return 70.0
-    elif latest_load >= cutoff_90:
+    if latest_load >= cutoff_90:
         return 40.0
-    else:
-        return 0.0
+    return 0.0
 
 
-def _load_count_30d(module_id: str, category: str, kb_path: Path) -> int:
+def _load_count_30d(
+    module_id: str,
+    category: str,
+    kb_path: Path,
+    load_stats: Mapping[tuple[str, str], Mapping[str, Any]] | None = None,
+) -> int:
     """Count load events for a module in the last 30 days."""
-    from datetime import timedelta
-    events = load_search_events(kb_path)
-    now = datetime.now(timezone.utc)
-    cutoff = now - timedelta(days=30)
-    count = 0
-    for evt in events:
-        if evt.get("type") != "load":
-            continue
-        if evt.get("module_id") != module_id:
-            continue
-        if evt.get("category") != category:
-            continue
-        try:
-            ts = datetime.fromisoformat(evt["timestamp"])
-        except (ValueError, KeyError):
-            continue
-        if ts >= cutoff:
-            count += 1
-    return count
+    if load_stats is None:
+        load_stats = _load_event_stats(kb_path)
+    record = load_stats.get((module_id, category))
+    if record is None:
+        return 0
+    return int(record.get("load_count_30d", 0))
 
 
-def _last_load_time(module_id: str, category: str, kb_path: Path) -> datetime | None:
+def _last_load_time(
+    module_id: str,
+    category: str,
+    kb_path: Path,
+    load_stats: Mapping[tuple[str, str], Mapping[str, Any]] | None = None,
+) -> datetime | None:
     """Get the most recent load time for a module."""
-    events = load_search_events(kb_path)
-    latest = None
-    for evt in events:
-        if evt.get("type") != "load":
-            continue
-        if evt.get("module_id") != module_id:
-            continue
-        if evt.get("category") != category:
-            continue
-        try:
-            ts = datetime.fromisoformat(evt["timestamp"])
-        except (ValueError, KeyError):
-            continue
-        if latest is None or ts > latest:
-            latest = ts
-    return latest
+    if load_stats is None:
+        load_stats = _load_event_stats(kb_path)
+    record = load_stats.get((module_id, category))
+    if record is None:
+        return None
+    latest = record.get("latest_load")
+    return latest if isinstance(latest, datetime) else None
 
 
 def _completeness_score(module: Any) -> float:
@@ -1189,12 +1694,18 @@ def _completeness_score(module: Any) -> float:
     return score
 
 
-def compute_module_health(module: Any, kb_path: Path) -> Any:
+def compute_module_health(
+    module: Any,
+    kb_path: Path,
+    load_stats: Mapping[tuple[str, str], Mapping[str, Any]] | None = None,
+) -> Any:
     """Compute health score for a single module."""
     from knowledge_manager.schemas import HealthScore, ModuleHealth
 
+    if load_stats is None:
+        load_stats = _load_event_stats(kb_path)
     freshness = _freshness_score(module)
-    usage = _usage_score(module.id, module.category, kb_path)
+    usage = _usage_score(module.id, module.category, kb_path, load_stats=load_stats)
     completeness = _completeness_score(module)
     overall = freshness * 0.35 + usage * 0.35 + completeness * 0.30
 
@@ -1222,13 +1733,13 @@ def compute_module_health(module: Any, kb_path: Path) -> Any:
         status=module.metadata.status,
         score=HealthScore(freshness=freshness, usage=usage, completeness=completeness, overall=round(overall, 1)),
         issues=issues,
-        last_load=_last_load_time(module.id, module.category, kb_path),
-        load_count_30d=_load_count_30d(module.id, module.category, kb_path),
+        last_load=_last_load_time(module.id, module.category, kb_path, load_stats=load_stats),
+        load_count_30d=_load_count_30d(module.id, module.category, kb_path, load_stats=load_stats),
         days_since_update=days_since_update,
     )
 
 
-def generate_health_report(kb_path: Path) -> Any:
+def _generate_health_report_uncached(kb_path: Path) -> Any:
     """Generate a full knowledge base health report."""
     from knowledge_manager.schemas import KBHealthReport, CategoryHealth
 
@@ -1280,6 +1791,16 @@ def generate_health_report(kb_path: Path) -> Any:
         category_breakdown=breakdown,
         at_risk_modules=at_risk,
     )
+
+
+def generate_health_report(kb_path: Path) -> Any:
+    from knowledge_manager.schemas import KBHealthReport
+
+    cached = load_fresh_materialized_view(kb_path, "health")
+    if cached is not None:
+        return KBHealthReport.model_validate(cached)
+    report = _generate_health_report_uncached(kb_path)
+    return store_materialized_view(kb_path, "health", report)
 
 
 # ── Phase 3B: Usage analytics ──
@@ -1564,7 +2085,7 @@ def detect_clusters(kb_path: Path) -> list[Any]:
 # ── Phase 3D: Recommendations ──
 
 
-def generate_recommendations(kb_path: Path) -> Any:
+def _generate_recommendations_uncached(kb_path: Path) -> Any:
     """Generate actionable recommendations for knowledge base improvement."""
     from knowledge_manager.schemas import (
         RecommendationReport, Recommendation, RecommendationType,
@@ -1574,110 +2095,133 @@ def generate_recommendations(kb_path: Path) -> Any:
     if index is None:
         return RecommendationReport()
 
+    try:
+        from knowledge_manager.recommendation_index import (
+            build_recommendation_index,
+            iter_recommendation_link_candidates,
+            load_recommendation_index,
+        )
+
+        recommendation_payload = load_recommendation_index(kb_path)
+        if recommendation_payload is None:
+            recommendation_payload = build_recommendation_index(kb_path)
+    except Exception:
+        recommendation_payload = None
+
+    modules_by_key: dict[str, Module] = {}
+    if recommendation_payload is not None:
+        for module_key, payload in recommendation_payload.get("modules", {}).items():
+            try:
+                modules_by_key[module_key] = Module.model_validate(payload["module"])
+            except Exception:
+                continue
+    if not modules_by_key:
+        for cat_name, cat in index.categories.items():
+            for summary in cat.modules:
+                module = load_module(summary.id, cat_name, kb_path)
+                if module is not None:
+                    modules_by_key[f"{cat_name}/{summary.id}"] = module
+
     archive_candidates = []
     enrichment_needed = []
     suggested_links = []
     review_reminders = []
 
     now = datetime.now(timezone.utc)
+    load_stats = _load_event_stats(kb_path)
 
-    # Build tag index for link suggestions
-    module_tags: dict[str, set[str]] = {}
-    for cat_name, cat in index.categories.items():
-        for m in cat.modules:
-            key = f"{cat_name}/{m.id}"
-            mod = load_module(m.id, cat_name, kb_path)
-            if mod:
-                module_tags[key] = set(mod.metadata.tags)
+    for module_key, mod in modules_by_key.items():
+        cat_name, _module_id = module_key.split("/", 1)
+        h = compute_module_health(mod, kb_path, load_stats=load_stats)
+        status = mod.metadata.status
 
-    for cat_name, cat in index.categories.items():
-        for m in cat.modules:
-            key = f"{cat_name}/{m.id}"
-            mod = load_module(m.id, cat_name, kb_path)
-            if mod is None:
-                continue
+        archive_score = 0.0
+        archive_reasons = []
+        if "zombie" in h.issues and h.score.overall < 20:
+            archive_score = 0.9
+            archive_reasons.append("ZOMBIE")
+        if h.score.usage == 0 and (h.days_since_update > 180):
+            archive_score = max(archive_score, 0.7)
+            archive_reasons.append(f"STALE ({h.days_since_update}d)")
+        if mod.metadata.expires_at and mod.metadata.expires_at.replace(tzinfo=timezone.utc) <= now:
+            archive_score = max(archive_score, 0.95)
+            archive_reasons.append("EXPIRED")
+        if h.score.overall < 20 and status != "archived":
+            archive_score = max(archive_score, 0.6)
+            archive_reasons.append("LOW_SCORE")
 
-            h = compute_module_health(mod, kb_path)
-            status = mod.metadata.status
+        if archive_score > 0.5 and status not in ("archived", "deprecated"):
+            archive_candidates.append(Recommendation(
+                type=RecommendationType.ARCHIVE,
+                module_id=mod.id, category=cat_name, title=mod.title,
+                score=archive_score,
+                reason=", ".join(archive_reasons),
+                detail={"health_score": h.score.overall, "issues": h.issues},
+            ))
 
-            # Archive candidates
-            archive_score = 0.0
-            archive_reasons = []
-            if "zombie" in h.issues and h.score.overall < 20:
-                archive_score = 0.9
-                archive_reasons.append("ZOMBIE")
-            if h.score.usage == 0 and (h.days_since_update > 180):
-                archive_score = max(archive_score, 0.7)
-                archive_reasons.append(f"STALE ({h.days_since_update}d)")
-            if mod.metadata.expires_at and mod.metadata.expires_at.replace(tzinfo=timezone.utc) <= now:
-                archive_score = max(archive_score, 0.95)
-                archive_reasons.append("EXPIRED")
-            if h.score.overall < 20 and status != "archived":
-                archive_score = max(archive_score, 0.6)
-                archive_reasons.append("LOW_SCORE")
-
-            if archive_score > 0.5 and status not in ("archived", "deprecated"):
-                archive_candidates.append(Recommendation(
-                    type=RecommendationType.ARCHIVE,
-                    module_id=m.id, category=cat_name, title=m.title,
-                    score=archive_score,
-                    reason=", ".join(archive_reasons),
-                    detail={"health_score": h.score.overall, "issues": h.issues},
+        if h.score.completeness < 80:
+            missing = []
+            if not mod.content.examples:
+                missing.append("examples")
+            if not mod.content.caveats:
+                missing.append("caveats")
+            if not mod.content.references:
+                missing.append("references")
+            if missing:
+                enrichment_needed.append(Recommendation(
+                    type=RecommendationType.ENRICH,
+                    module_id=mod.id, category=cat_name, title=mod.title,
+                    score=round((80 - h.score.completeness) / 80, 2),
+                    reason=f"Missing: {', '.join(missing)}",
+                    detail={"missing_fields": missing},
                 ))
 
-            # Enrichment suggestions
-            if h.score.completeness < 80:
-                missing = []
-                if not mod.content.examples:
-                    missing.append("examples")
-                if not mod.content.caveats:
-                    missing.append("caveats")
-                if not mod.content.references:
-                    missing.append("references")
-                if missing:
-                    enrichment_needed.append(Recommendation(
-                        type=RecommendationType.ENRICH,
-                        module_id=m.id, category=cat_name, title=m.title,
-                        score=round((80 - h.score.completeness) / 80, 2),
-                        reason=f"Missing: {', '.join(missing)}",
-                        detail={"missing_fields": missing},
-                    ))
+        if mod.metadata.review_interval_days and h.days_since_update > mod.metadata.review_interval_days:
+            review_reminders.append(Recommendation(
+                type=RecommendationType.REVIEW,
+                module_id=mod.id, category=cat_name, title=mod.title,
+                score=0.8,
+                reason=f"review_interval ({mod.metadata.review_interval_days}d) expired",
+                detail={"days_overdue": h.days_since_update - mod.metadata.review_interval_days},
+            ))
 
-            # Review reminders
-            if mod.metadata.review_interval_days and h.days_since_update > mod.metadata.review_interval_days:
-                review_reminders.append(Recommendation(
-                    type=RecommendationType.REVIEW,
-                    module_id=m.id, category=cat_name, title=m.title,
-                    score=0.8,
-                    reason=f"review_interval ({mod.metadata.review_interval_days}d) expired",
-                    detail={"days_overdue": h.days_since_update - mod.metadata.review_interval_days},
-                ))
+    if recommendation_payload is not None:
+        link_candidates = [
+            (item["first"], item["second"], item["shared_tags"])
+            for item in recommendation_payload.get("link_candidates", [])
+            if item.get("first") and item.get("second") and item.get("shared_tags")
+        ]
+        if not link_candidates:
+            link_candidates = iter_recommendation_link_candidates(recommendation_payload)
+    else:
+        module_tags = {
+            module_key: set(module.metadata.tags) for module_key, module in modules_by_key.items()
+        }
+        existing_links: set[tuple[str, str]] = set()
+        for src, targets in index.graph.items():
+            for target in targets:
+                existing_links.add((src, target))
+                existing_links.add((target, src))
+        link_candidates = []
+        for k1, tags1 in module_tags.items():
+            for k2, tags2 in module_tags.items():
+                if k1 >= k2:
+                    continue
+                if (k1, k2) in existing_links:
+                    continue
+                shared = sorted(tags1 & tags2)
+                if shared:
+                    link_candidates.append((k1, k2, shared))
 
-    # Link suggestions — find modules with shared tags not already linked
-    existing_links: set[tuple[str, str]] = set()
-    for src, targets in index.graph.items():
-        for t in targets:
-            existing_links.add((src, t))
-            existing_links.add((t, src))
-
-    seen_pairs: set[tuple[str, str]] = set()
-    for k1, tags1 in module_tags.items():
-        for k2, tags2 in module_tags.items():
-            if k1 >= k2:
-                continue
-            pair = (k1, k2)
-            if pair in existing_links or pair in seen_pairs:
-                continue
-            shared = tags1 & tags2
-            if len(shared) >= 2:
-                seen_pairs.add(pair)
-                suggested_links.append(Recommendation(
-                    type=RecommendationType.LINK,
-                    module_id=k1, category="", title=f"{k1} ↔ {k2}",
-                    score=min(1.0, len(shared) / 5.0),
-                    reason=f"Shared tags: {', '.join(sorted(shared)[:3])}",
-                    detail={"module_a": k1, "module_b": k2, "shared_tags": sorted(shared)},
-                ))
+    for k1, k2, shared in link_candidates:
+        if len(shared) >= 2:
+            suggested_links.append(Recommendation(
+                type=RecommendationType.LINK,
+                module_id=k1, category="", title=f"{k1} ↔ {k2}",
+                score=min(1.0, len(shared) / 5.0),
+                reason=f"Shared tags: {', '.join(shared[:3])}",
+                detail={"module_a": k1, "module_b": k2, "shared_tags": shared},
+            ))
 
     suggested_links.sort(key=lambda r: -r.score)
 
@@ -1689,7 +2233,17 @@ def generate_recommendations(kb_path: Path) -> Any:
     )
 
 
-def generate_ops_report(kb_path: Path) -> Any:
+def generate_recommendations(kb_path: Path) -> Any:
+    from knowledge_manager.schemas import RecommendationReport
+
+    cached = load_fresh_materialized_view(kb_path, "recommendations")
+    if cached is not None:
+        return RecommendationReport.model_validate(cached)
+    report = _generate_recommendations_uncached(kb_path)
+    return store_materialized_view(kb_path, "recommendations", report)
+
+
+def _generate_ops_report_uncached(kb_path: Path, staging_meta: list[Any] | None = None) -> Any:
     """Generate an operator-focused report across sources, lifecycle, and routing suppression."""
     from knowledge_manager.schemas import (
         LifecycleBacklog,
@@ -1701,8 +2255,8 @@ def generate_ops_report(kb_path: Path) -> Any:
 
     modules = list_modules(kb_path)
     registry = load_source_registry(kb_path)
-    staging_path = kb_path / ".staging"
-    staging_meta = list_staging_meta(staging_path)
+    if staging_meta is None:
+        staging_meta = list_staging_meta(kb_path / ".staging")
     cfg = _load_config_safe(kb_path)
     routing_policy = cfg.routing_policy if cfg else RoutingPolicyConfig()
 
@@ -1761,6 +2315,16 @@ def generate_ops_report(kb_path: Path) -> Any:
             suppressed, key=lambda item: (item.category, item.module_id)
         ),
     )
+
+
+def generate_ops_report(kb_path: Path, staging_meta: list[Any] | None = None) -> Any:
+    from knowledge_manager.schemas import OpsReport
+
+    cached = load_fresh_materialized_view(kb_path, "ops")
+    if cached is not None:
+        return OpsReport.model_validate(cached)
+    report = _generate_ops_report_uncached(kb_path, staging_meta=staging_meta)
+    return store_materialized_view(kb_path, "ops", report)
 
 
 # ── Phase 4B: Federation ──

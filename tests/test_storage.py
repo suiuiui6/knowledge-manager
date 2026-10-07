@@ -52,6 +52,123 @@ def test_save_creates_category_dir(kb_path):
     assert (kb_path / "auth" / "test-module.json").exists()
 
 
+def test_save_module_updates_index_without_full_rebuild(kb_path):
+    save_index(Index(description="incremental index"), kb_path)
+
+    save_module(
+        Module(
+            id="mod-1",
+            category="ops",
+            title="Ops module",
+            summary="Ops summary text.",
+            content=ModuleContent(
+                overview="Ops overview text.",
+                details="Ops details long enough for validation.",
+            ),
+        ),
+        kb_path,
+    )
+
+    index = load_index(kb_path)
+    assert index is not None
+    assert "ops" in index.categories
+    assert index.categories["ops"].modules[0].id == "mod-1"
+
+
+def test_save_module_can_schedule_noncritical_side_effects(kb_path, monkeypatch):
+    save_index(Index(description="deferred maintenance"), kb_path)
+    scheduled = []
+
+    monkeypatch.setattr(
+        "knowledge_manager.storage.schedule_maintenance_job",
+        lambda path, action, payload: scheduled.append((path, action, payload)) or {"deferred": True, "action": action},
+    )
+    monkeypatch.setattr(
+        "knowledge_manager.storage._run_noncritical_save_side_effects",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("noncritical save work should be deferred")),
+    )
+
+    save_module(make_module("deferred-module", "ops"), kb_path)
+
+    assert len(scheduled) == 1
+    assert scheduled[0][0] == kb_path
+    assert scheduled[0][1] == "module_saved"
+
+
+def test_save_module_refreshes_updated_at_when_content_changes(kb_path):
+    original = make_module("freshness-module", "ops")
+    save_module(original, kb_path, defer_noncritical=False)
+
+    loaded = load_module("freshness-module", "ops", kb_path)
+    assert loaded is not None
+    before = loaded.updated_at
+
+    updated = loaded.model_copy(deep=True)
+    updated.content.details = "These are updated detailed notes about the module content with a meaningful change."
+    save_module(updated, kb_path, defer_noncritical=False)
+
+    reloaded = load_module("freshness-module", "ops", kb_path)
+    assert reloaded is not None
+    assert reloaded.updated_at > before
+
+
+def test_save_module_preserves_updated_at_when_content_is_unchanged(kb_path):
+    module = make_module("stable-module", "ops")
+    save_module(module, kb_path, defer_noncritical=False)
+
+    loaded = load_module("stable-module", "ops", kb_path)
+    assert loaded is not None
+    before = loaded.updated_at
+
+    unchanged = loaded.model_copy(deep=True)
+    save_module(unchanged, kb_path, defer_noncritical=False)
+
+    reloaded = load_module("stable-module", "ops", kb_path)
+    assert reloaded is not None
+    assert reloaded.updated_at == before
+
+
+def test_delete_module_updates_index_without_full_rebuild(kb_path):
+    save_index(Index(description="incremental index delete"), kb_path)
+    save_module(
+        Module(
+            id="mod-1",
+            category="ops",
+            title="Ops module",
+            summary="Ops summary text.",
+            content=ModuleContent(
+                overview="Ops overview text.",
+                details="Ops details long enough for validation.",
+            ),
+        ),
+        kb_path,
+    )
+
+    assert delete_module("mod-1", "ops", kb_path) is True
+    index = load_index(kb_path)
+    assert index is not None
+    assert index.categories.get("ops", None) is None or index.categories["ops"].modules == []
+
+
+def test_delete_module_can_schedule_noncritical_side_effects(kb_path, monkeypatch):
+    save_index(Index(description="deferred delete maintenance"), kb_path)
+    save_module(make_module("delete-me", "ops"), kb_path, defer_noncritical=False)
+    scheduled = []
+
+    monkeypatch.setattr(
+        "knowledge_manager.storage.schedule_maintenance_job",
+        lambda path, action, payload: scheduled.append((path, action, payload)) or {"deferred": True, "action": action},
+    )
+    monkeypatch.setattr(
+        "knowledge_manager.storage._run_noncritical_delete_side_effects",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("noncritical delete work should be deferred")),
+    )
+
+    assert delete_module("delete-me", "ops", kb_path) is True
+    assert len(scheduled) == 1
+    assert scheduled[0][1] == "module_deleted"
+
+
 def test_save_is_atomic(kb_path, monkeypatch):
     # Verify no partial file left if replace fails
     import os
@@ -95,6 +212,200 @@ def test_list_modules(kb_path):
     modules = list_modules(kb_path)
     ids = {m.id for m in modules}
     assert ids == {"mod-a", "mod-b", "mod-c"}
+
+
+def test_list_modules_excludes_hidden_system_directories(kb_path):
+    save_module(make_module("published", "ops"), kb_path)
+    save_to_staging(make_module("staged", "ops"), kb_path / ".staging")
+
+    modules = list_modules(kb_path)
+
+    ids = {m.id for m in modules}
+    assert ids == {"published"}
+
+
+def test_search_modules_projection_path_preserves_short_partial_match(kb_path):
+    save_module(
+        Module(
+            id="auth-exact",
+            category="ops",
+            title="Auth exact module",
+            summary="Auth summary",
+            content=ModuleContent(
+                overview="This module uses auth as a standalone word.",
+                details="Detailed auth handling long enough for validation.",
+            ),
+        ),
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="jwt",
+            category="auth",
+            title="JWT signing and validation",
+            summary="JWT authentication summary",
+            content=ModuleContent(
+                overview="JWT supports authentication.",
+                details="Authentication details long enough for validation.",
+            ),
+            metadata=ModuleMetadata(tags=["authentication"]),
+        ),
+        kb_path,
+    )
+
+    results = search_modules("auth", kb_path)
+    ids = [item.module.id for item in results]
+    assert "auth-exact" in ids
+    assert "jwt" in ids
+
+
+def test_search_modules_projection_path_avoids_loading_direct_matches(kb_path, monkeypatch):
+    save_module(
+        Module(
+            id="rollback-guide",
+            category="ops",
+            title="Rollback Guide",
+            summary="Rollback guidance for production incidents.",
+            content=ModuleContent(
+                overview="Rollback safely during production incidents.",
+                details="Detailed rollback workflow with checkpoints and verification steps.",
+            ),
+        ),
+        kb_path,
+    )
+
+    def explode(*_args, **_kwargs):
+        raise AssertionError("projection-backed direct matches should not hydrate full modules")
+
+    monkeypatch.setattr("knowledge_manager.storage.load_module", explode)
+
+    results = search_modules("rollback incidents", kb_path)
+
+    assert [item.module.id for item in results] == ["rollback-guide"]
+
+
+def test_search_modules_projection_path_preserves_policy_filtering_without_hydration(kb_path, monkeypatch):
+    kb_path.mkdir(parents=True, exist_ok=True)
+    (kb_path / "config.json").write_text(
+        json.dumps(
+            {
+                "routing_policy": {
+                    "suppress_stale_sources": True,
+                    "suppress_expired": True,
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    save_module(
+        Module(
+            id="active-guidance",
+            category="auth",
+            title="Production Guidance",
+            summary="Current production guidance for service operators.",
+            content=ModuleContent(
+                overview="Current production guidance overview for operators.",
+                details="Current production guidance details with enough length for validation.",
+            ),
+        ),
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="stale-guidance",
+            category="auth",
+            title="Production Guidance Archive",
+            summary="Old production guidance for service operators.",
+            content=ModuleContent(
+                overview="Old production guidance overview for operators.",
+                details="Old production guidance details with enough length for validation.",
+            ),
+            metadata=ModuleMetadata(stale_due_to_source_change=True),
+        ),
+        kb_path,
+    )
+
+    def explode(*_args, **_kwargs):
+        raise AssertionError("policy filtering should run from projection data without hydrating modules")
+
+    monkeypatch.setattr("knowledge_manager.storage.load_module", explode)
+
+    results = search_modules("production guidance", kb_path)
+
+    assert [item.module.id for item in results] == ["active-guidance"]
+
+
+def test_search_modules_projection_path_preserves_graph_expansion_without_hydration(kb_path, monkeypatch):
+    save_module(
+        Module(
+            id="incident-runbook",
+            category="ops",
+            title="Incident Rollback Runbook",
+            summary="Rollback incidents safely in production.",
+            content=ModuleContent(
+                overview="Rollback incidents with staged checkpoints.",
+                details="Detailed incident rollback workflow with clear escalation steps.",
+            ),
+            metadata=ModuleMetadata(related_modules=["policy/approval-baseline"]),
+        ),
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="approval-baseline",
+            category="policy",
+            title="Approval Baseline",
+            summary="Required approvals for risky production changes.",
+            content=ModuleContent(
+                overview="Approval baseline for risky changes.",
+                details="Detailed approval baseline with sign-off and audit checkpoints.",
+            ),
+        ),
+        kb_path,
+    )
+
+    def explode(*_args, **_kwargs):
+        raise AssertionError("graph expansion should use projection payload instead of hydrating neighbors")
+
+    monkeypatch.setattr("knowledge_manager.storage.load_module", explode)
+
+    results = search_modules("rollback incidents", kb_path)
+
+    assert [item.module.id for item in results] == ["incident-runbook", "approval-baseline"]
+    assert results[1].source == "related"
+
+
+def test_search_modules_projection_path_materializes_only_ranked_results(kb_path, monkeypatch):
+    import knowledge_manager.storage as storage
+
+    for i in range(20):
+        save_module(
+            Module(
+                id=f"rollback-guide-{i:02d}",
+                category="ops",
+                title=f"Rollback Guide {i}",
+                summary="Rollback guidance for production incidents.",
+                content=ModuleContent(
+                    overview="Rollback safely during production incidents.",
+                    details=f"Detailed rollback workflow {i} with checkpoints and verification steps.",
+                ),
+            ),
+            kb_path,
+        )
+
+    calls = {"count": 0}
+    real_builder = storage._module_from_search_document
+
+    def counted_builder(document):
+        calls["count"] += 1
+        return real_builder(document)
+
+    monkeypatch.setattr(storage, "_module_from_search_document", counted_builder)
+
+    results = search_modules("rollback incidents", kb_path, limit=5)
+
+    assert len(results) == 5
+    assert calls["count"] < 10
 
 
 def test_merge_hybrid_results_adds_vector_support_reason(kb_path):
@@ -1344,6 +1655,33 @@ def test_load_search_events_returns_all_events(kb_path):
     assert len(events) == 3
 
 
+def test_load_search_events_reuses_cached_payload_when_file_unchanged(kb_path, monkeypatch):
+    import knowledge_manager.storage as storage
+
+    record_search_event("query one", ["mod-a"], kb_path)
+    record_load_event("mod-a", "cat", kb_path)
+    record_search_event("query two", ["mod-b"], kb_path)
+    storage._SEARCH_EVENTS_CACHE.clear()
+
+    events_path = kb_path / ".telemetry" / "search_events.jsonl"
+    read_calls = {"count": 0}
+    real_read_text = Path.read_text
+
+    def counted_read_text(path_obj, *args, **kwargs):
+        if path_obj == events_path:
+            read_calls["count"] += 1
+        return real_read_text(path_obj, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", counted_read_text)
+
+    first = storage.load_search_events_readonly(kb_path)
+    second = storage.load_search_events_readonly(kb_path)
+
+    assert len(first) == 3
+    assert len(second) == 3
+    assert read_calls["count"] == 1
+
+
 def test_load_search_events_empty_dir_returns_empty(kb_path):
     events = load_search_events(kb_path)
     assert events == []
@@ -1429,6 +1767,43 @@ def test_compute_bayesian_priors_caches_to_disk(kb_path):
     assert priors1 == priors2
     # Verify cache file was written
     assert (kb_path / ".telemetry" / "rank_model.json").exists()
+
+
+def test_compute_bayesian_priors_reuses_process_cache_when_events_unchanged(kb_path, monkeypatch):
+    import knowledge_manager.storage as storage
+
+    record_search_event("test query", ["auth/jwt"], kb_path)
+    record_load_event("jwt", "auth", kb_path)
+    storage._PRIORS_CACHE.clear()
+
+    first = compute_bayesian_priors(kb_path)
+
+    def explode(*_args, **_kwargs):
+        raise AssertionError("unchanged telemetry should reuse in-process priors cache")
+
+    monkeypatch.setattr(storage, "load_rank_model", explode)
+    second = compute_bayesian_priors(kb_path)
+
+    assert first == second
+
+
+def test_compute_bayesian_priors_reuses_cache_after_search_only_append(kb_path, monkeypatch):
+    import knowledge_manager.storage as storage
+
+    record_search_event("test query", ["auth/jwt"], kb_path)
+    record_load_event("jwt", "auth", kb_path)
+    storage._PRIORS_CACHE.clear()
+
+    first = compute_bayesian_priors(kb_path)
+    record_search_event("follow up query", ["auth/jwt"], kb_path)
+
+    def explode(*_args, **_kwargs):
+        raise AssertionError("search-only telemetry append should not invalidate priors cache")
+
+    monkeypatch.setattr(storage, "load_rank_model", explode)
+    second = compute_bayesian_priors(kb_path)
+
+    assert first == second
 
 
 # ── Phase 2B: staging metadata & review pipeline tests ──

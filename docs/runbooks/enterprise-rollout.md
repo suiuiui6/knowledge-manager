@@ -10,3 +10,12 @@
 6. Inspect `km --kb-path <kb-path> ops` and exported backlogs before enabling production agents.
 7. Enable auth middleware only after signed-token validation passes in staging.
 8. Keep `km --kb-path <kb-path> rebuild` and enterprise test suite in the release gate.
+
+Record the following with every cutover:
+
+- release version
+- matrix summary path
+- support bundle path
+- backup bundle path
+- operator on call
+- rollback owner

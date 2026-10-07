@@ -108,3 +108,42 @@ def test_cache_namespace_invalidate():
     cache.invalidate("mod-a", namespace="ns1")
     assert cache.get("mod-a", namespace="ns1") is None
     assert cache.get("mod-a", namespace="ns2") is not None
+
+
+def test_cache_isolates_by_namespace_category_and_module_id():
+    """Same module ID in one namespace must not collide across categories."""
+    cache = ModuleCache(max_size=10)
+    ops = make_module("shared-id")
+    ops.category = "ops"
+    ops.title = "Ops Title"
+    finance = make_module("shared-id")
+    finance.category = "finance"
+    finance.title = "Finance Title"
+
+    cache.put(ops, namespace="default")
+    cache.put(finance, namespace="default")
+
+    ops_result = cache.get("shared-id", namespace="default", category="ops")
+    finance_result = cache.get("shared-id", namespace="default", category="finance")
+
+    assert ops_result is not None
+    assert finance_result is not None
+    assert ops_result.title == "Ops Title"
+    assert finance_result.title == "Finance Title"
+
+
+def test_cache_invalidate_only_affects_matching_category():
+    """Invalidation should be scoped to category as well as namespace."""
+    cache = ModuleCache(max_size=10)
+    ops = make_module("shared-id")
+    ops.category = "ops"
+    finance = make_module("shared-id")
+    finance.category = "finance"
+
+    cache.put(ops, namespace="default")
+    cache.put(finance, namespace="default")
+
+    cache.invalidate("shared-id", namespace="default", category="ops")
+
+    assert cache.get("shared-id", namespace="default", category="ops") is None
+    assert cache.get("shared-id", namespace="default", category="finance") is not None

@@ -10,20 +10,39 @@ AUDIT_OPERATIONS = {
     "module.create", "module.update", "module.delete",
     "module.approve", "module.reject",
     "staging.submit", "staging.approve", "staging.reject",
+    "admin.dashboard.read", "source.jobs.read",
+    "source.job.enqueue",
+    "source.pull",
+    "worker.run",
     "config.update", "plugin.install", "plugin.uninstall",
     "auth.login", "auth.logout",
+    "authz.denied",
 }
 
 
 class AuditEvent:
-    def __init__(self, user: str, operation: str, module_id: str = "",
-                 category: str = "", details: str = ""):
+    def __init__(
+        self,
+        user: str,
+        operation: str,
+        module_id: str = "",
+        category: str = "",
+        details: str = "",
+        tenant_id: str = "",
+        resource: str = "",
+        result: str = "success",
+        request_id: str = "",
+    ):
         self.timestamp = datetime.now(timezone.utc).isoformat()
         self.user = user
         self.operation = operation
         self.module_id = module_id
         self.category = category
         self.details = details
+        self.tenant_id = tenant_id
+        self.resource = resource
+        self.result = result
+        self.request_id = request_id
 
     def to_dict(self) -> dict:
         return {
@@ -33,6 +52,10 @@ class AuditEvent:
             "module_id": self.module_id,
             "category": self.category,
             "details": self.details,
+            "tenant_id": self.tenant_id,
+            "resource": self.resource,
+            "result": self.result,
+            "request_id": self.request_id,
         }
 
 

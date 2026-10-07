@@ -97,6 +97,8 @@ class SourceDefinition(BaseModel):
     id: str
     type: Literal["confluence", "notion"] = "confluence"
     enabled: bool = True
+    tenant_id: str = ""
+    workspace_id: str = ""
     confluence: Optional[ConfluenceSourceConfig] = None
     notion: Optional[NotionSourceConfig] = None
     sync: SourceSyncState = Field(default_factory=SourceSyncState)
@@ -285,6 +287,15 @@ class TelemetryConfig(BaseModel):
     enabled: bool = True
 
 
+class SecurityConfig(BaseModel):
+    production_mode: bool = False
+    multi_tenant_mode: bool = False
+    mcp_global_resources: Literal["enabled", "disabled"] = "enabled"
+    required_perf_scales: List[str] = Field(default_factory=lambda: ["xs", "s", "m"])
+    maintenance_backlog_warn: int = 25
+    maintenance_backlog_fail: int = 100
+
+
 class ReviewRecord(BaseModel):
     reviewer: str
     action: Literal["approved", "changes-requested"]
@@ -404,6 +415,7 @@ class Config(BaseModel):
     extraction: ExtractionConfig = Field(default_factory=ExtractionConfig)
     cache: CacheConfig = Field(default_factory=CacheConfig)
     telemetry: TelemetryConfig = Field(default_factory=TelemetryConfig)
+    security: SecurityConfig = Field(default_factory=SecurityConfig)
     synonyms: Dict[str, List[str]] = Field(default_factory=dict)
     review: ReviewConfig = Field(default_factory=ReviewConfig)
     notifications: NotificationsConfig = Field(default_factory=NotificationsConfig)

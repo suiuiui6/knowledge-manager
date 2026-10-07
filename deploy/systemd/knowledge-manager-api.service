@@ -1,0 +1,21 @@
+[Unit]
+Description=knowledge-manager API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=km
+Group=km
+WorkingDirectory=/opt/knowledge-manager
+EnvironmentFile=/opt/knowledge-manager/.env.production
+ExecStartPre=/usr/bin/install -d -o km -g km /var/log/knowledge-manager
+ExecStartPre=/usr/bin/test -f /opt/knowledge-manager/kb/index.json
+ExecStart=/opt/knowledge-manager/.venv/bin/km serve --ui
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

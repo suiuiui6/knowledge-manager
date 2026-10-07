@@ -7,3 +7,12 @@
 5. Run `km --kb-path <kb-path> eval run <suite.json>` and compare hit rate, MRR, nDCG, recall, and failure decomposition against the incumbent baseline.
 6. Review `km --kb-path <kb-path> ops --format json` and `/api/admin/dashboard` for stale sources, review backlog, and ingestion job health.
 7. Keep a rollback bundle containing the original export, dry-run summary, eval output, and source status snapshots before switching clients.
+
+Record the following with every cutover:
+
+- release version
+- matrix summary path
+- support bundle path
+- backup bundle path
+- operator on call
+- rollback owner

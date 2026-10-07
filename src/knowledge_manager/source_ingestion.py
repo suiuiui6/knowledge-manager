@@ -1,14 +1,20 @@
 from __future__ import annotations
 
+import asyncio
+import os
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable, Protocol
 from uuid import uuid4
 
-from knowledge_manager.confluence import ConfluencePage
-from knowledge_manager.notion import NotionPage
+from knowledge_manager.confluence import ConfluenceClient, ConfluencePage
+from knowledge_manager.materialized_views import invalidate_materialized_views
+from knowledge_manager.llm_clients import create_client
+from knowledge_manager.notion import NotionClient, NotionPage
+from knowledge_manager.extractor import Extractor
 from knowledge_manager.schemas import (
+    Config,
     Module,
     SourceDefinition,
     SourceDocumentRef,
@@ -44,6 +50,18 @@ class IngestionSummary:
     modules_marked_stale: int = 0
 
 
+def _load_runtime_config(kb_path: Path) -> Config:
+    path = kb_path / "config.json"
+    if not path.exists():
+        raise RuntimeError("No config found")
+    return Config.model_validate_json(path.read_text(encoding="utf-8"))
+
+
+def _is_transient_source_pull_error(exc: Exception) -> bool:
+    message = str(exc).lower()
+    return any(token in message for token in ("timeout", "timed out", "429", "rate limit", "tempor"))
+
+
 def _registry_path(kb_path: Path) -> Path:
     return kb_path / ".sources" / "registry.json"
 
@@ -58,6 +76,7 @@ def load_source_registry(kb_path: Path) -> SourceRegistry:
 def save_source_registry(registry: SourceRegistry, kb_path: Path) -> None:
     validated = SourceRegistry.model_validate(registry.model_dump(mode="python"))
     _atomic_write(_registry_path(kb_path), validated.model_dump_json(indent=2))
+    invalidate_materialized_views(kb_path)
 
 
 def upsert_source(source: SourceDefinition, kb_path: Path) -> None:
@@ -109,6 +128,8 @@ def _stamp_module(module: Module, source: SourceDefinition, page: IngestionPage,
         update={
             "metadata": module.metadata.model_copy(
                 update={
+                    "tenant_id": module.metadata.tenant_id or source.tenant_id,
+                    "workspace_id": module.metadata.workspace_id or source.workspace_id,
                     "source": source.id,
                     "source_documents": [
                         SourceDocumentRef(
@@ -185,3 +206,59 @@ async def ingest_confluence_pages(
         kb_path,
     )
     return summary
+
+
+async def run_source_sync_once(kb_path: Path, source_id: str) -> IngestionSummary:
+    registry = load_source_registry(kb_path)
+    if source_id not in registry.sources:
+        raise RuntimeError(f"Unknown source: {source_id}")
+    source_def = registry.sources[source_id]
+    cfg = _load_runtime_config(kb_path)
+    token_env = (
+        source_def.confluence.api_token_env
+        if source_def.confluence is not None
+        else source_def.notion.api_token_env if source_def.notion is not None else ""
+    )
+    token = os.environ.get(token_env, "")
+    if not token:
+        raise RuntimeError(f"environment variable {token_env} is not set")
+
+    provider_name, provider_cfg = cfg.get_default_provider()
+    llm_client = create_client(provider_name, provider_cfg)
+    extractor = Extractor(llm_client, cfg.extraction)
+
+    last_error: Exception | None = None
+    for attempt in range(3):
+        try:
+            if source_def.type == "confluence":
+                assert source_def.confluence is not None
+                client = ConfluenceClient(
+                    source_def.confluence.base_url,
+                    source_def.confluence.email,
+                    token,
+                )
+                pages, next_cursor = await client.list_pages(
+                    source_def.confluence.space_key,
+                    root_page_id=source_def.confluence.root_page_id,
+                    limit=source_def.confluence.page_limit,
+                    cursor=source_def.sync.last_cursor,
+                )
+            else:
+                assert source_def.notion is not None
+                client = NotionClient(token)
+                pages, next_cursor = await client.list_pages(
+                    source_def.notion.database_id,
+                    page_limit=source_def.notion.page_limit,
+                    cursor=source_def.sync.last_cursor,
+                )
+            return await ingest_confluence_pages(source_def, pages, kb_path, extractor, next_cursor=next_cursor)
+        except Exception as exc:
+            last_error = exc
+            if not _is_transient_source_pull_error(exc) or attempt == 2:
+                record_source_sync_error(source_id, str(exc), kb_path)
+                raise
+            await asyncio.sleep(0.5 * (attempt + 1))
+
+    assert last_error is not None
+    record_source_sync_error(source_id, str(last_error), kb_path)
+    raise last_error

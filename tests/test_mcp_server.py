@@ -1,9 +1,10 @@
 import json
 import pytest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 from knowledge_manager.schemas import Index, Module, ModuleContent, ModuleMetadata
-from knowledge_manager.storage import save_module, save_index
+from knowledge_manager.storage import load_module, save_module, save_index
 
 
 def make_module(id="auth-jwt", category="auth") -> Module:
@@ -50,6 +51,20 @@ async def test_resource_index_returns_json(server, kb_path):
 
 
 @pytest.mark.asyncio
+async def test_multi_tenant_mcp_disables_global_resources(kb_path):
+    from knowledge_manager.mcp_server import create_server
+
+    server = create_server(
+        kb_path,
+        session_tenant=None,
+        security_mode="multi_tenant",
+    )
+
+    with pytest.raises(Exception):
+        await server.read_resource("knowledge://index")
+
+
+@pytest.mark.asyncio
 async def test_tool_load_module_found(server, kb_path):
     module = make_module()
     save_module(module, kb_path)
@@ -83,6 +98,35 @@ async def test_tool_load_module_honors_tenant_filter(server, kb_path):
 
 
 @pytest.mark.asyncio
+async def test_tool_load_module_rejects_cross_tenant_override_for_session(kb_path):
+    from knowledge_manager.mcp_server import create_server
+    from knowledge_manager.tenancy import TenantContext
+
+    save_module(
+        Module(
+            id="tenant-a",
+            category="ops",
+            title="Tenant A Guide",
+            summary="Tenant A operational guidance.",
+            content=ModuleContent(
+                overview="Tenant A overview.",
+                details="Tenant A details with enough length for validation.",
+            ),
+            metadata=ModuleMetadata(tenant_id="team-a"),
+        ),
+        kb_path,
+    )
+    server = create_server(kb_path, session_tenant=TenantContext(tenant_id="team-a"))
+
+    result = await server.call_tool(
+        "load_module",
+        {"module_id": "tenant-a", "category": "ops", "tenant_id": "team-b"},
+    )
+    content = result[0].text if hasattr(result[0], "text") else str(result[0])
+    assert "tenant override is not allowed" in content.lower()
+
+
+@pytest.mark.asyncio
 async def test_tool_load_module_not_found(server, kb_path):
     result = await server.call_tool("load_module", {"module_id": "missing", "category": "auth"})
     content = result[0].text if hasattr(result[0], "text") else str(result[0])
@@ -102,6 +146,59 @@ async def test_tool_search_modules(server, kb_path):
     assert '"caveats"' in raw
     assert '"related_modules"' in raw
     assert '"policy_reasons"' in raw
+
+
+@pytest.mark.asyncio
+async def test_tool_search_modules_uses_compact_json_serialization(server, kb_path, monkeypatch):
+    from knowledge_manager import mcp_server as mcp_module
+
+    save_module(make_module("auth-jwt", "auth"), kb_path)
+    captured: dict[str, object] = {}
+    original_dumps = mcp_module.json.dumps
+
+    def wrapped_dumps(*args, **kwargs):
+        if "policy_reasons" in str(args[0]):
+            captured["indent"] = kwargs.get("indent")
+            captured["separators"] = kwargs.get("separators")
+        return original_dumps(*args, **kwargs)
+
+    monkeypatch.setattr(mcp_module.json, "dumps", wrapped_dumps)
+
+    result = await server.call_tool("search_modules", {"query": "JWT authentication"})
+    raw = result[0].text if hasattr(result[0], "text") else str(result[0])
+
+    assert "auth-jwt" in raw
+    assert captured["indent"] is None
+    assert captured["separators"] == (",", ":")
+
+
+@pytest.mark.asyncio
+async def test_tool_search_modules_avoids_full_hydration_for_projection_hits(server, kb_path, monkeypatch):
+    save_module(
+        Module(
+            id="auth-jwt",
+            category="auth",
+            title="JWT Authentication Guide",
+            summary="Authentication guidance for stateless production tokens.",
+            content=ModuleContent(
+                overview="Stateless authentication overview for production tokens.",
+                details="Detailed authentication guidance with signing, verification, and rollback steps.",
+            ),
+        ),
+        kb_path,
+    )
+
+    def explode(*_args, **_kwargs):
+        raise AssertionError("MCP search should not hydrate full modules for projection-backed hits")
+
+    monkeypatch.setattr("knowledge_manager.storage.load_module", explode)
+    monkeypatch.setattr("knowledge_manager.mcp_server.load_module", explode)
+
+    result = await server.call_tool("search_modules", {"query": "authentication guide"})
+    raw = result[0].text if hasattr(result[0], "text") else str(result[0])
+
+    assert "auth-jwt" in raw
+    assert '"snippet"' in raw
 
 
 @pytest.mark.asyncio
@@ -264,6 +361,50 @@ async def test_tool_list_categories_honors_tenant_filter(server, kb_path):
 
 
 @pytest.mark.asyncio
+async def test_session_tenant_ignores_caller_supplied_tenant_for_search(kb_path):
+    from knowledge_manager.mcp_server import create_server
+    from knowledge_manager.tenancy import TenantContext
+
+    save_module(
+        Module(
+            id="tenant-a",
+            category="ops",
+            title="Rollback Guide A",
+            summary="Tenant A rollback guidance.",
+            content=ModuleContent(
+                overview="Rollback safely for tenant A.",
+                details="Tenant A rollback details with enough length for validation.",
+            ),
+            metadata=ModuleMetadata(tenant_id="team-a"),
+        ),
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="tenant-b",
+            category="ops",
+            title="Rollback Guide B",
+            summary="Tenant B rollback guidance.",
+            content=ModuleContent(
+                overview="Rollback safely for tenant B.",
+                details="Tenant B rollback details with enough length for validation.",
+            ),
+            metadata=ModuleMetadata(tenant_id="team-b"),
+        ),
+        kb_path,
+    )
+    server = create_server(kb_path, session_tenant=TenantContext(tenant_id="team-a"))
+
+    result = await server.call_tool(
+        "search_modules",
+        {"query": "rollback safely", "tenant_id": "team-a"},
+    )
+    raw = result[0].text if hasattr(result[0], "text") else str(result[0])
+    assert '"tenant-a"' in raw
+    assert '"tenant-b"' not in raw
+
+
+@pytest.mark.asyncio
 async def test_tool_search_modules_filters_disallowed_statuses(server, kb_path):
     (kb_path / "config.json").write_text(
         json.dumps(
@@ -360,6 +501,42 @@ async def test_tool_expand_module_returns_module_and_neighbors(server, kb_path):
 
 
 @pytest.mark.asyncio
+async def test_tool_expand_module_honors_trusted_session_tenant(kb_path):
+    from knowledge_manager.mcp_server import create_server
+    from knowledge_manager.tenancy import TenantContext
+    from knowledge_manager.schemas import ModuleMetadata
+
+    main = Module(
+        id="jwt", category="auth",
+        title="JWT tokens",
+        summary="Handling JSON Web Tokens for auth",
+        content=ModuleContent(
+            overview="A JWT overview for testing expand",
+            details="Detailed JWT notes for testing expand tool behavior",
+        ),
+        metadata=ModuleMetadata(tags=["auth"], related_modules=["auth/oauth-flow"], tenant_id="team-a"),
+    )
+    neighbor = Module(
+        id="oauth-flow", category="auth",
+        title="OAuth 2.0 flow",
+        summary="OAuth 2.0 authorization flow setup",
+        content=ModuleContent(
+            overview="OAuth overview for expand testing",
+            details="Detailed OAuth notes for testing expand tool behavior",
+        ),
+        metadata=ModuleMetadata(tags=["oauth"], tenant_id="team-b"),
+    )
+    save_module(main, kb_path)
+    save_module(neighbor, kb_path)
+    server = create_server(kb_path, session_tenant=TenantContext(tenant_id="team-a"))
+
+    result = await server.call_tool("expand_module", {"module_id": "jwt", "category": "auth"})
+    content = result[0].text if hasattr(result[0], "text") else str(result[0])
+    assert "jwt" in content
+    assert "oauth-flow" not in content
+
+
+@pytest.mark.asyncio
 async def test_tool_expand_module_not_found(server, kb_path):
     result = await server.call_tool("expand_module", {"module_id": "missing", "category": "auth"})
     content = result[0].text if hasattr(result[0], "text") else str(result[0])
@@ -398,6 +575,84 @@ async def test_tool_deep_search_returns_full_content(server, kb_path):
     assert "details" in content  # Full content loaded
     assert "neighbors" in content  # Graph expanded
     assert "oauth-flow" in content  # Neighbor included
+
+
+@pytest.mark.asyncio
+async def test_tool_deep_search_honors_trusted_session_tenant(kb_path):
+    from knowledge_manager.mcp_server import create_server
+    from knowledge_manager.tenancy import TenantContext
+    from knowledge_manager.schemas import ModuleMetadata
+
+    main = Module(
+        id="auth-jwt", category="auth",
+        title="JWT authentication module",
+        summary="How JWT tokens work in our system",
+        content=ModuleContent(
+            overview="JWT tokens are used for stateless authentication in our system.",
+            details="Tokens are signed with RS256 and expire after 24 hours by default.",
+        ),
+        metadata=ModuleMetadata(tags=["jwt"], related_modules=["auth/oauth-flow"], tenant_id="team-a"),
+    )
+    neighbor = Module(
+        id="oauth-flow", category="auth",
+        title="OAuth flow module",
+        summary="OAuth authorization flow details",
+        content=ModuleContent(
+            overview="OAuth 2.0 flow for authentication delegation.",
+            details="OAuth authorization code flow with PKCE extension for secure exchange.",
+        ),
+        metadata=ModuleMetadata(tags=["oauth"], tenant_id="team-b"),
+    )
+    save_module(main, kb_path)
+    save_module(neighbor, kb_path)
+    server = create_server(kb_path, session_tenant=TenantContext(tenant_id="team-a"))
+
+    result = await server.call_tool("deep_search", {"query": "JWT authentication"})
+    content = result[0].text if hasattr(result[0], "text") else str(result[0])
+    assert "auth-jwt" in content
+    assert "oauth-flow" not in content
+
+
+@pytest.mark.asyncio
+async def test_tool_deep_search_avoids_unnecessary_full_hydration(server, kb_path, monkeypatch):
+    from knowledge_manager.schemas import ModuleMetadata
+
+    main = Module(
+        id="auth-jwt", category="auth",
+        title="JWT authentication module",
+        summary="Stateless authentication guidance for production tokens.",
+        content=ModuleContent(
+            overview="Stateless authentication overview for production tokens.",
+            details="Detailed authentication guidance with signing, verification, and rollback steps.",
+        ),
+        metadata=ModuleMetadata(tags=["jwt"], related_modules=["auth/oauth-flow"]),
+    )
+    neighbor = Module(
+        id="oauth-flow", category="auth",
+        title="OAuth flow module",
+        summary="OAuth authorization flow details",
+        content=ModuleContent(
+            overview="OAuth 2.0 flow for authentication delegation.",
+            details="OAuth authorization code flow with PKCE extension for secure exchange.",
+        ),
+        metadata=ModuleMetadata(tags=["oauth"]),
+    )
+    save_module(main, kb_path)
+    save_module(neighbor, kb_path)
+
+    def explode(*_args, **_kwargs):
+        raise AssertionError("deep_search should reuse projection-backed content instead of hydrating modules")
+
+    monkeypatch.setattr("knowledge_manager.storage.load_module", explode)
+    monkeypatch.setattr("knowledge_manager.mcp_server.load_module", explode)
+
+    result = await server.call_tool("deep_search", {"query": "stateless authentication"})
+    content = result[0].text if hasattr(result[0], "text") else str(result[0])
+
+    assert "auth-jwt" in content
+    assert "details" in content
+    assert "neighbors" in content
+    assert "oauth-flow" in content
 
 
 @pytest.mark.asyncio
@@ -646,6 +901,45 @@ async def test_tool_knowledge_graph_with_query(server, kb_path):
     assert "results" in data
 
 
+@pytest.mark.asyncio
+async def test_tool_knowledge_graph_honors_trusted_session_tenant(kb_path):
+    from knowledge_manager.mcp_server import create_server
+    from knowledge_manager.tenancy import TenantContext
+    from knowledge_manager.storage import rebuild_index
+
+    mod = Module(
+        id="kg-team-a",
+        category="auth",
+        title="Tenant A JWT guide",
+        summary="Tenant A JWT guidance",
+        content=ModuleContent(
+            overview="JWT tokens are used for tenant A.",
+            details="Detailed tenant A JWT guidance with enough length for validation.",
+        ),
+        metadata=ModuleMetadata(tenant_id="team-a"),
+    )
+    mod2 = Module(
+        id="kg-team-b",
+        category="auth",
+        title="Tenant B JWT guide",
+        summary="Tenant B JWT guidance",
+        content=ModuleContent(
+            overview="JWT tokens are used for tenant B.",
+            details="Detailed tenant B JWT guidance with enough length for validation.",
+        ),
+        metadata=ModuleMetadata(tenant_id="team-b"),
+    )
+    save_module(mod, kb_path)
+    save_module(mod2, kb_path)
+    rebuild_index(kb_path)
+    server = create_server(kb_path, session_tenant=TenantContext(tenant_id="team-a"))
+
+    result = await server.call_tool("knowledge_graph", {"query": "JWT", "tenant_id": "team-a"})
+    raw = result[0][0].text
+    assert "kg-team-a" in raw
+    assert "kg-team-b" not in raw
+
+
 # ── Phase 3D: knowledge://recommendations MCP resource ──
 
 
@@ -846,6 +1140,23 @@ async def test_tool_federated_search(federated_server):
 
 
 @pytest.mark.asyncio
+async def test_tool_federated_search_avoids_full_hydration_for_projection_hits(federated_server, monkeypatch):
+    server, main_path, ns_path = federated_server
+
+    def explode(*_args, **_kwargs):
+        raise AssertionError("federated search should not hydrate full modules for projection-backed hits")
+
+    monkeypatch.setattr("knowledge_manager.storage.load_module", explode)
+    monkeypatch.setattr("knowledge_manager.mcp_server.load_module", explode)
+
+    result = await server.call_tool("federated_search", {"query": "authentication guide", "top_per_ns": 3})
+    raw = result[0][0].text
+    data = json.loads(raw)
+
+    assert any("auth-mod" in str(r) for r in data["results"]["auth"])
+
+
+@pytest.mark.asyncio
 async def test_tool_search_modules_with_namespace(federated_server):
     """search_modules with namespace=auth should search the auth KB only."""
     server, main_path, ns_path = federated_server
@@ -875,3 +1186,85 @@ async def test_tool_list_categories_with_namespace(federated_server):
     raw = result[0][0].text
     data = json.loads(raw)
     assert any(c["category"] == "auth" for c in data)
+
+
+@pytest.mark.asyncio
+async def test_research_tool_returns_json_error_or_result_instead_of_name_error(server, kb_path):
+    result = await server.call_tool("research", {"query": "rollback workflow", "depth": "shallow"})
+    raw = result[0].text if hasattr(result[0], "text") else str(result[0])
+    assert "_load_config_safe" not in raw
+
+
+@pytest.mark.asyncio
+async def test_research_tool_returns_success_payload_when_provider_is_configured(server, kb_path, monkeypatch):
+    class FakeConfig:
+        research = SimpleNamespace()
+
+        def get_default_provider(self):
+            return "fake", SimpleNamespace()
+
+    class FakeResearcher:
+        def __init__(self, kb_path, config, llm_client):
+            self.kb_path = kb_path
+            self.config = config
+            self.llm_client = llm_client
+
+        async def research(self, query, depth):
+            return SimpleNamespace(
+                query=query,
+                answer_synthesis="Rollback answer",
+                staged_ids=["stage-1"],
+                sources_used=["source-1"],
+                took_ms=12.5,
+            )
+
+    monkeypatch.setattr("knowledge_manager.mcp_server._load_config_safe", lambda _kb_path: FakeConfig())
+    monkeypatch.setattr("knowledge_manager.llm_clients.create_client", lambda *_args, **_kwargs: object())
+    monkeypatch.setattr("knowledge_manager.researcher.Researcher", FakeResearcher)
+
+    result = await server.call_tool("research", {"query": "rollback workflow", "depth": "shallow"})
+    raw = result[0].text if hasattr(result[0], "text") else str(result[0])
+
+    assert '"temporary_answer": "Rollback answer"' in raw
+    assert '"staged_modules": [' in raw
+
+
+@pytest.mark.asyncio
+async def test_tool_update_module_persists_changes(server, kb_path):
+    save_module(make_module("auth-jwt", "auth"), kb_path)
+
+    result = await server.call_tool(
+        "update_module",
+        {
+            "module_id": "auth-jwt",
+            "category": "auth",
+            "summary": "Updated MCP summary for authentication guidance.",
+        },
+    )
+    raw = result[0].text if hasattr(result[0], "text") else str(result[0])
+
+    assert '"status": "updated"' in raw
+
+    updated = load_module("auth-jwt", "auth", kb_path)
+    assert updated is not None
+    assert updated.summary == "Updated MCP summary for authentication guidance."
+
+
+@pytest.mark.asyncio
+async def test_tool_delete_module_archives_module(server, kb_path):
+    save_module(make_module("auth-jwt", "auth"), kb_path)
+
+    result = await server.call_tool(
+        "delete_module",
+        {
+            "module_id": "auth-jwt",
+            "category": "auth",
+        },
+    )
+    raw = result[0].text if hasattr(result[0], "text") else str(result[0])
+
+    assert '"status": "archived"' in raw
+
+    archived = load_module("auth-jwt", "auth", kb_path)
+    assert archived is not None
+    assert archived.metadata.status == "archived"

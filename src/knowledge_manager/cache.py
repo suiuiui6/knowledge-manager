@@ -13,13 +13,13 @@ class ModuleCache:
         self._lock = threading.Lock()
 
     @staticmethod
-    def _make_key(module_id: str, namespace: str = "default") -> str:
-        return f"{namespace}:{module_id}"
+    def _make_key(module_id: str, namespace: str = "default", category: str = "") -> str:
+        return f"{namespace}:{category}:{module_id}"
 
-    def get(self, module_id: str, namespace: str = "default") -> Optional[Module]:
+    def get(self, module_id: str, namespace: str = "default", category: str = "") -> Optional[Module]:
         if not self._enabled:
             return None
-        key = self._make_key(module_id, namespace)
+        key = self._make_key(module_id, namespace, category)
         with self._lock:
             if key not in self._cache:
                 return None
@@ -29,7 +29,7 @@ class ModuleCache:
     def put(self, module: Module, namespace: str = "default") -> None:
         if not self._enabled:
             return
-        key = self._make_key(module.id, namespace)
+        key = self._make_key(module.id, namespace, module.category)
         with self._lock:
             if key in self._cache:
                 self._cache.move_to_end(key)
@@ -37,8 +37,8 @@ class ModuleCache:
             if len(self._cache) > self._max_size:
                 self._cache.popitem(last=False)
 
-    def invalidate(self, module_id: str, namespace: str = "default") -> None:
-        key = self._make_key(module_id, namespace)
+    def invalidate(self, module_id: str, namespace: str = "default", category: str = "") -> None:
+        key = self._make_key(module_id, namespace, category)
         with self._lock:
             self._cache.pop(key, None)
 

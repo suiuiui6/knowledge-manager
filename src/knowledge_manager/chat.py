@@ -126,7 +126,7 @@ class ChatPipeline:
             vector=vector_results,
             weights={"tree": 0.35 if tree_results else 0, "keyword": 0.65 if not tree_results else 0.40, "vector": 0.25 if vector_results else 0},
         )
-        top_modules = fused[:5]
+        top_modules = fused[:3]
 
         yield ChatEvent("status", {
             "stage": "ranking",
@@ -138,7 +138,7 @@ class ChatPipeline:
         # ── Step 4: Context assembly ──
         yield ChatEvent("status", {"stage": "context_assembly", "message": "Assembling context..."})
 
-        system_prompt = self._build_system_prompt(top_modules, intent)
+        system_prompt = self._build_system_prompt(top_modules, intent, max_tokens=4000)
         user_prompt = rewritten
 
         # ── Step 5: LLM generation (streaming) ──

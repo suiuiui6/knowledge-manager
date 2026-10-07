@@ -4,6 +4,7 @@ import logging
 import os
 import subprocess
 import sys
+import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -14,6 +15,7 @@ from rich.console import Console
 from rich.prompt import Prompt
 from rich.table import Table
 
+from knowledge_manager.deploy_proof import validate_deploy_artifact_proofs
 from knowledge_manager.extractor import Extractor
 from knowledge_manager.llm_clients import create_client
 from knowledge_manager.schemas import (
@@ -42,14 +44,15 @@ from knowledge_manager.storage import (
     save_to_staging,
     search_modules,
 )
+from knowledge_manager.runtime_env import RuntimeEnvError, load_runtime_env_settings
 
 
 console = Console()
 logger = logging.getLogger("knowledge_manager")
 
 
-def _configure_logging(verbose: bool) -> None:
-    level = logging.DEBUG if verbose else logging.WARNING
+def _configure_logging(verbose: bool, default_level: str = "WARNING") -> None:
+    level = logging.DEBUG if verbose else getattr(logging, default_level.upper(), logging.WARNING)
     root = logging.getLogger()
     root.setLevel(level)
 
@@ -107,7 +110,7 @@ def _require_kb(kb_path: Path) -> None:
 @click.option(
     "--kb-path",
     type=click.Path(path_type=Path),
-    default=Path.cwd(),
+    default=None,
     help="Path to the knowledge base directory",
 )
 @click.option(
@@ -117,22 +120,30 @@ def _require_kb(kb_path: Path) -> None:
     help="Enable verbose logging output",
 )
 @click.pass_context
-def cli(ctx: click.Context, kb_path: Path, verbose: bool) -> None:
+def cli(ctx: click.Context, kb_path: Path | None, verbose: bool) -> None:
     """Knowledge Manager — lightweight AI knowledge management."""
     ctx.ensure_object(dict)
-    ctx.obj["kb_path"] = Path(kb_path)
+    try:
+        runtime_settings = load_runtime_env_settings()
+    except RuntimeEnvError as exc:
+        raise click.ClickException(str(exc)) from exc
+    resolved_kb = Path(kb_path) if kb_path is not None else runtime_settings.kb_path
+    ctx.obj["kb_path"] = resolved_kb
     ctx.obj["verbose"] = verbose
+    ctx.obj["runtime_env"] = runtime_settings
 
-    _configure_logging(verbose)
+    _configure_logging(verbose, runtime_settings.log_level)
     if verbose:
         logger.debug("Verbose logging enabled")
 
 
 @cli.command()
 @click.argument("path", type=click.Path(path_type=Path), required=False)
-def init(path: Optional[Path]) -> None:
+@click.pass_context
+def init(ctx: click.Context, path: Optional[Path]) -> None:
     """Initialize a new knowledge base at PATH (or current directory)."""
-    kb = Path(path) if path else Path.cwd()
+    runtime_env = ctx.obj["runtime_env"]
+    kb = Path(path) if path else runtime_env.kb_path
     if (kb / "index.json").exists():
         click.echo(f"Error: Knowledge base already exists at {kb}", err=True)
         raise click.Abort()
@@ -765,6 +776,83 @@ def ops_export_source_backlog(ctx: click.Context, output_path: Path) -> None:
     payload = generate_source_backlog_export(kb)
     output_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     click.echo(f"Exported source backlog to {output_path}")
+
+
+@cli.command()
+@click.option("--format", "-f", "fmt", type=click.Choice(["text", "json"]), default="text")
+@click.option("--repair", is_flag=True, help="Rebuild runtime artifacts before reporting integrity.")
+@click.pass_context
+def integrity(ctx: click.Context, fmt: str, repair: bool) -> None:
+    """Run production integrity checks for index and runtime caches."""
+    from knowledge_manager.runtime_checks import repair_runtime_artifacts, run_integrity_check
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    if repair:
+        repair_result = repair_runtime_artifacts(kb)
+        if fmt == "json":
+            click.echo(json.dumps({"repair": repair_result}, ensure_ascii=False, default=str))
+        else:
+            click.echo(f"Repaired: {', '.join(repair_result['repaired'])}")
+
+    report = run_integrity_check(kb)
+    if fmt == "json":
+        click.echo(json.dumps(report, ensure_ascii=False, default=str, indent=2))
+        return
+
+    click.echo("Integrity check")
+    click.echo(f"OK: {report['ok']}")
+    click.echo(f"Module count: {report['module_count']}")
+    if not report["issues"]:
+        click.echo("Issues: none")
+        return
+    for issue in report["issues"]:
+        click.echo(f"- {issue['kind']}: {issue['message']}")
+
+
+@cli.command("verify-production-readiness")
+@click.option("--matrix-summary", required=True, type=click.Path(path_type=Path, exists=True))
+@click.pass_context
+def verify_production_readiness_cmd(ctx: click.Context, matrix_summary: Path) -> None:
+    """Combine readiness, integrity, and benchmark-matrix verdicts into one production gate."""
+    from knowledge_manager.performance_benchmarks import build_production_readiness_verdict
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+
+    verdict = build_production_readiness_verdict(kb, matrix_summary)
+    click.echo(json.dumps(verdict, ensure_ascii=False, indent=2))
+    raise click.exceptions.Exit(0 if verdict["ready_for_production"] else 1)
+
+
+@cli.group("worker")
+def worker() -> None:
+    """Run local background workers."""
+
+
+@worker.command("run")
+@click.option("--once", is_flag=True, help="Process queued work once and exit.")
+@click.option("--poll-interval", type=float, default=1.0)
+@click.pass_context
+def worker_run(ctx: click.Context, once: bool, poll_interval: float) -> None:
+    from knowledge_manager.audit import AuditEvent, log_audit_event
+    from knowledge_manager.worker_service import run_worker_loop
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+    processed = run_worker_loop(kb, once=once, poll_interval=poll_interval)
+    log_audit_event(
+        kb,
+        AuditEvent(
+            user="cli-worker",
+            operation="worker.run",
+            resource="km worker run",
+            result="success",
+            details=f"once={once};poll_interval={poll_interval};processed={processed}",
+        ),
+    )
+    click.echo(f"Processed {processed} job(s)")
 
 
 # --- graph ---
@@ -1921,23 +2009,26 @@ def vector_status(ctx: click.Context) -> None:
 
 @cli.command()
 @click.option("--ui", is_flag=True, help="Start MCP + Web UI (FastAPI on localhost:8420)")
-@click.option("--host", default="127.0.0.1", help="Host to bind the Web UI server")
-@click.option("--port", default=8420, type=int, help="Port for the Web UI server")
+@click.option("--host", default=None, help="Host to bind the Web UI server")
+@click.option("--port", default=None, type=int, help="Port for the Web UI server")
 @click.pass_context
-def serve(ctx: click.Context, ui: bool, host: str, port: int) -> None:
+def serve(ctx: click.Context, ui: bool, host: str | None, port: int | None) -> None:
     """Run the MCP server over stdio. Use --ui for MCP + Web UI mode."""
     kb = ctx.obj["kb_path"]
+    runtime_env = ctx.obj["runtime_env"]
     _require_kb(kb)
 
     if ui:
         import uvicorn
         from knowledge_manager.http_server import create_app
 
+        resolved_host = host or runtime_env.ui_host
+        resolved_port = port or runtime_env.ui_port
         app = create_app(kb)
         console.print(f"[bold]Knowledge Manager Web UI[/bold]")
         console.print(f"  MCP: stdio (available)")
-        console.print(f"  Web UI: http://{host}:{port}")
-        console.print(f"  Fallback UI: http://{host}:{port}/ui/fallback")
+        console.print(f"  Web UI: http://{resolved_host}:{resolved_port}")
+        console.print(f"  Fallback UI: http://{resolved_host}:{resolved_port}/ui/fallback")
         # Run MCP in background thread, FastAPI in main thread
         import threading
         from knowledge_manager.mcp_server import create_server as create_mcp
@@ -1950,12 +2041,322 @@ def serve(ctx: click.Context, ui: bool, host: str, port: int) -> None:
         mcp_thread = threading.Thread(target=run_mcp, daemon=True)
         mcp_thread.start()
 
-        uvicorn.run(app, host=host, port=port, log_level="info")
+        uvicorn.run(
+            app,
+            host=resolved_host,
+            port=resolved_port,
+            log_level=runtime_env.log_level.lower(),
+        )
     else:
         from knowledge_manager.mcp_server import create_server
 
         server = create_server(kb)
         asyncio.run(server.run_stdio_async())
+
+
+@cli.group("backup")
+def backup() -> None:
+    """Create and restore knowledge-base backup bundles."""
+
+
+@backup.command("create")
+@click.option("--output-dir", type=click.Path(path_type=Path), required=True)
+@click.option("--attach", "attachments", type=click.Path(path_type=Path, exists=True), multiple=True)
+@click.pass_context
+def backup_create(ctx: click.Context, output_dir: Path, attachments: tuple[Path, ...]) -> None:
+    """Create a complete KB backup bundle."""
+    from knowledge_manager.backup_restore import create_backup_bundle
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+    bundle = create_backup_bundle(kb, output_dir, attachments=list(attachments))
+    click.echo(str(bundle))
+
+
+@backup.command("restore")
+@click.option("--bundle", type=click.Path(path_type=Path, exists=True), required=True)
+@click.option("--target-kb", type=click.Path(path_type=Path), required=True)
+def backup_restore(bundle: Path, target_kb: Path) -> None:
+    """Restore a backup bundle into an empty target KB."""
+    from knowledge_manager.backup_restore import restore_backup_bundle
+
+    restore_backup_bundle(bundle, target_kb)
+    click.echo(str(target_kb))
+
+
+@cli.group("support")
+def support() -> None:
+    """Generate operator support artifacts."""
+
+
+@support.command("bundle")
+@click.option("--output-dir", type=click.Path(path_type=Path), required=True)
+@click.option("--matrix-summary", type=click.Path(path_type=Path, exists=True), required=True)
+@click.pass_context
+def support_bundle(ctx: click.Context, output_dir: Path, matrix_summary: Path) -> None:
+    from knowledge_manager.ingestion_jobs import list_ingestion_jobs
+    from knowledge_manager.performance_benchmarks import build_production_readiness_verdict
+    from knowledge_manager.runtime_checks import evaluate_readiness, run_integrity_check
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    cfg = _load_config(kb)
+    jobs = list_ingestion_jobs(kb)
+    recent_jobs = [job.model_dump(mode="json") for job in jobs[:10]]
+    stale_running_jobs = sum(
+        1
+        for job in jobs
+        if job.status == "running"
+        and job.lease_expires_at is not None
+        and job.lease_expires_at < datetime.now(timezone.utc)
+    )
+    readiness_artifact = output_dir / "verify-production-readiness.json"
+    deployment_artifact = output_dir / "verify-deployment.json"
+    backup_artifacts = sorted(output_dir.glob("knowledge-manager-backup-*.zip"))
+    backup_artifact = backup_artifacts[-1] if backup_artifacts else None
+    install_smoke_artifact = output_dir / "verify-install-smoke.json"
+    restore_verify_artifact = output_dir / "restore-verify-deployment.json"
+    host_deploy_proof_artifact = output_dir / "host-deploy-proof.json"
+    release_verifier_artifact = output_dir / "verify-release-artifacts.json"
+    release_evidence_collection_artifact = output_dir / "release-evidence-collection.json"
+    deploy_artifact_proofs, deploy_artifact_invalid, deploy_artifact_proof_complete = (
+        validate_deploy_artifact_proofs(output_dir)
+    )
+    backup_bundle_attachments: list[str] = []
+    if backup_artifact is not None:
+        try:
+            with zipfile.ZipFile(backup_artifact) as zf:
+                backup_manifest = json.loads(zf.read("manifest.json").decode("utf-8"))
+            backup_bundle_attachments = list(
+                backup_manifest.get("contents", {}).get("attachments", [])
+            )
+        except (KeyError, OSError, ValueError, zipfile.BadZipFile):
+            backup_bundle_attachments = []
+    required_backup_attachments = [
+        "attachments/verify-production-readiness.json",
+        "attachments/verify-deployment.json",
+        "attachments/verify-install-smoke.json",
+    ]
+    release_evidence_missing: list[str] = []
+    release_evidence_invalid: list[str] = []
+    if not readiness_artifact.exists():
+        release_evidence_missing.append("verify-production-readiness.json")
+    if not deployment_artifact.exists():
+        release_evidence_missing.append("verify-deployment.json")
+    if not install_smoke_artifact.exists():
+        release_evidence_missing.append("verify-install-smoke.json")
+    if backup_artifact is None:
+        release_evidence_missing.append("knowledge-manager-backup-*.zip")
+    if not restore_verify_artifact.exists():
+        release_evidence_missing.append("restore-verify-deployment.json")
+    if not release_verifier_artifact.exists():
+        release_evidence_missing.append("verify-release-artifacts.json")
+    if not release_evidence_collection_artifact.exists():
+        release_evidence_missing.append("release-evidence-collection.json")
+    missing_backup_attachments = [
+        item for item in required_backup_attachments if item not in backup_bundle_attachments
+    ]
+    release_evidence_missing.extend(
+        f"backup-attachment:{item}" for item in missing_backup_attachments
+    )
+
+    def _load_json_artifact(path: Path) -> dict | None:
+        try:
+            return json.loads(path.read_text(encoding="utf-8-sig"))
+        except (OSError, ValueError, TypeError):
+            return None
+
+    readiness_payload = _load_json_artifact(readiness_artifact) if readiness_artifact.exists() else None
+    if readiness_payload is None and readiness_artifact.exists():
+        release_evidence_invalid.append("verify-production-readiness.json")
+    elif readiness_payload is not None and not bool(readiness_payload.get("ready_for_production")):
+        release_evidence_invalid.append("verify-production-readiness.json")
+
+    deployment_payload = _load_json_artifact(deployment_artifact) if deployment_artifact.exists() else None
+    if deployment_payload is None and deployment_artifact.exists():
+        release_evidence_invalid.append("verify-deployment.json")
+    elif deployment_payload is not None and not bool(deployment_payload.get("ok")):
+        release_evidence_invalid.append("verify-deployment.json")
+
+    install_smoke_payload = _load_json_artifact(install_smoke_artifact) if install_smoke_artifact.exists() else None
+    if install_smoke_payload is None and install_smoke_artifact.exists():
+        release_evidence_invalid.append("verify-install-smoke.json")
+    elif install_smoke_payload is not None and not bool(install_smoke_payload.get("ok")):
+        release_evidence_invalid.append("verify-install-smoke.json")
+
+    restore_verify_payload = _load_json_artifact(restore_verify_artifact) if restore_verify_artifact.exists() else None
+    if restore_verify_payload is None and restore_verify_artifact.exists():
+        release_evidence_invalid.append("restore-verify-deployment.json")
+    elif restore_verify_payload is not None and not bool(restore_verify_payload.get("ok")):
+        release_evidence_invalid.append("restore-verify-deployment.json")
+
+    host_deploy_proof_payload = (
+        _load_json_artifact(host_deploy_proof_artifact) if host_deploy_proof_artifact.exists() else None
+    )
+    if host_deploy_proof_payload is None and host_deploy_proof_artifact.exists():
+        release_evidence_invalid.append("host-deploy-proof.json")
+    elif host_deploy_proof_payload is not None and (
+        not bool(host_deploy_proof_payload.get("ok"))
+        or not bool(host_deploy_proof_payload.get("deploy_artifact_proof_complete"))
+        or bool(host_deploy_proof_payload.get("invalid"))
+    ):
+        release_evidence_invalid.append("host-deploy-proof.json")
+
+    release_verifier_payload = (
+        _load_json_artifact(release_verifier_artifact) if release_verifier_artifact.exists() else None
+    )
+    if release_verifier_payload is None and release_verifier_artifact.exists():
+        release_evidence_invalid.append("verify-release-artifacts.json")
+    elif release_verifier_payload is not None and (
+        not bool(release_verifier_payload.get("ok"))
+        or bool(release_verifier_payload.get("missing"))
+        or bool(release_verifier_payload.get("invalid"))
+    ):
+        release_evidence_invalid.append("verify-release-artifacts.json")
+
+    release_evidence_collection_payload = (
+        _load_json_artifact(release_evidence_collection_artifact)
+        if release_evidence_collection_artifact.exists()
+        else None
+    )
+    if release_evidence_collection_payload is None and release_evidence_collection_artifact.exists():
+        release_evidence_invalid.append("release-evidence-collection.json")
+    elif release_evidence_collection_payload is not None and not bool(
+        release_evidence_collection_payload.get("ok")
+    ):
+        release_evidence_invalid.append("release-evidence-collection.json")
+
+    release_evidence_invalid.extend(deploy_artifact_invalid)
+
+    backup_restore_drill_within_30_days = False
+    if backup_artifact is not None and restore_verify_artifact.exists():
+        now_ts = datetime.now(timezone.utc).timestamp()
+        oldest_allowed_ts = now_ts - (30 * 24 * 60 * 60)
+        backup_restore_drill_within_30_days = (
+            backup_artifact.stat().st_mtime >= oldest_allowed_ts
+            and restore_verify_artifact.stat().st_mtime >= oldest_allowed_ts
+        )
+
+    payload = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "app_version": "0.5.2",
+        "kb_path": str(kb),
+        "config_summary": sanitize_config(cfg).model_dump(mode="json"),
+        "readiness": evaluate_readiness(kb),
+        "integrity": run_integrity_check(kb),
+        "production_verdict": build_production_readiness_verdict(kb, matrix_summary),
+        "release_evidence": {
+            "matrix_summary_path": str(matrix_summary),
+            "matrix_summary_mtime": datetime.fromtimestamp(
+                matrix_summary.stat().st_mtime,
+                tz=timezone.utc,
+            ).isoformat(),
+            "verify_production_readiness_path": (
+                str(readiness_artifact) if readiness_artifact.exists() else ""
+            ),
+            "verify_deployment_path": (
+                str(deployment_artifact) if deployment_artifact.exists() else ""
+            ),
+            "backup_bundle_path": str(backup_artifact) if backup_artifact is not None else "",
+            "backup_bundle_attachments": backup_bundle_attachments,
+            "verify_install_smoke_path": (
+                str(install_smoke_artifact) if install_smoke_artifact.exists() else ""
+            ),
+            "restore_verify_deployment_path": (
+                str(restore_verify_artifact) if restore_verify_artifact.exists() else ""
+            ),
+            "host_deploy_proof_path": (
+                str(host_deploy_proof_artifact) if host_deploy_proof_artifact.exists() else ""
+            ),
+            "verify_release_artifacts_path": (
+                str(release_verifier_artifact) if release_verifier_artifact.exists() else ""
+            ),
+            "release_evidence_collection_path": (
+                str(release_evidence_collection_artifact)
+                if release_evidence_collection_artifact.exists()
+                else ""
+            ),
+            "deploy_artifact_proofs": {
+                key: path if Path(path).exists() else ""
+                for key, path in deploy_artifact_proofs.items()
+            },
+            "deploy_artifact_proof_complete": deploy_artifact_proof_complete,
+            "backup_restore_drill_within_30_days": backup_restore_drill_within_30_days,
+            "complete": not release_evidence_missing and not release_evidence_invalid,
+            "missing": release_evidence_missing,
+            "invalid": release_evidence_invalid,
+        },
+        "job_summary": {
+            "total": len(jobs),
+            "failed": sum(1 for job in jobs if job.status == "failed"),
+            "running": sum(1 for job in jobs if job.status == "running"),
+            "queued": sum(1 for job in jobs if job.status == "queued"),
+            "stale_running": stale_running_jobs,
+        },
+        "recent_jobs": recent_jobs,
+        "log_locations": {
+            "audit": str(kb / ".audit" / "audit.jsonl"),
+            "telemetry": str(kb / ".telemetry"),
+            "jobs": str(kb / ".jobs"),
+            "service_logs": "/var/log/knowledge-manager/*.log or journald",
+        },
+    }
+    path = output_dir / "release-support-bundle.json"
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    click.echo(str(path))
+
+
+@cli.command("verify-deployment")
+@click.option("--base-url", required=True)
+@click.option("--matrix-summary", type=click.Path(path_type=Path, exists=True), required=True)
+@click.option("--format", "fmt", type=click.Choice(["table", "json"]), default="table")
+@click.pass_context
+def verify_deployment(ctx: click.Context, base_url: str, matrix_summary: Path, fmt: str) -> None:
+    from knowledge_manager.ingestion_jobs import list_ingestion_jobs
+    from knowledge_manager.performance_benchmarks import build_production_readiness_verdict
+
+    kb = ctx.obj["kb_path"]
+    _require_kb(kb)
+    ready = httpx.get(f"{base_url}/api/ready", timeout=5.0)
+    metrics = httpx.get(f"{base_url}/api/metrics", timeout=5.0)
+    jobs = list_ingestion_jobs(kb)
+    ready_ok = ready.status_code == 200
+    metrics_nonempty = bool(metrics.text.strip())
+    metrics_ok = metrics.status_code == 200 and metrics_nonempty
+    failed_jobs = sum(1 for job in jobs if job.status == "failed")
+    stale_running_jobs = sum(
+        1
+        for job in jobs
+        if job.status == "running"
+        and job.lease_expires_at is not None
+        and job.lease_expires_at < datetime.now(timezone.utc)
+    )
+    production_verdict = build_production_readiness_verdict(kb, matrix_summary)
+    payload = {
+        "ok": (
+            ready_ok
+            and metrics_ok
+            and failed_jobs == 0
+            and stale_running_jobs == 0
+            and production_verdict["ready_for_production"]
+        ),
+        "http": {
+            "ready_status": ready.status_code,
+            "metrics_status": metrics.status_code,
+            "metrics_nonempty": metrics_nonempty,
+        },
+        "worker": {
+            "failed_jobs": failed_jobs,
+            "stale_running_jobs": stale_running_jobs,
+        },
+        "production_verdict": production_verdict,
+    }
+    if fmt == "json":
+        click.echo(json.dumps(payload, ensure_ascii=False, indent=2))
+        raise click.exceptions.Exit(0 if payload["ok"] else 1)
+    click.echo(f"ready={payload['http']['ready_status']} metrics={payload['http']['metrics_status']}")
+    raise click.exceptions.Exit(0 if payload["ok"] else 1)
 
 
 # --- Platform connector commands (Phase 4A) ---
@@ -3102,6 +3503,7 @@ def source_status(ctx: click.Context) -> None:
 @click.pass_context
 def source_pull(ctx: click.Context, source_id: str) -> None:
     """Pull from a registered enterprise source into staging."""
+    from knowledge_manager.audit import AuditEvent, log_audit_event
     from knowledge_manager.confluence import ConfluenceClient
     from knowledge_manager.ingestion_jobs import (
         claim_ingestion_job,
@@ -3187,6 +3589,16 @@ def source_pull(ctx: click.Context, source_id: str) -> None:
     except Exception as exc:
         fail_ingestion_job(kb, job.job_id, str(exc))
         record_source_sync_error(source_id, str(exc), kb)
+        log_audit_event(
+            kb,
+            AuditEvent(
+                user="cli-source",
+                operation="source.pull",
+                resource=f"km source pull {source_id}",
+                result="failed",
+                details=f"job_id={job.job_id};error={exc}",
+            ),
+        )
         click.echo(f"Error: source pull failed: {exc}", err=True)
         raise click.Abort()
     complete_ingestion_job(
@@ -3195,6 +3607,19 @@ def source_pull(ctx: click.Context, source_id: str) -> None:
         pages_seen=pages_seen,
         modules_staged=modules_staged,
         modules_marked_stale=modules_marked_stale,
+    )
+    log_audit_event(
+        kb,
+        AuditEvent(
+            user="cli-source",
+            operation="source.pull",
+            resource=f"km source pull {source_id}",
+            result="success",
+            details=(
+                f"job_id={job.job_id};pages_seen={pages_seen};"
+                f"modules_staged={modules_staged};modules_marked_stale={modules_marked_stale}"
+            ),
+        ),
     )
     click.echo(
         f"Job {job.job_id}: "

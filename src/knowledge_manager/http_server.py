@@ -1,14 +1,23 @@
 from datetime import datetime, timezone
 from pathlib import Path
+from uuid import uuid4
 
 import json
 from typing import AsyncIterator
 
-from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
+from fastapi import FastAPI, File, Form, HTTPException, Query, Request, UploadFile
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from knowledge_manager.audit import AuditEvent, log_audit_event
+from knowledge_manager.http_authz import (
+    enforce_subject_metadata_override,
+    enforce_subject_module_access,
+    require_auth_system_ready,
+    require_identity,
+    resolve_tenant_context,
+)
 from knowledge_manager.schemas import GraphData, GraphEdge, GraphNode, PaginatedResponse
 from knowledge_manager.storage import (
     aggregate_usage_stats,
@@ -24,6 +33,17 @@ from knowledge_manager.storage import (
     search_modules,
 )
 from knowledge_manager.tenancy import TenantContext, module_visible_to_tenant
+from knowledge_manager.tenant_views import (
+    build_tenant_graph,
+    build_tenant_index,
+    build_tenant_ops_report,
+    build_tenant_recommendations,
+    build_tenant_subgraph,
+    build_tenant_subtree,
+    build_tenant_tree,
+    filter_review_backlog_export,
+    filter_source_backlog_items,
+)
 
 
 class MigrationDryRunRequest(BaseModel):
@@ -51,11 +71,52 @@ def _load_config_safe(kb_path: Path):
         return None
 
 
+def _start_upload_job(
+    kb_path: Path,
+    filename: str,
+    payload: bytes,
+    category: str,
+    mode: str,
+    *,
+    tenant_id: str = "",
+    workspace_id: str = "",
+) -> str:
+    from knowledge_manager.ingestion_jobs import create_ingestion_job, update_job_payload
+
+    job = create_ingestion_job(
+        kb_path,
+        source_id="upload",
+        trigger="http-upload",
+        tenant_id=tenant_id,
+        workspace_id=workspace_id,
+    )
+    tmp_dir = kb_path / ".tmp" / "uploads"
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+    payload_path = tmp_dir / f"{job.job_id}-{Path(filename).name}"
+    payload_path.write_bytes(payload)
+    update_job_payload(
+        kb_path,
+        job.job_id,
+        payload_kind="upload",
+        payload_path=str(payload_path),
+        payload_meta={"filename": filename, "category": category, "mode": mode},
+    )
+    return job.job_id
+
+
 def create_app(kb_path: Path) -> FastAPI:
     app = FastAPI(title="Knowledge Manager", version="0.5.0")
 
     def _load_config():
         return _load_config_safe(kb_path)
+
+    @app.middleware("http")
+    async def inject_request_id(request: Request, call_next):
+        request_id = request.headers.get("X-Request-ID") or uuid4().hex
+        request.state.request_id = request_id
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = request_id
+        return response
 
     ui_dist = Path(__file__).resolve().parent.parent.parent / "src" / "ui" / "dist"
 
@@ -65,6 +126,25 @@ def create_app(kb_path: Path) -> FastAPI:
     def api_health():
         report = generate_health_report(kb_path)
         return report.model_dump()
+
+    @app.get("/api/ready")
+    def api_ready():
+        from knowledge_manager.runtime_checks import evaluate_readiness
+
+        state = evaluate_readiness(kb_path)
+        try:
+            require_auth_system_ready(kb_path)
+        except HTTPException as exc:
+            reasons = list(state.get("reasons", []))
+            reasons.append(str(exc.detail))
+            state = {**state, "ready": False, "reasons": reasons}
+        return JSONResponse(status_code=200 if state["ready"] else 503, content=state)
+
+    @app.get("/api/metrics")
+    def api_metrics():
+        from knowledge_manager.runtime_checks import collect_runtime_metrics
+
+        return PlainTextResponse(collect_runtime_metrics(kb_path), media_type="text/plain")
 
     # ── Stats ──
 
@@ -76,8 +156,9 @@ def create_app(kb_path: Path) -> FastAPI:
     # ── Index ──
 
     @app.get("/api/index")
-    def api_index():
-        index = load_index(kb_path)
+    def api_index(request: Request, tenant_id: str = Query("")):
+        tenant = resolve_tenant_context(request, kb_path, tenant_id=tenant_id)
+        index = build_tenant_index(kb_path, tenant)
         if index is None:
             return {"version": "1.0", "categories": {}, "stats": {"total_modules": 0}}
         d = index.model_dump()
@@ -88,13 +169,15 @@ def create_app(kb_path: Path) -> FastAPI:
     # ── Tree ──
 
     @app.get("/api/tree")
-    def api_tree():
-        tree = get_tree(kb_path)
+    def api_tree(request: Request, tenant_id: str = Query("")):
+        tenant = resolve_tenant_context(request, kb_path, tenant_id=tenant_id)
+        tree = build_tenant_tree(kb_path, tenant)
         return tree.model_dump()
 
     @app.get("/api/tree/{cat}/{mod_id}")
-    def api_tree_node(cat: str, mod_id: str):
-        subtree = get_subtree(cat, mod_id, kb_path)
+    def api_tree_node(request: Request, cat: str, mod_id: str, tenant_id: str = Query("")):
+        tenant = resolve_tenant_context(request, kb_path, tenant_id=tenant_id)
+        subtree = build_tenant_subtree(cat, mod_id, kb_path, tenant)
         if subtree is None:
             raise HTTPException(404, f"Module not found: {cat}/{mod_id}")
         return subtree.model_dump()
@@ -103,6 +186,7 @@ def create_app(kb_path: Path) -> FastAPI:
 
     @app.get("/api/modules")
     def api_modules_list(
+        request: Request,
         category: str = Query(""),
         status: str = Query(""),
         tag: str = Query(""),
@@ -110,7 +194,7 @@ def create_app(kb_path: Path) -> FastAPI:
         page: int = Query(1, ge=1),
         limit: int = Query(50, ge=1, le=200),
     ):
-        tenant = TenantContext(tenant_id=tenant_id) if tenant_id else None
+        tenant = resolve_tenant_context(request, kb_path, tenant_id=tenant_id)
         modules = list_modules(kb_path, tenant=tenant)
         if category:
             modules = [m for m in modules if m.category == category]
@@ -143,12 +227,13 @@ def create_app(kb_path: Path) -> FastAPI:
 
     @app.get("/api/modules/{cat}/{mod_id}")
     def api_module_detail(
+        request: Request,
         cat: str,
         mod_id: str,
         include_archived: bool = Query(False),
         tenant_id: str = Query(""),
     ):
-        tenant = TenantContext(tenant_id=tenant_id) if tenant_id else None
+        tenant = resolve_tenant_context(request, kb_path, tenant_id=tenant_id)
         # Handle .md suffix: strip and return 501 for M1
         if mod_id.endswith(".md"):
             real_id = mod_id[:-3]
@@ -177,7 +262,7 @@ def create_app(kb_path: Path) -> FastAPI:
     # ── Search ──
 
     @app.post("/api/search")
-    def api_search(body: dict):
+    def api_search(request: Request, body: dict):
         query = (body.get("query") or "").strip()
         if not query:
             raise HTTPException(422, "query is required")
@@ -188,7 +273,13 @@ def create_app(kb_path: Path) -> FastAPI:
         task_type = body.get("task_type") or None
         risk_level = body.get("risk_level") or None
         tenant_id = body.get("tenant_id") or ""
-        tenant = TenantContext(tenant_id=tenant_id) if tenant_id else None
+        workspace_id = body.get("workspace_id") or ""
+        tenant = resolve_tenant_context(
+            request,
+            kb_path,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
 
         results = search_modules(
             query,
@@ -211,7 +302,7 @@ def create_app(kb_path: Path) -> FastAPI:
             "agent_id": agent_id,
             "task_type": task_type,
             "risk_level": risk_level,
-            "tenant_id": tenant_id or None,
+            "tenant_id": tenant.tenant_id if tenant else None,
             "results": [
                 {
                     "id": r.module.id,
@@ -235,9 +326,10 @@ def create_app(kb_path: Path) -> FastAPI:
     # ── Write endpoints (M6) ──
 
     @app.post("/api/modules")
-    def api_module_create(body: dict):
+    def api_module_create(body: dict, request: Request):
         from knowledge_manager.schemas import Module, ModuleContent, ModuleMetadata
 
+        subject = require_identity(request, kb_path, "module.write")
         try:
             module = Module(
                 id=body["id"],
@@ -249,6 +341,15 @@ def create_app(kb_path: Path) -> FastAPI:
             )
         except Exception as e:
             raise HTTPException(422, str(e))
+        enforce_subject_metadata_override(
+            request,
+            subject,
+            kb_path,
+            tenant_id=module.metadata.tenant_id,
+            workspace_id=module.metadata.workspace_id,
+        )
+        module.metadata.tenant_id = module.metadata.tenant_id or subject.tenant_id
+        module.metadata.workspace_id = module.metadata.workspace_id or subject.workspace_id
 
         submit_to_staging = body.get("submit_to_staging", True)
         if submit_to_staging:
@@ -261,16 +362,35 @@ def create_app(kb_path: Path) -> FastAPI:
             save_staging_meta(StagingMeta(module_id=module.id, submitted_by="web-ui"), staging)
             return {"id": module.id, "category": module.category, "status": "staged", "review_required": True}
 
-        from knowledge_manager.storage import save_module, rebuild_index
-        save_module(module, kb_path)
-        rebuild_index(kb_path)
-        return module.model_dump()
+        from knowledge_manager.storage import save_module
+        maintenance_state: list[dict] = []
+        save_module(module, kb_path, maintenance_state=maintenance_state)
+        log_audit_event(
+            kb_path,
+            AuditEvent(
+                user=subject.user,
+                operation="module.create",
+                module_id=module.id,
+                category=module.category,
+                tenant_id=subject.tenant_id,
+                resource=f"/api/modules/{module.category}/{module.id}",
+                result="success",
+                request_id=getattr(request.state, "request_id", ""),
+            ),
+        )
+        return {
+            **module.model_dump(mode="json"),
+            "status": "created",
+            "maintenance": maintenance_state[0] if maintenance_state else {"deferred": False},
+        }
 
     @app.put("/api/modules/{cat}/{mod_id}")
-    def api_module_update(cat: str, mod_id: str, body: dict):
+    def api_module_update(cat: str, mod_id: str, body: dict, request: Request):
+        subject = require_identity(request, kb_path, "module.write")
         module = load_module(mod_id, cat, kb_path)
         if module is None:
             raise HTTPException(404, f"Module not found: {cat}/{mod_id}")
+        enforce_subject_module_access(subject, module, kb_path)
 
         for field in ("title", "summary"):
             if field in body:
@@ -280,37 +400,89 @@ def create_app(kb_path: Path) -> FastAPI:
                 if hasattr(module.content, k) and v:
                     setattr(module.content, k, v)
         if "metadata" in body:
+            metadata_updates = body["metadata"]
+            enforce_subject_metadata_override(
+                request,
+                subject,
+                kb_path,
+                tenant_id=metadata_updates.get("tenant_id", module.metadata.tenant_id),
+                workspace_id=metadata_updates.get("workspace_id", module.metadata.workspace_id),
+            )
             for k, v in body["metadata"].items():
                 if hasattr(module.metadata, k):
                     setattr(module.metadata, k, v)
             module.updated_at = datetime.now(timezone.utc)
 
-        from knowledge_manager.storage import save_module, rebuild_index
-        save_module(module, kb_path)
-        rebuild_index(kb_path)
-        return module.model_dump()
+        from knowledge_manager.storage import save_module
+        maintenance_state: list[dict] = []
+        save_module(module, kb_path, maintenance_state=maintenance_state)
+        log_audit_event(
+            kb_path,
+            AuditEvent(
+                user=subject.user,
+                operation="module.update",
+                module_id=module.id,
+                category=module.category,
+                tenant_id=subject.tenant_id,
+                resource=f"/api/modules/{module.category}/{module.id}",
+                result="success",
+                request_id=getattr(request.state, "request_id", ""),
+            ),
+        )
+        return {
+            **module.model_dump(mode="json"),
+            "status": "updated",
+            "maintenance": maintenance_state[0] if maintenance_state else {"deferred": False},
+        }
 
     @app.delete("/api/modules/{cat}/{mod_id}")
-    def api_module_delete(cat: str, mod_id: str):
-        from knowledge_manager.storage import delete_module, load_index, save_index
+    def api_module_delete(cat: str, mod_id: str, request: Request):
+        from knowledge_manager.storage import delete_module
 
-        if not delete_module(mod_id, cat, kb_path):
+        subject = require_identity(request, kb_path, "module.delete")
+        module = load_module(mod_id, cat, kb_path)
+        if module is None:
             raise HTTPException(404, f"Module not found: {cat}/{mod_id}")
-        index = load_index(kb_path)
-        if index:
-            index.remove_module(mod_id, cat)
-            save_index(index, kb_path)
-        return {"deleted": f"{cat}/{mod_id}"}
+        enforce_subject_module_access(subject, module, kb_path)
+        maintenance_state: list[dict] = []
+        if not delete_module(mod_id, cat, kb_path, maintenance_state=maintenance_state):
+            raise HTTPException(404, f"Module not found: {cat}/{mod_id}")
+        log_audit_event(
+            kb_path,
+            AuditEvent(
+                user=subject.user,
+                operation="module.delete",
+                module_id=mod_id,
+                category=cat,
+                tenant_id=subject.tenant_id,
+                resource=f"/api/modules/{cat}/{mod_id}",
+                result="success",
+                request_id=getattr(request.state, "request_id", ""),
+            ),
+        )
+        return {
+            "deleted": f"{cat}/{mod_id}",
+            "maintenance": maintenance_state[0] if maintenance_state else {"deferred": False},
+        }
 
     # ── Staging API (M6) ──
 
     @app.get("/api/staging")
-    def api_staging_list():
+    def api_staging_list(request: Request, tenant_id: str = Query(""), workspace_id: str = Query("")):
         from knowledge_manager.storage import list_staging, load_staging_meta
 
+        require_identity(request, kb_path, "module.review")
+        tenant = resolve_tenant_context(
+            request,
+            kb_path,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
         staging = kb_path / ".staging"
         items = []
         for m in list_staging(staging):
+            if tenant is not None and not module_visible_to_tenant(m, tenant):
+                continue
             meta = load_staging_meta(m.id, staging)
             cfg = _load_config()
             required = cfg.review.required_approvals if cfg else 1
@@ -327,54 +499,105 @@ def create_app(kb_path: Path) -> FastAPI:
         return {"items": items}
 
     @app.post("/api/staging/{module_id}/approve")
-    def api_staging_approve(module_id: str, body: dict | None = None):
+    def api_staging_approve(module_id: str, request: Request, body: dict | None = None):
         from knowledge_manager.storage import (
-            approve_from_staging, load_staging_meta, list_staging,
-            save_staging_meta, rebuild_index,
+            approve_from_staging, load_from_staging, load_staging_meta, list_staging,
+            save_staging_meta,
         )
         from knowledge_manager.schemas import ReviewRecord, StagingMeta
 
+        subject = require_identity(request, kb_path, "module.review")
         staging = kb_path / ".staging"
+        staged_module = load_from_staging(module_id, staging)
+        if staged_module is None:
+            raise HTTPException(404, f"Module not found: {module_id}")
+        enforce_subject_module_access(subject, staged_module, kb_path)
         meta = load_staging_meta(module_id, staging)
         if meta is None:
             meta = StagingMeta(module_id=module_id)
 
+        if body and "reviewer" in body and body["reviewer"] != subject.user:
+            raise HTTPException(status_code=422, detail="reviewer is server-assigned")
         comment = (body or {}).get("comment", "")
-        user = (body or {}).get("reviewer", "web-ui")
-        meta.reviews.append(ReviewRecord(reviewer=user, action="approved", comment=comment))
+        meta.reviews.append(ReviewRecord(reviewer=subject.user, action="approved", comment=comment))
 
         cfg = _load_config()
         required = cfg.review.required_approvals if cfg else 1
         if meta.approval_count() >= required:
             approve_from_staging(module_id, staging, kb_path)
-            rebuild_index(kb_path)
+            log_audit_event(
+                kb_path,
+                AuditEvent(
+                    user=subject.user,
+                    operation="staging.approve",
+                    module_id=module_id,
+                    category=staged_module.category,
+                    tenant_id=subject.tenant_id,
+                    resource=f"/api/staging/{module_id}/approve",
+                    result="success",
+                    request_id=getattr(request.state, "request_id", ""),
+                ),
+            )
             return {"status": "merged", "approvals": meta.approval_count()}
         save_staging_meta(meta, staging)
+        log_audit_event(
+            kb_path,
+            AuditEvent(
+                user=subject.user,
+                operation="staging.approve",
+                module_id=module_id,
+                category=staged_module.category,
+                tenant_id=subject.tenant_id,
+                resource=f"/api/staging/{module_id}/approve",
+                result="pending",
+                request_id=getattr(request.state, "request_id", ""),
+            ),
+        )
         return {"status": "pending", "approvals": meta.approval_count(), "required": required}
 
     @app.post("/api/staging/{module_id}/reject")
-    def api_staging_reject(module_id: str, body: dict | None = None):
-        from knowledge_manager.storage import load_staging_meta, save_staging_meta
+    def api_staging_reject(module_id: str, request: Request, body: dict | None = None):
+        from knowledge_manager.storage import load_from_staging, load_staging_meta, save_staging_meta
         from knowledge_manager.schemas import ReviewRecord, StagingMeta
 
+        subject = require_identity(request, kb_path, "module.review")
         staging = kb_path / ".staging"
+        staged_module = load_from_staging(module_id, staging)
+        if staged_module is None:
+            raise HTTPException(404, f"Module not found: {module_id}")
+        enforce_subject_module_access(subject, staged_module, kb_path)
         meta = load_staging_meta(module_id, staging)
         if meta is None:
             meta = StagingMeta(module_id=module_id)
 
+        if body and "reviewer" in body and body["reviewer"] != subject.user:
+            raise HTTPException(status_code=422, detail="reviewer is server-assigned")
         comment = (body or {}).get("comment", "No reason given")
-        user = (body or {}).get("reviewer", "web-ui")
-        meta.reviews.append(ReviewRecord(reviewer=user, action="changes-requested", comment=comment))
+        meta.reviews.append(ReviewRecord(reviewer=subject.user, action="changes-requested", comment=comment))
         meta.status = "changes-requested"
         save_staging_meta(meta, staging)
+        log_audit_event(
+            kb_path,
+            AuditEvent(
+                user=subject.user,
+                operation="staging.reject",
+                module_id=module_id,
+                category=staged_module.category,
+                tenant_id=subject.tenant_id,
+                resource=f"/api/staging/{module_id}/reject",
+                result="success",
+                request_id=getattr(request.state, "request_id", ""),
+            ),
+        )
         return {"status": "changes-requested", "module_id": module_id}
 
     # ── Tree mutation (M6) ──
 
     @app.put("/api/tree")
-    def api_tree_update(body: dict):
+    def api_tree_update(body: dict, request: Request):
         from knowledge_manager.storage import load_index, save_index, save_tree
 
+        require_identity(request, kb_path, "module.write")
         action = body.get("action")
         node_id = body.get("node_id", "")
         new_parent = body.get("new_parent", "")
@@ -448,121 +671,136 @@ def create_app(kb_path: Path) -> FastAPI:
     # ── Graph ──
 
     @app.get("/api/graph")
-    def api_graph():
-        index = load_index(kb_path)
-        if index is None:
-            return GraphData().model_dump()
-
-        gs = analyze_graph(kb_path)
-        nodes = []
-        for cat_name, cat in index.categories.items():
-            for m in cat.modules:
-                key = f"{cat_name}/{m.id}"
-                in_deg = 0
-                out_deg = len(index.graph.get(key, []))
-                for targets in index.graph.values():
-                    if key in targets:
-                        in_deg += 1
-                nodes.append(GraphNode(
-                    id=key, label=m.title, category=cat_name,
-                    in_degree=in_deg, out_degree=out_deg,
-                ))
-        edges = []
-        for src, targets in index.graph.items():
-            for t in targets:
-                edges.append(GraphEdge(source=src, target=t, weight=1.0))
-
-        return GraphData(
-            nodes=nodes,
-            edges=edges,
-            stats={"total_nodes": gs.total_nodes, "total_edges": gs.total_edges, "density": gs.density},
-        ).model_dump()
+    def api_graph(request: Request, tenant_id: str = Query("")):
+        tenant = resolve_tenant_context(request, kb_path, tenant_id=tenant_id)
+        return build_tenant_graph(kb_path, tenant).model_dump()
 
     @app.get("/api/graph/{cat}/{mod_id}")
-    def api_graph_node(cat: str, mod_id: str):
-        index = load_index(kb_path)
-        if index is None:
-            raise HTTPException(404, "No knowledge base")
-        center_key = f"{cat}/{mod_id}"
-        module = load_module(mod_id, cat, kb_path)
-        if module is None:
-            raise HTTPException(404, f"Module not found: {center_key}")
-
-        related = set(module.metadata.related_modules)
-        related.add(center_key)
-        nodes = []
-        edges = []
-        for ref in related:
-            parts = ref.split("/", 1)
-            if len(parts) != 2:
-                continue
-            ref_module = load_module(parts[1], parts[0], kb_path)
-            if ref_module is None:
-                continue
-            nodes.append(GraphNode(
-                id=ref, label=ref_module.title, category=parts[0],
-                status=ref_module.metadata.status,
-            ))
-        for ref in module.metadata.related_modules:
-            edges.append(GraphEdge(source=center_key, target=ref, weight=1.0))
-        for ref in module.metadata.related_modules:
-            ref_parts = ref.split("/", 1)
-            if len(ref_parts) == 2:
-                ref_mod = load_module(ref_parts[1], ref_parts[0], kb_path)
-                if ref_mod:
-                    for r2 in ref_mod.metadata.related_modules:
-                        if r2 in related and r2 != ref:
-                            edges.append(GraphEdge(source=ref, target=r2, weight=0.5))
-
-        return GraphData(nodes=nodes, edges=edges, stats={"center": center_key, "depth": 1}).model_dump()
+    def api_graph_node(request: Request, cat: str, mod_id: str, tenant_id: str = Query("")):
+        tenant = resolve_tenant_context(request, kb_path, tenant_id=tenant_id)
+        graph = build_tenant_subgraph(cat, mod_id, kb_path, tenant)
+        if graph is None:
+            raise HTTPException(404, f"Module not found: {cat}/{mod_id}")
+        return graph.model_dump()
 
     # ── Recommendations ──
 
     @app.get("/api/recommendations")
-    def api_recommendations():
-        report = generate_recommendations(kb_path)
+    def api_recommendations(request: Request, tenant_id: str = Query("")):
+        tenant = resolve_tenant_context(request, kb_path, tenant_id=tenant_id)
+        report = build_tenant_recommendations(kb_path, tenant)
         return report.model_dump()
 
     @app.get("/api/ops")
-    def api_ops():
-        report = generate_ops_report(kb_path)
+    def api_ops(request: Request, tenant_id: str = Query(""), workspace_id: str = Query("")):
+        require_identity(request, kb_path, "audit.read")
+        tenant = resolve_tenant_context(
+            request,
+            kb_path,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
+        report = build_tenant_ops_report(kb_path, tenant)
         return report.model_dump()
 
     @app.get("/api/ops/backlog")
-    def api_ops_backlog():
+    def api_ops_backlog(request: Request, tenant_id: str = Query(""), workspace_id: str = Query("")):
         from knowledge_manager.ops_export import generate_review_backlog_export
 
-        return generate_review_backlog_export(kb_path)
+        require_identity(request, kb_path, "audit.read")
+        tenant = resolve_tenant_context(
+            request,
+            kb_path,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
+        export = generate_review_backlog_export(kb_path)
+        return filter_review_backlog_export(kb_path, tenant, export)
 
     @app.get("/api/ops/backlog/review")
-    def api_ops_backlog_review():
+    def api_ops_backlog_review(request: Request, tenant_id: str = Query(""), workspace_id: str = Query("")):
         from knowledge_manager.ops_export import generate_review_backlog_export
 
-        return generate_review_backlog_export(kb_path)
+        require_identity(request, kb_path, "audit.read")
+        tenant = resolve_tenant_context(
+            request,
+            kb_path,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
+        export = generate_review_backlog_export(kb_path)
+        return filter_review_backlog_export(kb_path, tenant, export)
 
     @app.get("/api/ops/backlog/risky-misses")
-    def api_ops_backlog_risky_misses():
+    def api_ops_backlog_risky_misses(request: Request):
         from knowledge_manager.ops_export import generate_risky_miss_export
 
+        require_identity(request, kb_path, "config.manage")
         return generate_risky_miss_export(kb_path)
 
     @app.get("/api/ops/backlog/source")
-    def api_ops_backlog_source():
+    def api_ops_backlog_source(request: Request, tenant_id: str = Query(""), workspace_id: str = Query("")):
         from knowledge_manager.ops_export import generate_source_backlog_export
 
-        return generate_source_backlog_export(kb_path)
+        require_identity(request, kb_path, "audit.read")
+        tenant = resolve_tenant_context(
+            request,
+            kb_path,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
+        export = generate_source_backlog_export(kb_path)
+        items = filter_source_backlog_items(kb_path, tenant, export.get("items", []))
+        return {**export, "total": len(items), "items": items}
 
     @app.get("/api/dual-view")
-    def api_dual_view():
+    def api_dual_view(request: Request, tenant_id: str = Query(""), workspace_id: str = Query("")):
         from knowledge_manager.dual_view import build_dual_view
 
-        return build_dual_view(kb_path)
+        require_identity(request, kb_path, "audit.read")
+        tenant = resolve_tenant_context(
+            request,
+            kb_path,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
+        return build_dual_view(kb_path, tenant=tenant)
 
     @app.get("/api/source/jobs")
-    def api_source_jobs():
+    def api_source_jobs(request: Request, tenant_id: str = Query(""), workspace_id: str = Query("")):
         from knowledge_manager.ingestion_jobs import list_ingestion_jobs
 
+        subject = require_identity(request, kb_path, "audit.read")
+        tenant = resolve_tenant_context(
+            request,
+            kb_path,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
         jobs = list_ingestion_jobs(kb_path)
+        if tenant is not None:
+            jobs = [
+                job for job in jobs
+                if (
+                    (not job.tenant_id and tenant.allow_global_reads)
+                    or job.tenant_id == tenant.tenant_id
+                ) and (
+                    (not tenant.workspace_id)
+                    or not job.workspace_id
+                    or job.workspace_id == tenant.workspace_id
+                )
+            ]
+        log_audit_event(
+            kb_path,
+            AuditEvent(
+                user=subject.user,
+                operation="source.jobs.read",
+                tenant_id=subject.tenant_id,
+                resource="/api/source/jobs",
+                result="success",
+                request_id=getattr(request.state, "request_id", ""),
+            ),
+        )
         return {
             "total": len(jobs),
             "items": [job.model_dump(mode="json") for job in jobs],
@@ -579,10 +817,28 @@ def create_app(kb_path: Path) -> FastAPI:
         return summary.model_dump()
 
     @app.get("/api/admin/dashboard")
-    def api_admin_dashboard():
+    def api_admin_dashboard(request: Request, tenant_id: str = Query(""), workspace_id: str = Query("")):
         from knowledge_manager.admin_views import build_admin_dashboard
 
-        return build_admin_dashboard(kb_path)
+        subject = require_identity(request, kb_path, "config.manage")
+        tenant = resolve_tenant_context(
+            request,
+            kb_path,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
+        log_audit_event(
+            kb_path,
+            AuditEvent(
+                user=subject.user,
+                operation="admin.dashboard.read",
+                tenant_id=subject.tenant_id,
+                resource="/api/admin/dashboard",
+                result="success",
+                request_id=getattr(request.state, "request_id", ""),
+            ),
+        )
+        return build_admin_dashboard(kb_path, tenant=tenant)
 
     @app.post("/api/access/explain")
     def api_access_explain(request: AccessExplainRequest):
@@ -601,88 +857,44 @@ def create_app(kb_path: Path) -> FastAPI:
     # ── UI entry ──
 
     @app.post("/api/upload")
-    async def api_upload(file: UploadFile = File(...), category: str = Form(default="general"), mode: str = Form(default="auto")):
-        from knowledge_manager.extractor import Extractor
-        from knowledge_manager.llm_clients import create_client
-        from knowledge_manager.schemas import StagingMeta, ExtractionConfig
-
-        cfg = _load_config()
-        if cfg is None:
-            raise HTTPException(status_code=500, detail="No config found")
-
-        provider_name, provider_cfg = cfg.get_default_provider()
-        client = create_client(provider_name, provider_cfg)
-        extractor = Extractor(client, cfg.extraction)
-
+    async def api_upload(
+        request: Request,
+        file: UploadFile = File(...),
+        category: str = Form(default="general"),
+        mode: str = Form(default="auto"),
+    ):
+        subject = require_identity(request, kb_path, "module.write")
         content = await file.read()
         filename = file.filename or "upload"
-        suffix = Path(filename).suffix.lower()
-
-        # Save to temp
-        tmp_dir = kb_path / ".tmp"
-        tmp_dir.mkdir(exist_ok=True)
-        tmp_path = tmp_dir / filename
-        tmp_path.write_bytes(content)
-
-        # Build existing categories for auto-categorize
-        existing_categories = ""
-        if cfg.extraction.auto_categorize:
-            index = load_index(kb_path)
-            if index is not None and index.categories:
-                existing_categories = json.dumps({
-                    name: cat.description for name, cat in index.categories.items()
-                })
-
-        # Detect mode
-        if mode == "auto":
-            if suffix in (".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"):
-                mode = "image"
-            elif suffix in (".txt", ".md", ".markdown", ".rst"):
-                mode = "text"
-            else:
-                mode = "text"
-
-        try:
-            if mode == "image":
-                modules = await extractor.extract_from_image(str(tmp_path), category, existing_categories)
-            else:
-                text = content.decode("utf-8", errors="replace")
-                modules = await extractor.extract(text, category, existing_categories)
-        except Exception as e:
-            tmp_path.unlink(missing_ok=True)
-            raise HTTPException(status_code=500, detail=f"Extraction failed: {e}")
-
-        # Save to staging
-        from knowledge_manager.storage import save_to_staging, save_staging_meta
-        staging = kb_path / ".staging"
-        staging.mkdir(exist_ok=True)
-
-        import subprocess as _sp
-        git_user = "web-upload"
-        try:
-            r = _sp.run(["git", "-C", str(kb_path), "config", "user.name"], capture_output=True, text=True)
-            if r.returncode == 0 and r.stdout.strip():
-                git_user = r.stdout.strip()
-        except Exception:
-            pass
-
-        for m in modules:
-            save_to_staging(m, staging)
-            meta = StagingMeta(module_id=m.id, submitted_by=git_user)
-            save_staging_meta(meta, staging)
-
-        tmp_path.unlink(missing_ok=True)
-
-        return JSONResponse({
-            "status": "ok",
-            "modules_extracted": len(modules),
-            "modules": [
-                {"id": m.id, "category": m.category, "title": m.title}
-                for m in modules
-            ],
-            "staged": True,
-            "filename": filename,
-        })
+        job_id = _start_upload_job(
+            kb_path,
+            filename,
+            content,
+            category,
+            mode,
+            tenant_id=subject.tenant_id,
+            workspace_id=subject.workspace_id,
+        )
+        log_audit_event(
+            kb_path,
+            AuditEvent(
+                user=subject.user,
+                operation="source.job.enqueue",
+                tenant_id=subject.tenant_id,
+                resource="/api/upload",
+                result="accepted",
+                details=f"job_id={job_id};filename={filename}",
+                request_id=getattr(request.state, "request_id", ""),
+            ),
+        )
+        return JSONResponse(
+            status_code=202,
+            content={
+                "status": "accepted",
+                "job_id": job_id,
+                "filename": filename,
+            },
+        )
 
     @app.get("/ui", response_class=HTMLResponse)
     def ui_entry():

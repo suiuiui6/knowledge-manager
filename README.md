@@ -192,6 +192,45 @@ The same control-plane data is exposed through:
 - HTTP: `/api/ops`, `/api/ops/backlog/review`, `/api/ops/backlog/risky-misses`, `/api/ops/backlog/source`, `/api/dual-view`
 - MCP resources: `knowledge://ops`, `knowledge://ops/backlog/review`, `knowledge://ops/backlog/risky-misses`, `knowledge://ops/backlog/source`, `knowledge://dual-view`
 
+## Runtime Environment Contract
+
+Deployment-owned process settings are read from environment variables:
+
+- `KM_KB_PATH`
+- `KM_UI_HOST`
+- `KM_UI_PORT`
+- `KM_LOG_LEVEL`
+
+`KM_UI_PORT` must be an integer TCP port. `KM_LOG_LEVEL` must be one of `DEBUG`, `INFO`, `WARNING`, `ERROR`, or `CRITICAL`.
+
+Security mode, tenancy, and MCP exposure remain application config and stay in `kb/config.json`.
+
+## Migration Note
+
+Before this change, commands without `--kb-path` defaulted to the current working directory.
+After this change, commands without `--kb-path` resolve the KB path from `KM_KB_PATH` first and fall back to the current working directory only when `KM_KB_PATH` is unset.
+Any shell profile, service unit, or automation that exports `KM_KB_PATH` therefore changes the default KB target for bare `km ...` commands.
+
+## Production Verification
+
+Before production cutover, verify both:
+
+- `python scripts/verify_install_smoke.py`
+
+```bash
+RELEASE_DIR=/opt/knowledge-manager/release-artifacts/run-$(date +%Y%m%d%H%M%S)
+install -d -o km -g km "$RELEASE_DIR"
+python3.11 /opt/knowledge-manager/scripts/verify_install_smoke.py --project-root /opt/knowledge-manager --python python3.11 --format json > "$RELEASE_DIR"/verify-install-smoke.json
+/opt/knowledge-manager/.venv/bin/km --kb-path /opt/knowledge-manager/kb verify-production-readiness --matrix-summary <fresh-matrix-summary.json> > "$RELEASE_DIR"/verify-production-readiness.json
+/opt/knowledge-manager/.venv/bin/km --kb-path /opt/knowledge-manager/kb verify-deployment --base-url http://127.0.0.1:8420 --matrix-summary <fresh-matrix-summary.json> --format json > "$RELEASE_DIR"/verify-deployment.json
+/opt/knowledge-manager/.venv/bin/km --kb-path /opt/knowledge-manager/kb support bundle --output-dir "$RELEASE_DIR" --matrix-summary <fresh-matrix-summary.json>
+python3.11 /opt/knowledge-manager/scripts/collect_host_deploy_proof.py --output-dir "$RELEASE_DIR"
+python3.11 /opt/knowledge-manager/scripts/verify_release_artifacts.py --release-dir "$RELEASE_DIR"
+python3.11 /opt/knowledge-manager/scripts/collect_release_evidence.py --release-dir "$RELEASE_DIR" --kb-path /opt/knowledge-manager/kb --base-url http://127.0.0.1:8420 --matrix-summary <fresh-matrix-summary.json>
+# host-deploy-proof.json is written into $RELEASE_DIR by collect_host_deploy_proof.py
+# verify-release-artifacts.json is written into $RELEASE_DIR by verify_release_artifacts.py
+```
+
 ## Module schema
 
 ```json

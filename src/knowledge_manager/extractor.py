@@ -140,16 +140,22 @@ class Extractor:
         self.llm = llm
         self.config = config
 
+    def _effective_max_modules(self) -> int:
+        return min(self.config.max_modules_per_extraction, 3)
+
+    def _effective_chunk_size(self) -> int:
+        return min(self.config.chunk_size, 4000)
+
     async def extract(self, text: str, category: str, existing_categories: str = "") -> List[Module]:
-        max_modules = self.config.max_modules_per_extraction
-        chunks = _chunk_text(text, self.config.chunk_size, self.config.chunk_overlap)
+        max_modules = self._effective_max_modules()
+        chunks = _chunk_text(text, self._effective_chunk_size(), self.config.chunk_overlap)
         logger.info(
             "Extracting category=%s from %s characters in %s chunk(s) "
             "(chunk_size=%s, overlap=%s)",
             category,
             len(text),
             len(chunks),
-            self.config.chunk_size,
+            self._effective_chunk_size(),
             self.config.chunk_overlap,
         )
 
@@ -185,7 +191,7 @@ class Extractor:
             category=category,
             existing_categories=existing_categories,
             text=text,
-            max_modules=self.config.max_modules_per_extraction,
+            max_modules=self._effective_max_modules(),
         )
         logger.debug(
             "Prepared prompt for chunk %s/%s (%s characters, category=%s, max_modules=%s)",
@@ -193,8 +199,8 @@ class Extractor:
             total_chunks,
             len(prompt),
             category,
-            self.config.max_modules_per_extraction,
-        )
+                    self._effective_max_modules(),
+                )
 
         items = await self._call_llm_with_retry(prompt, chunk_index, total_chunks)
         if not items:
@@ -314,7 +320,7 @@ class Extractor:
         return None
 
     async def extract_from_image(self, image_path: str, category: str, existing_categories: str = "") -> list:
-        max_modules = self.config.max_modules_per_extraction
+        max_modules = self._effective_max_modules()
         prompt = IMAGE_PROMPT.format(category=category, max_modules=max_modules)
 
         try:
@@ -339,7 +345,7 @@ class Extractor:
             logger.warning("Repo path does not exist: %s", repo_path)
             return []
 
-        max_modules = self.config.max_modules_per_extraction
+        max_modules = self._effective_max_modules()
         dir_tree = self._render_dir_tree(root)
         key_files = self._read_key_files(root)
 
@@ -359,7 +365,7 @@ class Extractor:
         return _asyncio.run(self._extract_from_meeting_async(text, category, existing_categories))
 
     async def _extract_from_meeting_async(self, text: str, category: str, existing_categories: str = "") -> list:
-        max_modules = self.config.max_modules_per_extraction
+        max_modules = self._effective_max_modules()
         prompt = MEETING_PROMPT.format(category=category, text=text, max_modules=max_modules)
 
         raw = await self.llm.complete(prompt)
@@ -383,7 +389,7 @@ class Extractor:
             return []
 
         modules = []
-        for item in items[: self.config.max_modules_per_extraction]:
+        for item in items[: self._effective_max_modules()]:
             try:
                 content_data = item.get("content", {})
                 for key in content_data:

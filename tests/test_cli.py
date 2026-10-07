@@ -2,6 +2,7 @@ import json
 import logging
 import os
 from pathlib import Path
+from uuid import uuid4
 from unittest.mock import AsyncMock, patch
 
 import httpx
@@ -13,6 +14,14 @@ from knowledge_manager.schemas import Module, ModuleContent, ModuleMetadata
 from knowledge_manager.storage import save_module, save_to_staging, save_index, rebuild_index, load_index
 from knowledge_manager.schemas import Index
 from knowledge_manager.confluence import ConfluencePage
+
+
+def make_test_dir(name: str) -> Path:
+    root = Path(__file__).resolve().parents[1] / "tmp"
+    root.mkdir(parents=True, exist_ok=True)
+    path = root / f"{name}-{uuid4().hex}"
+    path.mkdir()
+    return path
 
 
 @pytest.fixture
@@ -109,6 +118,931 @@ def test_cli_stats(cli_runner, initialized_kb):
     assert result.exit_code == 0
     assert "Total modules" in result.output
     assert "1" in result.output
+
+
+def test_runtime_env_uses_explicit_km_variables(monkeypatch):
+    from knowledge_manager.runtime_env import load_runtime_env_settings
+
+    kb = make_test_dir("km-runtime-env-kb")
+    monkeypatch.setenv("KM_KB_PATH", str(kb))
+    monkeypatch.setenv("KM_UI_HOST", "0.0.0.0")
+    monkeypatch.setenv("KM_UI_PORT", "9001")
+    monkeypatch.setenv("KM_LOG_LEVEL", "INFO")
+
+    settings = load_runtime_env_settings()
+
+    assert settings.kb_path == kb
+    assert settings.ui_host == "0.0.0.0"
+    assert settings.ui_port == 9001
+    assert settings.log_level == "INFO"
+
+
+def test_configure_logging_uses_runtime_env_level_when_not_verbose(monkeypatch):
+    from knowledge_manager.cli import _configure_logging
+    from knowledge_manager.runtime_env import load_runtime_env_settings
+
+    kb = make_test_dir("km-runtime-env-log")
+    monkeypatch.setenv("KM_KB_PATH", str(kb))
+    monkeypatch.setenv("KM_LOG_LEVEL", "INFO")
+
+    settings = load_runtime_env_settings()
+    _configure_logging(verbose=False, default_level=settings.log_level)
+
+    assert logging.getLogger("knowledge_manager").level == logging.INFO
+
+
+def test_runtime_env_invalid_ui_port_raises_clear_error(monkeypatch):
+    from knowledge_manager.runtime_env import RuntimeEnvError, load_runtime_env_settings
+
+    monkeypatch.setenv("KM_UI_PORT", "not-a-port")
+
+    with pytest.raises(RuntimeEnvError, match="KM_UI_PORT"):
+        load_runtime_env_settings()
+
+
+def test_runtime_env_invalid_log_level_raises_clear_error(monkeypatch):
+    from knowledge_manager.runtime_env import RuntimeEnvError, load_runtime_env_settings
+
+    monkeypatch.setenv("KM_LOG_LEVEL", "LOUD")
+
+    with pytest.raises(RuntimeEnvError, match="KM_LOG_LEVEL"):
+        load_runtime_env_settings()
+
+
+def test_cli_uses_runtime_env_kb_path_when_flag_is_omitted(cli_runner, monkeypatch):
+    kb = Path("D:/tyh/runtime-env-kb")
+    seen = {}
+    monkeypatch.setenv("KM_KB_PATH", str(kb))
+    monkeypatch.setattr("knowledge_manager.cli._require_kb", lambda path: seen.setdefault("kb_path", path))
+    monkeypatch.setattr("knowledge_manager.cli.load_index", lambda path: Index(description="runtime env"))
+
+    result = cli_runner.invoke(cli, ["stats"])
+
+    assert result.exit_code == 0
+    assert "Total modules" in result.output
+    assert seen["kb_path"] == kb
+
+
+def test_cli_init_uses_runtime_env_kb_path_when_path_is_omitted(cli_runner, monkeypatch):
+    kb = make_test_dir("runtime-env-init-kb")
+    monkeypatch.setenv("KM_KB_PATH", str(kb))
+
+    with cli_runner.isolated_filesystem():
+        result = cli_runner.invoke(cli, ["init"])
+
+    assert result.exit_code == 0
+    assert (kb / "index.json").exists()
+    assert (kb / "config.json").exists()
+    assert (kb / ".staging").exists()
+
+
+def test_cli_reports_invalid_runtime_env_settings(cli_runner, monkeypatch):
+    monkeypatch.setenv("KM_UI_PORT", "not-a-port")
+
+    result = cli_runner.invoke(cli, ["stats"])
+
+    assert result.exit_code != 0
+    assert "KM_UI_PORT" in result.output
+    assert "integer" in result.output.lower()
+
+
+def test_cli_reports_invalid_runtime_env_log_level(cli_runner, monkeypatch):
+    monkeypatch.setenv("KM_LOG_LEVEL", "LOUD")
+
+    result = cli_runner.invoke(cli, ["stats"])
+
+    assert result.exit_code != 0
+    assert "KM_LOG_LEVEL" in result.output
+    assert "debug" in result.output.lower()
+
+
+def test_cli_integrity_reports_json(cli_runner, initialized_kb):
+    result = cli_runner.invoke(
+        cli,
+        ["--kb-path", str(initialized_kb), "integrity", "--format", "json"],
+    )
+    assert result.exit_code == 0
+    assert '"issues"' in result.output
+
+
+def test_support_bundle_includes_version(cli_runner, monkeypatch):
+    import os
+    from datetime import datetime, timedelta, timezone
+
+    from knowledge_manager.ingestion_jobs import IngestionJob
+    from scripts.backup_kb import create_backup_bundle
+
+    kb = make_test_dir("support-bundle-kb")
+    (kb / "index.json").write_text("{}", encoding="utf-8")
+    output_dir = make_test_dir("support-bundle-output")
+    matrix_summary = output_dir / "matrix-summary.json"
+    matrix_summary.write_text("{}", encoding="utf-8")
+    readiness_json = output_dir / "verify-production-readiness.json"
+    readiness_json.write_text('{"ready_for_production": true}', encoding="utf-8")
+    deployment_json = output_dir / "verify-deployment.json"
+    deployment_json.write_text('{"ok": true}', encoding="utf-8")
+    install_smoke_json = output_dir / "verify-install-smoke.json"
+    install_smoke_json.write_text('{"ok": true}', encoding="utf-8")
+    restore_verify_json = output_dir / "restore-verify-deployment.json"
+    restore_verify_json.write_text('{"ok": true}', encoding="utf-8")
+    host_deploy_proof_json = output_dir / "host-deploy-proof.json"
+    host_deploy_proof_json.write_text(
+        '{"ok": true, "deploy_artifact_proof_complete": true, "invalid": []}',
+        encoding="utf-8",
+    )
+    verify_release_artifacts_json = output_dir / "verify-release-artifacts.json"
+    verify_release_artifacts_json.write_text(
+        '{"ok": true, "missing": [], "invalid": []}',
+        encoding="utf-8",
+    )
+    release_evidence_collection_json = output_dir / "release-evidence-collection.json"
+    release_evidence_collection_json.write_text(
+        '{"ok": true, "steps": []}',
+        encoding="utf-8",
+    )
+    api_unit_txt = output_dir / "knowledge-manager-api.unit.txt"
+    api_unit_txt.write_text(
+        "[Service]\nEnvironmentFile=/opt/knowledge-manager/.env.production\nExecStart=/opt/knowledge-manager/.venv/bin/km serve --ui\n",
+        encoding="utf-8",
+    )
+    worker_unit_txt = output_dir / "knowledge-manager-worker.unit.txt"
+    worker_unit_txt.write_text(
+        "[Service]\nEnvironmentFile=/opt/knowledge-manager/.env.production\nExecStart=/opt/knowledge-manager/.venv/bin/km worker run --poll-interval 1.0\n",
+        encoding="utf-8",
+    )
+    caddy_validate_txt = output_dir / "caddy-validate.txt"
+    caddy_validate_txt.write_text("Valid configuration", encoding="utf-8")
+    logrotate_check_txt = output_dir / "logrotate-check.txt"
+    logrotate_check_txt.write_text("Handling 2 logs", encoding="utf-8")
+    backup_zip = create_backup_bundle(
+        kb,
+        output_dir,
+        attachments=[readiness_json, deployment_json, install_smoke_json],
+    )
+    fresh_ts = datetime.now(timezone.utc).timestamp()
+    os.utime(restore_verify_json, (fresh_ts, fresh_ts))
+    os.utime(backup_zip, (fresh_ts, fresh_ts))
+
+    now = datetime.now(timezone.utc)
+    monkeypatch.setattr(
+        "knowledge_manager.ingestion_jobs.list_ingestion_jobs",
+        lambda kb_path: [
+            IngestionJob(
+                job_id="job-stale",
+                source_id="team-docs",
+                trigger="manual",
+                status="running",
+                lease_expires_at=now - timedelta(minutes=5),
+            ),
+            IngestionJob(
+                job_id="job-failed",
+                source_id="team-docs",
+                trigger="manual",
+                status="failed",
+            ),
+        ],
+    )
+    monkeypatch.setattr(
+        "knowledge_manager.performance_benchmarks.build_production_readiness_verdict",
+        lambda kb_path, matrix_summary: {"ready_for_production": True},
+    )
+    monkeypatch.setattr("knowledge_manager.runtime_checks.evaluate_readiness", lambda kb_path: {"ready": True})
+    monkeypatch.setattr("knowledge_manager.runtime_checks.run_integrity_check", lambda kb_path: {"ok": True})
+
+    result = cli_runner.invoke(
+        cli,
+        [
+            "--kb-path",
+            str(kb),
+            "support",
+            "bundle",
+            "--output-dir",
+            str(output_dir),
+            "--matrix-summary",
+            str(matrix_summary),
+        ],
+    )
+
+    assert result.exit_code == 0
+    bundle_path = Path(result.output.strip())
+    payload = json.loads(bundle_path.read_text(encoding="utf-8"))
+    assert payload["app_version"] == "0.5.2"
+    assert payload["production_verdict"]["ready_for_production"] is True
+    assert payload["job_summary"]["total"] == 2
+    assert payload["job_summary"]["failed"] == 1
+    assert payload["job_summary"]["stale_running"] == 1
+    assert payload["release_evidence"]["verify_production_readiness_path"] == str(readiness_json)
+    assert payload["release_evidence"]["verify_deployment_path"] == str(deployment_json)
+    assert payload["release_evidence"]["backup_bundle_path"] == str(backup_zip)
+    assert payload["release_evidence"]["verify_install_smoke_path"] == str(install_smoke_json)
+    assert payload["release_evidence"]["restore_verify_deployment_path"] == str(restore_verify_json)
+    assert payload["release_evidence"]["host_deploy_proof_path"] == str(host_deploy_proof_json)
+    assert payload["release_evidence"]["verify_release_artifacts_path"] == str(verify_release_artifacts_json)
+    assert payload["release_evidence"]["release_evidence_collection_path"] == str(release_evidence_collection_json)
+    assert payload["release_evidence"]["backup_bundle_attachments"] == [
+        "attachments/verify-production-readiness.json",
+        "attachments/verify-deployment.json",
+        "attachments/verify-install-smoke.json",
+    ]
+    assert payload["release_evidence"]["complete"] is True
+    assert payload["release_evidence"]["missing"] == []
+    assert payload["release_evidence"]["invalid"] == []
+    assert payload["release_evidence"]["backup_restore_drill_within_30_days"] is True
+    assert payload["release_evidence"]["deploy_artifact_proof_complete"] is True
+    assert payload["release_evidence"]["deploy_artifact_proofs"] == {
+        "api_unit_capture_path": str(api_unit_txt),
+        "worker_unit_capture_path": str(worker_unit_txt),
+        "caddy_validate_path": str(caddy_validate_txt),
+        "logrotate_check_path": str(logrotate_check_txt),
+    }
+
+
+def test_support_bundle_reports_incomplete_release_evidence(cli_runner, monkeypatch):
+    kb = make_test_dir("support-bundle-incomplete-kb")
+    (kb / "index.json").write_text("{}", encoding="utf-8")
+    output_dir = make_test_dir("support-bundle-incomplete-output")
+    matrix_summary = output_dir / "matrix-summary.json"
+    matrix_summary.write_text("{}", encoding="utf-8")
+
+    monkeypatch.setattr("knowledge_manager.ingestion_jobs.list_ingestion_jobs", lambda kb_path: [])
+    monkeypatch.setattr(
+        "knowledge_manager.performance_benchmarks.build_production_readiness_verdict",
+        lambda kb_path, matrix_summary: {"ready_for_production": False},
+    )
+    monkeypatch.setattr("knowledge_manager.runtime_checks.evaluate_readiness", lambda kb_path: {"ready": False})
+    monkeypatch.setattr("knowledge_manager.runtime_checks.run_integrity_check", lambda kb_path: {"ok": True})
+
+    result = cli_runner.invoke(
+        cli,
+        [
+            "--kb-path",
+            str(kb),
+            "support",
+            "bundle",
+            "--output-dir",
+            str(output_dir),
+            "--matrix-summary",
+            str(matrix_summary),
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(Path(result.output.strip()).read_text(encoding="utf-8"))
+    assert payload["release_evidence"]["complete"] is False
+    assert payload["release_evidence"]["missing"] == [
+        "verify-production-readiness.json",
+        "verify-deployment.json",
+        "verify-install-smoke.json",
+        "knowledge-manager-backup-*.zip",
+        "restore-verify-deployment.json",
+        "verify-release-artifacts.json",
+        "release-evidence-collection.json",
+        "backup-attachment:attachments/verify-production-readiness.json",
+        "backup-attachment:attachments/verify-deployment.json",
+        "backup-attachment:attachments/verify-install-smoke.json",
+    ]
+    assert payload["release_evidence"]["invalid"] == []
+    assert payload["release_evidence"]["backup_restore_drill_within_30_days"] is False
+    assert payload["release_evidence"]["deploy_artifact_proof_complete"] is False
+
+
+def test_support_bundle_reports_stale_backup_restore_drill(cli_runner, monkeypatch):
+    import os
+    from datetime import datetime, timedelta, timezone
+
+    from scripts.backup_kb import create_backup_bundle
+
+    kb = make_test_dir("support-bundle-stale-drill-kb")
+    (kb / "index.json").write_text("{}", encoding="utf-8")
+    output_dir = make_test_dir("support-bundle-stale-drill-output")
+    matrix_summary = output_dir / "matrix-summary.json"
+    matrix_summary.write_text("{}", encoding="utf-8")
+    readiness_json = output_dir / "verify-production-readiness.json"
+    readiness_json.write_text('{"ready_for_production": true}', encoding="utf-8")
+    deployment_json = output_dir / "verify-deployment.json"
+    deployment_json.write_text('{"ok": true}', encoding="utf-8")
+    install_smoke_json = output_dir / "verify-install-smoke.json"
+    install_smoke_json.write_text('{"ok": true}', encoding="utf-8")
+    restore_verify_json = output_dir / "restore-verify-deployment.json"
+    restore_verify_json.write_text('{"ok": true}', encoding="utf-8")
+    verify_release_artifacts_json = output_dir / "verify-release-artifacts.json"
+    verify_release_artifacts_json.write_text(
+        '{"ok": true, "missing": [], "invalid": []}',
+        encoding="utf-8",
+    )
+    release_evidence_collection_json = output_dir / "release-evidence-collection.json"
+    release_evidence_collection_json.write_text(
+        '{"ok": true, "steps": []}',
+        encoding="utf-8",
+    )
+    backup_zip = create_backup_bundle(
+        kb,
+        output_dir,
+        attachments=[readiness_json, deployment_json, install_smoke_json],
+    )
+    stale_ts = (datetime.now(timezone.utc) - timedelta(days=31)).timestamp()
+    os.utime(restore_verify_json, (stale_ts, stale_ts))
+    os.utime(backup_zip, (stale_ts, stale_ts))
+
+    monkeypatch.setattr("knowledge_manager.ingestion_jobs.list_ingestion_jobs", lambda kb_path: [])
+    monkeypatch.setattr(
+        "knowledge_manager.performance_benchmarks.build_production_readiness_verdict",
+        lambda kb_path, matrix_summary: {"ready_for_production": True},
+    )
+    monkeypatch.setattr("knowledge_manager.runtime_checks.evaluate_readiness", lambda kb_path: {"ready": True})
+    monkeypatch.setattr("knowledge_manager.runtime_checks.run_integrity_check", lambda kb_path: {"ok": True})
+
+    result = cli_runner.invoke(
+        cli,
+        [
+            "--kb-path",
+            str(kb),
+            "support",
+            "bundle",
+            "--output-dir",
+            str(output_dir),
+            "--matrix-summary",
+            str(matrix_summary),
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(Path(result.output.strip()).read_text(encoding="utf-8"))
+    assert payload["release_evidence"]["complete"] is True
+    assert payload["release_evidence"]["invalid"] == []
+    assert payload["release_evidence"]["backup_restore_drill_within_30_days"] is False
+    assert payload["release_evidence"]["verify_release_artifacts_path"] == str(verify_release_artifacts_json)
+    assert payload["release_evidence"]["release_evidence_collection_path"] == str(release_evidence_collection_json)
+    assert payload["release_evidence"]["deploy_artifact_proof_complete"] is False
+
+
+def test_support_bundle_reports_invalid_release_evidence_content(cli_runner, monkeypatch):
+    import os
+    from datetime import datetime, timezone
+
+    from scripts.backup_kb import create_backup_bundle
+
+    kb = make_test_dir("support-bundle-invalid-evidence-kb")
+    (kb / "index.json").write_text("{}", encoding="utf-8")
+    output_dir = make_test_dir("support-bundle-invalid-evidence-output")
+    matrix_summary = output_dir / "matrix-summary.json"
+    matrix_summary.write_text("{}", encoding="utf-8")
+    readiness_json = output_dir / "verify-production-readiness.json"
+    readiness_json.write_text('{"ready_for_production": false}', encoding="utf-8")
+    deployment_json = output_dir / "verify-deployment.json"
+    deployment_json.write_text('{"ok": false}', encoding="utf-8")
+    install_smoke_json = output_dir / "verify-install-smoke.json"
+    install_smoke_json.write_text('{"ok": false}', encoding="utf-8")
+    restore_verify_json = output_dir / "restore-verify-deployment.json"
+    restore_verify_json.write_text('{"ok": false}', encoding="utf-8")
+    verify_release_artifacts_json = output_dir / "verify-release-artifacts.json"
+    verify_release_artifacts_json.write_text(
+        '{"ok": false, "missing": [], "invalid": ["host-deploy-proof.json"]}',
+        encoding="utf-8",
+    )
+    release_evidence_collection_json = output_dir / "release-evidence-collection.json"
+    release_evidence_collection_json.write_text(
+        '{"ok": true, "steps": []}',
+        encoding="utf-8",
+    )
+    backup_zip = create_backup_bundle(
+        kb,
+        output_dir,
+        attachments=[readiness_json, deployment_json, install_smoke_json],
+    )
+    fresh_ts = datetime.now(timezone.utc).timestamp()
+    os.utime(restore_verify_json, (fresh_ts, fresh_ts))
+    os.utime(backup_zip, (fresh_ts, fresh_ts))
+
+    monkeypatch.setattr("knowledge_manager.ingestion_jobs.list_ingestion_jobs", lambda kb_path: [])
+    monkeypatch.setattr(
+        "knowledge_manager.performance_benchmarks.build_production_readiness_verdict",
+        lambda kb_path, matrix_summary: {"ready_for_production": True},
+    )
+    monkeypatch.setattr("knowledge_manager.runtime_checks.evaluate_readiness", lambda kb_path: {"ready": True})
+    monkeypatch.setattr("knowledge_manager.runtime_checks.run_integrity_check", lambda kb_path: {"ok": True})
+
+    result = cli_runner.invoke(
+        cli,
+        [
+            "--kb-path",
+            str(kb),
+            "support",
+            "bundle",
+            "--output-dir",
+            str(output_dir),
+            "--matrix-summary",
+            str(matrix_summary),
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(Path(result.output.strip()).read_text(encoding="utf-8"))
+    assert payload["release_evidence"]["complete"] is False
+    assert payload["release_evidence"]["missing"] == []
+    assert payload["release_evidence"]["invalid"] == [
+            "verify-production-readiness.json",
+            "verify-deployment.json",
+        "verify-install-smoke.json",
+        "restore-verify-deployment.json",
+        "verify-release-artifacts.json",
+    ]
+    assert payload["release_evidence"]["deploy_artifact_proof_complete"] is False
+
+
+def test_support_bundle_reports_invalid_deploy_artifact_proof_content(cli_runner, monkeypatch):
+    import os
+    from datetime import datetime, timezone
+
+    from scripts.backup_kb import create_backup_bundle
+
+    kb = make_test_dir("support-bundle-invalid-deploy-proof-kb")
+    (kb / "index.json").write_text("{}", encoding="utf-8")
+    output_dir = make_test_dir("support-bundle-invalid-deploy-proof-output")
+    matrix_summary = output_dir / "matrix-summary.json"
+    matrix_summary.write_text("{}", encoding="utf-8")
+    readiness_json = output_dir / "verify-production-readiness.json"
+    readiness_json.write_text('{"ready_for_production": true}', encoding="utf-8")
+    deployment_json = output_dir / "verify-deployment.json"
+    deployment_json.write_text('{"ok": true}', encoding="utf-8")
+    install_smoke_json = output_dir / "verify-install-smoke.json"
+    install_smoke_json.write_text('{"ok": true}', encoding="utf-8")
+    restore_verify_json = output_dir / "restore-verify-deployment.json"
+    restore_verify_json.write_text('{"ok": true}', encoding="utf-8")
+    (output_dir / "knowledge-manager-api.unit.txt").write_text("broken api unit", encoding="utf-8")
+    (output_dir / "knowledge-manager-worker.unit.txt").write_text("broken worker unit", encoding="utf-8")
+    (output_dir / "caddy-validate.txt").write_text("caddy error", encoding="utf-8")
+    (output_dir / "logrotate-check.txt").write_text("logrotate error", encoding="utf-8")
+    backup_zip = create_backup_bundle(
+        kb,
+        output_dir,
+        attachments=[readiness_json, deployment_json, install_smoke_json],
+    )
+    fresh_ts = datetime.now(timezone.utc).timestamp()
+    os.utime(restore_verify_json, (fresh_ts, fresh_ts))
+    os.utime(backup_zip, (fresh_ts, fresh_ts))
+
+    monkeypatch.setattr("knowledge_manager.ingestion_jobs.list_ingestion_jobs", lambda kb_path: [])
+    monkeypatch.setattr(
+        "knowledge_manager.performance_benchmarks.build_production_readiness_verdict",
+        lambda kb_path, matrix_summary: {"ready_for_production": True},
+    )
+    monkeypatch.setattr("knowledge_manager.runtime_checks.evaluate_readiness", lambda kb_path: {"ready": True})
+    monkeypatch.setattr("knowledge_manager.runtime_checks.run_integrity_check", lambda kb_path: {"ok": True})
+
+    result = cli_runner.invoke(
+        cli,
+        [
+            "--kb-path",
+            str(kb),
+            "support",
+            "bundle",
+            "--output-dir",
+            str(output_dir),
+            "--matrix-summary",
+            str(matrix_summary),
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(Path(result.output.strip()).read_text(encoding="utf-8"))
+    assert payload["release_evidence"]["complete"] is False
+    assert payload["release_evidence"]["deploy_artifact_proof_complete"] is False
+    assert payload["release_evidence"]["invalid"] == [
+        "deploy-artifact-proof:knowledge-manager-api.unit.txt",
+        "deploy-artifact-proof:knowledge-manager-worker.unit.txt",
+        "deploy-artifact-proof:caddy-validate.txt",
+        "deploy-artifact-proof:logrotate-check.txt",
+    ]
+
+
+def test_support_bundle_reports_invalid_host_deploy_proof_content(cli_runner, monkeypatch):
+    import os
+    from datetime import datetime, timezone
+
+    from scripts.backup_kb import create_backup_bundle
+
+    kb = make_test_dir("support-bundle-invalid-host-proof-kb")
+    (kb / "index.json").write_text("{}", encoding="utf-8")
+    output_dir = make_test_dir("support-bundle-invalid-host-proof-output")
+    matrix_summary = output_dir / "matrix-summary.json"
+    matrix_summary.write_text("{}", encoding="utf-8")
+    readiness_json = output_dir / "verify-production-readiness.json"
+    readiness_json.write_text('{"ready_for_production": true}', encoding="utf-8")
+    deployment_json = output_dir / "verify-deployment.json"
+    deployment_json.write_text('{"ok": true}', encoding="utf-8")
+    install_smoke_json = output_dir / "verify-install-smoke.json"
+    install_smoke_json.write_text('{"ok": true}', encoding="utf-8")
+    restore_verify_json = output_dir / "restore-verify-deployment.json"
+    restore_verify_json.write_text('{"ok": true}', encoding="utf-8")
+    host_deploy_proof_json = output_dir / "host-deploy-proof.json"
+    host_deploy_proof_json.write_text(
+        '{"ok": false, "deploy_artifact_proof_complete": false, "invalid": ["deploy-artifact-proof:caddy-validate.txt"]}',
+        encoding="utf-8",
+    )
+    (output_dir / "knowledge-manager-api.unit.txt").write_text(
+        "[Service]\nEnvironmentFile=/opt/knowledge-manager/.env.production\nExecStart=/opt/knowledge-manager/.venv/bin/km serve --ui\n",
+        encoding="utf-8",
+    )
+    (output_dir / "knowledge-manager-worker.unit.txt").write_text(
+        "[Service]\nEnvironmentFile=/opt/knowledge-manager/.env.production\nExecStart=/opt/knowledge-manager/.venv/bin/km worker run --poll-interval 1.0\n",
+        encoding="utf-8",
+    )
+    (output_dir / "caddy-validate.txt").write_text("Valid configuration", encoding="utf-8")
+    (output_dir / "logrotate-check.txt").write_text("Handling 2 logs", encoding="utf-8")
+    backup_zip = create_backup_bundle(
+        kb,
+        output_dir,
+        attachments=[readiness_json, deployment_json, install_smoke_json],
+    )
+    fresh_ts = datetime.now(timezone.utc).timestamp()
+    os.utime(restore_verify_json, (fresh_ts, fresh_ts))
+    os.utime(backup_zip, (fresh_ts, fresh_ts))
+
+    monkeypatch.setattr("knowledge_manager.ingestion_jobs.list_ingestion_jobs", lambda kb_path: [])
+    monkeypatch.setattr(
+        "knowledge_manager.performance_benchmarks.build_production_readiness_verdict",
+        lambda kb_path, matrix_summary: {"ready_for_production": True},
+    )
+    monkeypatch.setattr("knowledge_manager.runtime_checks.evaluate_readiness", lambda kb_path: {"ready": True})
+    monkeypatch.setattr("knowledge_manager.runtime_checks.run_integrity_check", lambda kb_path: {"ok": True})
+
+    result = cli_runner.invoke(
+        cli,
+        [
+            "--kb-path",
+            str(kb),
+            "support",
+            "bundle",
+            "--output-dir",
+            str(output_dir),
+            "--matrix-summary",
+            str(matrix_summary),
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(Path(result.output.strip()).read_text(encoding="utf-8"))
+    assert payload["release_evidence"]["complete"] is False
+    assert payload["release_evidence"]["host_deploy_proof_path"] == str(host_deploy_proof_json)
+    assert payload["release_evidence"]["invalid"] == [
+        "host-deploy-proof.json",
+    ]
+
+
+def test_support_bundle_reports_invalid_release_verifier_content(cli_runner, monkeypatch):
+    import os
+    from datetime import datetime, timezone
+
+    from scripts.backup_kb import create_backup_bundle
+
+    kb = make_test_dir("support-bundle-invalid-release-verifier-kb")
+    (kb / "index.json").write_text("{}", encoding="utf-8")
+    output_dir = make_test_dir("support-bundle-invalid-release-verifier-output")
+    matrix_summary = output_dir / "matrix-summary.json"
+    matrix_summary.write_text("{}", encoding="utf-8")
+    readiness_json = output_dir / "verify-production-readiness.json"
+    readiness_json.write_text('{"ready_for_production": true}', encoding="utf-8")
+    deployment_json = output_dir / "verify-deployment.json"
+    deployment_json.write_text('{"ok": true}', encoding="utf-8")
+    install_smoke_json = output_dir / "verify-install-smoke.json"
+    install_smoke_json.write_text('{"ok": true}', encoding="utf-8")
+    restore_verify_json = output_dir / "restore-verify-deployment.json"
+    restore_verify_json.write_text('{"ok": true}', encoding="utf-8")
+    host_deploy_proof_json = output_dir / "host-deploy-proof.json"
+    host_deploy_proof_json.write_text(
+        '{"ok": true, "deploy_artifact_proof_complete": true, "invalid": []}',
+        encoding="utf-8",
+    )
+    verify_release_artifacts_json = output_dir / "verify-release-artifacts.json"
+    verify_release_artifacts_json.write_text(
+        '{"ok": false, "missing": [], "invalid": ["host-deploy-proof.json"]}',
+        encoding="utf-8",
+    )
+    (output_dir / "knowledge-manager-api.unit.txt").write_text(
+        "[Service]\nEnvironmentFile=/opt/knowledge-manager/.env.production\nExecStart=/opt/knowledge-manager/.venv/bin/km serve --ui\n",
+        encoding="utf-8",
+    )
+    (output_dir / "knowledge-manager-worker.unit.txt").write_text(
+        "[Service]\nEnvironmentFile=/opt/knowledge-manager/.env.production\nExecStart=/opt/knowledge-manager/.venv/bin/km worker run --poll-interval 1.0\n",
+        encoding="utf-8",
+    )
+    (output_dir / "caddy-validate.txt").write_text("Valid configuration", encoding="utf-8")
+    (output_dir / "logrotate-check.txt").write_text("Handling 2 logs", encoding="utf-8")
+    backup_zip = create_backup_bundle(
+        kb,
+        output_dir,
+        attachments=[readiness_json, deployment_json, install_smoke_json],
+    )
+    fresh_ts = datetime.now(timezone.utc).timestamp()
+    os.utime(restore_verify_json, (fresh_ts, fresh_ts))
+    os.utime(backup_zip, (fresh_ts, fresh_ts))
+
+    monkeypatch.setattr("knowledge_manager.ingestion_jobs.list_ingestion_jobs", lambda kb_path: [])
+    monkeypatch.setattr(
+        "knowledge_manager.performance_benchmarks.build_production_readiness_verdict",
+        lambda kb_path, matrix_summary: {"ready_for_production": True},
+    )
+    monkeypatch.setattr("knowledge_manager.runtime_checks.evaluate_readiness", lambda kb_path: {"ready": True})
+    monkeypatch.setattr("knowledge_manager.runtime_checks.run_integrity_check", lambda kb_path: {"ok": True})
+
+    result = cli_runner.invoke(
+        cli,
+        [
+            "--kb-path",
+            str(kb),
+            "support",
+            "bundle",
+            "--output-dir",
+            str(output_dir),
+            "--matrix-summary",
+            str(matrix_summary),
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(Path(result.output.strip()).read_text(encoding="utf-8"))
+    assert payload["release_evidence"]["complete"] is False
+    assert payload["release_evidence"]["verify_release_artifacts_path"] == str(verify_release_artifacts_json)
+    assert payload["release_evidence"]["invalid"] == [
+        "verify-release-artifacts.json",
+    ]
+
+
+def test_support_bundle_reports_invalid_release_evidence_collection_content(cli_runner, monkeypatch):
+    import os
+    from datetime import datetime, timezone
+
+    from scripts.backup_kb import create_backup_bundle
+
+    kb = make_test_dir("support-bundle-invalid-release-evidence-collection-kb")
+    (kb / "index.json").write_text("{}", encoding="utf-8")
+    output_dir = make_test_dir("support-bundle-invalid-release-evidence-collection-output")
+    matrix_summary = output_dir / "matrix-summary.json"
+    matrix_summary.write_text("{}", encoding="utf-8")
+    readiness_json = output_dir / "verify-production-readiness.json"
+    readiness_json.write_text('{"ready_for_production": true}', encoding="utf-8")
+    deployment_json = output_dir / "verify-deployment.json"
+    deployment_json.write_text('{"ok": true}', encoding="utf-8")
+    install_smoke_json = output_dir / "verify-install-smoke.json"
+    install_smoke_json.write_text('{"ok": true}', encoding="utf-8")
+    restore_verify_json = output_dir / "restore-verify-deployment.json"
+    restore_verify_json.write_text('{"ok": true}', encoding="utf-8")
+    host_deploy_proof_json = output_dir / "host-deploy-proof.json"
+    host_deploy_proof_json.write_text(
+        '{"ok": true, "deploy_artifact_proof_complete": true, "invalid": []}',
+        encoding="utf-8",
+    )
+    verify_release_artifacts_json = output_dir / "verify-release-artifacts.json"
+    verify_release_artifacts_json.write_text(
+        '{"ok": true, "missing": [], "invalid": []}',
+        encoding="utf-8",
+    )
+    release_evidence_collection_json = output_dir / "release-evidence-collection.json"
+    release_evidence_collection_json.write_text(
+        '{"ok": false, "steps": [{"name": "host_proof", "ok": false}]}',
+        encoding="utf-8",
+    )
+    (output_dir / "knowledge-manager-api.unit.txt").write_text(
+        "[Service]\nEnvironmentFile=/opt/knowledge-manager/.env.production\nExecStart=/opt/knowledge-manager/.venv/bin/km serve --ui\n",
+        encoding="utf-8",
+    )
+    (output_dir / "knowledge-manager-worker.unit.txt").write_text(
+        "[Service]\nEnvironmentFile=/opt/knowledge-manager/.env.production\nExecStart=/opt/knowledge-manager/.venv/bin/km worker run --poll-interval 1.0\n",
+        encoding="utf-8",
+    )
+    (output_dir / "caddy-validate.txt").write_text("Valid configuration", encoding="utf-8")
+    (output_dir / "logrotate-check.txt").write_text("Handling 2 logs", encoding="utf-8")
+    backup_zip = create_backup_bundle(
+        kb,
+        output_dir,
+        attachments=[readiness_json, deployment_json, install_smoke_json],
+    )
+    fresh_ts = datetime.now(timezone.utc).timestamp()
+    os.utime(restore_verify_json, (fresh_ts, fresh_ts))
+    os.utime(backup_zip, (fresh_ts, fresh_ts))
+
+    monkeypatch.setattr("knowledge_manager.ingestion_jobs.list_ingestion_jobs", lambda kb_path: [])
+    monkeypatch.setattr(
+        "knowledge_manager.performance_benchmarks.build_production_readiness_verdict",
+        lambda kb_path, matrix_summary: {"ready_for_production": True},
+    )
+    monkeypatch.setattr("knowledge_manager.runtime_checks.evaluate_readiness", lambda kb_path: {"ready": True})
+    monkeypatch.setattr("knowledge_manager.runtime_checks.run_integrity_check", lambda kb_path: {"ok": True})
+
+    result = cli_runner.invoke(
+        cli,
+        [
+            "--kb-path",
+            str(kb),
+            "support",
+            "bundle",
+            "--output-dir",
+            str(output_dir),
+            "--matrix-summary",
+            str(matrix_summary),
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(Path(result.output.strip()).read_text(encoding="utf-8"))
+    assert payload["release_evidence"]["complete"] is False
+    assert payload["release_evidence"]["release_evidence_collection_path"] == str(release_evidence_collection_json)
+    assert payload["release_evidence"]["invalid"] == [
+        "release-evidence-collection.json",
+    ]
+
+
+def test_verify_deployment_reports_ready(cli_runner, monkeypatch):
+    kb = make_test_dir("verify-deployment-kb")
+    (kb / "index.json").write_text("{}", encoding="utf-8")
+    matrix_summary = kb / "matrix-summary.json"
+    matrix_summary.write_text(
+        '{"xs":{"release_verdict":{"ready_for_production":true}},"s":{"release_verdict":{"ready_for_production":true}},"m":{"release_verdict":{"ready_for_production":true}}}',
+        encoding="utf-8",
+    )
+
+    class FakeResponse:
+        def __init__(self, status_code, text):
+            self.status_code = status_code
+            self.text = text
+
+        def json(self):
+            return {"ready": True}
+
+    def fake_get(url, timeout=5.0):
+        if url.endswith("/api/ready"):
+            return FakeResponse(200, '{"ready": true}')
+        if url.endswith("/api/metrics"):
+            return FakeResponse(200, "knowledge_manager_modules_total 1\n")
+        raise AssertionError(url)
+
+    monkeypatch.setattr("knowledge_manager.cli.httpx.get", fake_get)
+    monkeypatch.setattr("knowledge_manager.ingestion_jobs.list_ingestion_jobs", lambda kb_path: [])
+    monkeypatch.setattr(
+        "knowledge_manager.performance_benchmarks.build_production_readiness_verdict",
+        lambda kb_path, matrix_summary: {"ready_for_production": True},
+    )
+
+    result = cli_runner.invoke(
+        cli,
+        [
+            "--kb-path",
+            str(kb),
+            "verify-deployment",
+            "--base-url",
+            "http://127.0.0.1:8420",
+            "--matrix-summary",
+            str(matrix_summary),
+            "--format",
+            "json",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["ok"] is True
+    assert payload["http"]["ready_status"] == 200
+    assert payload["http"]["metrics_status"] == 200
+    assert "worker" in payload
+
+
+def test_single_node_deploy_artifacts_define_env_backed_services():
+    root = Path(__file__).resolve().parents[1]
+    api_service = (root / "deploy" / "systemd" / "knowledge-manager-api.service").read_text(
+        encoding="utf-8"
+    )
+    worker_service = (root / "deploy" / "systemd" / "knowledge-manager-worker.service").read_text(
+        encoding="utf-8"
+    )
+    caddyfile = (root / "deploy" / "caddy" / "Caddyfile").read_text(encoding="utf-8")
+    runbook = (root / "docs" / "runbooks" / "deploy-single-node.md").read_text(encoding="utf-8")
+
+    assert "EnvironmentFile=/opt/knowledge-manager/.env.production" in api_service
+    assert "ExecStart=/opt/knowledge-manager/.venv/bin/km serve --ui" in api_service
+    assert "ExecStart=/opt/knowledge-manager/.venv/bin/km worker run --poll-interval 1.0" in worker_service
+    assert "reverse_proxy 127.0.0.1:8420" in caddyfile
+    assert "km.example.com" in caddyfile
+    assert "http://km.example.com" not in caddyfile
+    assert "dnf install -y python3.11 git caddy logrotate" in runbook
+    assert "git clone <repo-url> /opt/knowledge-manager" in runbook
+    assert "git checkout <release-ref>" in runbook
+    assert "groupadd --system km" in runbook
+    assert "useradd --system --home /opt/knowledge-manager --shell /sbin/nologin --gid km km" in runbook
+    assert "chown -R km:km /opt/knowledge-manager /var/log/knowledge-manager" in runbook
+    assert "python3.11 -m venv /opt/knowledge-manager/.venv" in runbook
+    assert "/opt/knowledge-manager/.venv/bin/pip install --no-cache-dir --force-reinstall ." in runbook
+    assert "/opt/knowledge-manager/.venv/bin/km init /opt/knowledge-manager/kb" in runbook
+    assert "/opt/knowledge-manager/.venv/bin/km --version" in runbook
+    assert "install -m 0644 deploy/logrotate/knowledge-manager /etc/logrotate.d/knowledge-manager" in runbook
+    assert "systemctl enable --now caddy" in runbook
+    assert "Review /opt/knowledge-manager/.env.production and confirm KM_KB_PATH, KM_UI_HOST, KM_UI_PORT, and KM_LOG_LEVEL before starting services." in runbook
+    assert 'RELEASE_DIR=/opt/knowledge-manager/release-artifacts/run-$(date +%Y%m%d%H%M%S)' in runbook
+    assert 'python3.11 /opt/knowledge-manager/scripts/verify_install_smoke.py --project-root /opt/knowledge-manager --python python3.11 --format json > "$RELEASE_DIR"/verify-install-smoke.json' in runbook
+    assert '/opt/knowledge-manager/.venv/bin/km --kb-path /opt/knowledge-manager/kb verify-production-readiness --matrix-summary <fresh-matrix-summary.json> > "$RELEASE_DIR"/verify-production-readiness.json' in runbook
+    assert '/opt/knowledge-manager/.venv/bin/km --kb-path /opt/knowledge-manager/kb verify-deployment --base-url http://127.0.0.1:8420 --matrix-summary <fresh-matrix-summary.json> --format json > "$RELEASE_DIR"/verify-deployment.json' in runbook
+    assert '/opt/knowledge-manager/.venv/bin/km --kb-path /opt/knowledge-manager/kb support bundle --output-dir "$RELEASE_DIR" --matrix-summary <fresh-matrix-summary.json>' in runbook
+    assert 'systemctl cat knowledge-manager-api > "$RELEASE_DIR"/knowledge-manager-api.unit.txt' in runbook
+    assert 'systemctl cat knowledge-manager-worker > "$RELEASE_DIR"/knowledge-manager-worker.unit.txt' in runbook
+    assert 'caddy validate --config /etc/caddy/Caddyfile > "$RELEASE_DIR"/caddy-validate.txt 2>&1' in runbook
+    assert 'logrotate -d /etc/logrotate.d/knowledge-manager > "$RELEASE_DIR"/logrotate-check.txt 2>&1' in runbook
+    assert "python3.11 /opt/knowledge-manager/scripts/verify_install_smoke.py --project-root /opt/knowledge-manager --python python3.11 --format text" in runbook
+    assert "/opt/knowledge-manager/.venv/bin/km --kb-path /opt/knowledge-manager/kb verify-deployment" in runbook
+    assert "/opt/knowledge-manager/.venv/bin/km --kb-path /opt/knowledge-manager/kb support bundle" in runbook
+    assert "/opt/knowledge-manager/.venv/bin/km backup restore" in runbook
+    assert "systemctl status caddy" in runbook
+    assert "replace the placeholder host" in runbook
+    assert "automatic HTTPS" in runbook
+    assert "verify-deployment" in runbook
+    assert "support bundle" in runbook
+
+
+def test_observability_runbook_mentions_metrics_logs_alerts_and_bundle():
+    root = Path(__file__).resolve().parents[1]
+    text = (root / "docs" / "runbooks" / "observability-and-alerting.md").read_text(encoding="utf-8")
+    assert "/api/metrics" in text
+    assert "audit.jsonl" in text
+    assert "verify-deployment" in text
+    assert "release-support-bundle.json" in text
+    assert "complete == true" in text
+    assert "backup_restore_drill_within_30_days == true" in text
+    assert "alert" in text.lower()
+
+
+def test_logrotate_policy_targets_audit_and_app_logs():
+    root = Path(__file__).resolve().parents[1]
+    text = (root / "deploy" / "logrotate" / "knowledge-manager").read_text(encoding="utf-8")
+    assert ".audit/audit.jsonl" in text
+    assert "/var/log/knowledge-manager" in text
+
+
+def test_governance_docs_reference_deployment_verification_and_release_ownership():
+    root = Path(__file__).resolve().parents[1]
+    readme = (root / "README.md").read_text(encoding="utf-8")
+    checklist = (root / "docs" / "runbooks" / "production-release-checklist.md").read_text(
+        encoding="utf-8"
+    )
+    perf_plan = (root / "docs" / "runbooks" / "enterprise-performance-test-plan.md").read_text(
+        encoding="utf-8"
+    )
+    rollout = (root / "docs" / "runbooks" / "enterprise-rollout.md").read_text(encoding="utf-8")
+    cutover = (root / "docs" / "runbooks" / "migration-cutover.md").read_text(encoding="utf-8")
+    backup_drill = (root / "docs" / "runbooks" / "backup-restore-drill.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "verify-deployment" in readme
+    assert "support bundle" in readme
+    assert "python scripts/verify_install_smoke.py" in readme
+    assert 'RELEASE_DIR=/opt/knowledge-manager/release-artifacts/run-$(date +%Y%m%d%H%M%S)' in readme
+    assert 'python3.11 /opt/knowledge-manager/scripts/verify_install_smoke.py --project-root /opt/knowledge-manager --python python3.11 --format json > "$RELEASE_DIR"/verify-install-smoke.json' in readme
+    assert 'verify-production-readiness --matrix-summary <fresh-matrix-summary.json> > "$RELEASE_DIR"/verify-production-readiness.json' in readme
+    assert 'verify-deployment --base-url http://127.0.0.1:8420 --matrix-summary <fresh-matrix-summary.json> --format json > "$RELEASE_DIR"/verify-deployment.json' in readme
+    assert 'support bundle --output-dir "$RELEASE_DIR" --matrix-summary <fresh-matrix-summary.json>' in readme
+    assert 'collect_host_deploy_proof.py --output-dir "$RELEASE_DIR"' in readme
+    assert 'host-deploy-proof.json' in readme
+    assert "30 days" in checklist
+    assert "support bundle" in checklist
+    assert "python scripts/verify_install_smoke.py" in checklist
+    assert 'python3.11 /opt/knowledge-manager/scripts/verify_install_smoke.py --project-root /opt/knowledge-manager --python python3.11 --format json > "$RELEASE_DIR"/verify-install-smoke.json' in checklist
+    assert 'verify-production-readiness --matrix-summary <fresh-matrix-summary.json> > "$RELEASE_DIR"/verify-production-readiness.json' in checklist
+    assert 'verify-deployment --base-url http://127.0.0.1:8420 --matrix-summary <fresh-matrix-summary.json> --format json > "$RELEASE_DIR"/verify-deployment.json' in checklist
+    assert 'python3.11 /opt/knowledge-manager/scripts/collect_release_evidence.py --release-dir "$RELEASE_DIR" --kb-path /opt/knowledge-manager/kb --base-url http://127.0.0.1:8420 --matrix-summary <fresh-matrix-summary.json>' in checklist
+    assert "complete == true" in checklist
+    assert "backup_restore_drill_within_30_days == true" in checklist
+    assert "deploy_artifact_proof_complete == true" in checklist
+    assert "host-deploy-proof.json" in checklist
+    assert "/opt/knowledge-manager/.venv/bin/km --kb-path /opt/knowledge-manager/kb verify-deployment" in checklist
+    assert "/opt/knowledge-manager/.venv/bin/km backup restore" in checklist
+    assert "/opt/knowledge-manager/.venv/bin/km worker run --once" in checklist
+    assert "rollback" in checklist.lower()
+    assert "Capacity Boundary" in perf_plan
+    assert "verify-deployment" in perf_plan
+    assert "rollback owner" in rollout
+    assert "support bundle path" in rollout
+    assert "rollback owner" in cutover
+    assert "backup bundle path" in cutover
+    assert "30 days" in backup_drill
+    assert "verify-deployment" in backup_drill
+    assert 'RELEASE_DIR=/opt/knowledge-manager/release-artifacts/run-$(date +%Y%m%d%H%M%S)' in backup_drill
+    assert 'restore-verify-deployment.json' in backup_drill
+    assert '--attach "$RELEASE_DIR"/verify-production-readiness.json' in backup_drill
+    assert '--attach "$RELEASE_DIR"/verify-deployment.json' in backup_drill
+    assert '--attach "$RELEASE_DIR"/verify-install-smoke.json' in backup_drill
+    assert "/opt/knowledge-manager/.venv/bin/km --kb-path /opt/knowledge-manager/kb backup create" in backup_drill
+    assert "/opt/knowledge-manager/.venv/bin/km backup restore" in backup_drill
+
+
+def test_packaging_smoke_script_builds_wheel_and_installs_cli():
+    root = Path(__file__).resolve().parents[1]
+    script = (root / "scripts" / "verify_install_smoke.py").read_text(encoding="utf-8")
+
+    assert "pip" in script
+    assert "wheel" in script
+    assert "venv" in script
+    assert '"--version"' in script
+    assert '"init"' in script
+    assert '"--kb-path"' in script
 
 
 def test_cli_search(cli_runner, initialized_kb):
@@ -317,6 +1251,8 @@ def test_cli_source_add_notion_and_status(cli_runner, initialized_kb):
 
 
 def test_cli_source_pull_stages_modules(cli_runner, initialized_kb, monkeypatch):
+    from knowledge_manager.audit import read_audit_log
+
     cli_runner.invoke(
         cli,
         [
@@ -369,6 +1305,8 @@ def test_cli_source_pull_stages_modules(cli_runner, initialized_kb, monkeypatch)
     assert (initialized_kb / ".staging" / "jwt-playbook.json").exists()
     assert (initialized_kb / ".staging" / "jwt-playbook.meta.json").exists()
     assert any((initialized_kb / ".jobs" / "ingestion").glob("*.json"))
+    events = read_audit_log(initialized_kb)
+    assert any(event["operation"] == "source.pull" and event["result"] == "success" for event in events)
 
     status_result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "source", "status"])
     assert status_result.exit_code == 0
@@ -491,6 +1429,8 @@ def test_cli_source_pull_retries_transient_errors(cli_runner, initialized_kb, mo
 
 
 def test_cli_source_pull_does_not_retry_permanent_errors(cli_runner, initialized_kb, monkeypatch):
+    from knowledge_manager.audit import read_audit_log
+
     cli_runner.invoke(
         cli,
         [
@@ -532,6 +1472,8 @@ def test_cli_source_pull_does_not_retry_permanent_errors(cli_runner, initialized
     job_files = list((initialized_kb / ".jobs" / "ingestion").glob("*.json"))
     assert job_files
     assert '"status": "failed"' in job_files[0].read_text(encoding="utf-8")
+    events = read_audit_log(initialized_kb)
+    assert any(event["operation"] == "source.pull" and event["result"] == "failed" for event in events)
 
 
 def test_cli_eval_run(cli_runner, initialized_kb, tmp_path):
@@ -2268,3 +3210,52 @@ def test_publish_module_not_found(cli_runner, initialized_kb):
     """km publish with nonexistent module should error."""
     result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "publish", "auth/nonexistent"])
     assert result.exit_code != 0
+
+
+def test_cli_verify_production_readiness_reports_combined_verdict(cli_runner, initialized_kb, tmp_path):
+    matrix_summary = tmp_path / "matrix-summary.json"
+    matrix_summary.write_text(
+        json.dumps(
+            {
+                "xs": {"release_verdict": {"ready_for_production": True}},
+                "s": {"release_verdict": {"ready_for_production": True}},
+                "m": {"release_verdict": {"ready_for_production": False}},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    cfg = json.loads((initialized_kb / "config.json").read_text(encoding="utf-8"))
+    cfg["llm_providers"] = {"x": {"api_key": "k", "model": "m", "default": True}}
+    cfg["security"] = {"required_perf_scales": ["xs", "s", "m"]}
+    (initialized_kb / "config.json").write_text(json.dumps(cfg), encoding="utf-8")
+
+    result = cli_runner.invoke(
+        cli,
+        [
+            "--kb-path",
+            str(initialized_kb),
+            "verify-production-readiness",
+            "--matrix-summary",
+            str(matrix_summary),
+        ],
+    )
+
+    assert result.exit_code == 1
+    assert '"ready_for_production": false' in result.output.lower()
+    assert '"failed_scales": [' in result.output
+
+
+def test_cli_worker_run_once_processes_queued_jobs(cli_runner, initialized_kb, monkeypatch):
+    from knowledge_manager.ingestion_jobs import create_ingestion_job
+    from knowledge_manager.audit import read_audit_log
+
+    create_ingestion_job(initialized_kb, source_id="upload", trigger="http-upload")
+    monkeypatch.setattr("knowledge_manager.worker_service.run_single_job", lambda *_args, **_kwargs: None)
+
+    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "worker", "run", "--once"])
+
+    assert result.exit_code == 0
+    assert "Processed 1 job(s)" in result.output
+    events = read_audit_log(initialized_kb)
+    assert any(event["operation"] == "worker.run" and event["result"] == "success" for event in events)

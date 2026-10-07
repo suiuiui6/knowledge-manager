@@ -1,0 +1,9 @@
+/opt/knowledge-manager/kb/.audit/audit.jsonl
+/var/log/knowledge-manager/*.log {
+    daily
+    rotate 14
+    compress
+    missingok
+    notifempty
+    copytruncate
+}
