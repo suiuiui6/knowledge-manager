@@ -31,6 +31,7 @@ jieba = "^0.42.1"
 fastapi = "^0.115.0"
 uvicorn = "^0.32.0"
 pyyaml = "^6.0"
+pyjwt = {version = ">=2.10.1", extras = ["crypto"]}
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"

@@ -136,6 +136,61 @@ class TestHealth:
             },
         ).status_code == 503
 
+    def test_multi_tenant_search_hides_global_modules_by_default(self, tmp_path):
+        kb = tmp_path / "kb"
+        kb.mkdir()
+        from knowledge_manager.schemas import Index, Module, ModuleContent, ModuleMetadata
+        from knowledge_manager.storage import save_index, save_module
+
+        save_index(Index(description="multi-tenant"), kb)
+        save_module(
+            Module(
+                id="shared-policy",
+                category="policy",
+                title="Shared Policy",
+                summary="Global policy that must not leak by default.",
+                content=ModuleContent(
+                    overview="Global policy overview.",
+                    details="Global policy details with enough length for validation.",
+                ),
+                metadata=ModuleMetadata(status="published"),
+            ),
+            kb,
+        )
+        (kb / "config.json").write_text(
+            json.dumps(
+                {
+                    "llm_providers": {"x": {"api_key": "k", "model": "m", "default": True}},
+                    "security": {"production_mode": True, "multi_tenant_mode": True},
+                }
+            ),
+            encoding="utf-8",
+        )
+        (kb / "auth.json").write_text(
+            json.dumps(
+                {
+                    "provider": "token",
+                    "oidc_config": {
+                        "static_tokens": {
+                            "team-a": {"sub": "alice", "tenant_id": "team-a"},
+                        }
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+        (kb / "rbac.json").write_text(json.dumps({"users": {"alice": "viewer"}}), encoding="utf-8")
+
+        client = TestClient(create_app(kb))
+        response = client.post(
+            "/api/search",
+            json={"query": "global policy"},
+            headers={"Authorization": "Bearer team-a"},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["results"] == []
+
 
 class TestTree:
     def test_tree_ok(self, client):

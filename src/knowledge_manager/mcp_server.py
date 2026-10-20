@@ -134,6 +134,9 @@ def create_server(
     untrusted_global_resources_allowed = global_resources_enabled and not (
         resolved_security_mode == "multi_tenant" and session_tenant is None
     )
+    config_allows_global_reads = not (
+        resolved_security_mode == "multi_tenant"
+    ) or bool(cfg and cfg.security.allow_global_reads)
 
     def _resolve_kb(namespace: str) -> Path:
         """Resolve a namespace to its kb_path. 'default' maps to the main KB."""
@@ -147,8 +150,13 @@ def create_server(
         if session_tenant is not None:
             if tenant_id and not _tenant_matches(session_tenant, tenant_id):
                 raise ValueError("tenant override is not allowed for this MCP session")
-            return session_tenant
-        return TenantContext(tenant_id=tenant_id) if tenant_id else None
+            if config_allows_global_reads or not session_tenant.allow_global_reads:
+                return session_tenant
+            return session_tenant.model_copy(update={"allow_global_reads": False})
+        return TenantContext(
+            tenant_id=tenant_id,
+            allow_global_reads=config_allows_global_reads,
+        ) if tenant_id else None
 
     def _tenant_scoped_resources_available() -> bool:
         return session_tenant is not None

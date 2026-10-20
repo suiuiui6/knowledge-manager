@@ -87,10 +87,17 @@ def resolve_tenant_context(
     *,
     tenant_id: str = "",
     workspace_id: str = "",
-    allow_global_reads: bool = True,
+    allow_global_reads: bool | None = None,
 ) -> TenantContext | None:
     require_auth_system_ready(kb_path)
     auth_cfg = load_auth_config(kb_path)
+    cfg = _load_config_safe(kb_path)
+    if allow_global_reads is None:
+        # Global modules remain visible for single-tenant/local deployments,
+        # while multi-tenant deployments must explicitly opt in.
+        allow_global_reads = not bool(cfg and cfg.security.multi_tenant_mode) or bool(
+            cfg and cfg.security.allow_global_reads
+        )
     subject = getattr(request.state, "auth_subject", None)
 
     if subject is None:

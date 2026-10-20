@@ -290,6 +290,10 @@ class TelemetryConfig(BaseModel):
 class SecurityConfig(BaseModel):
     production_mode: bool = False
     multi_tenant_mode: bool = False
+    # Global modules are opt-in once tenant isolation is enabled. Single-tenant
+    # deployments retain their historical global-read behavior in the request
+    # authorization layer.
+    allow_global_reads: bool = False
     mcp_global_resources: Literal["enabled", "disabled"] = "enabled"
     required_perf_scales: List[str] = Field(default_factory=lambda: ["xs", "s", "m"])
     maintenance_backlog_warn: int = 25

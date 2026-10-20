@@ -65,6 +65,50 @@ async def test_multi_tenant_mcp_disables_global_resources(kb_path):
 
 
 @pytest.mark.asyncio
+async def test_multi_tenant_mcp_search_hides_global_modules_by_default(kb_path):
+    from knowledge_manager.mcp_server import create_server
+    from knowledge_manager.tenancy import TenantContext
+
+    (kb_path / "config.json").write_text(
+        json.dumps({"security": {"multi_tenant_mode": True}}), encoding="utf-8"
+    )
+    save_module(
+        Module(
+            id="shared-policy",
+            category="policy",
+            title="Shared Policy",
+            summary="Global policy that must not leak by default.",
+            content=ModuleContent(
+                overview="Global policy overview.",
+                details="Global policy details with enough length for validation.",
+            ),
+        ),
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="tenant-policy",
+            category="policy",
+            title="Tenant Policy",
+            summary="Tenant policy for team-a.",
+            content=ModuleContent(
+                overview="Tenant policy overview.",
+                details="Tenant policy details with enough length for validation.",
+            ),
+            metadata=ModuleMetadata(tenant_id="team-a"),
+        ),
+        kb_path,
+    )
+
+    server = create_server(kb_path, session_tenant=TenantContext(tenant_id="team-a"))
+    result = await server.call_tool("search_modules", {"query": "policy"})
+    raw = result[0].text if hasattr(result[0], "text") else str(result[0])
+
+    assert "tenant-policy" in raw
+    assert "shared-policy" not in raw
+
+
+@pytest.mark.asyncio
 async def test_tool_load_module_found(server, kb_path):
     module = make_module()
     save_module(module, kb_path)
