@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+import os
 from pathlib import Path
 from uuid import uuid4
 
@@ -32,6 +33,10 @@ class IngestionJob(BaseModel):
     error: str = ""
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class JobClaimConflict(RuntimeError):
+    """Raised when a queued job cannot be claimed by this worker."""
 
 
 def _jobs_dir(kb_path: Path) -> Path:
@@ -105,23 +110,42 @@ def claim_ingestion_job(
     worker_id: str,
     lease_seconds: int = 60,
 ) -> IngestionJob:
-    job = load_ingestion_job(kb_path, job_id)
-    if job is None:
-        raise FileNotFoundError(job_id)
-    return _save_job(
-        kb_path,
-        job.model_copy(
-            update={
-                "status": "running",
-                "stage": "running",
-                "worker_id": worker_id,
-                "attempt_count": job.attempt_count + 1,
-                "heartbeat_at": datetime.now(timezone.utc),
-                "lease_expires_at": datetime.now(timezone.utc).replace(microsecond=0)
-                + timedelta(seconds=lease_seconds),
-            }
-        ),
-    )
+    path = _job_path(kb_path, job_id)
+    lock_path = path.with_suffix(".claim.lock")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        descriptor = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        os.close(descriptor)
+    except FileExistsError as exc:
+        raise JobClaimConflict(f"job {job_id} has an active lease") from exc
+    try:
+        job = load_ingestion_job(kb_path, job_id)
+        if job is None:
+            raise FileNotFoundError(job_id)
+        if job.status in {"completed", "failed"}:
+            raise JobClaimConflict(f"job {job_id} is terminal")
+        now = datetime.now(timezone.utc)
+        lease = job.lease_expires_at
+        if job.status == "running" and lease is not None:
+            if lease.tzinfo is None:
+                lease = lease.replace(tzinfo=timezone.utc)
+            if lease > now:
+                raise JobClaimConflict(f"job {job_id} has an active lease")
+        return _save_job(
+            kb_path,
+            job.model_copy(
+                update={
+                    "status": "running",
+                    "stage": "running",
+                    "worker_id": worker_id,
+                    "attempt_count": job.attempt_count + 1,
+                    "heartbeat_at": now,
+                    "lease_expires_at": now.replace(microsecond=0) + timedelta(seconds=lease_seconds),
+                }
+            ),
+        )
+    finally:
+        lock_path.unlink(missing_ok=True)
 
 
 def complete_ingestion_job(

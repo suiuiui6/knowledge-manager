@@ -51,6 +51,54 @@ def test_ingestion_job_claim_complete_round_trip(tmp_path):
     assert finished.modules_staged == 7
 
 
+def test_ingestion_job_claim_rejects_active_lease_owned_by_other_worker(tmp_path):
+    import pytest
+
+    kb = tmp_path / "kb"
+    kb.mkdir()
+    job = create_ingestion_job(kb, source_id="team-docs", trigger="manual")
+    claim_ingestion_job(kb, job.job_id, worker_id="worker-1", lease_seconds=60)
+
+    with pytest.raises(RuntimeError, match="active lease"):
+        claim_ingestion_job(kb, job.job_id, worker_id="worker-2", lease_seconds=60)
+
+
+def test_ingestion_job_claim_reclaims_expired_lease_and_increments_attempt(tmp_path):
+    from knowledge_manager.ingestion_jobs import load_ingestion_job
+
+    kb = tmp_path / "kb"
+    kb.mkdir()
+    job = create_ingestion_job(kb, source_id="team-docs", trigger="manual")
+    claimed = claim_ingestion_job(kb, job.job_id, worker_id="worker-1", lease_seconds=1)
+    expired = claimed.model_copy(
+        update={
+            "lease_expires_at": datetime.now(timezone.utc) - timedelta(seconds=5),
+            "error": "worker stopped",
+        }
+    )
+    (kb / ".jobs" / "ingestion" / f"{job.job_id}.json").write_text(
+        expired.model_dump_json(indent=2), encoding="utf-8"
+    )
+
+    reclaimed = claim_ingestion_job(kb, job.job_id, worker_id="worker-2", lease_seconds=60)
+
+    assert reclaimed.worker_id == "worker-2"
+    assert reclaimed.attempt_count == 2
+    assert reclaimed.error == "worker stopped"
+
+
+def test_ingestion_job_claim_rejects_terminal_job(tmp_path):
+    import pytest
+
+    kb = tmp_path / "kb"
+    kb.mkdir()
+    job = create_ingestion_job(kb, source_id="team-docs", trigger="manual")
+    complete_ingestion_job(kb, job.job_id, pages_seen=1, modules_staged=1)
+
+    with pytest.raises(RuntimeError, match="terminal"):
+        claim_ingestion_job(kb, job.job_id, worker_id="worker-2")
+
+
 def test_ingestion_job_failure_is_listed(tmp_path):
     kb = tmp_path / "kb"
     kb.mkdir()

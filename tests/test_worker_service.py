@@ -70,3 +70,18 @@ def test_worker_run_once_drains_queued_maintenance_jobs(tmp_path, monkeypatch):
     assert processed >= 1
     assert dispatched == [(kb, "module_saved", {"module_id": "ops-1"})]
     assert len(list((kb / ".cache" / "maintenance").glob("*.done.json"))) == 1
+
+
+def test_worker_skips_job_with_active_claim(tmp_path):
+    from knowledge_manager.ingestion_jobs import claim_ingestion_job
+    from knowledge_manager.job_worker import run_single_job
+
+    kb = tmp_path / "kb"
+    kb.mkdir()
+    job = create_ingestion_job(kb, source_id="upload", trigger="http-upload")
+    claimed = claim_ingestion_job(kb, job.job_id, worker_id="other-worker", lease_seconds=60)
+
+    skipped = run_single_job(kb, job.job_id, payload={"kind": "upload"})
+
+    assert skipped.status == "running"
+    assert skipped.worker_id == claimed.worker_id

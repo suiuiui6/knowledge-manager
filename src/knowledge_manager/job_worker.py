@@ -13,6 +13,7 @@ from typing import Any
 from uuid import uuid4
 
 from knowledge_manager.ingestion_jobs import (
+    JobClaimConflict,
     IngestionJob,
     claim_ingestion_job,
     complete_ingestion_job,
@@ -293,7 +294,15 @@ def run_single_job(kb_path: Path, job_id: str, payload: dict[str, Any] | None = 
         "path": job.payload_path,
         **job.payload_meta,
     }
-    job = claim_ingestion_job(kb_path, job_id, worker_id="local-worker", lease_seconds=JOB_LEASE_SECONDS)
+    try:
+        job = claim_ingestion_job(
+            kb_path, job_id, worker_id="local-worker", lease_seconds=JOB_LEASE_SECONDS
+        )
+    except JobClaimConflict:
+        current = load_ingestion_job(kb_path, job_id)
+        if current is None:
+            raise FileNotFoundError(job_id)
+        return current
     stop_heartbeat, heartbeat_thread = _start_job_heartbeat(kb_path, job_id)
 
     try:
