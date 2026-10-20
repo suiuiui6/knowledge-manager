@@ -18,6 +18,24 @@ from knowledge_manager.schemas import Module, ModuleContent
 from knowledge_manager.tenancy import TenantContext, module_visible_to_tenant
 
 
+def test_rbac_config_is_written_to_temporary_sibling(tmp_path, monkeypatch):
+    from knowledge_manager.json_io import atomic_write_text
+
+    kb = tmp_path / "kb"
+    kb.mkdir()
+    writes = []
+    real_atomic_write = atomic_write_text
+
+    def record_atomic_write(path, data, *args, **kwargs):
+        writes.append(path)
+        return real_atomic_write(path, data, *args, **kwargs)
+
+    monkeypatch.setattr("knowledge_manager.rbac.atomic_write_text", record_atomic_write)
+    assert set_user_role("alice", "admin", kb)
+
+    assert writes == [kb / "rbac.json"]
+
+
 class TestAuthConfig:
     def test_load_nonexistent(self, tmp_path):
         assert load_auth_config(tmp_path) is None

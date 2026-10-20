@@ -5,6 +5,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from knowledge_manager.materialized_views import invalidate_materialized_views
+from knowledge_manager.json_io import atomic_write_text
 from pydantic import BaseModel, Field
 
 
@@ -45,7 +46,7 @@ def _save_job(kb_path: Path, job: IngestionJob) -> IngestionJob:
     job = job.model_copy(update={"updated_at": datetime.now(timezone.utc)})
     path = _job_path(kb_path, job.job_id)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(job.model_dump_json(indent=2), encoding="utf-8")
+    atomic_write_text(path, job.model_dump_json(indent=2))
     invalidate_materialized_views(kb_path, ["admin_dashboard"])
     return job
 

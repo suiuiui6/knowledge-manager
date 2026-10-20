@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from knowledge_manager.json_io import atomic_write_text
+
 
 def _index_path(kb_path: Path) -> Path:
     return kb_path / ".cache" / "lexical_index.json"
@@ -11,7 +13,7 @@ def _index_path(kb_path: Path) -> Path:
 def _write_index_payload(kb_path: Path, payload: dict[str, object]) -> dict[str, object]:
     path = _index_path(kb_path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    atomic_write_text(path, json.dumps(payload, ensure_ascii=False))
     return payload
 
 

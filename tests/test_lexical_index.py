@@ -2,6 +2,27 @@ from knowledge_manager.schemas import Index, Module, ModuleContent
 from knowledge_manager.storage import delete_module, save_index, save_module
 
 
+def test_lexical_index_is_written_to_temporary_sibling(tmp_path, monkeypatch):
+    from pathlib import Path
+    from knowledge_manager.lexical_index import build_lexical_index
+
+    kb = tmp_path / "kb"
+    kb.mkdir()
+    writes = []
+    real_write_text = Path.write_text
+
+    def record_write_text(path, data, *args, **kwargs):
+        if path.name == "lexical_index.json" or "lexical_index.json." in path.name:
+            writes.append(path)
+        return real_write_text(path, data, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "write_text", record_write_text)
+    build_lexical_index(kb)
+
+    assert writes
+    assert writes[-1].suffix == ".tmp"
+
+
 def test_lexical_index_returns_candidate_keys_for_query(tmp_path):
     from knowledge_manager.lexical_index import build_lexical_index, query_lexical_index
 

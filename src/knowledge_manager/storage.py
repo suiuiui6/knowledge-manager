@@ -26,6 +26,7 @@ from knowledge_manager.schemas import (
     StagingMeta,
 )
 from knowledge_manager.tenancy import TenantContext, module_visible_to_tenant
+from knowledge_manager.json_io import atomic_write_text
 
 
 _FIELD_WEIGHTS = {"title": 5, "tag": 3, "summary": 2, "overview": 1, "details": 1, "examples": 0, "caveats": 0}
@@ -216,10 +217,7 @@ def _document_key(document: Mapping[str, Any]) -> str:
 
 
 def _atomic_write(path: Path, data: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
-    tmp.write_text(data, encoding="utf-8")
-    os.replace(tmp, path)
+    atomic_write_text(path, data)
 
 
 def _invalidate_module_cache(kb_path: Path) -> None:

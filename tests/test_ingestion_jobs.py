@@ -14,6 +14,29 @@ from datetime import datetime, timedelta, timezone
 from time import sleep
 
 
+def test_ingestion_job_state_is_replaced_atomically(tmp_path, monkeypatch):
+    import knowledge_manager.ingestion_jobs as ingestion_jobs
+    from pathlib import Path
+
+    kb = tmp_path / "kb"
+    kb.mkdir()
+    writes = []
+    real_write_text = Path.write_text
+
+    def record_write_text(path, data, *args, **kwargs):
+        writes.append(path)
+        return real_write_text(path, data, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "write_text", record_write_text)
+
+    job = create_ingestion_job(kb, source_id="team-docs", trigger="manual")
+
+    job_writes = [path for path in writes if ".jobs" in str(path)]
+    assert job_writes
+    assert job_writes[-1].suffix == ".tmp"
+    assert job == ingestion_jobs.load_ingestion_job(kb, job.job_id)
+
+
 def test_ingestion_job_claim_complete_round_trip(tmp_path):
     kb = tmp_path / "kb"
     kb.mkdir()

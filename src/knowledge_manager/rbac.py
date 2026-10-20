@@ -5,6 +5,8 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
+from knowledge_manager.json_io import atomic_write_text
+
 logger = logging.getLogger("knowledge_manager.rbac")
 
 ROLES = {"admin", "editor", "reviewer", "viewer"}
@@ -46,7 +48,8 @@ def load_rbac_config(kb_path: Path) -> RBACConfig:
 
 
 def save_rbac_config(kb_path: Path, config: RBACConfig) -> None:
-    (kb_path / "rbac.json").write_text(
+    atomic_write_text(
+        kb_path / "rbac.json",
         json.dumps(
             {
                 "users": config.users,
@@ -56,7 +59,6 @@ def save_rbac_config(kb_path: Path, config: RBACConfig) -> None:
             indent=2,
             ensure_ascii=False,
         ),
-        encoding="utf-8",
     )
 
 
