@@ -267,26 +267,7 @@ def _run_noncritical_save_side_effects(module: Module, kb_path: Path, existed: b
     except Exception:
         pass
 
-    try:
-        from knowledge_manager.lexical_index import update_lexical_index_for_module
-
-        update_lexical_index_for_module(kb_path, module)
-    except Exception:
-        pass
-
-    try:
-        from knowledge_manager.search_projection import update_search_projection_for_module
-
-        update_search_projection_for_module(kb_path, module)
-    except Exception:
-        pass
-
-    try:
-        from knowledge_manager.recommendation_index import update_recommendation_index_for_module
-
-        update_recommendation_index_for_module(kb_path, module)
-    except Exception:
-        pass
+    _refresh_derived_indexes_for_module(module, kb_path)
 
 
 def _run_noncritical_delete_side_effects(module_id: str, category: str, kb_path: Path) -> None:
@@ -297,20 +278,44 @@ def _run_noncritical_delete_side_effects(module_id: str, category: str, kb_path:
     except Exception:
         pass
 
+    _remove_from_derived_indexes(module_id, category, kb_path)
+
+
+def _refresh_derived_indexes_for_module(module: Module, kb_path: Path) -> None:
+    """Keep query projections current while non-critical external work stays deferred."""
+    try:
+        from knowledge_manager.lexical_index import update_lexical_index_for_module
+
+        update_lexical_index_for_module(kb_path, module)
+    except Exception:
+        pass
+    try:
+        from knowledge_manager.search_projection import update_search_projection_for_module
+
+        update_search_projection_for_module(kb_path, module)
+    except Exception:
+        pass
+    try:
+        from knowledge_manager.recommendation_index import update_recommendation_index_for_module
+
+        update_recommendation_index_for_module(kb_path, module)
+    except Exception:
+        pass
+
+
+def _remove_from_derived_indexes(module_id: str, category: str, kb_path: Path) -> None:
     try:
         from knowledge_manager.lexical_index import delete_lexical_index_for_module
 
         delete_lexical_index_for_module(kb_path, category, module_id)
     except Exception:
         pass
-
     try:
         from knowledge_manager.search_projection import remove_search_projection_for_module
 
         remove_search_projection_for_module(kb_path, category, module_id)
     except Exception:
         pass
-
     try:
         from knowledge_manager.recommendation_index import remove_recommendation_index_for_module
 
@@ -366,6 +371,7 @@ def save_module(
     _upsert_index_entry(module, kb_path)
     _invalidate_module_cache(kb_path)
     invalidate_materialized_views(kb_path)
+    _refresh_derived_indexes_for_module(module, kb_path)
     if defer_noncritical:
         state = schedule_maintenance_job(
             kb_path,
@@ -400,6 +406,7 @@ def delete_module(
     _remove_index_entry(module_id, category, kb_path)
     _invalidate_module_cache(kb_path)
     invalidate_materialized_views(kb_path)
+    _remove_from_derived_indexes(module_id, category, kb_path)
     if defer_noncritical:
         state = schedule_maintenance_job(
             kb_path,
