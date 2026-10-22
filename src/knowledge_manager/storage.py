@@ -1088,11 +1088,12 @@ def generate_changelog(kb_path: Path) -> dict | None:
     if since_arg:
         cmd.append(since_arg)
     result = subprocess.run(cmd, capture_output=True, text=True, check=False)
-    if result.returncode != 0 or not result.stdout.strip():
+    stdout = result.stdout or ""
+    if result.returncode != 0 or not stdout.strip():
         return None
 
     commits = []
-    for line in result.stdout.strip().split("\n"):
+    for line in stdout.strip().split("\n"):
         parts = line.split("||", 2)
         if len(parts) != 3:
             continue
