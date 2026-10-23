@@ -50,3 +50,13 @@ config.json
 
 # Claude local worktrees
 .claude/
+
+# Local evaluation artifacts and workspace data
+/developer-kit/
+/kb/
+/task1-manual-checks/
+/test-results/
+/tmp/
+/pytesttmp*/
+/.tmp_pytest/
+/.mypy_cache/
