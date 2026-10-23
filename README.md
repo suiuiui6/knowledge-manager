@@ -51,6 +51,29 @@ km --kb-path ./my_kb review
 km --kb-path ./my_kb serve
 ```
 
+## Validation and CI
+
+The repository uses Ubuntu GitHub Actions with the versions locked in `poetry.lock`. The full pytest suite is the blocking merge gate. Black and Mypy run as separate quality reports while the repository's existing formatting and typing debt is being reduced. Windows checks are currently `audit-only-windows` because the local sandbox can prevent pytest from creating temporary directories; they are not represented as a passing production gate.
+
+Run the same checks locally after installing the project:
+
+```bash
+poetry install
+poetry run pytest -q
+poetry run black --check src tests scripts
+poetry run mypy src
+```
+
+## Architecture and scope
+
+Knowledge Manager follows the workflow `extract -> staging -> review -> publish -> serve`. It provides a CLI, an MCP stdio server, and a FastAPI HTTP service over Git-native JSON modules with atomic file updates and inspectable indexes. The design targets small to medium knowledge bases where reviewability and version control matter more than operating a large retrieval platform.
+
+The current project does not require GraphRAG, Neo4j, a vector database, Celery, LangGraph, or a microservice deployment. Those technologies are outside the current architecture and would require a separate requirement, capability validation, and reproducible benchmark before consideration.
+
+## Security and configuration
+
+Provider credentials must be supplied through environment variables or controlled local configuration. Do not commit API keys, tokens, private keys, or production configuration. Start from [.env.production.example](.env.production.example), the sanitized [sample knowledge base](examples/sample_knowledge_base/README.md), and the release and rollout runbooks under [docs/runbooks](docs/runbooks/).
+
 ## Who should use this?
 
 - Teams that want inspectable, versioned knowledge artifacts in git.
@@ -352,12 +375,12 @@ Use `km --verbose ...` to enable operational logging during CLI runs. Verbose lo
 ## Development
 
 ```bash
-poetry run pytest               # 75 tests
-poetry run black src tests      # format
-poetry run mypy src             # type check
+poetry run pytest -q
+poetry run black --check src tests scripts
+poetry run mypy src
 ```
 
-Current validation artifacts are checked into [`test-results/`](test-results/) and [`docs/validation-report-2026-05-29.md`](docs/validation-report-2026-05-29.md). They cover MCP protocol compliance, retrieval behavior, and an end-to-end extract -> review -> serve run against a real sample knowledge base.
+Validation reports are generated during verification and are kept out of the source release when they contain local paths or runtime artifacts. The repository includes durable assessment and runbook documentation under [`docs/`](docs/).
 
 ## Enterprise Operations
 
