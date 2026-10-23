@@ -2064,8 +2064,12 @@ def test_load_module_changelog_handles_missing_dir(tmp_path):
 
 def test_generate_changelog_handles_non_git(kb_path):
     """generate_changelog returns None for non-git directory."""
+    import subprocess
+
     from knowledge_manager.storage import generate_changelog
+
     kb_path.mkdir(parents=True, exist_ok=True)
+    subprocess.run(["git", "-C", str(kb_path), "init"], capture_output=True, check=True)
     result = generate_changelog(kb_path)
     assert result is None
 

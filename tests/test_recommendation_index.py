@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 from knowledge_manager.schemas import Index, Module, ModuleContent, ModuleMetadata
 from knowledge_manager.storage import delete_module, generate_recommendations, save_index, save_module
 
@@ -210,15 +213,30 @@ def test_generate_recommendations_reuses_telemetry_snapshot_per_run(tmp_path, mo
         ),
         kb,
     )
-    calls = {"count": 0}
+    events_file = kb / ".telemetry" / "search_events.jsonl"
+    events_file.parent.mkdir(parents=True)
+    events_file.write_text(
+        json.dumps(
+            {
+                "type": "load",
+                "timestamp": "2026-10-23T00:00:00+00:00",
+                "module_id": "incident-core",
+                "category": "ops",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    read_calls = {"count": 0}
+    real_read_text = Path.read_text
 
-    def counted_load_search_events(path):
-        assert path == kb
-        calls["count"] += 1
-        return []
+    def counted_read_text(path_obj, *args, **kwargs):
+        if path_obj == events_file:
+            read_calls["count"] += 1
+        return real_read_text(path_obj, *args, **kwargs)
 
-    monkeypatch.setattr("knowledge_manager.storage.load_search_events", counted_load_search_events)
+    monkeypatch.setattr(Path, "read_text", counted_read_text)
 
     generate_recommendations(kb)
 
-    assert calls["count"] == 1
+    assert read_calls["count"] == 1

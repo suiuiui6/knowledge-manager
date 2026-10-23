@@ -231,7 +231,18 @@ def test_admin_dashboard_cached_snapshot_avoids_full_fingerprint_scan(tmp_path, 
 
 
 def test_admin_dashboard_reuses_ops_report_and_staging_reads_within_single_build(tmp_path, monkeypatch):
-    from knowledge_manager.schemas import Index, Module, ModuleContent, OpsReport, SourceBacklogEntry, StagingMeta
+    from knowledge_manager.schemas import (
+        ConfluenceSourceConfig,
+        Index,
+        Module,
+        ModuleContent,
+        OpsReport,
+        SourceBacklogEntry,
+        SourceDefinition,
+        SourceRegistry,
+        SourceSyncState,
+        StagingMeta,
+    )
     from knowledge_manager.storage import save_index, save_staging_meta, save_to_staging
 
     kb = tmp_path / "kb"
@@ -249,6 +260,24 @@ def test_admin_dashboard_reuses_ops_report_and_staging_reads_within_single_build
     )
     save_to_staging(staged, kb / ".staging")
     save_staging_meta(StagingMeta(module_id="review-me", status="pending"), kb / ".staging")
+    save_source_registry(
+        SourceRegistry(
+            sources={
+                "team-docs": SourceDefinition(
+                    id="team-docs",
+                    confluence=ConfluenceSourceConfig(
+                        base_url="https://example.atlassian.net/wiki",
+                        space_key="ENG",
+                        email="docs@example.com",
+                        api_token_env="CONFLUENCE_API_TOKEN",
+                        category="ops",
+                    ),
+                    sync=SourceSyncState(page_versions={"123": "1"}),
+                )
+            }
+        ),
+        kb,
+    )
 
     ops_calls = {"count": 0}
     staging_calls = {"count": 0}
