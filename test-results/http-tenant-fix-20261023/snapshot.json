@@ -1,5 +1,5 @@
 {
-  "head": "4683d463c538bf186e9d643f9b0a13a7e33b0078",
+  "head": "e8da0d686e13c33929f5734af2a18d571ddf74f9",
   "branch": "feat/knowledge-manager-phase2",
   "environment": "audit-only-windows",
   "sha256": {
@@ -75,7 +75,7 @@
     "tests/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "tests/test_audit.py": "b3ed4d3c1d82a9c25e0168a946e7b804ee9473e04c0a40959c5772d8bb1fe550",
     "tests/test_backup_restore.py": "39735b7ead44323f9519d372a150eb01a39586886d9612df6d7476155c880b7c",
-    "tests/test_cache.py": "d7bff6af369513760059813bd3f5a83a8b00b620f6f227e093adb93a8a034221",
+    "tests/test_cache.py": "ae327673e45123429bbdf2eca24c3b9ae9d988991b05732d1ecc9b1484312ab9",
     "tests/test_chat.py": "9986191ea82793050dce3279f55e9384ca5f237c70c01b0caaf2d6039a43940c",
     "tests/test_cli.py": "a583a41af4b8067a6edd998125e2789628987d40709e738c808f2cdf743f61e8",
     "tests/test_collect_release_evidence.py": "6510a8ee5c8ad5b48733b970b7d55f5ee4681ae4129785d80b39c63b4acd5596",
@@ -94,7 +94,7 @@
     "tests/test_markdown.py": "a250a5bf564f840da5f97070e651c53f6c5b4c8573e5ba83937a8fd60ccad6bd",
     "tests/test_marketplace.py": "48f2f3865fef4f6e8cbf9e83d9cd5e4e5f75f28b98e9a4bd36d948d15265e795",
     "tests/test_materialized_views.py": "1aa11e4adc0d793aa67af08a97094903a0e7d9c9511c62d441915ce67d7f3cda",
-    "tests/test_mcp_server.py": "38b91e0ca8b19b19b2db66352e15287a109df13090f6635a9c65b8c3758e496e",
+    "tests/test_mcp_server.py": "95dd6e75f57ed01264e2b0d33e1d9db9c0c2a6af19f6d76ddb76abb46f874792",
     "tests/test_memory.py": "1b98592e07269e28fc177872fbc48ac9631d17f2c4f0b263b7bec994b3b61c84",
     "tests/test_migration.py": "e3bc6463f19dccf96ac2df47cdbb09056ed609bc257a16de1a96da2bcb3dd4f2",
     "tests/test_module_cache.py": "ff267901e229e9b5e38e58e5a94d276caf429bc3a1be16bfdac30ea1edaf6c46",
@@ -114,7 +114,7 @@
     "tests/test_search_projection.py": "136c9e4a740b63f0f76e9635bd8bde11c9fd47fe267f47ed04951a069dbbebd8",
     "tests/test_source_ingestion.py": "c2f07dcbdbb26921a03556979b7e16768a1a2dfc356d3635609bc3cd11d176b9",
     "tests/test_storage.py": "8fdc5ed48b43ea3ec2bcf6e6e658773d2086e66e8d5746db8d77a9ffa3f9d91f",
-    "tests/test_sync.py": "61d0c5f6c02e247f79978bcab2a3f1962a1c2662c9f65eedde608479896c62ab",
+    "tests/test_sync.py": "f2761f219c49d060f772487302c12ebf7fdf33890d27257343b9f659211cd2ef",
     "tests/test_tenancy.py": "b6ec0f9e3647f801f44bf9acacf26d872ecb7c233276efaf08d0a5767b86ad5c",
     "tests/test_tenant_boundaries.py": "d36336f8e9d35c9a959af4b8419e0fef84797d7380ae4bca3e3c996f5a877ea8",
     "tests/test_tree.py": "e06aaac0b459cdc50364fe158a34ed340a28c3b58b77e8dd1279b280062c328f",

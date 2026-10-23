@@ -12,11 +12,13 @@ class TestMarkdownSync:
         kb.mkdir()
         from knowledge_manager.schemas import Index, Module, ModuleContent, ModuleMetadata
         from knowledge_manager.storage import save_index, save_module
+        from knowledge_manager.job_worker import run_pending_maintenance
 
         save_index(Index(description="Test KB"), kb)
 
         mod = Module(
-            id="test-mod", category="general",
+            id="test-mod",
+            category="general",
             title="Test Module Title",
             summary="A test module for sync testing purposes.",
             content=ModuleContent(
@@ -28,7 +30,36 @@ class TestMarkdownSync:
             metadata=ModuleMetadata(tags=["test", "sync"], confidence="high"),
         )
         save_module(mod, kb)
+        run_pending_maintenance(kb)
         return kb
+
+    def test_save_queues_markdown_until_maintenance_runs(self, tmp_path):
+        from knowledge_manager.schemas import Index, Module, ModuleContent
+        from knowledge_manager.job_worker import run_pending_maintenance
+        from knowledge_manager.storage import save_index, save_module
+
+        kb = tmp_path / "deferred_kb"
+        kb.mkdir()
+        save_index(Index(description="Deferred sync KB"), kb)
+        module = Module(
+            id="queued-mod",
+            category="general",
+            title="Queued Module",
+            summary="A queued module for maintenance timing validation.",
+            content=ModuleContent(
+                overview="Queued overview.",
+                details="Queued details with enough characters for validation.",
+            ),
+        )
+        maintenance: list[dict] = []
+        save_module(module, kb, maintenance_state=maintenance)
+        md_path = kb / "general" / "queued-mod.md"
+
+        assert maintenance and maintenance[0]["deferred"] is True
+        assert not md_path.exists()
+        assert run_pending_maintenance(kb) == 1
+        assert md_path.exists()
+        assert "Queued Module" in md_path.read_text(encoding="utf-8")
 
     def test_sync_on_save_creates_md(self, kb):
         md_path = kb / "general" / "test-mod.md"
@@ -44,7 +75,9 @@ class TestMarkdownSync:
 
     def test_sync_md_to_json(self, kb):
         md_path = kb / "general" / "test-mod.md"
-        md_path.write_text(md_path.read_text().replace("Test Module Title", "Updated Title"), encoding="utf-8")
+        md_path.write_text(
+            md_path.read_text().replace("Test Module Title", "Updated Title"), encoding="utf-8"
+        )
         conflicts = MarkdownSync.sync_on_rebuild(kb)
         remaining = [c for c in conflicts if "Manually fix" in c.action_required]
         assert len(remaining) == 0

@@ -27,7 +27,7 @@
 
 测试环境变量：`PYTHONUTF8=1`、`PYTHONPATH=src`、`TEMP/TMP=D:/tyh/km-install-temp`。HTTP 测试在获准的非沙箱执行环境运行，使用原始 pytest fixture，没有加载旧 tmp_path 替代插件。
 
-新增 `tests/test_tenant_boundaries.py` 共 28 项：HTTP JSON/Markdown workspace 隔离、审核拒绝审计、短查询/投影查询/强制伴随模块、四种报表缓存预热顺序、MCP search/deep/load/expand/graph 引用隔离及存储不变性、跨 workspace 缓存、MCP 写入范围/新增归属/联合搜索、共享语义、资源全局读取策略、来源 stale 计数、全局资源注册。
+新增 `tests/test_tenant_boundaries.py` 共 28 项：HTTP JSON/Markdown workspace 隔离、审核拒绝审计、短查询/投影查询/强制伴随模块、四种报表缓存预热顺序、MCP search/deep/load/expand/graph 引用隔离及存储不变性、跨 workspace 缓存、MCP 写入范围/新增归属/联合搜索、共享语义、资源全局读取策略、来源 stale 计数、全局资源注册。另在缓存、Markdown 和 MCP 既有测试中校正了 category 参数、维护队列执行时机，并加入 MCP 二次加载命中缓存的真实行为测试。
 
 先失败后修复：最初 16 项全部真实失败，日志在工作区父目录 `km-red-boundaries.log`；随后 MCP 写入/联合搜索 6 项真实失败，拒绝审计/资源策略及全局资源注册也分别复现。来源 stale 测试初版缺少 schema 必填字段，纠正测试数据后通过，该初始 schema 错误不算产品缺陷。保存的后续失败证据见 `red-resources.log`、`red-global.log`。
 
@@ -35,6 +35,9 @@
 |---|---|---|---|
 | HTTP/MCP/tenancy 专项 | `-m pytest -q tests/test_tenant_boundaries.py tests/test_http_server.py tests/test_mcp_server.py tests/test_tenancy.py --basetemp D:/tyh/km-final-protocol --disable-warnings --junitxml test-results/http-tenant-fix-20261023/protocol.xml` | 0；158 passed | `protocol.log/xml` |
 | 全量测试 | `-m pytest -q --basetemp D:/tyh/km-final-full --disable-warnings --junitxml test-results/http-tenant-fix-20261023/full.xml` | 1；824 passed / 9 failed，342.38 秒 | `full.log/xml` |
+| 校正测试后的全量测试 | `-m pytest -q --basetemp D:/tyh/km-full-after-testfix --disable-warnings --junitxml test-results/http-tenant-fix-20261023/full-after-testfix.xml` | 1；832 passed / 3 failed，317.95 秒 | `full-after-testfix.log/xml` |
+| 缓存/Markdown/MCP 行为回归 | `-m pytest -q tests/test_cache.py tests/test_sync.py tests/test_mcp_server.py --basetemp D:/tyh/km-green-cache-sync-mcp3 --disable-warnings` | 0；73 passed | `cache-sync-mcp-final.log/xml` |
+| 本次修改测试格式 | `-m black --check tests/test_cache.py tests/test_sync.py` | 0；2 文件合规 | `black-testfix-final.log` |
 | 完整格式检查 | `-m black --check --workers 1 src tests scripts` | 1；84 文件需格式化、32 文件合规 | `black-final.log` |
 | 干净安装冒烟 | `scripts/verify_install_smoke.py --work-dir D:/tyh/km-install-temp` | 0；8 项检查通过 | `install-smoke.json` |
 | 类型检查 | `-m mypy src` | 1；100 errors / 26 files | `mypy.log` |
@@ -43,9 +46,9 @@
 
 Black 最初两个沙箱内只读检查未正常结束，核实进程归属后仅终止本轮对应进程；上表为非沙箱重跑的实际完成结果。未通过大范围格式化掩盖历史格式债务，仅格式化新增回归文件与小型 tenancy 文件。类型错误与历史记录同为 100 个，不以数量相同替代整体验收。
 
-对照上批 `D:/tyh/km-locked-tests.xml` 的失败用例集合：13 个减为 9 个，**新增失败集合为空**；本批解决的四个历史失败与核查报告一致。剩余明细：缓存 put/get、LRU、namespace isolation、namespace invalidate 共 4 项；管理面板 ops/staging 复用 1 项；推荐 telemetry 复用 1 项；非 Git 目录 changelog 1 项；Markdown 保存/反向同步 2 项。它们均在上批失败集合中，本批未改断言或跳过。
+对照上批 `D:/tyh/km-locked-tests.xml` 的失败用例集合：13 个减为 3 个，**新增失败集合为空**。本轮通过校正真实接口和维护执行时机，消除了缓存 4 项和 Markdown 2 项；前一轮已消除 HTTP/MCP 4 项。剩余为管理面板 ops/staging 复用、推荐 telemetry 复用、非 Git 目录 changelog，各 1 项，均仍是基线失败集合中的项目。
 
-测试结束后再次校验 snapshot 中 119 个输入文件的 SHA256，全部未变化；结果和基线差集记录于 `verification-summary.json`。新加测试为 28 项，原有用例保留，整体总数由 805 增至 833。
+最终测试快照记录 119 个输入文件的 SHA256；结果和基线差集记录于 `verification-summary-after-testfix.json`。新加测试为 28 项，另增加 1 个 MCP 缓存行为测试和 1 个 Markdown 队列时机测试，原有用例保留，整体总数为 835。
 
 用户确认提交后，2026-10-23 再次校验全部 119 个输入文件和上批依赖哈希，均未变化，`pip check` 退出码 0。提交前重跑同范围协议测试，仅 basetemp 改为 `D:/tyh/km-precommit-protocol`、报告名改为 `precommit-protocol.xml`：退出码 0，158 passed，38.48 秒；原全量失败及静态检查结果继续如实保留。依赖配置和安装证据已单独提交为 `8101341`，未推送。
 
@@ -54,7 +57,7 @@ Black 最初两个沙箱内只读检查未正常结束，核实进程归属后�
 ## 交付状态
 
 - 已修改：以上业务源码、回归测试和证据文档。
-- 已验证：HTTP/MCP 专项和干净安装通过；全量仍有 9 个既有失败，Black、Mypy 未通过，均有当前源码证据。
+- 已验证：HTTP/MCP 专项、缓存/Markdown/MCP 行为回归和干净安装通过；全量为 832 通过、3 个既有失败，Black 全量和 Mypy 仍未通过，均有当前源码证据。
 - 已提交：用户于 2026-10-23 确认将本批源码、回归测试及验证记录作为独立本地提交保存，实际提交 ID 以 Git 历史为准；依赖修复提交为 `8101341`。未推送。
 - 已部署：未执行。
-- 后续：优先核查影响缓存实际读取与 Markdown 同步的失败，再处理 changelog 的仓库识别和两个统计复用失败；基于真实行为决定修实现还是修不匹配的测试前提。整体门槛未满足，不宣称项目整体验收通过或生产就绪。
+- 后续：继续核查管理面板、推荐 telemetry 和非 Git changelog 三项；整体门槛未满足，不宣称项目整体验收通过或生产就绪。

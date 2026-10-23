@@ -5,7 +5,9 @@ from knowledge_manager.cache import ModuleCache
 
 def make_module(id="mod-a") -> Module:
     return Module(
-        id=id, category="general", title="Test Module Title",
+        id=id,
+        category="general",
+        title="Test Module Title",
         summary="A summary of this test module for testing purposes",
         content=ModuleContent(
             overview="This is the overview of the module",
@@ -18,7 +20,7 @@ def test_cache_put_and_get():
     cache = ModuleCache(max_size=10)
     module = make_module()
     cache.put(module)
-    result = cache.get("mod-a")
+    result = cache.get("mod-a", category=module.category)
     assert result is not None
     assert result.id == "mod-a"
 
@@ -32,20 +34,20 @@ def test_cache_evicts_lru():
     cache = ModuleCache(max_size=3)
     for i in range(3):
         cache.put(make_module(f"mod-{i}"))
-    # Access mod-0 to make it recently used
-    cache.get("mod-0")
+        # Access mod-0 to make it recently used
+        cache.get("mod-0", category="general")
     # Add a 4th item — mod-1 should be evicted (LRU)
     cache.put(make_module("mod-3"))
-    assert cache.get("mod-1") is None
-    assert cache.get("mod-0") is not None
-    assert cache.get("mod-3") is not None
+    assert cache.get("mod-1", category="general") is None
+    assert cache.get("mod-0", category="general") is not None
+    assert cache.get("mod-3", category="general") is not None
 
 
 def test_cache_invalidate():
     cache = ModuleCache(max_size=10)
     cache.put(make_module())
-    cache.invalidate("mod-a")
-    assert cache.get("mod-a") is None
+    cache.invalidate("mod-a", category="general")
+    assert cache.get("mod-a", category="general") is None
 
 
 def test_cache_clear():
@@ -53,14 +55,14 @@ def test_cache_clear():
     cache.put(make_module("mod-a"))
     cache.put(make_module("mod-b"))
     cache.clear()
-    assert cache.get("mod-a") is None
-    assert cache.get("mod-b") is None
+    assert cache.get("mod-a", category="general") is None
+    assert cache.get("mod-b", category="general") is None
 
 
 def test_cache_disabled():
     cache = ModuleCache(max_size=10, enabled=False)
     cache.put(make_module())
-    assert cache.get("mod-a") is None
+    assert cache.get("mod-a", category="general") is None
 
 
 def test_cache_size():
@@ -84,8 +86,8 @@ def test_cache_namespace_isolation():
     cache.put(mod_b, namespace="ns2")
 
     # Same ID, different namespace → both stored
-    result1 = cache.get("same-id", namespace="ns1")
-    result2 = cache.get("same-id", namespace="ns2")
+    result1 = cache.get("same-id", namespace="ns1", category="general")
+    result2 = cache.get("same-id", namespace="ns2", category="general")
     assert result1 is not None
     assert result2 is not None
     assert result1.title == "Test Module Title"
@@ -96,7 +98,7 @@ def test_cache_namespace_miss():
     """get with wrong namespace should return None."""
     cache = ModuleCache(max_size=10)
     cache.put(make_module("mod-a"), namespace="ns1")
-    assert cache.get("mod-a", namespace="ns2") is None
+    assert cache.get("mod-a", namespace="ns2", category="general") is None
 
 
 def test_cache_namespace_invalidate():
@@ -105,9 +107,9 @@ def test_cache_namespace_invalidate():
     cache.put(make_module("mod-a"), namespace="ns1")
     cache.put(make_module("mod-a"), namespace="ns2")
 
-    cache.invalidate("mod-a", namespace="ns1")
-    assert cache.get("mod-a", namespace="ns1") is None
-    assert cache.get("mod-a", namespace="ns2") is not None
+    cache.invalidate("mod-a", namespace="ns1", category="general")
+    assert cache.get("mod-a", namespace="ns1", category="general") is None
+    assert cache.get("mod-a", namespace="ns2", category="general") is not None
 
 
 def test_cache_isolates_by_namespace_category_and_module_id():

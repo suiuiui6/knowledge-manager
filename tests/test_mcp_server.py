@@ -119,6 +119,28 @@ async def test_tool_load_module_found(server, kb_path):
 
 
 @pytest.mark.asyncio
+async def test_tool_load_module_reuses_category_aware_cache(kb_path):
+    from knowledge_manager.cache import ModuleCache
+    from knowledge_manager.mcp_server import create_server
+
+    save_module(make_module(), kb_path)
+    server = create_server(kb_path, cache=ModuleCache())
+    first = await server.call_tool(
+        "load_module", {"module_id": "auth-jwt", "category": "auth"}
+    )
+    assert "auth-jwt" in str(first)
+
+    with patch(
+        "knowledge_manager.mcp_server.load_module",
+        side_effect=AssertionError("second load should use the category-aware cache"),
+    ):
+        second = await server.call_tool(
+            "load_module", {"module_id": "auth-jwt", "category": "auth"}
+        )
+    assert "auth-jwt" in str(second)
+
+
+@pytest.mark.asyncio
 async def test_tool_load_module_honors_tenant_filter(server, kb_path):
     module = Module(
         id="tenant-a",
