@@ -714,6 +714,7 @@ class TestModules:
         kb = tmp_path / "kb"
         kb.mkdir()
         save_index(Index(description="staging approve"), kb)
+        _write_auth_fixture(kb)
         staged = Module(
             id="review-me",
             category="ops",
@@ -732,7 +733,11 @@ class TestModules:
         )
 
         review_client = TestClient(create_app(kb))
-        r = review_client.post("/api/staging/review-me/approve", json={"reviewer": "alice"})
+        r = review_client.post(
+            "/api/staging/review-me/approve",
+            headers={"Authorization": "Bearer reviewer-team-a"},
+            json={},
+        )
         assert r.status_code == 200
         assert r.json()["status"] == "merged"
 
@@ -1330,6 +1335,10 @@ class TestOps:
         kb.mkdir()
         _write_auth_fixture(kb)
         save_index(Index(description="Ops KB"), kb)
+        (kb / "config.json").write_text(
+            json.dumps({"routing_policy": {"risk_level_allowed_statuses": {"high": ["published"]}}}),
+            encoding="utf-8",
+        )
         upsert_source(
             SourceDefinition(
                 id="team-docs-a",

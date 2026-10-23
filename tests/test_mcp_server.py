@@ -183,13 +183,12 @@ async def test_tool_search_modules(server, kb_path):
     save_module(make_module("db-conn", "database"), kb_path)
 
     result = await server.call_tool("search_modules", {"query": "JWT authentication"})
-    raw = result[0].text if hasattr(result[0], "text") else str(result[0])
-    assert "auth-jwt" in raw
-    assert '"source": "direct"' in raw
-    assert '"confidence": "medium"' in raw
-    assert '"caveats"' in raw
-    assert '"related_modules"' in raw
-    assert '"policy_reasons"' in raw
+    blocks = result[0] if isinstance(result, tuple) else result
+    payload = json.loads(next(block.text for block in blocks if hasattr(block, "text")))
+    match = next(item for item in payload if item["id"] == "auth-jwt")
+    assert match["source"] == "direct"
+    assert match["confidence"] == "medium"
+    assert {"caveats", "related_modules", "policy_reasons"} <= match.keys()
 
 
 @pytest.mark.asyncio

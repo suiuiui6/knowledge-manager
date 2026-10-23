@@ -1,0 +1,265 @@
+FFFFFFF                                                                  [100%]
+================================== FAILURES ===================================
+_____ test_mcp_writes_cannot_modify_hidden_modules[foreign-update_module] _____
+
+scoped_kb = WindowsPath('D:/tyh/km-red-audit-resources/test_mcp_writes_cannot_modify_0/kb')
+tool = 'update_module', module_id = 'foreign'
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("tool", ["update_module", "delete_module"])
+    @pytest.mark.parametrize("module_id", ["foreign", "workspace"])
+    async def test_mcp_writes_cannot_modify_hidden_modules(scoped_kb, tool, module_id):
+        before = load_module(module_id, "ops", scoped_kb).model_dump()
+        server = create_server(scoped_kb, session_tenant=TenantContext(tenant_id="a", workspace_id="one"))
+        args = {"module_id": module_id, "category": "ops"}
+        if tool == "update_module":
+            args["title"] = "Forbidden update"
+        result = decode(await server.call_tool(tool, args))
+        assert "not found" in result.get("error", "").lower()
+        assert load_module(module_id, "ops", scoped_kb).model_dump() == before
+>       events = [json.loads(line) for line in (scoped_kb / ".audit" / "audit.jsonl").read_text(encoding="utf-8").splitlines()]
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_tenant_boundaries.py:197: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+D:\Python\Lib\pathlib\__init__.py:787: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = WindowsPath('D:/tyh/km-red-audit-resources/test_mcp_writes_cannot_modify_0/kb/.audit/audit.jsonl')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\tyh\\km-red-audit-resources\\test_mcp_writes_cannot_modify_0\\kb\\.audit\\audit.jsonl'
+
+D:\Python\Lib\pathlib\__init__.py:771: FileNotFoundError
+_____ test_mcp_writes_cannot_modify_hidden_modules[foreign-delete_module] _____
+
+scoped_kb = WindowsPath('D:/tyh/km-red-audit-resources/test_mcp_writes_cannot_modify_1/kb')
+tool = 'delete_module', module_id = 'foreign'
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("tool", ["update_module", "delete_module"])
+    @pytest.mark.parametrize("module_id", ["foreign", "workspace"])
+    async def test_mcp_writes_cannot_modify_hidden_modules(scoped_kb, tool, module_id):
+        before = load_module(module_id, "ops", scoped_kb).model_dump()
+        server = create_server(scoped_kb, session_tenant=TenantContext(tenant_id="a", workspace_id="one"))
+        args = {"module_id": module_id, "category": "ops"}
+        if tool == "update_module":
+            args["title"] = "Forbidden update"
+        result = decode(await server.call_tool(tool, args))
+        assert "not found" in result.get("error", "").lower()
+        assert load_module(module_id, "ops", scoped_kb).model_dump() == before
+>       events = [json.loads(line) for line in (scoped_kb / ".audit" / "audit.jsonl").read_text(encoding="utf-8").splitlines()]
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_tenant_boundaries.py:197: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+D:\Python\Lib\pathlib\__init__.py:787: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = WindowsPath('D:/tyh/km-red-audit-resources/test_mcp_writes_cannot_modify_1/kb/.audit/audit.jsonl')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\tyh\\km-red-audit-resources\\test_mcp_writes_cannot_modify_1\\kb\\.audit\\audit.jsonl'
+
+D:\Python\Lib\pathlib\__init__.py:771: FileNotFoundError
+____ test_mcp_writes_cannot_modify_hidden_modules[workspace-update_module] ____
+
+scoped_kb = WindowsPath('D:/tyh/km-red-audit-resources/test_mcp_writes_cannot_modify_2/kb')
+tool = 'update_module', module_id = 'workspace'
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("tool", ["update_module", "delete_module"])
+    @pytest.mark.parametrize("module_id", ["foreign", "workspace"])
+    async def test_mcp_writes_cannot_modify_hidden_modules(scoped_kb, tool, module_id):
+        before = load_module(module_id, "ops", scoped_kb).model_dump()
+        server = create_server(scoped_kb, session_tenant=TenantContext(tenant_id="a", workspace_id="one"))
+        args = {"module_id": module_id, "category": "ops"}
+        if tool == "update_module":
+            args["title"] = "Forbidden update"
+        result = decode(await server.call_tool(tool, args))
+        assert "not found" in result.get("error", "").lower()
+        assert load_module(module_id, "ops", scoped_kb).model_dump() == before
+>       events = [json.loads(line) for line in (scoped_kb / ".audit" / "audit.jsonl").read_text(encoding="utf-8").splitlines()]
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_tenant_boundaries.py:197: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+D:\Python\Lib\pathlib\__init__.py:787: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = WindowsPath('D:/tyh/km-red-audit-resources/test_mcp_writes_cannot_modify_2/kb/.audit/audit.jsonl')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\tyh\\km-red-audit-resources\\test_mcp_writes_cannot_modify_2\\kb\\.audit\\audit.jsonl'
+
+D:\Python\Lib\pathlib\__init__.py:771: FileNotFoundError
+____ test_mcp_writes_cannot_modify_hidden_modules[workspace-delete_module] ____
+
+scoped_kb = WindowsPath('D:/tyh/km-red-audit-resources/test_mcp_writes_cannot_modify_3/kb')
+tool = 'delete_module', module_id = 'workspace'
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("tool", ["update_module", "delete_module"])
+    @pytest.mark.parametrize("module_id", ["foreign", "workspace"])
+    async def test_mcp_writes_cannot_modify_hidden_modules(scoped_kb, tool, module_id):
+        before = load_module(module_id, "ops", scoped_kb).model_dump()
+        server = create_server(scoped_kb, session_tenant=TenantContext(tenant_id="a", workspace_id="one"))
+        args = {"module_id": module_id, "category": "ops"}
+        if tool == "update_module":
+            args["title"] = "Forbidden update"
+        result = decode(await server.call_tool(tool, args))
+        assert "not found" in result.get("error", "").lower()
+        assert load_module(module_id, "ops", scoped_kb).model_dump() == before
+>       events = [json.loads(line) for line in (scoped_kb / ".audit" / "audit.jsonl").read_text(encoding="utf-8").splitlines()]
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_tenant_boundaries.py:197: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+D:\Python\Lib\pathlib\__init__.py:787: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = WindowsPath('D:/tyh/km-red-audit-resources/test_mcp_writes_cannot_modify_3/kb/.audit/audit.jsonl')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\tyh\\km-red-audit-resources\\test_mcp_writes_cannot_modify_3\\kb\\.audit\\audit.jsonl'
+
+D:\Python\Lib\pathlib\__init__.py:771: FileNotFoundError
+_______ test_mcp_resources_enforce_configured_global_read_policy[index] _______
+
+scoped_kb = WindowsPath('D:/tyh/km-red-audit-resources/test_mcp_resources_enforce_con0/kb')
+resource = 'index'
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("resource", ["index", "ops"])
+    async def test_mcp_resources_enforce_configured_global_read_policy(scoped_kb, resource):
+        module = load_module("shared", "ops", scoped_kb)
+        module.id = "global-secret"
+        module.metadata.tenant_id = ""
+        save_module(module, scoped_kb)
+        server = create_server(scoped_kb, session_tenant=TenantContext(tenant_id="a", workspace_id="one"))
+        result = await server.read_resource(f"knowledge://{resource}")
+        payload = json.loads(next(block.content for block in result))
+        if resource == "ops":
+            assert payload["lifecycle_backlog"]["status_counts"] == {"published": 2}
+        else:
+>           assert "global-secret" not in json.dumps(payload)
+E           assert 'global-secret' not in '{"version":...tree": null}'
+E             
+E             'global-secret' is contained here:
+E             ?           ^^
+E                [{"id": "global-secret", "category": "ops", "title": "Authentication shared", "summary": "Authentication guidance for operators.", "tags": [], "word_count": 12}, {"id": "shared", "category": "ops", "title": "Authentication shared", "summary": "Authentication guidance for operators.", "tags": [], "word_count": 12}, {"id": "visible", "category": "ops", "title": "Authentication visible", "summary": "Authentication guidance for operators.", "tags": [], "word_count": 12}]}}, "graph": {"ops/visible": ["ops/shared"]}, "stats": {"total_modu...
+E             
+E             ...Full output truncated (2 lines hidden), use '-vv' to show
+
+tests\test_tenant_boundaries.py:250: AssertionError
+________ test_mcp_resources_enforce_configured_global_read_policy[ops] ________
+
+scoped_kb = WindowsPath('D:/tyh/km-red-audit-resources/test_mcp_resources_enforce_con1/kb')
+resource = 'ops'
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("resource", ["index", "ops"])
+    async def test_mcp_resources_enforce_configured_global_read_policy(scoped_kb, resource):
+        module = load_module("shared", "ops", scoped_kb)
+        module.id = "global-secret"
+        module.metadata.tenant_id = ""
+        save_module(module, scoped_kb)
+        server = create_server(scoped_kb, session_tenant=TenantContext(tenant_id="a", workspace_id="one"))
+        result = await server.read_resource(f"knowledge://{resource}")
+        payload = json.loads(next(block.content for block in result))
+        if resource == "ops":
+>           assert payload["lifecycle_backlog"]["status_counts"] == {"published": 2}
+E           AssertionError: assert {'published': 3} == {'published': 2}
+E             
+E             Differing items:
+E             {'published': 3} != {'published': 2}
+E             Use -v to get more diff
+
+tests\test_tenant_boundaries.py:248: AssertionError
+________________ test_ops_source_stale_counts_use_module_scope ________________
+
+scoped_kb = WindowsPath('D:/tyh/km-red-audit-resources/test_ops_source_stale_counts_u0/kb')
+
+    def test_ops_source_stale_counts_use_module_scope(scoped_kb):
+        from knowledge_manager.schemas import ConfluenceSourceConfig, SourceDefinition, SourceDocumentRef
+        from knowledge_manager.source_ingestion import upsert_source
+    
+        for source_id, workspace in [("shared-source", ""), ("hidden-source", "two")]:
+            upsert_source(SourceDefinition(
+                id=source_id, tenant_id="a", workspace_id=workspace,
+                confluence=ConfluenceSourceConfig(base_url="https://example.com", space_key="OPS", email="ops@example.com", api_token_env="TEST_TOKEN"),
+            ), scoped_kb)
+        for module_id in ["visible", "foreign", "workspace"]:
+            module = load_module(module_id, "ops", scoped_kb)
+            module.metadata.stale_due_to_source_change = True
+>           module.metadata.source_documents = [SourceDocumentRef(source_id="shared-source", page_id=module_id)]
+                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           pydantic_core._pydantic_core.ValidationError: 3 validation errors for SourceDocumentRef
+E           source_type
+E             Field required [type=missing, input_value={'source_id': 'shared-sou...', 'page_id': 'visible'}, input_type=dict]
+E               For further information visit https://errors.pydantic.dev/2.13/v/missing
+E           external_id
+E             Field required [type=missing, input_value={'source_id': 'shared-sou...', 'page_id': 'visible'}, input_type=dict]
+E               For further information visit https://errors.pydantic.dev/2.13/v/missing
+E           title
+E             Field required [type=missing, input_value={'source_id': 'shared-sou...', 'page_id': 'visible'}, input_type=dict]
+E               For further information visit https://errors.pydantic.dev/2.13/v/missing
+
+tests\test_tenant_boundaries.py:265: ValidationError
+=========================== short test summary info ===========================
+FAILED tests/test_tenant_boundaries.py::test_mcp_writes_cannot_modify_hidden_modules[foreign-update_module]
+FAILED tests/test_tenant_boundaries.py::test_mcp_writes_cannot_modify_hidden_modules[foreign-delete_module]
+FAILED tests/test_tenant_boundaries.py::test_mcp_writes_cannot_modify_hidden_modules[workspace-update_module]
+FAILED tests/test_tenant_boundaries.py::test_mcp_writes_cannot_modify_hidden_modules[workspace-delete_module]
+FAILED tests/test_tenant_boundaries.py::test_mcp_resources_enforce_configured_global_read_policy[index]
+FAILED tests/test_tenant_boundaries.py::test_mcp_resources_enforce_configured_global_read_policy[ops]
+FAILED tests/test_tenant_boundaries.py::test_ops_source_stale_counts_use_module_scope
+7 failed, 20 deselected, 514 warnings in 5.72s

@@ -25,7 +25,7 @@ from knowledge_manager.schemas import (
     RoutingPolicyConfig,
     StagingMeta,
 )
-from knowledge_manager.tenancy import TenantContext, module_visible_to_tenant
+from knowledge_manager.tenancy import TenantContext, module_visible_to_tenant, scope_visible_to_tenant
 from knowledge_manager.json_io import atomic_write_text
 
 
@@ -204,12 +204,35 @@ def _module_from_search_document(document: Mapping[str, Any]) -> Module:
 
 
 def _projection_doc_visible_to_tenant(document: Mapping[str, Any], tenant: TenantContext | None) -> bool:
-    if tenant is None:
-        return True
-    module_tenant = str(document.get("tenant_id", ""))
-    if module_tenant == tenant.tenant_id:
-        return True
-    return tenant.allow_global_reads and not module_tenant
+    return scope_visible_to_tenant(
+        str(document.get("tenant_id", "")), str(document.get("workspace_id", "")), tenant
+    )
+
+
+def module_for_tenant(module: Module, kb_path: Path, tenant: TenantContext | None) -> Module:
+    """Redact structured references in a response copy without changing storage or caches."""
+    if tenant is None or not module.metadata.related_modules:
+        return module
+    from knowledge_manager.search_projection import load_search_projection_readonly
+
+    projection = load_search_projection_readonly(kb_path)
+    documents = projection.get("documents", {}) if projection else {}
+    visible = []
+    for ref in module.metadata.related_modules:
+        parts = ref.split("/", 1)
+        if len(parts) != 2:
+            continue
+        document = documents.get(ref)
+        if document is not None:
+            allowed = _projection_doc_visible_to_tenant(document, tenant)
+        else:
+            target = load_module(parts[1], parts[0], kb_path)
+            allowed = target is not None and module_visible_to_tenant(target, tenant)
+        if allowed:
+            visible.append(ref)
+    return module.model_copy(
+        update={"metadata": module.metadata.model_copy(update={"related_modules": visible})}
+    )
 
 
 def _document_key(document: Mapping[str, Any]) -> str:
@@ -1061,6 +1084,11 @@ def search_modules(
         results.append(SearchResult(companion, "policy", companion_reasons))
         seen_keys.add(companion_key)
 
+    results = [
+        SearchResult(module_for_tenant(result.module, kb_path, tenant), result.source, result.reasons)
+        for result in results
+        if module_visible_to_tenant(result.module, tenant)
+    ]
     if results:
         result_ids = [f"{r.module.category}/{r.module.id}" for r in results[:20]]
         record_search_event(query, result_ids, kb_path)
@@ -2249,7 +2277,9 @@ def generate_recommendations(kb_path: Path) -> Any:
     return store_materialized_view(kb_path, "recommendations", report)
 
 
-def _generate_ops_report_uncached(kb_path: Path, staging_meta: list[Any] | None = None) -> Any:
+def _generate_ops_report_uncached(
+    kb_path: Path, staging_meta: list[Any] | None = None, tenant: TenantContext | None = None
+) -> Any:
     """Generate an operator-focused report across sources, lifecycle, and routing suppression."""
     from knowledge_manager.schemas import (
         LifecycleBacklog,
@@ -2259,15 +2289,23 @@ def _generate_ops_report_uncached(kb_path: Path, staging_meta: list[Any] | None 
     )
     from knowledge_manager.source_ingestion import load_source_registry
 
-    modules = list_modules(kb_path)
+    modules = list_modules(kb_path, tenant=tenant)
     registry = load_source_registry(kb_path)
     if staging_meta is None:
         staging_meta = list_staging_meta(kb_path / ".staging")
+    if tenant is not None:
+        visible_staging_ids = {
+            module.id for module in list_staging(kb_path / ".staging")
+            if module_visible_to_tenant(module, tenant)
+        }
+        staging_meta = [meta for meta in staging_meta if meta.module_id in visible_staging_ids]
     cfg = _load_config_safe(kb_path)
     routing_policy = cfg.routing_policy if cfg else RoutingPolicyConfig()
 
     source_backlog: list[SourceBacklogEntry] = []
     for source_id, definition in registry.sources.items():
+        if not scope_visible_to_tenant(definition.tenant_id, definition.workspace_id, tenant):
+            continue
         stale_count = 0
         for module in modules:
             if module.metadata.stale_due_to_source_change and any(
@@ -2323,9 +2361,14 @@ def _generate_ops_report_uncached(kb_path: Path, staging_meta: list[Any] | None 
     )
 
 
-def generate_ops_report(kb_path: Path, staging_meta: list[Any] | None = None) -> Any:
+def generate_ops_report(
+    kb_path: Path, staging_meta: list[Any] | None = None, *, tenant: TenantContext | None = None
+) -> Any:
     from knowledge_manager.schemas import OpsReport
 
+    # Only the full, implicit input set can use the global materialized snapshot.
+    if tenant is not None or staging_meta is not None:
+        return _generate_ops_report_uncached(kb_path, staging_meta=staging_meta, tenant=tenant)
     cached = load_fresh_materialized_view(kb_path, "ops")
     if cached is not None:
         return OpsReport.model_validate(cached)

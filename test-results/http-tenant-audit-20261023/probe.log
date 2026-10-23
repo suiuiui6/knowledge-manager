@@ -1,0 +1,70 @@
+[10/23/26 08:05:48] INFO     HTTP Request: POST                 _client.py:1038
+                             http://testserver/api/staging/stag                
+                             e-a/approve "HTTP/1.1 422                         
+                             Unprocessable Entity"                             
+                    INFO     HTTP Request: POST                 _client.py:1038
+                             http://testserver/api/staging/stag                
+                             e-a/approve "HTTP/1.1 200 OK"                     
+{
+  "cold_ops_a": {
+    "status_counts": {
+      "draft": 1,
+      "published": 2
+    },
+    "staging_status_counts": {
+      "pending": 1
+    }
+  },
+  "after_a_ops_b": {
+    "status_counts": {
+      "draft": 1,
+      "published": 2
+    },
+    "staging_status_counts": {
+      "pending": 1
+    }
+  },
+  "global_after_tenant": {
+    "status_counts": {
+      "draft": 1,
+      "published": 2
+    },
+    "staging_status_counts": {
+      "pending": 1
+    }
+  },
+  "global_warmed_ops_a": {
+    "status_counts": {
+      "draft": 1,
+      "published": 2
+    },
+    "staging_status_counts": {
+      "pending": 1,
+      "changes-requested": 1
+    }
+  },
+  "workspace_detail": {
+    "status": 200
+  },
+  "workspace_override": {
+    "status": 403
+  },
+  "mcp_ids": [
+    "other-workspace",
+    "visible-a"
+  ],
+  "mcp_related": [],
+  "forged_reviewer": {
+    "status": 422,
+    "body": {
+      "detail": "reviewer is server-assigned"
+    }
+  },
+  "authenticated_approval": {
+    "status": 200,
+    "body": {
+      "status": "merged",
+      "approvals": 1
+    }
+  }
+}

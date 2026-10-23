@@ -1,0 +1,48 @@
+{
+  "snapshot_inputs_unchanged": true,
+  "changed_inputs": [],
+  "baseline_failed": 13,
+  "current_failed": 9,
+  "resolved": [
+    "tests.test_http_server.TestModules::test_staging_approve_does_not_require_full_rebuild",
+    "tests.test_http_server.TestOps::test_ops_report_uses_authenticated_tenant_scope",
+    "tests.test_mcp_server::test_tool_deep_search_honors_trusted_session_tenant",
+    "tests.test_mcp_server::test_tool_search_modules"
+  ],
+  "new_failures": [],
+  "remaining": [
+    "tests.test_cache::test_cache_evicts_lru",
+    "tests.test_cache::test_cache_namespace_invalidate",
+    "tests.test_cache::test_cache_namespace_isolation",
+    "tests.test_cache::test_cache_put_and_get",
+    "tests.test_materialized_views::test_admin_dashboard_reuses_ops_report_and_staging_reads_within_single_build",
+    "tests.test_recommendation_index::test_generate_recommendations_reuses_telemetry_snapshot_per_run",
+    "tests.test_storage::test_generate_changelog_handles_non_git",
+    "tests.test_sync.TestMarkdownSync::test_sync_md_to_json",
+    "tests.test_sync.TestMarkdownSync::test_sync_on_save_creates_md"
+  ],
+  "checks": {
+    "protocol": {
+      "exit_code": 0,
+      "passed": 158
+    },
+    "full": {
+      "exit_code": 1,
+      "passed": 824,
+      "failed": 9
+    },
+    "black": {
+      "exit_code": 1,
+      "files_requiring_format": 84
+    },
+    "mypy": {
+      "exit_code": 1,
+      "errors": 100,
+      "files_with_errors": 26
+    },
+    "install_smoke": {
+      "exit_code": 0,
+      "checks_passed": 8
+    }
+  }
+}

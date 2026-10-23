@@ -7,7 +7,7 @@ from knowledge_manager.auth import AuthSubject, load_auth_config
 from knowledge_manager.rbac import check_permission
 from knowledge_manager.schemas import Module
 from knowledge_manager.schemas import Config
-from knowledge_manager.tenancy import TenantContext
+from knowledge_manager.tenancy import TenantContext, module_visible_to_tenant
 
 SUPPORTED_AUTH_PROVIDERS = {"token", "oidc"}
 
@@ -145,14 +145,24 @@ def subject_is_admin(subject: AuthSubject, kb_path: Path) -> bool:
     return check_permission(subject.user, "config.manage", kb_path)
 
 
-def enforce_subject_module_access(subject: AuthSubject, module: Module, kb_path: Path) -> None:
+def enforce_subject_module_access(
+    subject: AuthSubject, module: Module, kb_path: Path, request: Request | None = None
+) -> None:
     if subject.user == "anonymous" or subject_is_admin(subject, kb_path):
         return
-    module_tenant = module.metadata.tenant_id
-    module_workspace = module.metadata.workspace_id
-    if module_tenant and subject.tenant_id and module_tenant != subject.tenant_id:
-        raise HTTPException(status_code=404, detail=f"Module not found: {module.category}/{module.id}")
-    if module_workspace and subject.workspace_id and module_workspace != subject.workspace_id:
+    cfg = _load_config_safe(kb_path)
+    tenant = TenantContext(
+        tenant_id=subject.tenant_id,
+        workspace_id=subject.workspace_id,
+        allow_global_reads=not bool(cfg and cfg.security.multi_tenant_mode)
+        or bool(cfg and cfg.security.allow_global_reads),
+    )
+    if not module_visible_to_tenant(module, tenant):
+        if request is not None:
+            _log_authz_denial(
+                request, kb_path, "Module outside authorized scope",
+                resource=f"{module.category}/{module.id}",
+            )
         raise HTTPException(status_code=404, detail=f"Module not found: {module.category}/{module.id}")
 
 

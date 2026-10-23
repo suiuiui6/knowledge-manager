@@ -1,0 +1,245 @@
+.............................F.....................F.................... [ 55%]
+..........F.............F.................................               [100%]
+================================== FAILURES ===================================
+_______ TestModules.test_staging_approve_does_not_require_full_rebuild ________
+
+self = <tests.test_http_server.TestModules object at 0x0000015369B67AD0>
+tmp_path = WindowsPath('D:/tyh/km-audit-scope-69a51ac4a7344bd3ac36cffc17aba378/test_staging_approve_does_not_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000015369ABF950>
+
+    def test_staging_approve_does_not_require_full_rebuild(self, tmp_path, monkeypatch):
+        from knowledge_manager.schemas import Index, Module, ModuleContent, StagingMeta
+        from knowledge_manager.storage import save_index, save_staging_meta, save_to_staging
+    
+        kb = tmp_path / "kb"
+        kb.mkdir()
+        save_index(Index(description="staging approve"), kb)
+        staged = Module(
+            id="review-me",
+            category="ops",
+            title="Review me",
+            summary="Review me summary for operators.",
+            content=ModuleContent(
+                overview="Review me overview.",
+                details="Review me details with enough length for validation.",
+            ),
+        )
+        save_to_staging(staged, kb / ".staging")
+        save_staging_meta(StagingMeta(module_id="review-me", status="pending"), kb / ".staging")
+        monkeypatch.setattr(
+            "knowledge_manager.storage.rebuild_index",
+            lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("full rebuild should not run")),
+        )
+    
+        review_client = TestClient(create_app(kb))
+        r = review_client.post("/api/staging/review-me/approve", json={"reviewer": "alice"})
+>       assert r.status_code == 200
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Entity]>.status_code
+
+tests\test_http_server.py:736: AssertionError
+___________ TestOps.test_ops_report_uses_authenticated_tenant_scope ___________
+
+self = <tests.test_http_server.TestOps object at 0x0000015369A52350>
+tmp_path = WindowsPath('D:/tyh/km-audit-scope-69a51ac4a7344bd3ac36cffc17aba378/test_ops_report_uses_authentic0')
+
+    def test_ops_report_uses_authenticated_tenant_scope(self, tmp_path):
+        from knowledge_manager.schemas import ConfluenceSourceConfig, Index, Module, ModuleContent, ModuleMetadata, SourceDefinition
+        from knowledge_manager.source_ingestion import upsert_source
+        from knowledge_manager.storage import save_index, save_module
+    
+        kb = tmp_path / "kb"
+        kb.mkdir()
+        _write_auth_fixture(kb)
+        save_index(Index(description="Ops KB"), kb)
+        upsert_source(
+            SourceDefinition(
+                id="team-docs-a",
+                tenant_id="team-a",
+                workspace_id="ws-a",
+                confluence=ConfluenceSourceConfig(
+                    base_url="https://example.atlassian.net/wiki",
+                    space_key="OPS",
+                    email="ops@example.com",
+                    api_token_env="CONFLUENCE_API_TOKEN",
+                ),
+            ),
+            kb,
+        )
+        upsert_source(
+            SourceDefinition(
+                id="team-docs-b",
+                tenant_id="team-b",
+                workspace_id="ws-b",
+                confluence=ConfluenceSourceConfig(
+                    base_url="https://example.atlassian.net/wiki",
+                    space_key="ENG",
+                    email="eng@example.com",
+                    api_token_env="CONFLUENCE_API_TOKEN",
+                ),
+            ),
+            kb,
+        )
+        save_module(
+            Module(
+                id="draft-a",
+                category="ops",
+                title="Draft A",
+                summary="Draft A for operators.",
+                content=ModuleContent(
+                    overview="Draft A overview.",
+                    details="Draft A details with enough length for validation.",
+                ),
+                metadata=ModuleMetadata(status="draft", tenant_id="team-a", workspace_id="ws-a"),
+            ),
+            kb,
+        )
+        save_module(
+            Module(
+                id="draft-b",
+                category="ops",
+                title="Draft B",
+                summary="Draft B for operators.",
+                content=ModuleContent(
+                    overview="Draft B overview.",
+                    details="Draft B details with enough length for validation.",
+                ),
+                metadata=ModuleMetadata(status="draft", tenant_id="team-b", workspace_id="ws-b"),
+            ),
+            kb,
+        )
+    
+        ops_client = TestClient(create_app(kb))
+        r = ops_client.get("/api/ops", headers={"Authorization": "Bearer reviewer-team-a"})
+    
+        assert r.status_code == 200
+        data = r.json()
+        assert len(data["source_backlog"]) == 1
+        assert data["source_backlog"][0]["source_id"] == "team-docs-a"
+>       assert len(data["policy_suppressed_modules"]) == 1
+E       assert 0 == 1
+E        +  where 0 = len([])
+
+tests\test_http_server.py:1397: AssertionError
+__________________________ test_tool_search_modules ___________________________
+
+server = <mcp.server.fastmcp.server.FastMCP object at 0x000001536A702850>
+kb_path = WindowsPath('D:/tyh/km-audit-scope-69a51ac4a7344bd3ac36cffc17aba378/test_tool_search_modules0/kb')
+
+    @pytest.mark.asyncio
+    async def test_tool_search_modules(server, kb_path):
+        save_module(make_module("auth-jwt", "auth"), kb_path)
+        save_module(make_module("db-conn", "database"), kb_path)
+    
+        result = await server.call_tool("search_modules", {"query": "JWT authentication"})
+        raw = result[0].text if hasattr(result[0], "text") else str(result[0])
+        assert "auth-jwt" in raw
+>       assert '"source": "direct"' in raw
+E       assert '"source": "direct"' in '[TextContent(type=\'text\', text=\'[{"id":"auth-jwt","category":"auth","title":"JWT Authentication Guide","summary":"...","related_modules":[],"snippet":"JWT tokens are used for stateless authentication"}]\', annotations=None, meta=None)]'
+
+tests\test_mcp_server.py:188: AssertionError
+_____________ test_tool_deep_search_honors_trusted_session_tenant _____________
+
+kb_path = WindowsPath('D:/tyh/km-audit-scope-69a51ac4a7344bd3ac36cffc17aba378/test_tool_deep_search_honors_t0/kb')
+
+    @pytest.mark.asyncio
+    async def test_tool_deep_search_honors_trusted_session_tenant(kb_path):
+        from knowledge_manager.mcp_server import create_server
+        from knowledge_manager.tenancy import TenantContext
+        from knowledge_manager.schemas import ModuleMetadata
+    
+        main = Module(
+            id="auth-jwt", category="auth",
+            title="JWT authentication module",
+            summary="How JWT tokens work in our system",
+            content=ModuleContent(
+                overview="JWT tokens are used for stateless authentication in our system.",
+                details="Tokens are signed with RS256 and expire after 24 hours by default.",
+            ),
+            metadata=ModuleMetadata(tags=["jwt"], related_modules=["auth/oauth-flow"], tenant_id="team-a"),
+        )
+        neighbor = Module(
+            id="oauth-flow", category="auth",
+            title="OAuth flow module",
+            summary="OAuth authorization flow details",
+            content=ModuleContent(
+                overview="OAuth 2.0 flow for authentication delegation.",
+                details="OAuth authorization code flow with PKCE extension for secure exchange.",
+            ),
+            metadata=ModuleMetadata(tags=["oauth"], tenant_id="team-b"),
+        )
+        save_module(main, kb_path)
+        save_module(neighbor, kb_path)
+        server = create_server(kb_path, session_tenant=TenantContext(tenant_id="team-a"))
+    
+        result = await server.call_tool("deep_search", {"query": "JWT authentication"})
+        content = result[0].text if hasattr(result[0], "text") else str(result[0])
+        assert "auth-jwt" in content
+>       assert "oauth-flow" not in content
+E       assert 'oauth-flow' not in '[TextConten... meta=None)]'
+E         
+E         'oauth-flow' is contained here:
+E           s":["auth/oauth-flow"],"content":{"overview":"JWT tokens are used for stateless authentication in our system.","details":"Tokens are signed with RS256 and expire after 24 hours by default.","examples":"","references":""},"neighbors":[]}]', annotations=None, meta=None)]
+E         ?           ++++++++++
+
+tests\test_mcp_server.py:657: AssertionError
+============================== warnings summary ===============================
+..\km-locked-venvs\knowledge-manager-96lmHReR-py3.14\Lib\site-packages\pytest_asyncio\plugin.py:169: 6063 warnings
+  D:\tyh\km-locked-venvs\knowledge-manager-96lmHReR-py3.14\Lib\site-packages\pytest_asyncio\plugin.py:169: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+    return asyncio.iscoroutinefunction(obj) or inspect.isasyncgenfunction(obj)
+
+..\km-locked-venvs\knowledge-manager-96lmHReR-py3.14\Lib\site-packages\pytest_asyncio\plugin.py:433: 130 warnings
+  D:\tyh\km-locked-venvs\knowledge-manager-96lmHReR-py3.14\Lib\site-packages\pytest_asyncio\plugin.py:433: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+    return asyncio.iscoroutinefunction(func)
+
+tests/test_http_server.py::TestHealth::test_health_ok
+  D:\tyh\km-locked-venvs\knowledge-manager-96lmHReR-py3.14\Lib\site-packages\pytest_asyncio\plugin.py:1005: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    return asyncio.get_event_loop_policy()
+
+tests/test_http_server.py: 2448 warnings
+  D:\tyh\km-locked-venvs\knowledge-manager-96lmHReR-py3.14\Lib\site-packages\fastapi\routing.py:233: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+    is_coroutine = asyncio.iscoroutinefunction(dependant.call)
+
+tests/test_http_server.py: 2 warnings
+tests/test_mcp_server.py: 53 warnings
+  D:\tyh\km-locked-venvs\knowledge-manager-96lmHReR-py3.14\Lib\site-packages\pytest_asyncio\plugin.py:751: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    _restore_event_loop_policy(asyncio.get_event_loop_policy()),
+
+tests/test_http_server.py: 2 warnings
+tests/test_mcp_server.py: 53 warnings
+  D:\tyh\km-locked-venvs\knowledge-manager-96lmHReR-py3.14\Lib\site-packages\pytest_asyncio\plugin.py:977: DeprecationWarning: 'asyncio.set_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    asyncio.set_event_loop_policy(new_loop_policy)
+
+tests/test_http_server.py: 2 warnings
+tests/test_mcp_server.py: 53 warnings
+  D:\tyh\km-locked-venvs\knowledge-manager-96lmHReR-py3.14\Lib\site-packages\pytest_asyncio\plugin.py:978: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+
+tests/test_http_server.py: 2 warnings
+tests/test_mcp_server.py: 53 warnings
+  D:\tyh\km-locked-venvs\knowledge-manager-96lmHReR-py3.14\Lib\site-packages\pytest_asyncio\plugin.py:766: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    policy = asyncio.get_event_loop_policy()
+
+tests/test_http_server.py: 2 warnings
+tests/test_mcp_server.py: 53 warnings
+  D:\tyh\km-locked-venvs\knowledge-manager-96lmHReR-py3.14\Lib\site-packages\pytest_asyncio\plugin.py:811: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    policy = asyncio.get_event_loop_policy()
+
+tests/test_http_server.py: 2 warnings
+tests/test_mcp_server.py: 53 warnings
+  D:\tyh\km-locked-venvs\knowledge-manager-96lmHReR-py3.14\Lib\site-packages\pytest_asyncio\plugin.py:835: DeprecationWarning: 'asyncio.set_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    asyncio.set_event_loop_policy(previous_policy)
+
+tests/test_http_server.py: 2 warnings
+tests/test_mcp_server.py: 53 warnings
+  D:\tyh\km-locked-venvs\knowledge-manager-96lmHReR-py3.14\Lib\site-packages\pytest_asyncio\plugin.py:847: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    policy = asyncio.get_event_loop_policy()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+- generated xml file: D:\tyh\knowledge-manager\test-results\http-tenant-audit-20261023\pytest.xml -
+=========================== short test summary info ===========================
+FAILED tests/test_http_server.py::TestModules::test_staging_approve_does_not_require_full_rebuild
+FAILED tests/test_http_server.py::TestOps::test_ops_report_uses_authenticated_tenant_scope
+FAILED tests/test_mcp_server.py::test_tool_search_modules - assert '"source":...
+FAILED tests/test_mcp_server.py::test_tool_deep_search_honors_trusted_session_tenant
+4 failed, 126 passed, 9027 warnings in 17.74s

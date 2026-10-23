@@ -11,6 +11,9 @@ logger = logging.getLogger("knowledge_manager.rbac")
 
 ROLES = {"admin", "editor", "reviewer", "viewer"}
 
+# Role permissions also require resource tenant/workspace access at service boundaries.
+# HTTP administrators retain explicit cross-scope management access; other denials
+# return 404 and emit authz.denied with the authenticated subject and request ID.
 PERMISSIONS = {
     "module.read": {"admin", "editor", "reviewer", "viewer"},
     "module.write": {"admin", "editor"},

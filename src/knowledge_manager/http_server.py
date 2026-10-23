@@ -29,6 +29,7 @@ from knowledge_manager.storage import (
     get_tree,
     load_index,
     load_module,
+    module_for_tenant,
     list_modules,
     search_modules,
 )
@@ -234,22 +235,23 @@ def create_app(kb_path: Path) -> FastAPI:
         tenant_id: str = Query(""),
     ):
         tenant = resolve_tenant_context(request, kb_path, tenant_id=tenant_id)
-        # Handle .md suffix: strip and return 501 for M1
+        # Resolve the canonical module before serving its Markdown representation.
         if mod_id.endswith(".md"):
             real_id = mod_id[:-3]
             md_path = kb_path / cat / f"{real_id}.md"
-            if md_path.exists():
-                from fastapi.responses import PlainTextResponse
-                return PlainTextResponse(md_path.read_text(encoding="utf-8"), media_type="text/markdown")
             module = load_module(real_id, cat, kb_path)
             if module is None:
                 raise HTTPException(404, f"Module not found: {cat}/{real_id}")
             if tenant is not None and not module_visible_to_tenant(module, tenant):
                 raise HTTPException(404, f"Module not found: {cat}/{real_id}")
-            # Module exists but no .md file yet — generate on the fly
+            if md_path.exists() and tenant is None:
+                return PlainTextResponse(md_path.read_text(encoding="utf-8"), media_type="text/markdown")
+            # Scoped responses render canonical data with filtered references.
             from knowledge_manager.markdown import render_markdown_module
-            from fastapi.responses import PlainTextResponse
-            return PlainTextResponse(render_markdown_module(module), media_type="text/markdown")
+            return PlainTextResponse(
+                render_markdown_module(module_for_tenant(module, kb_path, tenant)),
+                media_type="text/markdown",
+            )
         module = load_module(mod_id, cat, kb_path)
         if module is None:
             raise HTTPException(404, f"Module not found: {cat}/{mod_id}")
@@ -257,7 +259,7 @@ def create_app(kb_path: Path) -> FastAPI:
             raise HTTPException(404, f"Module not found: {cat}/{mod_id}")
         if module.metadata.status == "archived" and not include_archived:
             raise HTTPException(410, f"Module archived: {cat}/{mod_id}")
-        return module.model_dump()
+        return module_for_tenant(module, kb_path, tenant).model_dump()
 
     # ── Search ──
 
@@ -390,7 +392,7 @@ def create_app(kb_path: Path) -> FastAPI:
         module = load_module(mod_id, cat, kb_path)
         if module is None:
             raise HTTPException(404, f"Module not found: {cat}/{mod_id}")
-        enforce_subject_module_access(subject, module, kb_path)
+        enforce_subject_module_access(subject, module, kb_path, request)
 
         for field in ("title", "summary"):
             if field in body:
@@ -443,7 +445,7 @@ def create_app(kb_path: Path) -> FastAPI:
         module = load_module(mod_id, cat, kb_path)
         if module is None:
             raise HTTPException(404, f"Module not found: {cat}/{mod_id}")
-        enforce_subject_module_access(subject, module, kb_path)
+        enforce_subject_module_access(subject, module, kb_path, request)
         maintenance_state: list[dict] = []
         if not delete_module(mod_id, cat, kb_path, maintenance_state=maintenance_state):
             raise HTTPException(404, f"Module not found: {cat}/{mod_id}")
@@ -511,7 +513,7 @@ def create_app(kb_path: Path) -> FastAPI:
         staged_module = load_from_staging(module_id, staging)
         if staged_module is None:
             raise HTTPException(404, f"Module not found: {module_id}")
-        enforce_subject_module_access(subject, staged_module, kb_path)
+        enforce_subject_module_access(subject, staged_module, kb_path, request)
         meta = load_staging_meta(module_id, staging)
         if meta is None:
             meta = StagingMeta(module_id=module_id)
@@ -565,7 +567,7 @@ def create_app(kb_path: Path) -> FastAPI:
         staged_module = load_from_staging(module_id, staging)
         if staged_module is None:
             raise HTTPException(404, f"Module not found: {module_id}")
-        enforce_subject_module_access(subject, staged_module, kb_path)
+        enforce_subject_module_access(subject, staged_module, kb_path, request)
         meta = load_staging_meta(module_id, staging)
         if meta is None:
             meta = StagingMeta(module_id=module_id)

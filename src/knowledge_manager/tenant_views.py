@@ -19,7 +19,6 @@ from knowledge_manager.storage import (
     generate_recommendations,
     list_modules,
     list_staging,
-    list_staging_meta,
     load_module,
 )
 from knowledge_manager.tenancy import TenantContext, module_visible_to_tenant
@@ -225,45 +224,7 @@ def build_tenant_recommendations(kb_path, tenant: TenantContext | None) -> Recom
 
 
 def build_tenant_ops_report(kb_path, tenant: TenantContext | None) -> OpsReport:
-    if tenant is None:
-        return generate_ops_report(kb_path)
-
-    staging_modules = list_staging(kb_path / ".staging")
-    visible_staging_ids = {
-        module.id for module in staging_modules if module_visible_to_tenant(module, tenant)
-    }
-    visible_staging_meta = [
-        meta for meta in list_staging_meta(kb_path / ".staging") if meta.module_id in visible_staging_ids
-    ]
-    report = generate_ops_report(kb_path, staging_meta=visible_staging_meta)
-    visible_module_keys = {
-        f"{module.category}/{module.id}" for module in list_modules(kb_path, tenant=tenant)
-    }
-    registry = load_source_registry(kb_path)
-    visible_source_ids = {
-        source_id
-        for source_id, source in registry.sources.items()
-        if (
-            (not source.tenant_id and tenant.allow_global_reads)
-            or source.tenant_id == tenant.tenant_id
-        ) and (
-            not tenant.workspace_id or not source.workspace_id or source.workspace_id == tenant.workspace_id
-        )
-    }
-    filtered_policy = [
-        item
-        for item in report.policy_suppressed_modules
-        if f"{item.category}/{item.module_id}" in visible_module_keys
-    ]
-    filtered_source_backlog = [
-        item for item in report.source_backlog if item.source_id in visible_source_ids
-    ]
-    return OpsReport(
-        generated_at=report.generated_at,
-        source_backlog=filtered_source_backlog,
-        lifecycle_backlog=report.lifecycle_backlog,
-        policy_suppressed_modules=filtered_policy,
-    )
+    return generate_ops_report(kb_path, tenant=tenant)
 
 
 def filter_review_backlog_export(kb_path, tenant: TenantContext | None, export: dict) -> dict:

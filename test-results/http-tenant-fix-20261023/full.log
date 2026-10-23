@@ -1,0 +1,247 @@
+...................F.F....F.F........................................... [  8%]
+........................................................................ [ 17%]
+........................................................................ [ 25%]
+........................................................................ [ 34%]
+........................................................................ [ 43%]
+........................................................................ [ 51%]
+F....................................................................... [ 60%]
+...............................................F........................ [ 69%]
+........................................................................ [ 77%]
+.....................................................................F.. [ 86%]
+................................F.F..................................... [ 95%]
+.........................................                                [100%]
+================================== FAILURES ===================================
+___________________________ test_cache_put_and_get ____________________________
+
+    def test_cache_put_and_get():
+        cache = ModuleCache(max_size=10)
+        module = make_module()
+        cache.put(module)
+        result = cache.get("mod-a")
+>       assert result is not None
+E       assert None is not None
+
+tests\test_cache.py:22: AssertionError
+____________________________ test_cache_evicts_lru ____________________________
+
+    def test_cache_evicts_lru():
+        cache = ModuleCache(max_size=3)
+        for i in range(3):
+            cache.put(make_module(f"mod-{i}"))
+        # Access mod-0 to make it recently used
+        cache.get("mod-0")
+        # Add a 4th item — mod-1 should be evicted (LRU)
+        cache.put(make_module("mod-3"))
+        assert cache.get("mod-1") is None
+>       assert cache.get("mod-0") is not None
+E       AssertionError: assert None is not None
+E        +  where None = get('mod-0')
+E        +    where get = <knowledge_manager.cache.ModuleCache object at 0x0000016C83837C50>.get
+
+tests\test_cache.py:40: AssertionError
+_______________________ test_cache_namespace_isolation ________________________
+
+    def test_cache_namespace_isolation():
+        """Modules with same ID in different namespaces should not collide."""
+        cache = ModuleCache(max_size=10)
+        mod_a = make_module("same-id")
+        mod_b = make_module("same-id")
+        mod_b.title = "Different Title for NS2"
+    
+        cache.put(mod_a, namespace="ns1")
+        cache.put(mod_b, namespace="ns2")
+    
+        # Same ID, different namespace → both stored
+        result1 = cache.get("same-id", namespace="ns1")
+        result2 = cache.get("same-id", namespace="ns2")
+>       assert result1 is not None
+E       assert None is not None
+
+tests\test_cache.py:89: AssertionError
+_______________________ test_cache_namespace_invalidate _______________________
+
+    def test_cache_namespace_invalidate():
+        """invalidate should only remove from the specified namespace."""
+        cache = ModuleCache(max_size=10)
+        cache.put(make_module("mod-a"), namespace="ns1")
+        cache.put(make_module("mod-a"), namespace="ns2")
+    
+        cache.invalidate("mod-a", namespace="ns1")
+        assert cache.get("mod-a", namespace="ns1") is None
+>       assert cache.get("mod-a", namespace="ns2") is not None
+E       AssertionError: assert None is not None
+E        +  where None = get('mod-a', namespace='ns2')
+E        +    where get = <knowledge_manager.cache.ModuleCache object at 0x0000016C83C54C50>.get
+
+tests\test_cache.py:110: AssertionError
+_ test_admin_dashboard_reuses_ops_report_and_staging_reads_within_single_build _
+
+tmp_path = WindowsPath('D:/tyh/km-final-full/test_admin_dashboard_reuses_op0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000016CFCF40F30>
+
+    def test_admin_dashboard_reuses_ops_report_and_staging_reads_within_single_build(tmp_path, monkeypatch):
+        from knowledge_manager.schemas import Index, Module, ModuleContent, OpsReport, SourceBacklogEntry, StagingMeta
+        from knowledge_manager.storage import save_index, save_staging_meta, save_to_staging
+    
+        kb = tmp_path / "kb"
+        kb.mkdir()
+        save_index(Index(description="admin dashboard reuse"), kb)
+        staged = Module(
+            id="review-me",
+            category="ops",
+            title="Review me",
+            summary="Review me summary for operators.",
+            content=ModuleContent(
+                overview="Review me overview.",
+                details="Review me details with enough length for validation.",
+            ),
+        )
+        save_to_staging(staged, kb / ".staging")
+        save_staging_meta(StagingMeta(module_id="review-me", status="pending"), kb / ".staging")
+    
+        ops_calls = {"count": 0}
+        staging_calls = {"count": 0}
+    
+        def fake_generate_ops_report(path, *args, **kwargs):
+            assert path == kb
+            ops_calls["count"] += 1
+            return OpsReport(source_backlog=[SourceBacklogEntry(source_id="team-docs", tracked_pages=1)])
+    
+        def counted_list_staging_meta(path):
+            assert path == kb / ".staging"
+            staging_calls["count"] += 1
+            return [StagingMeta(module_id="review-me", status="pending")]
+    
+        monkeypatch.setattr("knowledge_manager.admin_views.generate_ops_report", fake_generate_ops_report, raising=False)
+        monkeypatch.setattr("knowledge_manager.admin_views.list_staging_meta", counted_list_staging_meta, raising=False)
+    
+        payload = build_admin_dashboard(kb)
+    
+>       assert payload["stale_sources"][0]["source_id"] == "team-docs"
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       IndexError: list index out of range
+
+tests\test_materialized_views.py:271: IndexError
+_______ test_generate_recommendations_reuses_telemetry_snapshot_per_run _______
+
+tmp_path = WindowsPath('D:/tyh/km-final-full/test_generate_recommendations_1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000016C839BAE40>
+
+    def test_generate_recommendations_reuses_telemetry_snapshot_per_run(tmp_path, monkeypatch):
+        kb = tmp_path / "kb"
+        kb.mkdir()
+        save_index(Index(description="recommendation telemetry reuse"), kb)
+        save_module(
+            Module(
+                id="incident-core",
+                category="ops",
+                title="Incident Core",
+                summary="Incident response summary.",
+                content=ModuleContent(
+                    overview="Rollback and incident overview.",
+                    details="Incident response details long enough for validation.",
+                ),
+                metadata=ModuleMetadata(tags=["incident", "rollback"]),
+            ),
+            kb,
+        )
+        save_module(
+            Module(
+                id="incident-links",
+                category="ops",
+                title="Incident Links",
+                summary="Incident companion summary.",
+                content=ModuleContent(
+                    overview="Rollback and incident companion overview.",
+                    details="Companion details long enough for validation.",
+                ),
+                metadata=ModuleMetadata(tags=["incident", "rollback"]),
+            ),
+            kb,
+        )
+        calls = {"count": 0}
+    
+        def counted_load_search_events(path):
+            assert path == kb
+            calls["count"] += 1
+            return []
+    
+        monkeypatch.setattr("knowledge_manager.storage.load_search_events", counted_load_search_events)
+    
+        generate_recommendations(kb)
+    
+>       assert calls["count"] == 1
+E       assert 0 == 1
+
+tests\test_recommendation_index.py:224: AssertionError
+___________________ test_generate_changelog_handles_non_git ___________________
+
+kb_path = WindowsPath('D:/tyh/km-final-full/test_generate_changelog_handle0/kb')
+
+    def test_generate_changelog_handles_non_git(kb_path):
+        """generate_changelog returns None for non-git directory."""
+        from knowledge_manager.storage import generate_changelog
+        kb_path.mkdir(parents=True, exist_ok=True)
+        result = generate_changelog(kb_path)
+>       assert result is None
+E       AssertionError: assert {'commits': [{'author': '汤颜豪', 'changes': {'added': ['knowledge_base/general/p5reject', 'knowledge_base/general/p5test...'modified': []}, 'hash': '6992d2d', 'message': 'Add initial knowledge manager docs and assets'}], 'date': '2026-10-23'} is None
+
+tests\test_storage.py:2070: AssertionError
+________________ TestMarkdownSync.test_sync_on_save_creates_md ________________
+
+self = <tests.test_sync.TestMarkdownSync object at 0x0000016CFE502210>
+kb = WindowsPath('D:/tyh/km-final-full/test_sync_on_save_creates_md0/test_kb')
+
+    def test_sync_on_save_creates_md(self, kb):
+        md_path = kb / "general" / "test-mod.md"
+>       assert md_path.exists()
+E       AssertionError: assert False
+E        +  where False = exists()
+E        +    where exists = WindowsPath('D:/tyh/km-final-full/test_sync_on_save_creates_md0/test_kb/general/test-mod.md').exists
+
+tests\test_sync.py:35: AssertionError
+____________________ TestMarkdownSync.test_sync_md_to_json ____________________
+
+self = <tests.test_sync.TestMarkdownSync object at 0x0000016CFE357E10>
+kb = WindowsPath('D:/tyh/km-final-full/test_sync_md_to_json0/test_kb')
+
+    def test_sync_md_to_json(self, kb):
+        md_path = kb / "general" / "test-mod.md"
+>       md_path.write_text(md_path.read_text().replace("Test Module Title", "Updated Title"), encoding="utf-8")
+                           ^^^^^^^^^^^^^^^^^^^
+
+tests\test_sync.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+D:\Python\Lib\pathlib\__init__.py:787: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = WindowsPath('D:/tyh/km-final-full/test_sync_md_to_json0/test_kb/general/test-mod.md')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\tyh\\km-final-full\\test_sync_md_to_json0\\test_kb\\general\\test-mod.md'
+
+D:\Python\Lib\pathlib\__init__.py:771: FileNotFoundError
+- generated xml file: D:\tyh\knowledge-manager\test-results\http-tenant-fix-20261023\full.xml -
+=========================== short test summary info ===========================
+FAILED tests/test_cache.py::test_cache_put_and_get - assert None is not None
+FAILED tests/test_cache.py::test_cache_evicts_lru - AssertionError: assert No...
+FAILED tests/test_cache.py::test_cache_namespace_isolation - assert None is n...
+FAILED tests/test_cache.py::test_cache_namespace_invalidate - AssertionError:...
+FAILED tests/test_materialized_views.py::test_admin_dashboard_reuses_ops_report_and_staging_reads_within_single_build
+FAILED tests/test_recommendation_index.py::test_generate_recommendations_reuses_telemetry_snapshot_per_run
+FAILED tests/test_storage.py::test_generate_changelog_handles_non_git - Asser...
+FAILED tests/test_sync.py::TestMarkdownSync::test_sync_on_save_creates_md - A...
+FAILED tests/test_sync.py::TestMarkdownSync::test_sync_md_to_json - FileNotFo...
+9 failed, 824 passed, 81751 warnings in 342.38s (0:05:42)

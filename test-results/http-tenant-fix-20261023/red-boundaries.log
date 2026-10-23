@@ -1,0 +1,518 @@
+FFFFFFFFFFFFFFFF                                                         [100%]
+================================== FAILURES ===================================
+_______ test_http_workspace_detail_is_hidden_even_with_markdown_file[] ________
+
+scoped_kb = WindowsPath('D:/tyh/km-red-boundaries/test_http_workspace_detail_is_0/kb')
+suffix = ''
+
+    @pytest.mark.parametrize("suffix", ["", ".md"])
+    def test_http_workspace_detail_is_hidden_even_with_markdown_file(scoped_kb, suffix):
+        (scoped_kb / "ops" / "workspace.md").write_text("SECRET", encoding="utf-8")
+        client = TestClient(create_app(scoped_kb))
+        response = client.get(
+            f"/api/modules/ops/workspace{suffix}", headers={"Authorization": "Bearer a"}
+        )
+>       assert response.status_code == 404
+E       assert 410 == 404
+E        +  where 410 = <Response [410 Gone]>.status_code
+
+tests\test_tenant_boundaries.py:96: AssertionError
+______ test_http_workspace_detail_is_hidden_even_with_markdown_file[.md] ______
+
+scoped_kb = WindowsPath('D:/tyh/km-red-boundaries/test_http_workspace_detail_is_1/kb')
+suffix = '.md'
+
+    @pytest.mark.parametrize("suffix", ["", ".md"])
+    def test_http_workspace_detail_is_hidden_even_with_markdown_file(scoped_kb, suffix):
+        (scoped_kb / "ops" / "workspace.md").write_text("SECRET", encoding="utf-8")
+        client = TestClient(create_app(scoped_kb))
+        response = client.get(
+            f"/api/modules/ops/workspace{suffix}", headers={"Authorization": "Bearer a"}
+        )
+>       assert response.status_code == 404
+E       assert 200 == 404
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\test_tenant_boundaries.py:96: AssertionError
+__________ test_review_denies_foreign_workspace_and_audits[approve] ___________
+
+scoped_kb = WindowsPath('D:/tyh/km-red-boundaries/test_review_denies_foreign_wor0/kb')
+action = 'approve'
+
+    @pytest.mark.parametrize("action", ["approve", "reject"])
+    def test_review_denies_foreign_workspace_and_audits(scoped_kb, action):
+        client = TestClient(create_app(scoped_kb))
+        response = client.post(
+            f"/api/staging/workspace/{action}",
+            headers={"Authorization": "Bearer a", "X-Request-ID": "workspace-denial"},
+            json={"comment": "must be denied"},
+        )
+        assert response.status_code == 404
+        events = [
+            json.loads(line)
+>           for line in (scoped_kb / ".audit" / "audit.jsonl").read_text(encoding="utf-8").splitlines()
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        ]
+
+tests\test_tenant_boundaries.py:111: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+D:\Python\Lib\pathlib\__init__.py:787: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = WindowsPath('D:/tyh/km-red-boundaries/test_review_denies_foreign_wor0/kb/.audit/audit.jsonl')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\tyh\\km-red-boundaries\\test_review_denies_foreign_wor0\\kb\\.audit\\audit.jsonl'
+
+D:\Python\Lib\pathlib\__init__.py:771: FileNotFoundError
+___________ test_review_denies_foreign_workspace_and_audits[reject] ___________
+
+scoped_kb = WindowsPath('D:/tyh/km-red-boundaries/test_review_denies_foreign_wor1/kb')
+action = 'reject'
+
+    @pytest.mark.parametrize("action", ["approve", "reject"])
+    def test_review_denies_foreign_workspace_and_audits(scoped_kb, action):
+        client = TestClient(create_app(scoped_kb))
+        response = client.post(
+            f"/api/staging/workspace/{action}",
+            headers={"Authorization": "Bearer a", "X-Request-ID": "workspace-denial"},
+            json={"comment": "must be denied"},
+        )
+        assert response.status_code == 404
+        events = [
+            json.loads(line)
+>           for line in (scoped_kb / ".audit" / "audit.jsonl").read_text(encoding="utf-8").splitlines()
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        ]
+
+tests\test_tenant_boundaries.py:111: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+D:\Python\Lib\pathlib\__init__.py:787: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = WindowsPath('D:/tyh/km-red-boundaries/test_review_denies_foreign_wor1/kb/.audit/audit.jsonl')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'D:\\tyh\\km-red-boundaries\\test_review_denies_foreign_wor1\\kb\\.audit\\audit.jsonl'
+
+D:\Python\Lib\pathlib\__init__.py:771: FileNotFoundError
+_________ test_storage_search_filters_workspace_and_companions[auth] __________
+
+scoped_kb = WindowsPath('D:/tyh/km-red-boundaries/test_storage_search_filters_wo0/kb')
+query = 'auth'
+
+    @pytest.mark.parametrize("query", ["auth", "authentication"])
+    def test_storage_search_filters_workspace_and_companions(scoped_kb, query):
+        config_path = scoped_kb / "config.json"
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+        config["routing_policy"] = {"mandatory_companions": {"ops": ["ops/foreign", "ops/workspace"]}}
+        config_path.write_text(json.dumps(config), encoding="utf-8")
+        results = search_modules(
+            query, scoped_kb, include_archived=True,
+            tenant=TenantContext(tenant_id="a", workspace_id="one", allow_global_reads=False),
+        )
+>       assert {r.module.id for r in results} == {"visible", "shared"}
+E       AssertionError: assert {'foreign', '..., 'workspace'} == {'shared', 'visible'}
+E         
+E         Extra items in the left set:
+E         'foreign'
+E         'workspace'
+E         Use -v to get more diff
+
+tests\test_tenant_boundaries.py:132: AssertionError
+____ test_storage_search_filters_workspace_and_companions[authentication] _____
+
+scoped_kb = WindowsPath('D:/tyh/km-red-boundaries/test_storage_search_filters_wo1/kb')
+query = 'authentication'
+
+    @pytest.mark.parametrize("query", ["auth", "authentication"])
+    def test_storage_search_filters_workspace_and_companions(scoped_kb, query):
+        config_path = scoped_kb / "config.json"
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+        config["routing_policy"] = {"mandatory_companions": {"ops": ["ops/foreign", "ops/workspace"]}}
+        config_path.write_text(json.dumps(config), encoding="utf-8")
+        results = search_modules(
+            query, scoped_kb, include_archived=True,
+            tenant=TenantContext(tenant_id="a", workspace_id="one", allow_global_reads=False),
+        )
+>       assert {r.module.id for r in results} == {"visible", "shared"}
+E       AssertionError: assert {'foreign', '..., 'workspace'} == {'shared', 'visible'}
+E         
+E         Extra items in the left set:
+E         'foreign'
+E         'workspace'
+E         Use -v to get more diff
+
+tests\test_tenant_boundaries.py:132: AssertionError
+_________ test_ops_scope_is_independent_of_cache_request_order[none] __________
+
+scoped_kb = WindowsPath('D:/tyh/km-red-boundaries/test_ops_scope_is_independent_0/kb')
+warmup = 'none'
+
+    @pytest.mark.parametrize("warmup", ["none", "global", "a", "b"])
+    def test_ops_scope_is_independent_of_cache_request_order(scoped_kb, warmup):
+        client = TestClient(create_app(scoped_kb))
+        if warmup == "global":
+            generate_ops_report(scoped_kb)
+        elif warmup != "none":
+            assert client.get("/api/ops", headers={"Authorization": f"Bearer {warmup}"}).status_code == 200
+        for token, counts, staging in [
+            ("a", {"published": 2}, {"pending": 1}),
+            ("b", {"draft": 1}, {"changes-requested": 1}),
+            ("a", {"published": 2}, {"pending": 1}),
+        ]:
+            response = client.get("/api/ops", headers={"Authorization": f"Bearer {token}"})
+            assert response.status_code == 200
+>           assert response.json()["lifecycle_backlog"] == {
+                "status_counts": counts, "staging_status_counts": staging,
+            }
+E           AssertionError: assert {'staging_sta...ublished': 2}} == {'staging_sta...ublished': 2}}
+E             
+E             Differing items:
+E             {'status_counts': {'archived': 1, 'draft': 1, 'published': 2}} != {'status_counts': {'published': 2}}
+E             {'staging_status_counts': {'changes-requested': 1, 'pending': 1}} != {'staging_status_counts': {'pending': 1}}
+E             Use -v to get more diff
+
+tests\test_tenant_boundaries.py:149: AssertionError
+________ test_ops_scope_is_independent_of_cache_request_order[global] _________
+
+scoped_kb = WindowsPath('D:/tyh/km-red-boundaries/test_ops_scope_is_independent_1/kb')
+warmup = 'global'
+
+    @pytest.mark.parametrize("warmup", ["none", "global", "a", "b"])
+    def test_ops_scope_is_independent_of_cache_request_order(scoped_kb, warmup):
+        client = TestClient(create_app(scoped_kb))
+        if warmup == "global":
+            generate_ops_report(scoped_kb)
+        elif warmup != "none":
+            assert client.get("/api/ops", headers={"Authorization": f"Bearer {warmup}"}).status_code == 200
+        for token, counts, staging in [
+            ("a", {"published": 2}, {"pending": 1}),
+            ("b", {"draft": 1}, {"changes-requested": 1}),
+            ("a", {"published": 2}, {"pending": 1}),
+        ]:
+            response = client.get("/api/ops", headers={"Authorization": f"Bearer {token}"})
+            assert response.status_code == 200
+>           assert response.json()["lifecycle_backlog"] == {
+                "status_counts": counts, "staging_status_counts": staging,
+            }
+E           AssertionError: assert {'staging_sta...ublished': 2}} == {'staging_sta...ublished': 2}}
+E             
+E             Differing items:
+E             {'status_counts': {'archived': 1, 'draft': 1, 'published': 2}} != {'status_counts': {'published': 2}}
+E             {'staging_status_counts': {'changes-requested': 2, 'pending': 1}} != {'staging_status_counts': {'pending': 1}}
+E             Use -v to get more diff
+
+tests\test_tenant_boundaries.py:149: AssertionError
+___________ test_ops_scope_is_independent_of_cache_request_order[a] ___________
+
+scoped_kb = WindowsPath('D:/tyh/km-red-boundaries/test_ops_scope_is_independent_2/kb')
+warmup = 'a'
+
+    @pytest.mark.parametrize("warmup", ["none", "global", "a", "b"])
+    def test_ops_scope_is_independent_of_cache_request_order(scoped_kb, warmup):
+        client = TestClient(create_app(scoped_kb))
+        if warmup == "global":
+            generate_ops_report(scoped_kb)
+        elif warmup != "none":
+            assert client.get("/api/ops", headers={"Authorization": f"Bearer {warmup}"}).status_code == 200
+        for token, counts, staging in [
+            ("a", {"published": 2}, {"pending": 1}),
+            ("b", {"draft": 1}, {"changes-requested": 1}),
+            ("a", {"published": 2}, {"pending": 1}),
+        ]:
+            response = client.get("/api/ops", headers={"Authorization": f"Bearer {token}"})
+            assert response.status_code == 200
+>           assert response.json()["lifecycle_backlog"] == {
+                "status_counts": counts, "staging_status_counts": staging,
+            }
+E           AssertionError: assert {'staging_sta...ublished': 2}} == {'staging_sta...ublished': 2}}
+E             
+E             Differing items:
+E             {'status_counts': {'archived': 1, 'draft': 1, 'published': 2}} != {'status_counts': {'published': 2}}
+E             {'staging_status_counts': {'changes-requested': 1, 'pending': 1}} != {'staging_status_counts': {'pending': 1}}
+E             Use -v to get more diff
+
+tests\test_tenant_boundaries.py:149: AssertionError
+___________ test_ops_scope_is_independent_of_cache_request_order[b] ___________
+
+scoped_kb = WindowsPath('D:/tyh/km-red-boundaries/test_ops_scope_is_independent_3/kb')
+warmup = 'b'
+
+    @pytest.mark.parametrize("warmup", ["none", "global", "a", "b"])
+    def test_ops_scope_is_independent_of_cache_request_order(scoped_kb, warmup):
+        client = TestClient(create_app(scoped_kb))
+        if warmup == "global":
+            generate_ops_report(scoped_kb)
+        elif warmup != "none":
+            assert client.get("/api/ops", headers={"Authorization": f"Bearer {warmup}"}).status_code == 200
+        for token, counts, staging in [
+            ("a", {"published": 2}, {"pending": 1}),
+            ("b", {"draft": 1}, {"changes-requested": 1}),
+            ("a", {"published": 2}, {"pending": 1}),
+        ]:
+            response = client.get("/api/ops", headers={"Authorization": f"Bearer {token}"})
+            assert response.status_code == 200
+>           assert response.json()["lifecycle_backlog"] == {
+                "status_counts": counts, "staging_status_counts": staging,
+            }
+E           AssertionError: assert {'staging_sta...ublished': 2}} == {'staging_sta...ublished': 2}}
+E             
+E             Differing items:
+E             {'status_counts': {'archived': 1, 'draft': 1, 'published': 2}} != {'status_counts': {'published': 2}}
+E             {'staging_status_counts': {'changes-requested': 1}} != {'staging_status_counts': {'pending': 1}}
+E             Use -v to get more diff
+
+tests\test_tenant_boundaries.py:149: AssertionError
+_ test_mcp_filters_hidden_references_without_mutating_storage[search_modules] _
+
+scoped_kb = WindowsPath('D:/tyh/km-red-boundaries/test_mcp_filters_hidden_refere0/kb')
+tool = 'search_modules'
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("tool", ["search_modules", "deep_search", "load_module", "expand_module", "knowledge_graph"])
+    async def test_mcp_filters_hidden_references_without_mutating_storage(scoped_kb, tool):
+        server = create_server(scoped_kb, session_tenant=TenantContext(tenant_id="a", workspace_id="one"))
+        args = {"module_id": "visible", "category": "ops"} if tool in {"load_module", "expand_module"} else {"query": "authentication"}
+        result = decode(await server.call_tool(tool, args))
+        raw = json.dumps(result)
+>       assert "foreign" not in raw
+E       assert 'foreign' not in '[{"id": "sh...overview."}]'
+E         
+E         'foreign' is contained here:
+E         ?           ^^
+E           s": ["ops/foreign", "ops/workspace", "ops/shared"], "snippet": "Authentication policy overview."}, {"id": "workspace", "category": "ops", "title": "Authentication workspace", "summary": "Authentication guidance for operators.", "tags": [], "confidence": "medium", "status": "archived", "source": "related", "policy_reasons": ["intent:general", "graph_related:ops/visible"], "caveats": "", "related_modules": [], "snippet": "Authentication policy overview."}]
+E         ?           ^^^^^^^^^
+
+tests\test_tenant_boundaries.py:164: AssertionError
+__ test_mcp_filters_hidden_references_without_mutating_storage[deep_search] ___
+
+scoped_kb = WindowsPath('D:/tyh/km-red-boundaries/test_mcp_filters_hidden_refere1/kb')
+tool = 'deep_search'
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("tool", ["search_modules", "deep_search", "load_module", "expand_module", "knowledge_graph"])
+    async def test_mcp_filters_hidden_references_without_mutating_storage(scoped_kb, tool):
+        server = create_server(scoped_kb, session_tenant=TenantContext(tenant_id="a", workspace_id="one"))
+        args = {"module_id": "visible", "category": "ops"} if tool in {"load_module", "expand_module"} else {"query": "authentication"}
+        result = decode(await server.call_tool(tool, args))
+        raw = json.dumps(result)
+>       assert "foreign" not in raw
+E       assert 'foreign' not in '[{"id": "sh...hbors": []}]'
+E         
+E         'foreign' is contained here:
+E         ?           ^^
+E           s": ["ops/foreign", "ops/workspace", "ops/shared"], "content": {"overview": "Authentication policy overview.", "details": "Confidential body for visible, with enough length for validation.", "examples": "", "references": ""}, "neighbors": [{"id": "workspace", "category": "ops", "title": "Authentication workspace", "summary": "Authentication guidance for operators.", "confidence": "medium"}, {"id": "shared", "category": "ops", "title": "Authentication shared", "summary": "Authentication guidance for operators.", "confidence": "medium"}]}, {"id": ...
+E         
+E         ...Full output truncated (2 lines hidden), use '-vv' to show
+
+tests\test_tenant_boundaries.py:164: AssertionError
+__ test_mcp_filters_hidden_references_without_mutating_storage[load_module] ___
+
+scoped_kb = WindowsPath('D:/tyh/km-red-boundaries/test_mcp_filters_hidden_refere2/kb')
+tool = 'load_module'
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("tool", ["search_modules", "deep_search", "load_module", "expand_module", "knowledge_graph"])
+    async def test_mcp_filters_hidden_references_without_mutating_storage(scoped_kb, tool):
+        server = create_server(scoped_kb, session_tenant=TenantContext(tenant_id="a", workspace_id="one"))
+        args = {"module_id": "visible", "category": "ops"} if tool in {"load_module", "expand_module"} else {"query": "authentication"}
+        result = decode(await server.call_tool(tool, args))
+        raw = json.dumps(result)
+>       assert "foreign" not in raw
+E       assert 'foreign' not in '{"id": "vis...published"}}'
+E         
+E         'foreign' is contained here:
+E         ?           ^^
+E           s": ["ops/foreign", "ops/workspace", "ops/shared"], "confidence": "medium", "tenant_id": "a", "workspace_id": "one", "source": "", "source_documents": [], "source_spans": [], "extraction_run_id": "", "reviewed_by": "", "reviewed_at": null, "stale_due_to_source_change": false, "supersedes": [], "derived_from": [], "expires_at": null, "review_interval_days": null, "status": "published"}}
+E         ?           ^^^^^^^^^
+
+tests\test_tenant_boundaries.py:164: AssertionError
+_ test_mcp_filters_hidden_references_without_mutating_storage[expand_module] __
+
+scoped_kb = WindowsPath('D:/tyh/km-red-boundaries/test_mcp_filters_hidden_refere3/kb')
+tool = 'expand_module'
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("tool", ["search_modules", "deep_search", "load_module", "expand_module", "knowledge_graph"])
+    async def test_mcp_filters_hidden_references_without_mutating_storage(scoped_kb, tool):
+        server = create_server(scoped_kb, session_tenant=TenantContext(tenant_id="a", workspace_id="one"))
+        args = {"module_id": "visible", "category": "ops"} if tool in {"load_module", "expand_module"} else {"query": "authentication"}
+        result = decode(await server.call_tool(tool, args))
+        raw = json.dumps(result)
+        assert "foreign" not in raw
+>       assert "workspace" not in raw.replace('"workspace_id"', '"scope"')
+E       assert 'workspace' not in '{"module": ...ules": []}]}'
+E         
+E         'workspace' is contained here:
+E         ?           ^^
+E            [{"id": "workspace", "category": "ops", "title": "Authentication workspace", "summary": "Authentication guidance for operators.", "tags": [], "confidence": "medium", "caveats": "", "related_modules": []}, {"id": "shared", "category": "ops", "title": "Authentication shared", "summary": "Authentication guidance for operators.", "tags": [], "confidence": "medium", "caveats": "", "related_modules": []}]}
+E         ?           ^^^^^^^^^^^
+
+tests\test_tenant_boundaries.py:165: AssertionError
+_ test_mcp_filters_hidden_references_without_mutating_storage[knowledge_graph] _
+
+scoped_kb = WindowsPath('D:/tyh/km-red-boundaries/test_mcp_filters_hidden_refere4/kb')
+tool = 'knowledge_graph'
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("tool", ["search_modules", "deep_search", "load_module", "expand_module", "knowledge_graph"])
+    async def test_mcp_filters_hidden_references_without_mutating_storage(scoped_kb, tool):
+        server = create_server(scoped_kb, session_tenant=TenantContext(tenant_id="a", workspace_id="one"))
+        args = {"module_id": "visible", "category": "ops"} if tool in {"load_module", "expand_module"} else {"query": "authentication"}
+        result = decode(await server.call_tool(tool, args))
+        raw = json.dumps(result)
+>       assert "foreign" not in raw
+E       assert 'foreign' not in '{"query": "...ules": []}]}'
+E         
+E         'foreign' is contained here:
+E           s": ["ops/foreign", "ops/workspace", "ops/shared"]}, {"id": "ops/workspace", "title": "Authentication workspace", "related_modules": []}]}
+E         ?           +++++++
+
+tests\test_tenant_boundaries.py:164: AssertionError
+________________ test_mcp_load_cache_does_not_bypass_workspace ________________
+
+scoped_kb = WindowsPath('D:/tyh/km-red-boundaries/test_mcp_load_cache_does_not_b0/kb')
+
+    @pytest.mark.asyncio
+    async def test_mcp_load_cache_does_not_bypass_workspace(scoped_kb):
+        from knowledge_manager.cache import ModuleCache
+    
+        cache = ModuleCache()
+        wide = create_server(scoped_kb, cache=cache)
+        await wide.call_tool("load_module", {"module_id": "workspace", "category": "ops"})
+        scoped = create_server(scoped_kb, cache=cache, session_tenant=TenantContext(tenant_id="a", workspace_id="one"))
+        result = await scoped.call_tool("load_module", {"module_id": "workspace", "category": "ops"})
+>       assert "Confidential body" not in str(result)
+E       assert 'Confidential body' not in '([TextConte...n  }\\n}\'})'
+E         
+E         'Confidential body' is contained here:
+E         ?           ^ ^^
+E           etails": "Confidential body for workspace, with enough length for validation.",\n    "examples": "",\n    "references": "",\n    "caveats": ""\n  },\n  "metadata": {\n    "tags": [],\n    "related_modules": [],\n    "confidence": "medium",\n    "tenant_id": "a",\n    "workspace_id": "two",\n    "source": "",\n    "source_documents": [],\n    "source_spans": [],\n    "extraction_run_id": "",\n    "reviewed_by": "",\n    "reviewed_at": null,\n    "stale_due_to_source_change": false,\n    "supersedes": [],\n    "derived_from":...
+E         
+E         ...Full output truncated (2 lines hidden), use '-vv' to show
+
+tests\test_tenant_boundaries.py:181: AssertionError
+============================== warnings summary ===============================
+..\km-locked-venvs\knowledge-manager-96lmHReR-py3.14\Lib\site-packages\pytest_asyncio\plugin.py:169: 222 warnings
+  D:\tyh\km-locked-venvs\knowledge-manager-96lmHReR-py3.14\Lib\site-packages\pytest_asyncio\plugin.py:169: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+    return asyncio.iscoroutinefunction(obj) or inspect.isasyncgenfunction(obj)
+
+..\km-locked-venvs\knowledge-manager-96lmHReR-py3.14\Lib\site-packages\pytest_asyncio\plugin.py:433: 16 warnings
+  D:\tyh\km-locked-venvs\knowledge-manager-96lmHReR-py3.14\Lib\site-packages\pytest_asyncio\plugin.py:433: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+    return asyncio.iscoroutinefunction(func)
+
+tests/test_tenant_boundaries.py::test_http_workspace_detail_is_hidden_even_with_markdown_file[]
+  D:\tyh\km-locked-venvs\knowledge-manager-96lmHReR-py3.14\Lib\site-packages\pytest_asyncio\plugin.py:1005: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    return asyncio.get_event_loop_policy()
+
+tests/test_tenant_boundaries.py: 272 warnings
+  D:\tyh\km-locked-venvs\knowledge-manager-96lmHReR-py3.14\Lib\site-packages\fastapi\routing.py:233: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+    is_coroutine = asyncio.iscoroutinefunction(dependant.call)
+
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[search_modules]
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[deep_search]
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[load_module]
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[expand_module]
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[knowledge_graph]
+tests/test_tenant_boundaries.py::test_mcp_load_cache_does_not_bypass_workspace
+  D:\tyh\km-locked-venvs\knowledge-manager-96lmHReR-py3.14\Lib\site-packages\pytest_asyncio\plugin.py:751: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    _restore_event_loop_policy(asyncio.get_event_loop_policy()),
+
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[search_modules]
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[deep_search]
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[load_module]
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[expand_module]
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[knowledge_graph]
+tests/test_tenant_boundaries.py::test_mcp_load_cache_does_not_bypass_workspace
+  D:\tyh\km-locked-venvs\knowledge-manager-96lmHReR-py3.14\Lib\site-packages\pytest_asyncio\plugin.py:977: DeprecationWarning: 'asyncio.set_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    asyncio.set_event_loop_policy(new_loop_policy)
+
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[search_modules]
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[deep_search]
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[load_module]
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[expand_module]
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[knowledge_graph]
+tests/test_tenant_boundaries.py::test_mcp_load_cache_does_not_bypass_workspace
+  D:\tyh\km-locked-venvs\knowledge-manager-96lmHReR-py3.14\Lib\site-packages\pytest_asyncio\plugin.py:978: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[search_modules]
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[deep_search]
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[load_module]
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[expand_module]
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[knowledge_graph]
+tests/test_tenant_boundaries.py::test_mcp_load_cache_does_not_bypass_workspace
+  D:\tyh\km-locked-venvs\knowledge-manager-96lmHReR-py3.14\Lib\site-packages\pytest_asyncio\plugin.py:766: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    policy = asyncio.get_event_loop_policy()
+
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[search_modules]
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[deep_search]
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[load_module]
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[expand_module]
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[knowledge_graph]
+tests/test_tenant_boundaries.py::test_mcp_load_cache_does_not_bypass_workspace
+  D:\tyh\km-locked-venvs\knowledge-manager-96lmHReR-py3.14\Lib\site-packages\pytest_asyncio\plugin.py:811: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    policy = asyncio.get_event_loop_policy()
+
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[search_modules]
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[deep_search]
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[load_module]
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[expand_module]
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[knowledge_graph]
+tests/test_tenant_boundaries.py::test_mcp_load_cache_does_not_bypass_workspace
+  D:\tyh\km-locked-venvs\knowledge-manager-96lmHReR-py3.14\Lib\site-packages\pytest_asyncio\plugin.py:835: DeprecationWarning: 'asyncio.set_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    asyncio.set_event_loop_policy(previous_policy)
+
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[search_modules]
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[deep_search]
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[load_module]
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[expand_module]
+tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[knowledge_graph]
+tests/test_tenant_boundaries.py::test_mcp_load_cache_does_not_bypass_workspace
+  D:\tyh\km-locked-venvs\knowledge-manager-96lmHReR-py3.14\Lib\site-packages\pytest_asyncio\plugin.py:847: DeprecationWarning: 'asyncio.get_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    policy = asyncio.get_event_loop_policy()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_tenant_boundaries.py::test_http_workspace_detail_is_hidden_even_with_markdown_file[]
+FAILED tests/test_tenant_boundaries.py::test_http_workspace_detail_is_hidden_even_with_markdown_file[.md]
+FAILED tests/test_tenant_boundaries.py::test_review_denies_foreign_workspace_and_audits[approve]
+FAILED tests/test_tenant_boundaries.py::test_review_denies_foreign_workspace_and_audits[reject]
+FAILED tests/test_tenant_boundaries.py::test_storage_search_filters_workspace_and_companions[auth]
+FAILED tests/test_tenant_boundaries.py::test_storage_search_filters_workspace_and_companions[authentication]
+FAILED tests/test_tenant_boundaries.py::test_ops_scope_is_independent_of_cache_request_order[none]
+FAILED tests/test_tenant_boundaries.py::test_ops_scope_is_independent_of_cache_request_order[global]
+FAILED tests/test_tenant_boundaries.py::test_ops_scope_is_independent_of_cache_request_order[a]
+FAILED tests/test_tenant_boundaries.py::test_ops_scope_is_independent_of_cache_request_order[b]
+FAILED tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[search_modules]
+FAILED tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[deep_search]
+FAILED tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[load_module]
+FAILED tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[expand_module]
+FAILED tests/test_tenant_boundaries.py::test_mcp_filters_hidden_references_without_mutating_storage[knowledge_graph]
+FAILED tests/test_tenant_boundaries.py::test_mcp_load_cache_does_not_bypass_workspace
+16 failed, 553 warnings in 11.45s

@@ -5,7 +5,7 @@ from pathlib import Path
 from mcp.server.fastmcp import FastMCP
 
 from knowledge_manager.cache import ModuleCache
-from knowledge_manager.tenancy import TenantContext, module_visible_to_tenant
+from knowledge_manager.tenancy import TenantContext, module_visible_to_tenant, scope_visible_to_tenant
 from knowledge_manager.tenant_views import (
     build_tenant_graph,
     build_tenant_index,
@@ -21,6 +21,7 @@ from knowledge_manager.storage import (
     load_index,
     load_module,
     load_module_changelog,
+    module_for_tenant,
     record_load_event,
     search_modules,
 )
@@ -71,12 +72,9 @@ def _load_projection_documents(kb_path: Path) -> dict[str, dict]:
 
 
 def _projection_visible_to_tenant(document: dict, tenant: TenantContext | None) -> bool:
-    if tenant is None:
-        return True
-    doc_tenant = document.get("tenant_id", "")
-    if doc_tenant == tenant.tenant_id:
-        return True
-    return tenant.allow_global_reads and not doc_tenant
+    return scope_visible_to_tenant(
+        document.get("tenant_id", ""), document.get("workspace_id", ""), tenant
+    )
 
 
 def _projection_neighbor(target_kb: Path, ref: str) -> dict | None:
@@ -163,6 +161,22 @@ def create_server(
 
     def _resource_access_denied() -> str:
         return json.dumps({"error": "resource unavailable without trusted tenant context"})
+
+    # Resources and tools must apply the same configured global-read policy.
+    session_tenant = _effective_tenant()
+
+    def _write_scope_allowed(module, operation: str) -> bool:
+        if module_visible_to_tenant(module, _effective_tenant()):
+            return True
+        from knowledge_manager.audit import AuditEvent, log_audit_event
+
+        log_audit_event(kb_path, AuditEvent(
+            user="mcp-agent", operation="authz.denied",
+            tenant_id=session_tenant.tenant_id if session_tenant else "",
+            resource=f"{module.category}/{module.id}", result="denied",
+            details=f"{operation}: module outside trusted session scope",
+        ))
+        return False
 
     mcp = FastMCP("knowledge-manager")
 
@@ -290,7 +304,7 @@ def create_server(
 
     # ── Federation: namespace-scoped resources ──
 
-    if federation and untrusted_global_resources_allowed:
+    if federation and untrusted_global_resources_allowed and resolved_security_mode != "multi_tenant":
         # Register namespace-scoped resources programmatically
         for ns_name, ns_data in federation.items():
             ns_path = ns_data["path"]
@@ -399,7 +413,7 @@ def create_server(
             return json.dumps({"error": str(exc)})
         cached = cache.get(module_id, namespace, category)
         if cached is not None and (tenant is None or module_visible_to_tenant(cached, tenant)):
-            return cached.model_dump_json(indent=2)
+            return module_for_tenant(cached, target_kb, tenant).model_dump_json(indent=2)
 
         module = load_module(module_id, category, target_kb)
         if module is None:
@@ -415,7 +429,7 @@ def create_server(
         _session_loaded.append(module_key)
         if len(_session_loaded) > 20:
             _session_loaded.pop(0)
-        return module.model_dump_json(indent=2)
+        return module_for_tenant(module, target_kb, tenant).model_dump_json(indent=2)
 
     @mcp.tool(name="search_modules")
     def search_modules_tool(
@@ -524,7 +538,7 @@ def create_server(
                     "tags": n.metadata.tags,
                     "confidence": n.metadata.confidence,
                     "caveats": n.content.caveats,
-                    "related_modules": n.metadata.related_modules,
+                    "related_modules": module_for_tenant(n, target_kb, tenant).metadata.related_modules,
                 })
 
         return json.dumps({
@@ -618,7 +632,7 @@ def create_server(
 
     # ── Lint resource (M7) ──
 
-    if untrusted_global_resources_allowed:
+    if untrusted_global_resources_allowed and resolved_security_mode != "multi_tenant":
         @mcp.resource("knowledge://lint")
         def get_lint() -> str:
             """Get knowledge base contradiction and structural issue report."""
@@ -689,7 +703,7 @@ def create_server(
                     output["results"][ns_name] = {"error": f"Unknown namespace: {ns_name}"}
                     continue
                 ns_path = federation[ns_name]["path"]
-                ns_results = search_modules(query, ns_path, limit=top_per_ns)
+                ns_results = search_modules(query, ns_path, limit=top_per_ns, tenant=_effective_tenant())
                 output["results"][ns_name] = [
                     {
                         "id": r.module.id,
@@ -750,6 +764,8 @@ def create_server(
                 tags=[t.strip() for t in tags.split(",") if t.strip()],
                 confidence=confidence,
                 status="draft",
+                tenant_id=session_tenant.tenant_id if session_tenant else "",
+                workspace_id=session_tenant.workspace_id if session_tenant else "",
             ),
         )
 
@@ -785,7 +801,7 @@ def create_server(
         from knowledge_manager.storage import load_module, save_module
 
         mod = load_module(module_id, category, kb_path)
-        if mod is None:
+        if mod is None or not _write_scope_allowed(mod, "module.update"):
             return json.dumps({"error": f"Module not found: {category}/{module_id}"})
 
         if title and len(title) >= 5:
@@ -818,7 +834,7 @@ def create_server(
         from knowledge_manager.storage import load_module, save_module
 
         mod = load_module(module_id, category, kb_path)
-        if mod is None:
+        if mod is None or not _write_scope_allowed(mod, "module.delete"):
             return json.dumps({"error": f"Module not found: {category}/{module_id}"})
 
         mod.metadata.status = "archived"
