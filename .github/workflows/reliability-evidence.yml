@@ -1,0 +1,49 @@
+name: Reliability evidence
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main", "master", "feat/**", "codex/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  evidence:
+    name: Ubuntu reliability evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install locked dependencies
+        run: |
+          python -m pip install --disable-pip-version-check poetry==2.4.1
+          python -m poetry install --no-interaction
+      - name: Recovery and concurrency behavior
+        run: |
+          poetry run pytest -q tests/test_reliability.py tests/test_ingestion_jobs.py tests/test_worker_service.py tests/test_ingestion_recovery_drill.py tests/test_backup_restore_drill.py tests/test_retrieval_quality.py tests/test_evidence_contracts.py --junitxml=test-results/reliability-junit.xml
+      - name: Retrieval and recovery drills
+        run: |
+          cp -r examples/sample_knowledge_base "$RUNNER_TEMP/evidence-kb"
+          poetry run python scripts/run_retrieval_quality.py --kb-path "$RUNNER_TEMP/evidence-kb" --golden-set examples/sample_knowledge_base/retrieval-golden-set.json --output test-results/retrieval-quality.json
+          poetry run python scripts/run_ingestion_recovery_drill.py --kb-path "$RUNNER_TEMP/ingestion-drill" --output test-results/ingestion-recovery.json
+          poetry run python scripts/run_backup_restore_drill.py --kb-path "$RUNNER_TEMP/evidence-kb" --output-dir "$RUNNER_TEMP/restore-drill"
+          cp "$RUNNER_TEMP/restore-drill/restore-verify-deployment.json" test-results/
+      - name: Record snapshot
+        if: always()
+        run: |
+          git rev-parse HEAD > test-results/commit.txt
+          python --version > test-results/runtime.txt
+          sha256sum poetry.lock >> test-results/runtime.txt
+      - name: Upload reliability evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-reliability-evidence
+          path: test-results/
+          if-no-files-found: error
+
