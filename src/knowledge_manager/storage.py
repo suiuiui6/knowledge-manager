@@ -6,6 +6,8 @@ import math
 import os
 import re
 import tempfile
+from functools import lru_cache
+from threading import Lock
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, NamedTuple, Optional, cast
@@ -33,6 +35,7 @@ from knowledge_manager.json_io import atomic_write_text
 _FIELD_WEIGHTS = {"title": 5, "tag": 3, "summary": 2, "overview": 1, "details": 1, "examples": 0, "caveats": 0}
 _WORD_RE = re.compile(r"\w+")
 _EN_STEMMER: Any = _snowball_stemmer("english")
+_EN_STEMMER_LOCK = Lock()
 _CJK_RE = re.compile(r"[一-鿿㐀-䶿豈-﫿]")
 
 _QUALITY_EXACT = 3
@@ -83,6 +86,13 @@ _INTENT_PATTERNS: Dict[str, List[str]] = {
 _MODULE_CACHE = ModuleCache()
 
 
+@lru_cache(maxsize=65536)
+def _stem_english(word: str) -> str:
+    # Snowball mutates its working buffer; serialize cache misses across threads.
+    with _EN_STEMMER_LOCK:
+        return cast(str, _EN_STEMMER.stemWord(word))
+
+
 def _stem(word: str) -> str:
     """Stem/tokenize a word. Chinese text is segmented with jieba; English uses snowball."""
     if _CJK_RE.search(word):
@@ -91,7 +101,7 @@ def _stem(word: str) -> str:
             return " ".join(jieba.cut(word))
         except ImportError:
             return word.lower()
-    return cast(str, _EN_STEMMER.stemWord(word.lower()))
+    return _stem_english(word.lower())
 
 
 def _classify_intent(query: str) -> str:
@@ -798,18 +808,16 @@ def search_modules(
 
     def _document_field_stems(document: Mapping[str, Any]) -> dict[str, set[str]]:
         stored = document.get("field_stems", {})
-        computed = {
-            "title": _field_stems(str(document.get("title", ""))),
-            "tag": {s for tag in document.get("tags", []) for s in _stem(str(tag)).split()},
-            "summary": _field_stems(str(document.get("summary", ""))),
-            "overview": _field_stems(str(document.get("overview", ""))),
-            "details": _field_stems(str(document.get("details", ""))),
-            "examples": _field_stems(str(document.get("examples", ""))),
-            "caveats": _field_stems(str(document.get("caveats", ""))),
-        }
-        for field_name, values in stored.items():
-            computed[field_name] = set(values)
-        return computed
+        fields = ("title", "tag", "summary", "overview", "details", "examples", "caveats")
+        result = {}
+        for name in fields:
+            if name in stored:
+                result[name] = set(stored[name])
+            elif name == "tag":
+                result[name] = {s for tag in document.get("tags", []) for s in _stem(str(tag)).split()}
+            else:
+                result[name] = _field_stems(str(document.get(name, "")))
+        return result
 
     candidate_items: list[tuple[str, dict[str, Any], dict[str, set[str]]]] = []
     if use_projection and candidate_set is not None:

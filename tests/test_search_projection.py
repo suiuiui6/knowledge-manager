@@ -208,3 +208,36 @@ def test_bm25_scores_for_documents_uses_persisted_stems_when_available(tmp_path,
     scores = _bm25_scores_for_documents("rollback incidents", [document])
 
     assert scores["ops/rollback-guide"] > 0
+
+
+def test_search_projection_does_not_restem_stored_fields(tmp_path, monkeypatch):
+    from knowledge_manager.search_projection import build_search_projection
+    import knowledge_manager.storage as storage
+
+    kb = tmp_path / "kb"
+    kb.mkdir()
+    save_index(Index(description="projection stored stems"), kb)
+    save_module(
+        Module(
+            id="stored-stems",
+            category="ops",
+            title="Stored Stems Module",
+            summary="Stored stems summary.",
+            content=ModuleContent(
+                overview="Rollback overview.",
+                details="Rollback details for stored stem regression test.",
+            ),
+        ),
+        kb,
+    )
+    build_search_projection(kb)
+
+    monkeypatch.setattr(
+        storage,
+        "_field_stems",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("projection should use stored field stems")
+        ),
+    )
+    results = search_modules("rollback", kb)
+    assert results[0].module.id == "stored-stems"
