@@ -19,6 +19,7 @@ def main() -> int:
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
     with (args.output_dir / "benchmark-stacks.log").open("w", encoding="utf-8") as stacks:
+        faulthandler.enable(file=stacks, all_threads=True)
         faulthandler.dump_traceback_later(120, repeat=True, file=stacks)
         try:
             report = run_enterprise_benchmark(
@@ -36,6 +37,7 @@ def main() -> int:
             )
         finally:
             faulthandler.cancel_dump_traceback_later()
+            faulthandler.disable()
     return 0 if report["release_verdict"]["ready_for_production"] else 2
 
 
