@@ -21,7 +21,7 @@ jobs:
       - name: Install Poetry
         run: |
           pipx install poetry==2.4.1
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          echo "$(pipx environment --value PIPX_BIN_DIR)" >> "$GITHUB_PATH"
       - name: Install locked dependencies
         run: poetry install --no-interaction
       - name: Run full test suite
@@ -46,7 +46,7 @@ jobs:
       - name: Install Poetry
         run: |
           pipx install poetry==2.4.1
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          echo "$(pipx environment --value PIPX_BIN_DIR)" >> "$GITHUB_PATH"
       - name: Install locked dependencies
         run: poetry install --no-interaction
       - name: Check formatting
