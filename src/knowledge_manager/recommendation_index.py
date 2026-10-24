@@ -6,6 +6,7 @@ from typing import Any
 
 
 _RECOMMENDATION_CACHE: dict[str, tuple[int, int, dict[str, Any]]] = {}
+MAX_TAG_DOCUMENTS = 200
 
 
 def _index_path(kb_path: Path) -> Path:
@@ -65,7 +66,9 @@ def _apply_module(payload: dict[str, Any], module) -> None:
     related = sorted(
         {
             normalized
-            for normalized in (_normalize_related_module(item) for item in module.metadata.related_modules)
+            for normalized in (
+                _normalize_related_module(item) for item in module.metadata.related_modules
+            )
             if "/" in normalized
         }
     )
@@ -112,7 +115,11 @@ def _refresh_link_candidates_for_module(payload: dict[str, Any], key: str) -> No
     modules = set(payload.get("modules", {}))
     if key not in modules:
         return
-    key_tags = set(payload.get("module_tags", {}).get(key, []))
+    key_tags = {
+        tag
+        for tag in payload.get("module_tags", {}).get(key, [])
+        if len(payload.get("tag_index", {}).get(tag, [])) <= MAX_TAG_DOCUMENTS
+    }
     for other in sorted(modules - {key}):
         first, second = sorted((key, other))
         if _has_explicit_link(payload, first, second):
@@ -132,7 +139,31 @@ def _empty_payload() -> dict[str, Any]:
         "tag_index": {},
         "outbound_links": {},
         "link_candidates": [],
+        "candidate_policy": {
+            "max_tag_documents": MAX_TAG_DOCUMENTS,
+            "ignored_high_frequency_tags": [],
+        },
     }
+
+
+def _update_candidate_policy(payload: dict[str, Any]) -> None:
+    modules = set(payload.get("modules", {}))
+    ignored = sorted(
+        tag
+        for tag, keys in payload.get("tag_index", {}).items()
+        if len([key for key in keys if key in modules]) > MAX_TAG_DOCUMENTS
+    )
+    payload["candidate_policy"] = {
+        "max_tag_documents": MAX_TAG_DOCUMENTS,
+        "ignored_high_frequency_tags": ignored,
+    }
+    ignored_set = set(ignored)
+    candidates = []
+    for candidate in payload.get("link_candidates", []):
+        shared_tags = sorted(set(candidate.get("shared_tags", [])) - ignored_set)
+        if shared_tags:
+            candidates.append({**candidate, "shared_tags": shared_tags})
+    payload["link_candidates"] = candidates
 
 
 def _derive_link_candidates(payload: dict[str, Any]) -> list[dict[str, Any]]:
@@ -159,20 +190,29 @@ def build_recommendation_index(kb_path: Path) -> dict[str, Any]:
 
 def update_recommendation_index_for_module(kb_path: Path, module) -> dict[str, Any]:
     payload = load_recommendation_index(kb_path) or _empty_payload()
+    previous_policy = payload.get("candidate_policy", {}).copy()
     _apply_module(payload, module)
+    _update_candidate_policy(payload)
+    if previous_policy != payload["candidate_policy"]:
+        return _write_payload(kb_path, payload)
     _refresh_link_candidates_for_module(payload, _module_key(module.category, module.id))
     return _write_payload(kb_path, payload, refresh_link_candidates=False)
 
 
-def remove_recommendation_index_for_module(kb_path: Path, category: str, module_id: str) -> dict[str, Any] | None:
+def remove_recommendation_index_for_module(
+    kb_path: Path, category: str, module_id: str
+) -> dict[str, Any] | None:
     payload = load_recommendation_index(kb_path)
     if payload is None:
         return None
     _remove_module(payload, category, module_id)
-    return _write_payload(kb_path, payload, refresh_link_candidates=False)
+    _update_candidate_policy(payload)
+    return _write_payload(kb_path, payload, refresh_link_candidates=True)
 
 
-def iter_recommendation_link_candidates(payload: dict[str, Any]) -> list[tuple[str, str, list[str]]]:
+def iter_recommendation_link_candidates(
+    payload: dict[str, Any]
+) -> list[tuple[str, str, list[str]]]:
     pair_tags: dict[tuple[str, str], set[str]] = {}
     existing_pairs: set[tuple[str, str]] = set()
     modules = set(payload.get("modules", {}).keys())
@@ -185,15 +225,23 @@ def iter_recommendation_link_candidates(payload: dict[str, Any]) -> list[tuple[s
                 continue
             existing_pairs.add(tuple(sorted((source, target))))
 
+    ignored_tags: list[str] = []
     for tag, keys in payload.get("tag_index", {}).items():
         ordered = sorted(key for key in keys if key in modules)
+        if len(ordered) > MAX_TAG_DOCUMENTS:
+            ignored_tags.append(tag)
+            continue
         for index, first in enumerate(ordered):
-            for second in ordered[index + 1:]:
+            for second in ordered[index + 1 :]:
                 pair = (first, second)
                 if pair in existing_pairs:
                     continue
                 pair_tags.setdefault(pair, set()).add(tag)
 
+    payload["candidate_policy"] = {
+        "max_tag_documents": MAX_TAG_DOCUMENTS,
+        "ignored_high_frequency_tags": sorted(ignored_tags),
+    }
     return [
         (first, second, sorted(shared_tags))
         for (first, second), shared_tags in pair_tags.items()
