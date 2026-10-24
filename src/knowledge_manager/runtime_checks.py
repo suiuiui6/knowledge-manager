@@ -8,6 +8,7 @@ from knowledge_manager.auth import load_auth_config
 from knowledge_manager.http_authz import SUPPORTED_AUTH_PROVIDERS
 from knowledge_manager.ingestion_jobs import list_ingestion_jobs
 from knowledge_manager.storage import _load_config_safe, list_modules, load_index, rebuild_index
+from knowledge_manager.derived_index_state import load_derived_index_state
 
 
 def evaluate_readiness(kb_path: Path) -> dict[str, Any]:

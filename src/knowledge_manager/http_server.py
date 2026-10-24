@@ -366,7 +366,7 @@ def create_app(kb_path: Path) -> FastAPI:
 
         from knowledge_manager.storage import save_module
         maintenance_state: list[dict] = []
-        save_module(module, kb_path, maintenance_state=maintenance_state)
+        save_module(module, kb_path, defer_derived=True, maintenance_state=maintenance_state)
         log_audit_event(
             kb_path,
             AuditEvent(
@@ -417,7 +417,7 @@ def create_app(kb_path: Path) -> FastAPI:
 
         from knowledge_manager.storage import save_module
         maintenance_state: list[dict] = []
-        save_module(module, kb_path, maintenance_state=maintenance_state)
+        save_module(module, kb_path, defer_derived=True, maintenance_state=maintenance_state)
         log_audit_event(
             kb_path,
             AuditEvent(
@@ -447,7 +447,7 @@ def create_app(kb_path: Path) -> FastAPI:
             raise HTTPException(404, f"Module not found: {cat}/{mod_id}")
         enforce_subject_module_access(subject, module, kb_path, request)
         maintenance_state: list[dict] = []
-        if not delete_module(mod_id, cat, kb_path, maintenance_state=maintenance_state):
+        if not delete_module(mod_id, cat, kb_path, defer_derived=True, maintenance_state=maintenance_state):
             raise HTTPException(404, f"Module not found: {cat}/{mod_id}")
         log_audit_event(
             kb_path,

@@ -104,7 +104,7 @@ def test_deferred_save_does_not_refresh_derived_indexes_twice(kb_path, monkeypat
     )
 
     module = make_module("single-refresh", "ops")
-    save_module(module, kb_path)
+    save_module(module, kb_path, defer_derived=True)
     assert refreshes == []
     from knowledge_manager.storage import run_deferred_maintenance_action
 
@@ -132,7 +132,7 @@ def test_deferred_save_marks_derived_indexes_pending(kb_path, monkeypatch):
         ),
     )
 
-    save_module(make_module("pending-module", "ops"), kb_path)
+    save_module(make_module("pending-module", "ops"), kb_path, defer_derived=True)
 
     from knowledge_manager.derived_index_state import load_derived_index_state
 
@@ -226,7 +226,7 @@ def test_deferred_delete_does_not_remove_derived_indexes_twice(kb_path, monkeypa
         lambda module_id, category, path: removals.append((module_id, category, path)),
     )
 
-    assert delete_module("single-delete", "ops", kb_path) is True
+    assert delete_module("single-delete", "ops", kb_path, defer_derived=True) is True
     assert removals == []
     from knowledge_manager.storage import run_deferred_maintenance_action
 

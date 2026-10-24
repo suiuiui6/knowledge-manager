@@ -146,12 +146,17 @@ def run_pending_maintenance(kb_path: Path, limit: int = 20) -> int:
         try:
             action = str(payload["action"])
             derived_work = derived_work or action in {"module_saved", "module_deleted"}
-            run_deferred_maintenance_action(
-                kb_path,
-                action,
-                payload.get("payload", {}),
-                refresh_derived=False,
-            )
+            try:
+                run_deferred_maintenance_action(
+                    kb_path,
+                    action,
+                    payload.get("payload", {}),
+                    refresh_derived=False,
+                )
+            except TypeError as exc:
+                if "refresh_derived" not in str(exc):
+                    raise
+                run_deferred_maintenance_action(kb_path, action, payload.get("payload", {}))
             payload["status"] = "completed"
             payload["completed_at"] = datetime.now(timezone.utc).isoformat()
         except Exception as exc:

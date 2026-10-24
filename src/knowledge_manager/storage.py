@@ -399,6 +399,7 @@ def save_module(
     module: Module,
     kb_path: Path,
     defer_noncritical: bool = True,
+    defer_derived: bool = False,
     maintenance_state: list[dict[str, Any]] | None = None,
 ) -> None:
     path = module.to_file_path(kb_path)
@@ -418,12 +419,12 @@ def save_module(
     _upsert_index_entry(module, kb_path)
     _invalidate_module_cache(kb_path)
     invalidate_materialized_views(kb_path)
-    from knowledge_manager.derived_index_state import (
-        mark_derived_indexes_dirty,
-        mark_derived_indexes_operation_complete,
-    )
+    from knowledge_manager.derived_index_state import mark_derived_indexes_dirty
 
-    mark_derived_indexes_dirty(kb_path)
+    if defer_derived:
+        mark_derived_indexes_dirty(kb_path)
+    else:
+        _refresh_derived_indexes_for_module(module, kb_path)
     if defer_noncritical:
         state = schedule_maintenance_job(
             kb_path,
@@ -431,8 +432,6 @@ def save_module(
             payload={"module": module.model_dump(mode="json"), "existed": existed},
         )
     else:
-        _refresh_derived_indexes_for_module(module, kb_path)
-        mark_derived_indexes_operation_complete(kb_path)
         _run_noncritical_save_side_effects(module, kb_path, existed)
         state = {"deferred": False, "action": "module_saved"}
     if maintenance_state is not None:
@@ -451,6 +450,7 @@ def delete_module(
     category: str,
     kb_path: Path,
     defer_noncritical: bool = True,
+    defer_derived: bool = False,
     maintenance_state: list[dict[str, Any]] | None = None,
 ) -> bool:
     path = kb_path / category / f"{module_id}.json"
@@ -460,12 +460,12 @@ def delete_module(
     _remove_index_entry(module_id, category, kb_path)
     _invalidate_module_cache(kb_path)
     invalidate_materialized_views(kb_path)
-    from knowledge_manager.derived_index_state import (
-        mark_derived_indexes_dirty,
-        mark_derived_indexes_operation_complete,
-    )
+    from knowledge_manager.derived_index_state import mark_derived_indexes_dirty
 
-    mark_derived_indexes_dirty(kb_path)
+    if defer_derived:
+        mark_derived_indexes_dirty(kb_path)
+    else:
+        _remove_from_derived_indexes(module_id, category, kb_path)
     if defer_noncritical:
         state = schedule_maintenance_job(
             kb_path,
@@ -473,8 +473,6 @@ def delete_module(
             payload={"module_id": module_id, "category": category},
         )
     else:
-        _remove_from_derived_indexes(module_id, category, kb_path)
-        mark_derived_indexes_operation_complete(kb_path)
         _run_noncritical_delete_side_effects(module_id, category, kb_path)
         state = {"deferred": False, "action": "module_deleted"}
     if maintenance_state is not None:

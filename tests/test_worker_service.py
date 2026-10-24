@@ -92,7 +92,7 @@ def test_worker_batches_derived_index_rebuilds(tmp_path, monkeypatch):
         lambda path, action, payload, **kwargs: dispatched.append((path, action, payload, kwargs)),
     )
     monkeypatch.setattr(
-        "knowledge_manager.job_worker.rebuild_derived_indexes",
+        "knowledge_manager.storage.rebuild_derived_indexes",
         lambda path: rebuilds.append(path),
     )
     monkeypatch.setattr("knowledge_manager.job_worker.os.replace", safe_replace)
