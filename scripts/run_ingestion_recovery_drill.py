@@ -11,7 +11,7 @@ from knowledge_manager.ingestion_jobs import (
 from knowledge_manager.job_worker import run_single_job
 from knowledge_manager.runtime_checks import run_integrity_check
 from knowledge_manager.schemas import Index, Module, ModuleContent
-from knowledge_manager.storage import save_index
+from knowledge_manager.storage import list_modules, list_staging, list_staging_meta, save_index
 
 
 def main() -> int:
@@ -21,6 +21,8 @@ def main() -> int:
     args = parser.parse_args()
     kb = (args.kb_path or args.output.parent / "ingestion-kb").resolve()
     kb.mkdir(parents=True, exist_ok=True)
+    if any(kb.iterdir()):
+        raise ValueError("ingestion drill target must be empty")
     save_index(Index(description="ingestion recovery drill"), kb)
     payload = kb / "recovery.txt"
     payload.write_text("recoverable source", encoding="utf-8")
@@ -67,6 +69,10 @@ def main() -> int:
         "final_status": completed.status,
         "attempt_count": completed.attempt_count,
         "integrity": integrity,
+        "staged_module_valid": len(list_staging(kb / ".staging")) == 1,
+        "staging_metadata_present": len(list_staging_meta(kb / ".staging")) == 1,
+        "published_module_count": len(list_modules(kb)),
+        "provider_mode": "deterministic fault injection",
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
