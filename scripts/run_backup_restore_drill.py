@@ -9,7 +9,7 @@ from pathlib import Path
 from knowledge_manager.backup_restore import create_backup_bundle, restore_backup_bundle
 from knowledge_manager.performance_benchmarks import _sum_file_bytes
 from knowledge_manager.runtime_checks import evaluate_readiness, run_integrity_check
-from knowledge_manager.storage import rebuild_derived_indexes, rebuild_index, search_modules
+from knowledge_manager.storage import list_modules, rebuild_derived_indexes, rebuild_index
 
 
 def main() -> int:
@@ -26,14 +26,16 @@ def main() -> int:
     rebuild_derived_indexes(target)
     integrity = run_integrity_check(target)
     readiness = evaluate_readiness(target)
-    expected_keys = {f"{item.module.category}/{item.module.id}" for item in search_modules("rollback", args.kb_path, limit=20)}
-    restored_keys = {f"{item.module.category}/{item.module.id}" for item in search_modules("rollback", target, limit=20)}
+    source_keys = {f"{module.category}/{module.id}" for module in list_modules(args.kb_path)}
+    restored_keys = {f"{module.category}/{module.id}" for module in list_modules(target)}
     try:
-        commit = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=False).stdout.strip()
+        commit = subprocess.run(
+            ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=False
+        ).stdout.strip()
     except OSError:
         commit = ""
     report = {
-        "ok": integrity["ok"] and readiness["ready"] and bool(expected_keys & restored_keys),
+        "ok": integrity["ok"] and readiness["ready"] and source_keys == restored_keys,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "source_kb": str(args.kb_path.resolve()),
         "restored_kb": str(target),
@@ -43,7 +45,10 @@ def main() -> int:
         "restored_bytes": _sum_file_bytes(target),
         "integrity": integrity,
         "readiness": readiness,
-        "search_overlap": sorted(expected_keys & restored_keys),
+        "source_module_count": len(source_keys),
+        "restored_module_count": len(restored_keys),
+        "canonical_files_match": source_keys == restored_keys,
+        "search_overlap": sorted(source_keys & restored_keys),
     }
     artifact = output / "restore-verify-deployment.json"
     artifact.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")

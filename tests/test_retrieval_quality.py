@@ -45,3 +45,33 @@ def test_quality_catches_scope_leaks_without_explicit_allowlist():
     )
     assert report["tenant_leakage_cases"] == 1
     assert report["abstention_accuracy"] == 0.0
+
+
+def test_quality_positive_metrics_exclude_abstention_cases():
+    from types import SimpleNamespace
+    from knowledge_manager.retrieval_eval import evaluate_golden_set
+
+    module = SimpleNamespace(category="ops", id="runbook")
+    report = evaluate_golden_set(
+        [
+            {"query": "known", "required_modules": ["ops/runbook"]},
+            {"query": "unknown", "required_modules": []},
+        ],
+        lambda query, **kwargs: [SimpleNamespace(module=module)] if query == "known" else [],
+    )
+    assert report["mean_recall_at_k"] == 1.0
+    assert report["mean_mrr"] == 1.0
+    assert report["mean_ndcg_at_k"] == 1.0
+    assert report["abstention_accuracy"] == 1.0
+
+
+def test_quality_catches_workspace_leak_and_counts_case_once():
+    from types import SimpleNamespace
+    from knowledge_manager.retrieval_eval import evaluate_golden_set
+
+    module = SimpleNamespace(category="ops", id="secret", metadata=SimpleNamespace(tenant_id="a", workspace_id="other"))
+    report = evaluate_golden_set(
+        [{"query": "secret", "tenant_id": "a", "workspace_id": "mine", "allowed_modules": ["ops/allowed"], "required_modules": []}],
+        lambda *_args, **_kwargs: [SimpleNamespace(module=module)],
+    )
+    assert report["tenant_leakage_cases"] == 1
