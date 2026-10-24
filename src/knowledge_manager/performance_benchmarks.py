@@ -67,9 +67,11 @@ def _stabilize_benchmark_kb(kb_path: Path) -> None:
     from datetime import timedelta
 
     from knowledge_manager.ingestion_jobs import list_ingestion_jobs
+    from knowledge_manager.job_worker import run_pending_maintenance
     from knowledge_manager.recommendation_index import build_recommendation_index
     from knowledge_manager.search_projection import build_search_projection
 
+    run_pending_maintenance(kb_path, limit=1000)
     build_search_projection(kb_path)
     build_recommendation_index(kb_path)
     for job in list_ingestion_jobs(kb_path):
