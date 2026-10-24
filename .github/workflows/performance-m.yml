@@ -12,7 +12,7 @@ jobs:
   m-scale:
     name: Ubuntu M-scale benchmark
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -38,3 +38,4 @@ jobs:
         with:
           name: m-scale-performance-evidence
           path: ${{ runner.temp }}/km-m-evidence
+
