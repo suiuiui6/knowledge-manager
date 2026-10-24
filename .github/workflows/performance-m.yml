@@ -1,0 +1,40 @@
+name: M-scale performance evidence
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["feat/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  m-scale:
+    name: Ubuntu M-scale benchmark
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Poetry
+        run: python -m pip install --disable-pip-version-check poetry==2.4.1
+      - name: Install locked dependencies
+        run: python -m poetry install --no-interaction
+      - name: Run M-scale benchmark
+        run: |
+          poetry run python scripts/run_enterprise_benchmark.py \
+            --kb-path "$RUNNER_TEMP/km-m-kb" \
+            --output-dir "$RUNNER_TEMP/km-m-evidence" \
+            --module-count 50000 \
+            --tenant-count 20 \
+            --job-count 2000 \
+            --migration-document-count 1000 \
+            --iterations 3
+      - name: Upload M-scale evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m-scale-performance-evidence
+          path: ${{ runner.temp }}/km-m-evidence
