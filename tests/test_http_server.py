@@ -101,6 +101,103 @@ class TestHealth:
         assert "text/plain" in response.headers["content-type"]
         assert "knowledge_manager_modules_total" in response.text
 
+    def test_http_write_worker_and_search_form_consistency_loop(self, tmp_path):
+        """HTTP writes become searchable only after the tracked derived rebuild."""
+        from knowledge_manager.derived_index_state import load_derived_index_state
+        from knowledge_manager.schemas import Index, Module, ModuleContent
+        from knowledge_manager.storage import save_index, save_module
+        from knowledge_manager.worker_service import run_worker_loop
+
+        kb = tmp_path / "kb"
+        kb.mkdir()
+        save_index(Index(description="consistency loop"), kb)
+        (kb / "config.json").write_text(
+            json.dumps(
+                {"llm_providers": {"test": {"api_key": "local", "model": "test", "default": True}}}
+            ),
+            encoding="utf-8",
+        )
+        save_module(
+            Module(
+                id="baseline",
+                category="ops",
+                title="Baseline module",
+                summary="Baseline module for consistency tests.",
+                content=ModuleContent(
+                    overview="Baseline overview for consistency tests.",
+                    details="Baseline details are long enough for schema validation.",
+                ),
+            ),
+            kb,
+            defer_noncritical=False,
+        )
+
+        client = TestClient(create_app(kb))
+        create = client.post(
+            "/api/modules",
+            json={
+                "id": "consistency-loop",
+                "category": "ops",
+                "title": "Consistency loop module",
+                "summary": "A module used for HTTP and MCP consistency verification.",
+                "content": {
+                    "overview": "The initial consistency loop overview is searchable.",
+                    "details": "The initial consistency loop details are long enough for validation.",
+                },
+                "submit_to_staging": False,
+            },
+        )
+        assert create.status_code == 200
+        assert create.json()["status"] == "created"
+        assert create.json()["maintenance"]["deferred"] is True
+        assert load_derived_index_state(kb)["status"] == "dirty"
+        readiness_before = client.get("/api/ready")
+        assert readiness_before.status_code == 503
+        assert any("derived indexes are not ready" in reason for reason in readiness_before.json()["reasons"])
+
+        assert run_worker_loop(kb, once=True, poll_interval=0.01) >= 1
+        assert load_derived_index_state(kb)["status"] == "ready"
+        readiness_after = client.get("/api/ready")
+        assert readiness_after.status_code == 200
+        assert readiness_after.json()["ready"] is True
+
+        initial_search = client.post("/api/search", json={"query": "initial consistency loop", "top_k": 10})
+        assert initial_search.status_code == 200
+        assert any(item["id"] == "consistency-loop" for item in initial_search.json()["results"])
+
+        import asyncio
+
+        from knowledge_manager.mcp_server import create_server
+
+        async def mcp_search(query: str) -> list[dict]:
+            result = await create_server(kb).call_tool("search_modules", {"query": query})
+            blocks = result[0] if isinstance(result, tuple) else result
+            return json.loads(next(block.text for block in blocks if hasattr(block, "text")))
+
+        mcp_initial = asyncio.run(mcp_search("initial consistency loop"))
+        assert any(item["id"] == "consistency-loop" for item in mcp_initial)
+
+        update = client.put(
+            "/api/modules/ops/consistency-loop",
+            json={"title": "Updated consistency loop module", "summary": "Updated consistency loop summary text."},
+        )
+        assert update.status_code == 200
+        assert load_derived_index_state(kb)["status"] == "dirty"
+        assert run_worker_loop(kb, once=True, poll_interval=0.01) >= 1
+        updated_search = client.post("/api/search", json={"query": "updated consistency loop", "top_k": 10})
+        assert any(item["title"] == "Updated consistency loop module" for item in updated_search.json()["results"])
+        mcp_updated = asyncio.run(mcp_search("updated consistency loop"))
+        assert any(item["title"] == "Updated consistency loop module" for item in mcp_updated)
+
+        delete = client.delete("/api/modules/ops/consistency-loop")
+        assert delete.status_code == 200
+        assert load_derived_index_state(kb)["status"] == "dirty"
+        assert run_worker_loop(kb, once=True, poll_interval=0.01) >= 1
+        deleted_search = client.post("/api/search", json={"query": "updated consistency loop", "top_k": 10})
+        assert all(item["id"] != "consistency-loop" for item in deleted_search.json()["results"])
+        mcp_deleted = asyncio.run(mcp_search("updated consistency loop"))
+        assert all(item["id"] != "consistency-loop" for item in mcp_deleted)
+
     def test_production_mode_without_auth_config_fails_closed(self, tmp_path):
         kb = tmp_path / "kb"
         kb.mkdir()
