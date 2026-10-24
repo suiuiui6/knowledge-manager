@@ -107,6 +107,52 @@ def test_recommendation_index_updates_on_save_without_full_rebuild(tmp_path, mon
     assert "ops/incident-links" in payload["modules"]
 
 
+def test_recommendation_index_updates_link_candidates_incrementally(tmp_path):
+    from knowledge_manager.recommendation_index import load_recommendation_index
+
+    kb = tmp_path / "kb"
+    kb.mkdir()
+    save_index(Index(description="incremental recommendation candidates"), kb)
+
+    def make_module(module_id, tags):
+        return Module(
+            id=module_id,
+            category="ops",
+            title=f"Module {module_id}",
+            summary="Recommendation summary long enough.",
+            content=ModuleContent(
+                overview="Recommendation overview long enough.",
+                details="Recommendation details long enough for validation.",
+            ),
+            metadata=ModuleMetadata(tags=tags),
+        )
+
+    save_module(make_module("core", ["incident"]), kb)
+    save_module(make_module("companion", ["incident"]), kb)
+    save_module(make_module("other", ["policy"]), kb)
+    payload = load_recommendation_index(kb)
+    assert payload is not None
+    assert payload["link_candidates"] == [
+        {"first": "ops/companion", "second": "ops/core", "shared_tags": ["incident"]}
+    ]
+
+    save_module(make_module("other", ["incident"]), kb)
+    payload = load_recommendation_index(kb)
+    assert payload is not None
+    assert payload["link_candidates"] == [
+        {"first": "ops/companion", "second": "ops/core", "shared_tags": ["incident"]},
+        {"first": "ops/companion", "second": "ops/other", "shared_tags": ["incident"]},
+        {"first": "ops/core", "second": "ops/other", "shared_tags": ["incident"]},
+    ]
+
+    assert delete_module("companion", "ops", kb) is True
+    payload = load_recommendation_index(kb)
+    assert payload is not None
+    assert payload["link_candidates"] == [
+        {"first": "ops/core", "second": "ops/other", "shared_tags": ["incident"]}
+    ]
+
+
 def test_recommendation_index_updates_on_delete(tmp_path):
     from knowledge_manager.recommendation_index import build_recommendation_index, load_recommendation_index
 

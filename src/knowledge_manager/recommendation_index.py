@@ -13,8 +13,14 @@ def _module_key(category: str, module_id: str) -> str:
     return f"{category}/{module_id}"
 
 
-def _write_payload(kb_path: Path, payload: dict[str, Any]) -> dict[str, Any]:
-    payload["link_candidates"] = _derive_link_candidates(payload)
+def _write_payload(
+    kb_path: Path,
+    payload: dict[str, Any],
+    *,
+    refresh_link_candidates: bool = True,
+) -> dict[str, Any]:
+    if refresh_link_candidates:
+        payload["link_candidates"] = _derive_link_candidates(payload)
     path = _index_path(kb_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
@@ -73,6 +79,38 @@ def _remove_module(payload: dict[str, Any], category: str, module_id: str) -> No
             payload["tag_index"].pop(tag, None)
     payload.get("modules", {}).pop(key, None)
     payload.get("outbound_links", {}).pop(key, None)
+    payload["link_candidates"] = [
+        candidate
+        for candidate in payload.get("link_candidates", [])
+        if candidate.get("first") != key and candidate.get("second") != key
+    ]
+
+
+def _has_explicit_link(payload: dict[str, Any], first: str, second: str) -> bool:
+    outbound_links = payload.get("outbound_links", {})
+    return second in outbound_links.get(first, []) or first in outbound_links.get(second, [])
+
+
+def _refresh_link_candidates_for_module(payload: dict[str, Any], key: str) -> None:
+    payload["link_candidates"] = [
+        candidate
+        for candidate in payload.get("link_candidates", [])
+        if candidate.get("first") != key and candidate.get("second") != key
+    ]
+    modules = set(payload.get("modules", {}))
+    if key not in modules:
+        return
+    key_tags = set(payload.get("module_tags", {}).get(key, []))
+    for other in sorted(modules - {key}):
+        first, second = sorted((key, other))
+        if _has_explicit_link(payload, first, second):
+            continue
+        shared_tags = sorted(key_tags.intersection(payload.get("module_tags", {}).get(other, [])))
+        if shared_tags:
+            payload["link_candidates"].append(
+                {"first": first, "second": second, "shared_tags": shared_tags}
+            )
+    payload["link_candidates"].sort(key=lambda item: (item["first"], item["second"]))
 
 
 def _empty_payload() -> dict[str, Any]:
@@ -110,7 +148,8 @@ def build_recommendation_index(kb_path: Path) -> dict[str, Any]:
 def update_recommendation_index_for_module(kb_path: Path, module) -> dict[str, Any]:
     payload = load_recommendation_index(kb_path) or _empty_payload()
     _apply_module(payload, module)
-    return _write_payload(kb_path, payload)
+    _refresh_link_candidates_for_module(payload, _module_key(module.category, module.id))
+    return _write_payload(kb_path, payload, refresh_link_candidates=False)
 
 
 def remove_recommendation_index_for_module(kb_path: Path, category: str, module_id: str) -> dict[str, Any] | None:
@@ -118,7 +157,7 @@ def remove_recommendation_index_for_module(kb_path: Path, category: str, module_
     if payload is None:
         return None
     _remove_module(payload, category, module_id)
-    return _write_payload(kb_path, payload)
+    return _write_payload(kb_path, payload, refresh_link_candidates=False)
 
 
 def iter_recommendation_link_candidates(payload: dict[str, Any]) -> list[tuple[str, str, list[str]]]:
