@@ -41,6 +41,8 @@ from knowledge_manager.storage import (
     rebuild_index,
     save_index,
     save_module,
+    rebuild_derived_indexes,
+    _atomic_write,
     save_staging_meta,
     save_to_staging,
     search_modules,
@@ -349,7 +351,9 @@ def _seed_modules(config: BenchmarkConfig) -> None:
                 ] if category == "ops" and i % 6 == 0 else [],
             ),
         )
-        save_module(module, config.kb_path, defer_noncritical=False)
+        # Fixture loading is outside measured operations. Populate validated
+        # primary JSON in this dedicated KB, then build indexes once below.
+        _atomic_write(module.to_file_path(config.kb_path), module.model_dump_json(indent=2))
 
     staged = Module(
         id="pending-review",
@@ -365,6 +369,7 @@ def _seed_modules(config: BenchmarkConfig) -> None:
     save_to_staging(staged, staging_path)
     save_staging_meta(StagingMeta(module_id="pending-review", status="pending"), staging_path)
     rebuild_index(config.kb_path)
+    rebuild_derived_indexes(config.kb_path)
 
 
 def _seed_jobs(config: BenchmarkConfig) -> None:
@@ -410,7 +415,13 @@ def _evaluate_gate_summary(report: dict[str, Any]) -> dict[str, Any]:
         actual_mean_ms = metric.get("mean_ms", 0.0)
         actual_p95_ms = metric.get("p95_ms", 0.0)
         summary[gate_name] = {
-            "status": "pass" if actual_mean_ms <= target_mean_ms and actual_p95_ms <= target_p95_ms else "fail",
+            "status": (
+                "pass"
+                if not metric.get("errors")
+                and actual_mean_ms <= target_mean_ms
+                and actual_p95_ms <= target_p95_ms
+                else "fail"
+            ),
             "section": section,
             "metric": metric_name,
             "target_mean_ms": target_mean_ms,

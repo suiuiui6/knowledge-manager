@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from knowledge_manager.file_locks import serialized_write
+
 import asyncio
 import base64
 import json
@@ -95,6 +97,7 @@ def _ensure_maintenance_worker(kb_path: Path) -> None:
     Thread(target=_maintenance_worker_main, args=(kb_path,), daemon=True).start()
 
 
+@serialized_write
 def enqueue_local_maintenance(kb_path: Path, action: str, payload: dict[str, Any]) -> dict[str, Any]:
     job_id = f"maint-{uuid4().hex[:12]}"
     queued_at = datetime.now(timezone.utc).isoformat()
@@ -111,6 +114,7 @@ def enqueue_local_maintenance(kb_path: Path, action: str, payload: dict[str, Any
     return {"deferred": True, "job_id": job_id, "action": action, "queued_at": queued_at}
 
 
+@serialized_write
 def run_pending_maintenance(kb_path: Path, limit: int = 20) -> int:
     from knowledge_manager.storage import run_deferred_maintenance_action
     from knowledge_manager.storage import rebuild_derived_indexes
@@ -126,6 +130,18 @@ def run_pending_maintenance(kb_path: Path, limit: int = 20) -> int:
     queue_dir = _maintenance_dir(kb_path)
     if not queue_dir.exists():
         return 0
+
+    for abandoned_path in queue_dir.glob("*.running.json"):
+        try:
+            payload = json.loads(abandoned_path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        # The KB lock excludes every live maintenance worker. A running file
+        # observed here was abandoned when its owning process exited.
+        queued_path = abandoned_path.with_name(abandoned_path.name.replace(".running.json", ".queued.json"))
+        payload["status"] = "queued"
+        _write_json(queued_path, payload)
+        abandoned_path.unlink(missing_ok=True)
 
     for queued_path in sorted(queue_dir.glob("*.queued.json")):
         if processed >= limit:
@@ -341,9 +357,6 @@ def run_single_job(kb_path: Path, job_id: str, payload: dict[str, Any] | None = 
             return _run_source_sync_job(kb_path, job, effective_payload)
         return fail_ingestion_job(kb_path, job_id, "unknown job payload")
     except Exception as exc:
-        path_str = effective_payload.get("path") or job.payload_path
-        if path_str and effective_payload.get("kind") == "upload":
-            Path(path_str).unlink(missing_ok=True)
         return fail_ingestion_job(kb_path, job_id, str(exc))
     finally:
         stop_heartbeat.set()

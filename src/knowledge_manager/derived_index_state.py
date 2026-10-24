@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from knowledge_manager.file_locks import serialized_write
+
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -55,6 +57,7 @@ def _store(kb_path: Path, state: dict[str, Any]) -> dict[str, Any]:
     return state
 
 
+@serialized_write
 def mark_derived_indexes_dirty(kb_path: Path) -> dict[str, Any]:
     state = load_derived_index_state(kb_path)
     state["status"] = "dirty"
@@ -64,6 +67,7 @@ def mark_derived_indexes_dirty(kb_path: Path) -> dict[str, Any]:
     return _store(kb_path, state)
 
 
+@serialized_write
 def mark_derived_indexes_ready(kb_path: Path) -> dict[str, Any]:
     state = load_derived_index_state(kb_path)
     state.update(
@@ -78,6 +82,7 @@ def mark_derived_indexes_ready(kb_path: Path) -> dict[str, Any]:
     return _store(kb_path, state)
 
 
+@serialized_write
 def mark_derived_indexes_operation_complete(kb_path: Path) -> dict[str, Any]:
     state = load_derived_index_state(kb_path)
     pending = max(0, int(state.get("pending_operations", 0)) - 1)
@@ -92,6 +97,7 @@ def mark_derived_indexes_operation_complete(kb_path: Path) -> dict[str, Any]:
     return _store(kb_path, state)
 
 
+@serialized_write
 def mark_derived_indexes_failed(kb_path: Path, error: str) -> dict[str, Any]:
     state = load_derived_index_state(kb_path)
     state["status"] = "failed"

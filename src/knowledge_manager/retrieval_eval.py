@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import math
+import json
+from pathlib import Path
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -30,3 +33,63 @@ def score_ranked_case(required_modules: list[str], found_modules: list[str]) -> 
         ndcg_at_k=(dcg / idcg) if idcg else 0.0,
         recall_at_k=recall,
     )
+
+
+def evaluate_golden_set(
+    cases: list[dict[str, Any]],
+    search,
+    *,
+    top_k: int = 10,
+) -> dict[str, Any]:
+    """Evaluate deterministic retrieval cases and report quality plus isolation."""
+    if not cases:
+        raise ValueError("golden set must contain at least one case")
+    summaries: list[dict[str, Any]] = []
+    leakage = 0
+    abstention_hits = 0
+    positive_cases = 0
+    for case in cases:
+        tenant = case.get("tenant_id")
+        workspace = case.get("workspace_id")
+        results = search(
+            str(case["query"]),
+            tenant_id=tenant,
+            workspace_id=workspace,
+            top_k=int(case.get("top_k", top_k)),
+        )
+        found = [f"{item.module.category}/{item.module.id}" for item in results]
+        allowed = set(case.get("allowed_modules", []))
+        if allowed and any(key not in allowed for key in found):
+            leakage += 1
+        if tenant is not None:
+            for item in results:
+                metadata = getattr(item.module, "metadata", None)
+                if metadata is not None and metadata.tenant_id not in {"", tenant}:
+                    leakage += 1
+                    break
+        required = case.get("required_modules", [])
+        if required:
+            positive_cases += 1
+        elif not found:
+            abstention_hits += 1
+        score = score_ranked_case(case.get("required_modules", []), found)
+        summaries.append({"query": case["query"], "found_modules": found, **score.model_dump()})
+    count = len(summaries)
+    return {
+        "case_count": count,
+        "mean_recall_at_k": sum(item["recall_at_k"] for item in summaries) / count if count else 0.0,
+        "mean_mrr": sum(item["mrr"] for item in summaries) / count if count else 0.0,
+        "mean_ndcg_at_k": sum(item["ndcg_at_k"] for item in summaries) / count if count else 0.0,
+        "tenant_leakage_cases": leakage,
+        "positive_case_count": positive_cases,
+        "abstention_accuracy": abstention_hits / (count - positive_cases) if count != positive_cases else 1.0,
+        "cases": summaries,
+    }
+
+
+def load_golden_set(path: Path) -> list[dict[str, Any]]:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    cases = payload.get("cases", payload) if isinstance(payload, dict) else payload
+    if not isinstance(cases, list):
+        raise ValueError("golden set must contain a cases list")
+    return cases

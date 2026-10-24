@@ -1,3 +1,4 @@
+from knowledge_manager.file_locks import serialized_write
 import copy
 import hashlib
 import json
@@ -343,6 +344,7 @@ def _remove_from_derived_indexes(module_id: str, category: str, kb_path: Path) -
         pass
 
 
+@serialized_write
 def rebuild_derived_indexes(kb_path: Path) -> None:
     """Rebuild all query indexes once for a batch of primary-module changes."""
     from knowledge_manager.lexical_index import build_lexical_index
@@ -402,6 +404,19 @@ def save_module(
     defer_derived: bool = False,
     maintenance_state: list[dict[str, Any]] | None = None,
 ) -> None:
+    from knowledge_manager.file_locks import kb_write_lock
+
+    with kb_write_lock(kb_path):
+        _save_module_locked(module, kb_path, defer_noncritical, defer_derived, maintenance_state)
+
+
+def _save_module_locked(
+    module: Module,
+    kb_path: Path,
+    defer_noncritical: bool,
+    defer_derived: bool,
+    maintenance_state: list[dict[str, Any]] | None,
+) -> None:
     path = module.to_file_path(kb_path)
     existed = path.exists()
     if existed:
@@ -452,6 +467,20 @@ def delete_module(
     defer_noncritical: bool = True,
     defer_derived: bool = False,
     maintenance_state: list[dict[str, Any]] | None = None,
+) -> bool:
+    from knowledge_manager.file_locks import kb_write_lock
+
+    with kb_write_lock(kb_path):
+        return _delete_module_locked(module_id, category, kb_path, defer_noncritical, defer_derived, maintenance_state)
+
+
+def _delete_module_locked(
+    module_id: str,
+    category: str,
+    kb_path: Path,
+    defer_noncritical: bool,
+    defer_derived: bool,
+    maintenance_state: list[dict[str, Any]] | None,
 ) -> bool:
     path = kb_path / category / f"{module_id}.json"
     if not path.exists():
@@ -1266,6 +1295,7 @@ def sanitize_config(config: Config) -> Config:
     return sanitized
 
 
+@serialized_write
 def save_index(index: Index, kb_path: Path) -> None:
     _atomic_write(kb_path / "index.json", index.model_dump_json(indent=2))
     invalidate_materialized_views(kb_path)
@@ -1278,6 +1308,7 @@ def load_index(kb_path: Path) -> Optional[Index]:
     return Index.model_validate_json(path.read_text(encoding="utf-8"))
 
 
+@serialized_write
 def rebuild_index(kb_path: Path) -> Index:
     _invalidate_module_cache(kb_path)
     index = load_index(kb_path) or Index()

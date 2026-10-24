@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from knowledge_manager.file_locks import serialized_write
+
 from datetime import datetime, timedelta, timezone
 import os
 from pathlib import Path
@@ -48,14 +50,18 @@ def _job_path(kb_path: Path, job_id: str) -> Path:
 
 
 def _save_job(kb_path: Path, job: IngestionJob) -> IngestionJob:
+    from knowledge_manager.file_locks import kb_write_lock
+
     job = job.model_copy(update={"updated_at": datetime.now(timezone.utc)})
-    path = _job_path(kb_path, job.job_id)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    atomic_write_text(path, job.model_dump_json(indent=2))
+    with kb_write_lock(kb_path):
+        path = _job_path(kb_path, job.job_id)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        atomic_write_text(path, job.model_dump_json(indent=2))
     invalidate_materialized_views(kb_path, ["admin_dashboard"])
     return job
 
 
+@serialized_write
 def create_ingestion_job(
     kb_path: Path,
     source_id: str,
@@ -104,50 +110,41 @@ def list_ingestion_jobs(kb_path: Path) -> list[IngestionJob]:
     return jobs
 
 
+@serialized_write
 def claim_ingestion_job(
     kb_path: Path,
     job_id: str,
     worker_id: str,
     lease_seconds: int = 60,
 ) -> IngestionJob:
-    path = _job_path(kb_path, job_id)
-    lock_path = path.with_suffix(".claim.lock")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        descriptor = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-        os.close(descriptor)
-    except FileExistsError as exc:
-        raise JobClaimConflict(f"job {job_id} has an active lease") from exc
-    try:
-        job = load_ingestion_job(kb_path, job_id)
-        if job is None:
-            raise FileNotFoundError(job_id)
-        if job.status in {"completed", "failed"}:
-            raise JobClaimConflict(f"job {job_id} is terminal")
-        now = datetime.now(timezone.utc)
-        lease = job.lease_expires_at
-        if job.status == "running" and lease is not None:
-            if lease.tzinfo is None:
-                lease = lease.replace(tzinfo=timezone.utc)
-            if lease > now:
-                raise JobClaimConflict(f"job {job_id} has an active lease")
-        return _save_job(
-            kb_path,
-            job.model_copy(
-                update={
-                    "status": "running",
-                    "stage": "running",
-                    "worker_id": worker_id,
-                    "attempt_count": job.attempt_count + 1,
-                    "heartbeat_at": now,
-                    "lease_expires_at": now.replace(microsecond=0) + timedelta(seconds=lease_seconds),
-                }
-            ),
-        )
-    finally:
-        lock_path.unlink(missing_ok=True)
+    job = load_ingestion_job(kb_path, job_id)
+    if job is None:
+        raise FileNotFoundError(job_id)
+    if job.status in {"completed", "failed"}:
+        raise JobClaimConflict(f"job {job_id} is terminal")
+    now = datetime.now(timezone.utc)
+    lease = job.lease_expires_at
+    if job.status == "running" and lease is not None:
+        if lease.tzinfo is None:
+            lease = lease.replace(tzinfo=timezone.utc)
+        if lease > now:
+            raise JobClaimConflict(f"job {job_id} has an active lease")
+    return _save_job(
+        kb_path,
+        job.model_copy(
+            update={
+                "status": "running",
+                "stage": "running",
+                "worker_id": worker_id,
+                "attempt_count": job.attempt_count + 1,
+                "heartbeat_at": now,
+                "lease_expires_at": now.replace(microsecond=0) + timedelta(seconds=lease_seconds),
+            }
+        ),
+    )
 
 
+@serialized_write
 def complete_ingestion_job(
     kb_path: Path,
     job_id: str,
@@ -176,6 +173,7 @@ def complete_ingestion_job(
     )
 
 
+@serialized_write
 def fail_ingestion_job(kb_path: Path, job_id: str, error: str) -> IngestionJob:
     job = load_ingestion_job(kb_path, job_id)
     if job is None:
@@ -194,6 +192,7 @@ def fail_ingestion_job(kb_path: Path, job_id: str, error: str) -> IngestionJob:
     )
 
 
+@serialized_write
 def update_ingestion_checkpoint(kb_path: Path, job_id: str, cursor: str, pages_seen: int) -> IngestionJob:
     job = load_ingestion_job(kb_path, job_id)
     if job is None:
@@ -209,6 +208,7 @@ def update_ingestion_checkpoint(kb_path: Path, job_id: str, cursor: str, pages_s
     )
 
 
+@serialized_write
 def resume_ingestion_job(kb_path: Path, job_id: str) -> IngestionJob:
     job = load_ingestion_job(kb_path, job_id)
     if job is None:
@@ -227,6 +227,7 @@ def resume_ingestion_job(kb_path: Path, job_id: str) -> IngestionJob:
     )
 
 
+@serialized_write
 def update_job_payload(
     kb_path: Path,
     job_id: str,
@@ -250,6 +251,7 @@ def update_job_payload(
     )
 
 
+@serialized_write
 def update_job_stage(kb_path: Path, job_id: str, stage: str) -> IngestionJob:
     job = load_ingestion_job(kb_path, job_id)
     if job is None:
@@ -262,6 +264,7 @@ def update_job_stage(kb_path: Path, job_id: str, stage: str) -> IngestionJob:
     return _save_job(kb_path, job.model_copy(update=updates))
 
 
+@serialized_write
 def renew_ingestion_job_lease(kb_path: Path, job_id: str, lease_seconds: int = 60) -> IngestionJob:
     job = load_ingestion_job(kb_path, job_id)
     if job is None:
@@ -280,6 +283,7 @@ def renew_ingestion_job_lease(kb_path: Path, job_id: str, lease_seconds: int = 6
     )
 
 
+@serialized_write
 def store_job_result_modules(kb_path: Path, job_id: str, modules: list[dict]) -> IngestionJob:
     job = load_ingestion_job(kb_path, job_id)
     if job is None:
