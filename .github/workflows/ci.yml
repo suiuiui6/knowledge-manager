@@ -17,7 +17,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: poetry
       - name: Install Poetry
         run: python -m pip install --disable-pip-version-check poetry==2.4.1
       - name: Install locked dependencies
@@ -40,7 +39,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: poetry
       - name: Install Poetry
         run: python -m pip install --disable-pip-version-check poetry==2.4.1
       - name: Install locked dependencies
