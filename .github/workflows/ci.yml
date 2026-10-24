@@ -22,7 +22,9 @@ jobs:
       - name: Install locked dependencies
         run: python -m poetry install --no-interaction
       - name: Run full test suite
-        run: python -m poetry run pytest -q --junitxml=test-results/junit.xml
+        run: |
+          poetry_env="$(python -m poetry env info --path)"
+          "$poetry_env/bin/python" -m pytest -q --junitxml=test-results/junit.xml
       - name: Upload test report
         if: always()
         uses: actions/upload-artifact@v4
@@ -44,6 +46,10 @@ jobs:
       - name: Install locked dependencies
         run: python -m poetry install --no-interaction
       - name: Check formatting
-        run: python -m poetry run black --check src tests scripts
+        run: |
+          poetry_env="$(python -m poetry env info --path)"
+          "$poetry_env/bin/python" -m black --check src tests scripts
       - name: Check types
-        run: python -m poetry run mypy src
+        run: |
+          poetry_env="$(python -m poetry env info --path)"
+          "$poetry_env/bin/python" -m mypy src
