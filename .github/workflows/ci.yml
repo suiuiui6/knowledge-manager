@@ -24,15 +24,26 @@ jobs:
       - name: Run full test suite
         run: |
           poetry_env="$(python -m poetry env info --path)"
-          set +e
-          "$poetry_env/bin/python" -m pytest -q --junitxml=test-results/junit.xml
-          test_status=$?
-          set -e
-          if [ "$test_status" -eq 139 ] && grep -q 'failures="0" errors="0"' test-results/junit.xml; then
-            echo "pytest completed with no reported failures; runner exit was a post-test segmentation fault"
-            exit 0
-          fi
-          exit "$test_status"
+          "$poetry_env/bin/python" - <<'PY'
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          command = [
+              sys.executable,
+              "-m",
+              "pytest",
+              "-q",
+              "--junitxml=test-results/junit.xml",
+          ]
+          result = subprocess.run(command)
+          report = Path("test-results/junit.xml")
+          clean_report = report.exists() and 'failures="0" errors="0"' in report.read_text()
+          if result.returncode in (139, -11) and clean_report:
+              print("pytest completed with no reported failures; runner exit was a post-test segmentation fault")
+              raise SystemExit(0)
+          raise SystemExit(result.returncode)
+          PY
       - name: Upload test report
         if: always()
         uses: actions/upload-artifact@v4
