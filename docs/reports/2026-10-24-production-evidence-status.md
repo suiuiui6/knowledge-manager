@@ -33,3 +33,9 @@ The fresh 50,000-module M-scale run was started locally but stopped after the fi
 ## Current M-scale gate
 
 Ubuntu workflow `40100770148` started from commit `4af1aa4` and remained in its benchmark step for more than 40 minutes as of 2026-10-24 14:42 UTC. It produced no artifact or verdict at that point. This remains an open performance gate and is not recorded as a pass.
+
+## Subsequent M-scale runs
+
+- Workflow `40104454704` ran from `fe8c6a3` and produced a numeric artifact, but `recommendations_http` and `module_crud_http` failed their gates.
+- Workflow `40108955876` ran from `c011317` and exited with code 139 after about six minutes. The runner captured repeated stacks during large derived-index construction; no valid M-scale verdict was produced.
+- Commit `c590291` adds fatal-error stack capture to the benchmark harness so the next Ubuntu run can identify the native crash site. Until a fresh run produces `release_verdict.ready_for_production == true`, M-scale remains blocked.
