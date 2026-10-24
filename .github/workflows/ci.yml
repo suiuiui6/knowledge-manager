@@ -27,6 +27,7 @@ jobs:
           "$poetry_env/bin/python" - <<'PY'
           import subprocess
           import sys
+          import xml.etree.ElementTree as ET
           from pathlib import Path
 
           command = [
@@ -38,7 +39,10 @@ jobs:
           ]
           result = subprocess.run(command)
           report = Path("test-results/junit.xml")
-          clean_report = report.exists() and 'failures="0" errors="0"' in report.read_text()
+          clean_report = False
+          if report.exists():
+              root = ET.parse(report).getroot()
+              clean_report = root.attrib.get("failures", "1") == "0" and root.attrib.get("errors", "1") == "0"
           if result.returncode in (139, -11) and clean_report:
               print("pytest completed with no reported failures; runner exit was a post-test segmentation fault")
               raise SystemExit(0)
