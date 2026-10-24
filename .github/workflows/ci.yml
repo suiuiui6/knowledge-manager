@@ -42,7 +42,7 @@ jobs:
           clean_report = False
           if report.exists():
               root = ET.parse(report).getroot()
-              clean_report = root.attrib.get("failures", "1") == "0" and root.attrib.get("errors", "1") == "0"
+              clean_report = not any(root.iter("failure")) and not any(root.iter("error"))
           if result.returncode in (139, -11) and clean_report:
               print("pytest completed with no reported failures; runner exit was a post-test segmentation fault")
               raise SystemExit(0)
