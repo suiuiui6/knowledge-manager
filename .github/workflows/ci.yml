@@ -19,13 +19,11 @@ jobs:
           python-version: "3.12"
           cache: poetry
       - name: Install Poetry
-        run: |
-          pipx install poetry==2.4.1
-          echo "$(pipx environment --value PIPX_BIN_DIR)" >> "$GITHUB_PATH"
+        run: python -m pip install --disable-pip-version-check poetry==2.4.1
       - name: Install locked dependencies
-        run: poetry install --no-interaction
+        run: python -m poetry install --no-interaction
       - name: Run full test suite
-        run: poetry run pytest -q --junitxml=test-results/junit.xml
+        run: python -m poetry run pytest -q --junitxml=test-results/junit.xml
       - name: Upload test report
         if: always()
         uses: actions/upload-artifact@v4
@@ -44,12 +42,10 @@ jobs:
           python-version: "3.12"
           cache: poetry
       - name: Install Poetry
-        run: |
-          pipx install poetry==2.4.1
-          echo "$(pipx environment --value PIPX_BIN_DIR)" >> "$GITHUB_PATH"
+        run: python -m pip install --disable-pip-version-check poetry==2.4.1
       - name: Install locked dependencies
-        run: poetry install --no-interaction
+        run: python -m poetry install --no-interaction
       - name: Check formatting
-        run: poetry run black --check src tests scripts
+        run: python -m poetry run black --check src tests scripts
       - name: Check types
-        run: poetry run mypy src
+        run: python -m poetry run mypy src
