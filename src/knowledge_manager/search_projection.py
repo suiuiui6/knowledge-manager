@@ -156,7 +156,7 @@ def _remove_from_projection(payload: dict[str, Any], category: str, module_id: s
 
 
 def update_search_projection_for_module(kb_path: Path, module) -> dict[str, Any]:
-    payload = load_search_projection(kb_path) or {"documents": {}, "inverted": {}}
+    payload = load_search_projection_readonly(kb_path) or {"documents": {}, "inverted": {}}
     _remove_from_projection(payload, module.category, module.id)
     key = _module_key(module.category, module.id)
     payload["documents"][key] = _project_module(module)

@@ -5,6 +5,9 @@ from pathlib import Path
 from typing import Any
 
 
+_RECOMMENDATION_CACHE: dict[str, tuple[int, int, dict[str, Any]]] = {}
+
+
 def _index_path(kb_path: Path) -> Path:
     return kb_path / ".cache" / "recommendation_index.json"
 
@@ -24,6 +27,8 @@ def _write_payload(
     path = _index_path(kb_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    stat = path.stat()
+    _RECOMMENDATION_CACHE[str(path)] = (int(stat.st_mtime_ns), int(stat.st_size), payload)
     return payload
 
 
@@ -31,7 +36,14 @@ def load_recommendation_index(kb_path: Path) -> dict[str, Any] | None:
     path = _index_path(kb_path)
     if not path.exists():
         return None
-    return json.loads(path.read_text(encoding="utf-8"))
+    stat = path.stat()
+    cache_key = str(path)
+    cached = _RECOMMENDATION_CACHE.get(cache_key)
+    if cached is not None and cached[:2] == (int(stat.st_mtime_ns), int(stat.st_size)):
+        return cached[2]
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    _RECOMMENDATION_CACHE[cache_key] = (int(stat.st_mtime_ns), int(stat.st_size), payload)
+    return payload
 
 
 def _normalize_related_module(reference: str) -> str:
