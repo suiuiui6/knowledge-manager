@@ -86,7 +86,6 @@ def evaluate_golden_set(
     quality_count = len(positive_summaries)
     return {
         "case_count": count,
-        "positive_case_count": positive_cases,
         "quality_case_count": quality_count,
         "mean_recall_at_k": (
             sum(item["recall_at_k"] for item in positive_summaries) / quality_count
