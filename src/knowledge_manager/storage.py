@@ -343,13 +343,39 @@ def _remove_from_derived_indexes(module_id: str, category: str, kb_path: Path) -
         pass
 
 
-def run_deferred_maintenance_action(kb_path: Path, action: str, payload: Mapping[str, Any]) -> None:
+def rebuild_derived_indexes(kb_path: Path) -> None:
+    """Rebuild all query indexes once for a batch of primary-module changes."""
+    from knowledge_manager.lexical_index import build_lexical_index
+    from knowledge_manager.recommendation_index import build_recommendation_index
+    from knowledge_manager.search_projection import build_search_projection
+
+    build_lexical_index(kb_path)
+    build_search_projection(kb_path)
+    build_recommendation_index(kb_path)
+
+
+def run_deferred_maintenance_action(
+    kb_path: Path,
+    action: str,
+    payload: Mapping[str, Any],
+    *,
+    refresh_derived: bool = True,
+) -> None:
     if action == "module_saved":
         module_payload = payload.get("module")
-        if module_payload is None:
-            raise ValueError("module_saved maintenance payload requires module")
-        module = Module.model_validate(module_payload)
-        _run_noncritical_save_side_effects(module, kb_path, bool(payload.get("existed")))
+        modules = payload.get("modules")
+        if modules is None:
+            if module_payload is None:
+                raise ValueError("module_saved maintenance payload requires module")
+            modules = [payload]
+        for item in modules:
+            module_data = item.get("module") if isinstance(item, Mapping) else None
+            if module_data is None:
+                raise ValueError("module_saved maintenance payload requires module")
+            module = Module.model_validate(module_data)
+            _run_noncritical_save_side_effects(module, kb_path, bool(item.get("existed")))
+            if refresh_derived:
+                _refresh_derived_indexes_for_module(module, kb_path)
         return
     if action == "module_deleted":
         module_id = str(payload.get("module_id") or "")
@@ -357,6 +383,8 @@ def run_deferred_maintenance_action(kb_path: Path, action: str, payload: Mapping
         if not module_id or not category:
             raise ValueError("module_deleted maintenance payload requires module_id and category")
         _run_noncritical_delete_side_effects(module_id, category, kb_path)
+        if refresh_derived:
+            _remove_from_derived_indexes(module_id, category, kb_path)
         return
     raise ValueError(f"Unsupported maintenance action: {action}")
 
@@ -390,7 +418,12 @@ def save_module(
     _upsert_index_entry(module, kb_path)
     _invalidate_module_cache(kb_path)
     invalidate_materialized_views(kb_path)
-    _refresh_derived_indexes_for_module(module, kb_path)
+    from knowledge_manager.derived_index_state import (
+        mark_derived_indexes_dirty,
+        mark_derived_indexes_operation_complete,
+    )
+
+    mark_derived_indexes_dirty(kb_path)
     if defer_noncritical:
         state = schedule_maintenance_job(
             kb_path,
@@ -398,6 +431,8 @@ def save_module(
             payload={"module": module.model_dump(mode="json"), "existed": existed},
         )
     else:
+        _refresh_derived_indexes_for_module(module, kb_path)
+        mark_derived_indexes_operation_complete(kb_path)
         _run_noncritical_save_side_effects(module, kb_path, existed)
         state = {"deferred": False, "action": "module_saved"}
     if maintenance_state is not None:
@@ -425,7 +460,12 @@ def delete_module(
     _remove_index_entry(module_id, category, kb_path)
     _invalidate_module_cache(kb_path)
     invalidate_materialized_views(kb_path)
-    _remove_from_derived_indexes(module_id, category, kb_path)
+    from knowledge_manager.derived_index_state import (
+        mark_derived_indexes_dirty,
+        mark_derived_indexes_operation_complete,
+    )
+
+    mark_derived_indexes_dirty(kb_path)
     if defer_noncritical:
         state = schedule_maintenance_job(
             kb_path,
@@ -433,6 +473,8 @@ def delete_module(
             payload={"module_id": module_id, "category": category},
         )
     else:
+        _remove_from_derived_indexes(module_id, category, kb_path)
+        mark_derived_indexes_operation_complete(kb_path)
         _run_noncritical_delete_side_effects(module_id, category, kb_path)
         state = {"deferred": False, "action": "module_deleted"}
     if maintenance_state is not None:

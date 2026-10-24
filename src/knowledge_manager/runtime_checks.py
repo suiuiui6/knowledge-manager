@@ -56,6 +56,15 @@ def evaluate_readiness(kb_path: Path) -> dict[str, Any]:
         elif queued_maintenance >= cfg.security.maintenance_backlog_warn:
             warnings.append(f"maintenance backlog above warning threshold: {queued_maintenance}")
 
+    from knowledge_manager.derived_index_state import load_derived_index_state
+
+    derived_state = load_derived_index_state(kb_path)
+    if derived_state["status"] != "ready":
+        reasons.append(
+            "derived indexes are not ready: "
+            f"{derived_state['status']} ({derived_state.get('pending_operations', 0)} pending)"
+        )
+
     integrity = run_integrity_check(kb_path)
     if not integrity["ok"]:
         reasons.append("integrity check failed")
@@ -180,6 +189,9 @@ def collect_runtime_metrics(kb_path: Path) -> str:
         "# HELP knowledge_manager_categories_total Total index categories",
         "# TYPE knowledge_manager_categories_total gauge",
         f"knowledge_manager_categories_total {categories_total}",
+        "# HELP knowledge_manager_derived_index_pending_operations Pending derived index operations",
+        "# TYPE knowledge_manager_derived_index_pending_operations gauge",
+        f"knowledge_manager_derived_index_pending_operations {load_derived_index_state(kb_path).get('pending_operations', 0)}",
     ]
 
     counts: dict[str, int] = {}

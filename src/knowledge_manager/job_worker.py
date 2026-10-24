@@ -113,8 +113,16 @@ def enqueue_local_maintenance(kb_path: Path, action: str, payload: dict[str, Any
 
 def run_pending_maintenance(kb_path: Path, limit: int = 20) -> int:
     from knowledge_manager.storage import run_deferred_maintenance_action
+    from knowledge_manager.storage import rebuild_derived_indexes
+    from knowledge_manager.derived_index_state import (
+        load_derived_index_state,
+        mark_derived_indexes_failed,
+        mark_derived_indexes_ready,
+    )
 
     processed = 0
+    derived_work = load_derived_index_state(kb_path)["status"] in {"dirty", "failed"}
+    batch_failed = False
     queue_dir = _maintenance_dir(kb_path)
     if not queue_dir.exists():
         return 0
@@ -136,19 +144,35 @@ def run_pending_maintenance(kb_path: Path, limit: int = 20) -> int:
         _write_json(running_path, payload)
 
         try:
-            run_deferred_maintenance_action(kb_path, str(payload["action"]), payload.get("payload", {}))
+            action = str(payload["action"])
+            derived_work = derived_work or action in {"module_saved", "module_deleted"}
+            run_deferred_maintenance_action(
+                kb_path,
+                action,
+                payload.get("payload", {}),
+                refresh_derived=False,
+            )
             payload["status"] = "completed"
             payload["completed_at"] = datetime.now(timezone.utc).isoformat()
         except Exception as exc:
+            batch_failed = True
             payload["status"] = "failed"
             payload["error"] = str(exc)
             payload["completed_at"] = datetime.now(timezone.utc).isoformat()
+            mark_derived_indexes_failed(kb_path, str(exc))
 
         final_suffix = ".done.json" if payload["status"] == "completed" else ".failed.json"
         final_path = running_path.with_name(running_path.name.replace(".running.json", final_suffix))
         _write_json(running_path, payload)
         os.replace(running_path, final_path)
         processed += 1
+
+    if derived_work and not batch_failed:
+        try:
+            rebuild_derived_indexes(kb_path)
+            mark_derived_indexes_ready(kb_path)
+        except Exception as exc:
+            mark_derived_indexes_failed(kb_path, str(exc))
 
     return processed
 

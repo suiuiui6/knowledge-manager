@@ -59,7 +59,7 @@ def test_worker_run_once_drains_queued_maintenance_jobs(tmp_path, monkeypatch):
 
     monkeypatch.setattr(
         "knowledge_manager.storage.run_deferred_maintenance_action",
-        lambda path, action, payload: dispatched.append((path, action, payload)),
+        lambda path, action, payload, **kwargs: dispatched.append((path, action, payload)),
     )
     monkeypatch.setattr("knowledge_manager.job_worker.os.replace", safe_replace)
 
@@ -70,6 +70,72 @@ def test_worker_run_once_drains_queued_maintenance_jobs(tmp_path, monkeypatch):
     assert processed >= 1
     assert dispatched == [(kb, "module_saved", {"module_id": "ops-1"})]
     assert len(list((kb / ".cache" / "maintenance").glob("*.done.json"))) == 1
+
+
+def test_worker_batches_derived_index_rebuilds(tmp_path, monkeypatch):
+    from knowledge_manager.job_worker import enqueue_local_maintenance
+    from knowledge_manager.worker_service import run_worker_loop
+
+    kb = tmp_path / "kb"
+    kb.mkdir()
+    dispatched = []
+    rebuilds = []
+
+    def safe_replace(src, dst):
+        src_path = Path(src)
+        dst_path = Path(dst)
+        dst_path.parent.mkdir(parents=True, exist_ok=True)
+        dst_path.write_text(src_path.read_text(encoding="utf-8"), encoding="utf-8")
+
+    monkeypatch.setattr(
+        "knowledge_manager.storage.run_deferred_maintenance_action",
+        lambda path, action, payload, **kwargs: dispatched.append((path, action, payload, kwargs)),
+    )
+    monkeypatch.setattr(
+        "knowledge_manager.job_worker.rebuild_derived_indexes",
+        lambda path: rebuilds.append(path),
+    )
+    monkeypatch.setattr("knowledge_manager.job_worker.os.replace", safe_replace)
+
+    enqueue_local_maintenance(kb, action="module_saved", payload={"module_id": "ops-1"})
+    enqueue_local_maintenance(kb, action="module_saved", payload={"module_id": "ops-2"})
+
+    processed = run_worker_loop(kb, once=True, poll_interval=0.01)
+
+    assert processed >= 2
+    assert len(dispatched) == 2
+    assert all(item[3] == {"refresh_derived": False} for item in dispatched)
+    assert rebuilds == [kb]
+
+
+def test_failed_derived_rebuild_is_recorded_and_retried(tmp_path, monkeypatch):
+    from knowledge_manager.derived_index_state import load_derived_index_state
+    from knowledge_manager.job_worker import enqueue_local_maintenance
+    from knowledge_manager.worker_service import run_worker_loop
+
+    kb = tmp_path / "kb"
+    kb.mkdir()
+    calls = {"count": 0}
+
+    def fail_once(_path):
+        calls["count"] += 1
+        if calls["count"] == 1:
+            raise RuntimeError("simulated derived rebuild failure")
+
+    monkeypatch.setattr("knowledge_manager.storage.rebuild_derived_indexes", fail_once)
+    monkeypatch.setattr(
+        "knowledge_manager.storage.run_deferred_maintenance_action",
+        lambda *_args, **_kwargs: None,
+    )
+    enqueue_local_maintenance(kb, action="module_saved", payload={"module_id": "ops-1"})
+    run_worker_loop(kb, once=True, poll_interval=0.01)
+
+    failed = load_derived_index_state(kb)
+    assert failed["status"] == "failed"
+    assert "simulated derived rebuild failure" in failed["last_error"]
+
+    run_worker_loop(kb, once=True, poll_interval=0.01)
+    assert load_derived_index_state(kb)["status"] == "ready"
 
 
 def test_worker_skips_job_with_active_claim(tmp_path):

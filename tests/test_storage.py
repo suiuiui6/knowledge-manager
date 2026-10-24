@@ -105,6 +105,7 @@ def test_deferred_save_does_not_refresh_derived_indexes_twice(kb_path, monkeypat
 
     module = make_module("single-refresh", "ops")
     save_module(module, kb_path)
+    assert refreshes == []
     from knowledge_manager.storage import run_deferred_maintenance_action
 
     run_deferred_maintenance_action(
@@ -114,6 +115,31 @@ def test_deferred_save_does_not_refresh_derived_indexes_twice(kb_path, monkeypat
     )
 
     assert refreshes == [("single-refresh", kb_path)]
+
+
+def test_deferred_save_marks_derived_indexes_pending(kb_path, monkeypatch):
+    save_index(Index(description="pending derived state"), kb_path)
+    scheduled = []
+    monkeypatch.setattr(
+        "knowledge_manager.storage.schedule_maintenance_job",
+        lambda path, action, payload: scheduled.append((path, action, payload))
+        or {"deferred": True, "action": action},
+    )
+    monkeypatch.setattr(
+        "knowledge_manager.storage._refresh_derived_indexes_for_module",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("derived indexes must be deferred")
+        ),
+    )
+
+    save_module(make_module("pending-module", "ops"), kb_path)
+
+    from knowledge_manager.derived_index_state import load_derived_index_state
+
+    state = load_derived_index_state(kb_path)
+    assert scheduled and scheduled[0][1] == "module_saved"
+    assert state["status"] == "dirty"
+    assert state["pending_operations"] == 1
 
 
 def test_save_module_refreshes_updated_at_when_content_changes(kb_path):
@@ -201,6 +227,7 @@ def test_deferred_delete_does_not_remove_derived_indexes_twice(kb_path, monkeypa
     )
 
     assert delete_module("single-delete", "ops", kb_path) is True
+    assert removals == []
     from knowledge_manager.storage import run_deferred_maintenance_action
 
     run_deferred_maintenance_action(
