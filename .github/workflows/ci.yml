@@ -19,7 +19,9 @@ jobs:
           python-version: "3.12"
           cache: poetry
       - name: Install Poetry
-        run: pipx install poetry==2.4.1
+        run: |
+          pipx install poetry==2.4.1
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - name: Install locked dependencies
         run: poetry install --no-interaction
       - name: Run full test suite
@@ -42,7 +44,9 @@ jobs:
           python-version: "3.12"
           cache: poetry
       - name: Install Poetry
-        run: pipx install poetry==2.4.1
+        run: |
+          pipx install poetry==2.4.1
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - name: Install locked dependencies
         run: poetry install --no-interaction
       - name: Check formatting
