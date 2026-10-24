@@ -95,6 +95,27 @@ def test_save_module_can_schedule_noncritical_side_effects(kb_path, monkeypatch)
     assert scheduled[0][1] == "module_saved"
 
 
+def test_deferred_save_does_not_refresh_derived_indexes_twice(kb_path, monkeypatch):
+    save_index(Index(description="single derived refresh"), kb_path)
+    refreshes = []
+    monkeypatch.setattr(
+        "knowledge_manager.storage._refresh_derived_indexes_for_module",
+        lambda module, path: refreshes.append((module.id, path)),
+    )
+
+    module = make_module("single-refresh", "ops")
+    save_module(module, kb_path)
+    from knowledge_manager.storage import run_deferred_maintenance_action
+
+    run_deferred_maintenance_action(
+        kb_path,
+        "module_saved",
+        {"module": module.model_dump(mode="json"), "existed": False},
+    )
+
+    assert refreshes == [("single-refresh", kb_path)]
+
+
 def test_save_module_refreshes_updated_at_when_content_changes(kb_path):
     original = make_module("freshness-module", "ops")
     save_module(original, kb_path, defer_noncritical=False)
@@ -167,6 +188,28 @@ def test_delete_module_can_schedule_noncritical_side_effects(kb_path, monkeypatc
     assert delete_module("delete-me", "ops", kb_path) is True
     assert len(scheduled) == 1
     assert scheduled[0][1] == "module_deleted"
+
+
+def test_deferred_delete_does_not_remove_derived_indexes_twice(kb_path, monkeypatch):
+    save_index(Index(description="single derived delete"), kb_path)
+    module = make_module("single-delete", "ops")
+    save_module(module, kb_path, defer_noncritical=False)
+    removals = []
+    monkeypatch.setattr(
+        "knowledge_manager.storage._remove_from_derived_indexes",
+        lambda module_id, category, path: removals.append((module_id, category, path)),
+    )
+
+    assert delete_module("single-delete", "ops", kb_path) is True
+    from knowledge_manager.storage import run_deferred_maintenance_action
+
+    run_deferred_maintenance_action(
+        kb_path,
+        "module_deleted",
+        {"module_id": "single-delete", "category": "ops"},
+    )
+
+    assert removals == [("single-delete", "ops", kb_path)]
 
 
 def test_save_is_atomic(kb_path, monkeypatch):

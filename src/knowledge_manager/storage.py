@@ -290,8 +290,6 @@ def _run_noncritical_save_side_effects(module: Module, kb_path: Path, existed: b
     except Exception:
         pass
 
-    _refresh_derived_indexes_for_module(module, kb_path)
-
 
 def _run_noncritical_delete_side_effects(module_id: str, category: str, kb_path: Path) -> None:
     try:
@@ -300,8 +298,6 @@ def _run_noncritical_delete_side_effects(module_id: str, category: str, kb_path:
         emit_event(kb_path, "module.deleted", module_id, category)
     except Exception:
         pass
-
-    _remove_from_derived_indexes(module_id, category, kb_path)
 
 
 def _refresh_derived_indexes_for_module(module: Module, kb_path: Path) -> None:
