@@ -1,9 +1,22 @@
 [tool.poetry]
 name = "knowledge-manager"
-version = "0.1.0"
-description = "Git-native knowledge modules for LLM workflows via MCP."
-authors = ["Your Name <your.email@example.com>"]
+version = "0.5.2"
+description = "Git-native structured knowledge modules for LLM agent workflows via MCP."
+authors = ["Tang Yanhao <tangyanhao@example.com>"]
 readme = "README.md"
+license = "MIT"
+keywords = ["knowledge-management", "mcp", "llm", "agent", "git-native"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Documentation",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 packages = [{include = "knowledge_manager", from = "src"}]
 
 [tool.poetry.dependencies]
@@ -14,6 +27,11 @@ click = "^8.0.0"
 httpx = "^0.27.0"
 rich = "^13.0.0"
 snowballstemmer = "^2.2.0"
+jieba = "^0.42.1"
+fastapi = "^0.115.0"
+uvicorn = "^0.32.0"
+pyyaml = "^6.0"
+pyjwt = {version = ">=2.10.1", extras = ["crypto"]}
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
@@ -24,6 +42,11 @@ pytest-cov = "^4.1.0"
 
 [tool.poetry.scripts]
 km = "knowledge_manager.cli:cli"
+
+[[tool.poetry.source]]
+name = "tencent"
+url = "https://mirrors.cloud.tencent.com/pypi/simple/"
+priority = "primary"
 
 [build-system]
 requires = ["poetry-core"]
@@ -41,3 +64,6 @@ warn_unused_configs = true
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+filterwarnings = [
+    "ignore:pkg_resources is deprecated as an API:UserWarning",
+]

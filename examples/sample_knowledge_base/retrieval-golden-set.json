@@ -1,0 +1,46 @@
+{
+  "cases": [
+    {
+      "id": "oauth",
+      "query": "OAuth authorization code PKCE",
+      "required_modules": [
+        "auth/oauth-flow"
+      ],
+      "allowed_modules": [
+        "auth/oauth-flow",
+        "auth/jwt-tokens"
+      ],
+      "top_k": 2
+    },
+    {
+      "id": "jwt",
+      "query": "JWT RS256 JWKS key rotation",
+      "required_modules": [
+        "auth/jwt-tokens"
+      ],
+      "allowed_modules": [
+        "auth/oauth-flow",
+        "auth/jwt-tokens"
+      ],
+      "top_k": 2
+    },
+    {
+      "id": "pool",
+      "query": "Postgres connection pool sizing timeout",
+      "required_modules": [
+        "database/connection-pool"
+      ],
+      "allowed_modules": [
+        "database/connection-pool"
+      ],
+      "top_k": 1
+    },
+    {
+      "id": "miss",
+      "query": "quantum entanglement reactor maintenance",
+      "required_modules": [],
+      "allowed_modules": [],
+      "top_k": 3
+    }
+  ]
+}

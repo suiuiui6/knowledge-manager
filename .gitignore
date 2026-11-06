@@ -35,9 +35,12 @@ env/
 
 # Testing
 .pytest_cache/
+.pytest-tmp-*/
 .coverage
 htmlcov/
 .tox/
+/test_*.py
+/debug_*.py
 
 # Knowledge base (for testing)
 test_kb/
@@ -50,3 +53,13 @@ config.json
 
 # Claude local worktrees
 .claude/
+
+# Local evaluation artifacts and workspace data
+/developer-kit/
+/kb/
+/task1-manual-checks/
+/test-results/
+/tmp/
+/pytesttmp*/
+/.tmp_pytest/
+/.mypy_cache/

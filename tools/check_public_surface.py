@@ -1,4 +1,5 @@
 """Check the minimum safe public surface without third-party dependencies."""
+
 from __future__ import annotations
 
 import re
@@ -21,7 +22,9 @@ def main() -> int:
     for path in REQUIRED:
         if not (ROOT / path).is_file():
             errors.append(f"missing required file: {path}")
-    readme = (ROOT / "README.md").read_text(encoding="utf-8") if (ROOT / "README.md").is_file() else ""
+    readme = (
+        (ROOT / "README.md").read_text(encoding="utf-8") if (ROOT / "README.md").is_file() else ""
+    )
     for marker in README_MARKERS:
         if marker.lower() not in readme.lower():
             errors.append(f"README missing marker: {marker}")
@@ -31,7 +34,12 @@ def main() -> int:
             continue
         name = raw_name.replace("\\", "/")
         base = Path(name).name.lower()
-        if (base == ".env" or (base.startswith(".env.") and base != ".env.example")) or base.endswith((".pem", ".key", ".log")):
+        env_template = base == ".env.example" or (
+            base.startswith(".env.") and base.endswith(".example")
+        )
+        if (base == ".env" or (base.startswith(".env.") and not env_template)) or base.endswith(
+            (".pem", ".key", ".log")
+        ):
             errors.append(f"forbidden tracked path: {name}")
             continue
         path = ROOT / Path(name)

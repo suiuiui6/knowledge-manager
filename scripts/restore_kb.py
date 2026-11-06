@@ -1,0 +1,1 @@
+from knowledge_manager.backup_restore import restore_backup_bundle
