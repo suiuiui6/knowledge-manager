@@ -12,7 +12,7 @@
 
 ## Real Performance Baseline This Plan Must Respect
 
-The latest real benchmark source is `D:\tyh\knowledge-manager\test-results\perf-run-production-gate-20260612-r4\matrix-summary.json`.
+The latest real benchmark source is `<workspace>\test-results\perf-run-production-gate-20260612-r4\matrix-summary.json`.
 
 - Global state:
   - `readiness_ready = true`
@@ -52,35 +52,35 @@ The latest real benchmark source is `D:\tyh\knowledge-manager\test-results\perf-
 
 ### Existing files to modify
 
-- `D:\tyh\knowledge-manager\src\knowledge_manager\storage.py`
+- `<workspace>\src\knowledge_manager\storage.py`
   Responsibility: search path, recommendation path, module save/delete path, index rebuild path.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\search_projection.py`
+- `<workspace>\src\knowledge_manager\search_projection.py`
   Responsibility: request-time search candidate selection and projection payload density.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\recommendation_index.py`
+- `<workspace>\src\knowledge_manager\recommendation_index.py`
   Responsibility: recommendation candidate precomputation.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\admin_views.py`
+- `<workspace>\src\knowledge_manager\admin_views.py`
   Responsibility: admin dashboard snapshot composition.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\ops_export.py`
+- `<workspace>\src\knowledge_manager\ops_export.py`
   Responsibility: backlog exports currently reused by admin/dashboard endpoints.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\mcp_server.py`
+- `<workspace>\src\knowledge_manager\mcp_server.py`
   Responsibility: MCP search serialization path and deep-search read amplification.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py`
+- `<workspace>\src\knowledge_manager\http_server.py`
   Responsibility: HTTP route response shape and any avoidable request-time work.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\performance_benchmarks.py`
+- `<workspace>\src\knowledge_manager\performance_benchmarks.py`
   Responsibility: benchmark matrix, hotspot metrics, release gate evidence.
-- `D:\tyh\knowledge-manager\tests\test_search_projection.py`
-- `D:\tyh\knowledge-manager\tests\test_recommendation_index.py`
-- `D:\tyh\knowledge-manager\tests\test_storage.py`
-- `D:\tyh\knowledge-manager\tests\test_http_server.py`
-- `D:\tyh\knowledge-manager\tests\test_mcp_server.py`
-- `D:\tyh\knowledge-manager\tests\test_materialized_views.py`
-- `D:\tyh\knowledge-manager\tests\test_performance_benchmarks.py`
+- `<workspace>\tests\test_search_projection.py`
+- `<workspace>\tests\test_recommendation_index.py`
+- `<workspace>\tests\test_storage.py`
+- `<workspace>\tests\test_http_server.py`
+- `<workspace>\tests\test_mcp_server.py`
+- `<workspace>\tests\test_materialized_views.py`
+- `<workspace>\tests\test_performance_benchmarks.py`
 
 ### New files to create
 
-- `D:\tyh\knowledge-manager\src\knowledge_manager\performance_hotspots.py`
+- `<workspace>\src\knowledge_manager\performance_hotspots.py`
   Responsibility: small, explicit timing helpers plus hotspot payload shaping helpers shared by benchmarks and tests.
-- `D:\tyh\knowledge-manager\tests\test_performance_hotspots.py`
+- `<workspace>\tests\test_performance_hotspots.py`
   Responsibility: regression tests for hotspot summaries and deferred-maintenance accounting.
 
 ## Delivery Order
@@ -94,10 +94,10 @@ The latest real benchmark source is `D:\tyh\knowledge-manager\test-results\perf-
 ### Task 1: Add Performance Hotspot Evidence Before Further Tuning
 
 **Files:**
-- Create: `D:\tyh\knowledge-manager\src\knowledge_manager\performance_hotspots.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\performance_benchmarks.py`
-- Create: `D:\tyh\knowledge-manager\tests\test_performance_hotspots.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_performance_benchmarks.py`
+- Create: `<workspace>\src\knowledge_manager\performance_hotspots.py`
+- Modify: `<workspace>\src\knowledge_manager\performance_benchmarks.py`
+- Create: `<workspace>\tests\test_performance_hotspots.py`
+- Modify: `<workspace>\tests\test_performance_benchmarks.py`
 
 - [ ] **Step 1: Write the failing hotspot-summary tests**
 
@@ -142,7 +142,7 @@ def test_hotspot_timer_accumulates_named_sections():
 
 - [ ] **Step 2: Run the focused tests to verify they fail**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_performance_hotspots.py D:\tyh\knowledge-manager\tests\test_performance_benchmarks.py::test_benchmark_report_includes_hotspot_breakdown -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_performance_hotspots.py <workspace>\tests\test_performance_benchmarks.py::test_benchmark_report_includes_hotspot_breakdown -v`
 
 Expected: `FAIL` because hotspot helpers and hotspot sections are not emitted yet.
 
@@ -214,26 +214,26 @@ def _module_crud_round_trip() -> dict[str, Any]:
 
 - [ ] **Step 6: Run the hotspot-focused regression suite**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_performance_hotspots.py D:\tyh\knowledge-manager\tests\test_performance_benchmarks.py -k "hotspot" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_performance_hotspots.py <workspace>\tests\test_performance_benchmarks.py -k "hotspot" -v`
 
 Expected: hotspot tests `PASS`.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\performance_hotspots.py D:\tyh\knowledge-manager\src\knowledge_manager\performance_benchmarks.py D:\tyh\knowledge-manager\tests\test_performance_hotspots.py D:\tyh\knowledge-manager\tests\test_performance_benchmarks.py
+git add <workspace>\src\knowledge_manager\performance_hotspots.py <workspace>\src\knowledge_manager\performance_benchmarks.py <workspace>\tests\test_performance_hotspots.py <workspace>\tests\test_performance_benchmarks.py
 git commit -m "test: add performance hotspot evidence"
 ```
 
 ### Task 2: Eliminate Shared Search-Path Overfetch For HTTP And MCP
 
 **Files:**
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\search_projection.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\storage.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\mcp_server.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_search_projection.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_storage.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_mcp_server.py`
+- Modify: `<workspace>\src\knowledge_manager\search_projection.py`
+- Modify: `<workspace>\src\knowledge_manager\storage.py`
+- Modify: `<workspace>\src\knowledge_manager\mcp_server.py`
+- Modify: `<workspace>\tests\test_search_projection.py`
+- Modify: `<workspace>\tests\test_storage.py`
+- Modify: `<workspace>\tests\test_mcp_server.py`
 
 - [ ] **Step 1: Write the failing retrieval fast-path tests**
 
@@ -288,7 +288,7 @@ def test_mcp_search_modules_does_not_expand_full_module_content_for_list_results
 
 - [ ] **Step 2: Run the focused tests to verify they fail**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_search_projection.py D:\tyh\knowledge-manager\tests\test_storage.py D:\tyh\knowledge-manager\tests\test_mcp_server.py -k "fast_path or search_modules_does_not_expand" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_search_projection.py <workspace>\tests\test_storage.py <workspace>\tests\test_mcp_server.py -k "fast_path or search_modules_does_not_expand" -v`
 
 Expected: `FAIL` because `search_modules()` still reconstructs many full modules and MCP result serialization still depends on full module objects.
 
@@ -357,27 +357,27 @@ def deep_search_tool(...):
 
 - [ ] **Step 6: Run the shared retrieval regression suite**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_search_projection.py D:\tyh\knowledge-manager\tests\test_storage.py D:\tyh\knowledge-manager\tests\test_mcp_server.py -k "projection or search_modules or deep_search" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_search_projection.py <workspace>\tests\test_storage.py <workspace>\tests\test_mcp_server.py -k "projection or search_modules or deep_search" -v`
 
 Expected: retrieval-path tests `PASS`.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\search_projection.py D:\tyh\knowledge-manager\src\knowledge_manager\storage.py D:\tyh\knowledge-manager\src\knowledge_manager\mcp_server.py D:\tyh\knowledge-manager\tests\test_search_projection.py D:\tyh\knowledge-manager\tests\test_storage.py D:\tyh\knowledge-manager\tests\test_mcp_server.py
+git add <workspace>\src\knowledge_manager\search_projection.py <workspace>\src\knowledge_manager\storage.py <workspace>\src\knowledge_manager\mcp_server.py <workspace>\tests\test_search_projection.py <workspace>\tests\test_storage.py <workspace>\tests\test_mcp_server.py
 git commit -m "feat: reduce search overfetch on shared read paths"
 ```
 
 ### Task 3: Collapse Duplicated Control-Plane Recomputations For Recommendations And Admin
 
 **Files:**
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\recommendation_index.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\storage.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\admin_views.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\ops_export.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_recommendation_index.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_materialized_views.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_http_server.py`
+- Modify: `<workspace>\src\knowledge_manager\recommendation_index.py`
+- Modify: `<workspace>\src\knowledge_manager\storage.py`
+- Modify: `<workspace>\src\knowledge_manager\admin_views.py`
+- Modify: `<workspace>\src\knowledge_manager\ops_export.py`
+- Modify: `<workspace>\tests\test_recommendation_index.py`
+- Modify: `<workspace>\tests\test_materialized_views.py`
+- Modify: `<workspace>\tests\test_http_server.py`
 
 - [ ] **Step 1: Write the failing control-plane caching tests**
 
@@ -414,7 +414,7 @@ def test_recommendations_reuses_precomputed_candidate_pairs_without_full_module_
 
 - [ ] **Step 2: Run the focused tests to verify they fail**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_recommendation_index.py D:\tyh\knowledge-manager\tests\test_materialized_views.py D:\tyh\knowledge-manager\tests\test_http_server.py -k "ops_report_once or reuses_precomputed_candidate_pairs" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_recommendation_index.py <workspace>\tests\test_materialized_views.py <workspace>\tests\test_http_server.py -k "ops_report_once or reuses_precomputed_candidate_pairs" -v`
 
 Expected: `FAIL` because dashboard/export composition still layers repeated work and recommendation generation still performs expensive runtime reconstruction under scale.
 
@@ -475,27 +475,27 @@ def build_admin_dashboard(kb_path: Path) -> dict[str, Any]:
 
 - [ ] **Step 6: Run the control-plane regression suite**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_recommendation_index.py D:\tyh\knowledge-manager\tests\test_materialized_views.py D:\tyh\knowledge-manager\tests\test_http_server.py -k "recommendation or admin_dashboard or ops_report" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_recommendation_index.py <workspace>\tests\test_materialized_views.py <workspace>\tests\test_http_server.py -k "recommendation or admin_dashboard or ops_report" -v`
 
 Expected: recommendations/admin tests `PASS`.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\recommendation_index.py D:\tyh\knowledge-manager\src\knowledge_manager\storage.py D:\tyh\knowledge-manager\src\knowledge_manager\admin_views.py D:\tyh\knowledge-manager\src\knowledge_manager\ops_export.py D:\tyh\knowledge-manager\tests\test_recommendation_index.py D:\tyh\knowledge-manager\tests\test_materialized_views.py D:\tyh\knowledge-manager\tests\test_http_server.py
+git add <workspace>\src\knowledge_manager\recommendation_index.py <workspace>\src\knowledge_manager\storage.py <workspace>\src\knowledge_manager\admin_views.py <workspace>\src\knowledge_manager\ops_export.py <workspace>\tests\test_recommendation_index.py <workspace>\tests\test_materialized_views.py <workspace>\tests\test_http_server.py
 git commit -m "feat: remove duplicated control-plane recomputation"
 ```
 
 ### Task 4: Slim Synchronous Module CRUD By Deferring Non-Critical Side Effects
 
 **Files:**
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\storage.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\job_worker.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\performance_hotspots.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_storage.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_http_server.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_performance_hotspots.py`
+- Modify: `<workspace>\src\knowledge_manager\storage.py`
+- Modify: `<workspace>\src\knowledge_manager\job_worker.py`
+- Modify: `<workspace>\src\knowledge_manager\http_server.py`
+- Modify: `<workspace>\src\knowledge_manager\performance_hotspots.py`
+- Modify: `<workspace>\tests\test_storage.py`
+- Modify: `<workspace>\tests\test_http_server.py`
+- Modify: `<workspace>\tests\test_performance_hotspots.py`
 
 - [ ] **Step 1: Write the failing deferred-maintenance tests**
 
@@ -549,7 +549,7 @@ def test_module_create_endpoint_returns_maintenance_state(tmp_path):
 
 - [ ] **Step 2: Run the focused tests to verify they fail**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_storage.py D:\tyh\knowledge-manager\tests\test_http_server.py D:\tyh\knowledge-manager\tests\test_performance_hotspots.py -k "schedule_noncritical_side_effects or maintenance_state" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_storage.py <workspace>\tests\test_http_server.py <workspace>\tests\test_performance_hotspots.py -k "schedule_noncritical_side_effects or maintenance_state" -v`
 
 Expected: `FAIL` because `save_module()` and `delete_module()` still do all expensive side effects inline and do not expose maintenance state.
 
@@ -607,23 +607,23 @@ def api_module_create(body: dict):
 
 - [ ] **Step 6: Run the write-path regression suite**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_storage.py D:\tyh\knowledge-manager\tests\test_http_server.py D:\tyh\knowledge-manager\tests\test_performance_hotspots.py -k "maintenance or save_module or module_create" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_storage.py <workspace>\tests\test_http_server.py <workspace>\tests\test_performance_hotspots.py -k "maintenance or save_module or module_create" -v`
 
 Expected: write-path tests `PASS`.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\storage.py D:\tyh\knowledge-manager\src\knowledge_manager\job_worker.py D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py D:\tyh\knowledge-manager\src\knowledge_manager\performance_hotspots.py D:\tyh\knowledge-manager\tests\test_storage.py D:\tyh\knowledge-manager\tests\test_http_server.py D:\tyh\knowledge-manager\tests\test_performance_hotspots.py
+git add <workspace>\src\knowledge_manager\storage.py <workspace>\src\knowledge_manager\job_worker.py <workspace>\src\knowledge_manager\http_server.py <workspace>\src\knowledge_manager\performance_hotspots.py <workspace>\tests\test_storage.py <workspace>\tests\test_http_server.py <workspace>\tests\test_performance_hotspots.py
 git commit -m "feat: defer noncritical module maintenance work"
 ```
 
 ### Task 5: Re-Run Matrix, Tighten Gate Contracts, And Close The Loop
 
 **Files:**
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\performance_benchmarks.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_performance_benchmarks.py`
-- Modify: `D:\tyh\knowledge-manager\docs\runbooks\enterprise-performance-test-plan.md`
+- Modify: `<workspace>\src\knowledge_manager\performance_benchmarks.py`
+- Modify: `<workspace>\tests\test_performance_benchmarks.py`
+- Modify: `<workspace>\docs\runbooks\enterprise-performance-test-plan.md`
 
 - [ ] **Step 1: Write the failing matrix-regression contract tests**
 
@@ -652,7 +652,7 @@ def test_benchmark_release_verdict_exposes_hotspot_blockers(tmp_path):
 
 - [ ] **Step 2: Run the focused tests to verify they fail if hotspot-gate wiring is incomplete**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_performance_benchmarks.py -k "hotspot_blockers" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_performance_benchmarks.py -k "hotspot_blockers" -v`
 
 Expected: `FAIL` until release verdict and benchmark markdown include the new hotspot evidence.
 
@@ -690,17 +690,17 @@ if report.get("hotspots"):
 
 - [ ] **Step 5: Run the contract tests and the full matrix**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_performance_benchmarks.py -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_performance_benchmarks.py -v`
 
 Run:
 
 ```powershell
-$env:PYTHONPATH='D:\tyh\knowledge-manager\src'
+$env:PYTHONPATH='<workspace>\src'
 @'
 from pathlib import Path
 from knowledge_manager.performance_benchmarks import BenchmarkConfig, run_enterprise_benchmark
 
-root = Path(r"D:\tyh\knowledge-manager\test-results\perf-run-production-gate-20260613-r1")
+root = Path(r"<workspace>\test-results\perf-run-production-gate-20260613-r1")
 scales = {
     "xs": dict(module_count=100, tenant_count=10, job_count=80, migration_document_count=100),
     "s": dict(module_count=250, tenant_count=20, job_count=200, migration_document_count=250),
@@ -726,7 +726,7 @@ Expected: tests `PASS`, and the fresh matrix clearly shows which of the five rem
 - [ ] **Step 6: Commit**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\performance_benchmarks.py D:\tyh\knowledge-manager\tests\test_performance_benchmarks.py D:\tyh\knowledge-manager\docs\runbooks\enterprise-performance-test-plan.md
+git add <workspace>\src\knowledge_manager\performance_benchmarks.py <workspace>\tests\test_performance_benchmarks.py <workspace>\docs\runbooks\enterprise-performance-test-plan.md
 git commit -m "docs: close the performance remediation loop"
 ```
 

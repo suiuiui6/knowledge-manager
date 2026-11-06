@@ -39,7 +39,7 @@ This is a manual extraction task. Use `km add` to extract knowledge modules from
 - [ ] **Step 1: Initialize the dogfood KB**
 
 ```bash
-cd D:\tyh\knowledge-manager
+cd <workspace>
 km init kb
 ```
 
@@ -155,7 +155,7 @@ packages = [{include = "knowledge_manager", from = "src"}]
 The version string is already in the edit above. Verify:
 
 ```bash
-cd D:\tyh\knowledge-manager
+cd <workspace>
 grep 'version' pyproject.toml | head -1
 ```
 
@@ -172,7 +172,7 @@ jieba = "^0.42.1"
 - [ ] **Step 4: Verify package builds**
 
 ```bash
-cd D:\tyh\knowledge-manager
+cd <workspace>
 pip install poetry  # if not already installed
 poetry build
 ```
@@ -243,7 +243,7 @@ git commit -m "chore: prepare v0.5.0 for PyPI publish — fix metadata, add jieb
 - [ ] **Step 1: Install jieba and verify it works**
 
 ```bash
-cd D:\tyh\knowledge-manager
+cd <workspace>
 pip install jieba
 python -c "import jieba; print('|'.join(jieba.cut('知识管理系统搜索优化')))"
 ```
@@ -290,7 +290,7 @@ def test_search_modules_chinese_tokenization(kb_path):
 - [ ] **Step 3: Run test to verify it fails**
 
 ```bash
-cd D:\tyh\knowledge-manager
+cd <workspace>
 pytest tests/test_storage.py::test_search_modules_chinese_tokenization -v
 ```
 

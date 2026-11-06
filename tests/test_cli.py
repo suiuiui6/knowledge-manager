@@ -170,7 +170,7 @@ def test_runtime_env_invalid_log_level_raises_clear_error(monkeypatch):
 
 
 def test_cli_uses_runtime_env_kb_path_when_flag_is_omitted(cli_runner, monkeypatch):
-    kb = Path("D:/tyh/runtime-env-kb")
+    kb = Path("runtime-env-kb")
     seen = {}
     monkeypatch.setenv("KM_KB_PATH", str(kb))
     monkeypatch.setattr("knowledge_manager.cli._require_kb", lambda path: seen.setdefault("kb_path", path))

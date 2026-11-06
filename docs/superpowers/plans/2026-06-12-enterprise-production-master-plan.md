@@ -13,45 +13,45 @@
 ## File Structure
 
 ### Existing files to extend
-- `D:\tyh\knowledge-manager\src\knowledge_manager\schemas.py`
+- `<workspace>\src\knowledge_manager\schemas.py`
   Responsibility: canonical source/module/eval/auth schema definitions.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\storage.py`
+- `<workspace>\src\knowledge_manager\storage.py`
   Responsibility: persistence, retrieval, routing policy, ops reports, lifecycle transitions.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\source_ingestion.py`
+- `<workspace>\src\knowledge_manager\source_ingestion.py`
   Responsibility: source pull orchestration, provenance stamping, sync state, invalidation.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\cli.py`
+- `<workspace>\src\knowledge_manager\cli.py`
   Responsibility: operator entrypoints for source, eval, ops, auth, compliance workflows.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py`
+- `<workspace>\src\knowledge_manager\http_server.py`
   Responsibility: HTTP APIs for modules, ops, source state, auth-aware access, dual views.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\mcp_server.py`
+- `<workspace>\src\knowledge_manager\mcp_server.py`
   Responsibility: agent-facing load/search/navigation surfaces and ops resources.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\auth.py`
+- `<workspace>\src\knowledge_manager\auth.py`
   Responsibility: auth middleware, token validation, group extraction.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\audit.py`
+- `<workspace>\src\knowledge_manager\audit.py`
   Responsibility: append-only audit trail and compliance export helpers.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\rbac.py`
+- `<workspace>\src\knowledge_manager\rbac.py`
   Responsibility: role mapping and scoped permission checks.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\eval_runner.py`
+- `<workspace>\src\knowledge_manager\eval_runner.py`
   Responsibility: benchmark execution, result decomposition, baseline comparison.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\vector_index.py`
+- `<workspace>\src\knowledge_manager\vector_index.py`
   Responsibility: semantic fallback lookup under module-governed resolution.
 
 ### New files to create
-- `D:\tyh\knowledge-manager\src\knowledge_manager\notion.py`
+- `<workspace>\src\knowledge_manager\notion.py`
   Responsibility: read-only Notion connector normalized into the same source document shape as Confluence.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\policy.py`
+- `<workspace>\src\knowledge_manager\policy.py`
   Responsibility: routing policy composition, validation, explanation formatting.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\ops_export.py`
+- `<workspace>\src\knowledge_manager\ops_export.py`
   Responsibility: review backlog, risky misses, stale-source backlog, compliance bundle export formatting.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\dual_view.py`
+- `<workspace>\src\knowledge_manager\dual_view.py`
   Responsibility: source graph <-> module graph projection and stale impact summaries.
-- `D:\tyh\knowledge-manager\tests\test_notion.py`
+- `<workspace>\tests\test_notion.py`
   Responsibility: Notion connector normalization and retry coverage.
-- `D:\tyh\knowledge-manager\tests\test_policy.py`
+- `<workspace>\tests\test_policy.py`
   Responsibility: routing policy merge, suppression, forced companion, explanation coverage.
-- `D:\tyh\knowledge-manager\tests\test_ops_export.py`
+- `<workspace>\tests\test_ops_export.py`
   Responsibility: export payload, backlog shaping, dashboard counters.
-- `D:\tyh\knowledge-manager\tests\test_dual_view.py`
+- `<workspace>\tests\test_dual_view.py`
   Responsibility: source/module projection and stale impact traversal.
 
 ## Delivery Stages
@@ -66,10 +66,10 @@
 ### Task 1: Foundation Hardening For Safe Enterprise Expansion
 
 **Files:**
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\source_ingestion.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\schemas.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_source_ingestion.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_schemas.py`
+- Modify: `<workspace>\src\knowledge_manager\source_ingestion.py`
+- Modify: `<workspace>\src\knowledge_manager\schemas.py`
+- Modify: `<workspace>\tests\test_source_ingestion.py`
+- Modify: `<workspace>\tests\test_schemas.py`
 
 - [ ] **Step 1: Write the failing regression tests for partial sync merges and ingestion retries**
 
@@ -115,7 +115,7 @@ def test_pull_source_retries_only_transient_errors(tmp_path, monkeypatch):
 
 - [ ] **Step 2: Run the focused tests to verify they fail**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_source_ingestion.py -k "merges_existing_sync_state or retries_only_transient_errors" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_source_ingestion.py -k "merges_existing_sync_state or retries_only_transient_errors" -v`
 
 Expected: `FAIL` because partial sync state is overwritten or retry behavior is incomplete.
 
@@ -140,26 +140,26 @@ class PullRetryPolicy:
 
 - [ ] **Step 4: Run the focused tests to verify they pass**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_source_ingestion.py -k "merges_existing_sync_state or retries_only_transient_errors" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_source_ingestion.py -k "merges_existing_sync_state or retries_only_transient_errors" -v`
 
 Expected: `2 passed`.
 
 - [ ] **Step 5: Commit the foundation hardening slice**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\source_ingestion.py D:\tyh\knowledge-manager\src\knowledge_manager\schemas.py D:\tyh\knowledge-manager\tests\test_source_ingestion.py D:\tyh\knowledge-manager\tests\test_schemas.py
+git add <workspace>\src\knowledge_manager\source_ingestion.py <workspace>\src\knowledge_manager\schemas.py <workspace>\tests\test_source_ingestion.py <workspace>\tests\test_schemas.py
 git commit -m "fix: harden source sync merge and retry policy"
 ```
 
 ### Task 2: Build A Real Connector Platform Beyond The First Flagship
 
 **Files:**
-- Create: `D:\tyh\knowledge-manager\src\knowledge_manager\notion.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\source_ingestion.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\cli.py`
-- Create: `D:\tyh\knowledge-manager\tests\test_notion.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_cli.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_source_ingestion.py`
+- Create: `<workspace>\src\knowledge_manager\notion.py`
+- Modify: `<workspace>\src\knowledge_manager\source_ingestion.py`
+- Modify: `<workspace>\src\knowledge_manager\cli.py`
+- Create: `<workspace>\tests\test_notion.py`
+- Modify: `<workspace>\tests\test_cli.py`
+- Modify: `<workspace>\tests\test_source_ingestion.py`
 
 - [ ] **Step 1: Write the failing Notion connector and CLI tests**
 
@@ -195,7 +195,7 @@ def test_cli_source_add_notion_persists_registry(tmp_path):
 
 - [ ] **Step 2: Run the connector-focused tests to verify they fail**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_notion.py D:\tyh\knowledge-manager\tests\test_cli.py -k "notion" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_notion.py <workspace>\tests\test_cli.py -k "notion" -v`
 
 Expected: `FAIL` with `NotionClient` or CLI command missing.
 
@@ -227,26 +227,26 @@ class NotionClient:
 
 - [ ] **Step 4: Run the connector-focused tests to verify they pass**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_notion.py D:\tyh\knowledge-manager\tests\test_cli.py -k "notion" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_notion.py <workspace>\tests\test_cli.py -k "notion" -v`
 
 Expected: all Notion-focused tests `PASS`.
 
 - [ ] **Step 5: Commit the connector platform slice**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\notion.py D:\tyh\knowledge-manager\src\knowledge_manager\source_ingestion.py D:\tyh\knowledge-manager\src\knowledge_manager\cli.py D:\tyh\knowledge-manager\tests\test_notion.py D:\tyh\knowledge-manager\tests\test_cli.py D:\tyh\knowledge-manager\tests\test_source_ingestion.py
+git add <workspace>\src\knowledge_manager\notion.py <workspace>\src\knowledge_manager\source_ingestion.py <workspace>\src\knowledge_manager\cli.py <workspace>\tests\test_notion.py <workspace>\tests\test_cli.py <workspace>\tests\test_source_ingestion.py
 git commit -m "feat: add notion ingestion connector"
 ```
 
 ### Task 3: Harden Provenance, Version Chains, And Source-Change Impact
 
 **Files:**
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\schemas.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\storage.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\source_ingestion.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_schemas.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_storage.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_source_ingestion.py`
+- Modify: `<workspace>\src\knowledge_manager\schemas.py`
+- Modify: `<workspace>\src\knowledge_manager\storage.py`
+- Modify: `<workspace>\src\knowledge_manager\source_ingestion.py`
+- Modify: `<workspace>\tests\test_schemas.py`
+- Modify: `<workspace>\tests\test_storage.py`
+- Modify: `<workspace>\tests\test_source_ingestion.py`
 
 - [ ] **Step 1: Write failing tests for supersession, derived lineage, and source impact invalidation**
 
@@ -275,7 +275,7 @@ def test_mark_source_change_flags_dependent_modules_stale(tmp_path):
 
 - [ ] **Step 2: Run the provenance tests to verify they fail**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_schemas.py D:\tyh\knowledge-manager\tests\test_storage.py -k "supersedes or source_change" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_schemas.py <workspace>\tests\test_storage.py -k "supersedes or source_change" -v`
 
 Expected: `FAIL` because lineage helpers and stale impact traversal are incomplete.
 
@@ -304,27 +304,27 @@ def mark_source_documents_changed(self, versions: dict[str, str]) -> list[str]:
 
 - [ ] **Step 4: Run the provenance tests to verify they pass**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_schemas.py D:\tyh\knowledge-manager\tests\test_storage.py D:\tyh\knowledge-manager\tests\test_source_ingestion.py -k "supersedes or source_change" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_schemas.py <workspace>\tests\test_storage.py <workspace>\tests\test_source_ingestion.py -k "supersedes or source_change" -v`
 
 Expected: all provenance-focused tests `PASS`.
 
 - [ ] **Step 5: Commit the provenance trust slice**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\schemas.py D:\tyh\knowledge-manager\src\knowledge_manager\storage.py D:\tyh\knowledge-manager\src\knowledge_manager\source_ingestion.py D:\tyh\knowledge-manager\tests\test_schemas.py D:\tyh\knowledge-manager\tests\test_storage.py D:\tyh\knowledge-manager\tests\test_source_ingestion.py
+git add <workspace>\src\knowledge_manager\schemas.py <workspace>\src\knowledge_manager\storage.py <workspace>\src\knowledge_manager\source_ingestion.py <workspace>\tests\test_schemas.py <workspace>\tests\test_storage.py <workspace>\tests\test_source_ingestion.py
 git commit -m "feat: add module lineage and source impact tracking"
 ```
 
 ### Task 4: Externalize Governable Routing Into A Policy Engine
 
 **Files:**
-- Create: `D:\tyh\knowledge-manager\src\knowledge_manager\policy.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\storage.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\mcp_server.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py`
-- Create: `D:\tyh\knowledge-manager\tests\test_policy.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_storage.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_mcp_server.py`
+- Create: `<workspace>\src\knowledge_manager\policy.py`
+- Modify: `<workspace>\src\knowledge_manager\storage.py`
+- Modify: `<workspace>\src\knowledge_manager\mcp_server.py`
+- Modify: `<workspace>\src\knowledge_manager\http_server.py`
+- Create: `<workspace>\tests\test_policy.py`
+- Modify: `<workspace>\tests\test_storage.py`
+- Modify: `<workspace>\tests\test_mcp_server.py`
 
 - [ ] **Step 1: Write failing tests for policy layering, invalid suppression, and forced companions**
 
@@ -347,7 +347,7 @@ def test_search_results_explain_policy_suppression(tmp_path):
 
 - [ ] **Step 2: Run the policy tests to verify they fail**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_policy.py D:\tyh\knowledge-manager\tests\test_storage.py D:\tyh\knowledge-manager\tests\test_mcp_server.py -k "policy or suppression or companions" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_policy.py <workspace>\tests\test_storage.py <workspace>\tests\test_mcp_server.py -k "policy or suppression or companions" -v`
 
 Expected: `FAIL` because the dedicated policy engine and richer explanations do not exist yet.
 
@@ -373,28 +373,28 @@ def format_policy_explanation(decision: PolicyDecision) -> dict[str, Any]:
 
 - [ ] **Step 4: Run the policy tests to verify they pass**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_policy.py D:\tyh\knowledge-manager\tests\test_storage.py D:\tyh\knowledge-manager\tests\test_mcp_server.py -k "policy or suppression or companions" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_policy.py <workspace>\tests\test_storage.py <workspace>\tests\test_mcp_server.py -k "policy or suppression or companions" -v`
 
 Expected: policy-focused tests `PASS`.
 
 - [ ] **Step 5: Commit the governable routing slice**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\policy.py D:\tyh\knowledge-manager\src\knowledge_manager\storage.py D:\tyh\knowledge-manager\src\knowledge_manager\mcp_server.py D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py D:\tyh\knowledge-manager\tests\test_policy.py D:\tyh\knowledge-manager\tests\test_storage.py D:\tyh\knowledge-manager\tests\test_mcp_server.py
+git add <workspace>\src\knowledge_manager\policy.py <workspace>\src\knowledge_manager\storage.py <workspace>\src\knowledge_manager\mcp_server.py <workspace>\src\knowledge_manager\http_server.py <workspace>\tests\test_policy.py <workspace>\tests\test_storage.py <workspace>\tests\test_mcp_server.py
 git commit -m "feat: extract governable routing policy engine"
 ```
 
 ### Task 5: Build The Knowledge Ops Control Plane
 
 **Files:**
-- Create: `D:\tyh\knowledge-manager\src\knowledge_manager\ops_export.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\storage.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\cli.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\mcp_server.py`
-- Create: `D:\tyh\knowledge-manager\tests\test_ops_export.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_cli.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_http_server.py`
+- Create: `<workspace>\src\knowledge_manager\ops_export.py`
+- Modify: `<workspace>\src\knowledge_manager\storage.py`
+- Modify: `<workspace>\src\knowledge_manager\cli.py`
+- Modify: `<workspace>\src\knowledge_manager\http_server.py`
+- Modify: `<workspace>\src\knowledge_manager\mcp_server.py`
+- Create: `<workspace>\tests\test_ops_export.py`
+- Modify: `<workspace>\tests\test_cli.py`
+- Modify: `<workspace>\tests\test_http_server.py`
 
 - [ ] **Step 1: Write failing tests for review backlog, risky misses, and stale-source backlog exports**
 
@@ -414,7 +414,7 @@ def test_cli_ops_export_risky_misses_writes_json(tmp_path):
 
 - [ ] **Step 2: Run the ops export tests to verify they fail**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_ops_export.py D:\tyh\knowledge-manager\tests\test_cli.py D:\tyh\knowledge-manager\tests\test_http_server.py -k "backlog or risky_misses" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_ops_export.py <workspace>\tests\test_cli.py <workspace>\tests\test_http_server.py -k "backlog or risky_misses" -v`
 
 Expected: `FAIL` because export helpers and endpoints are missing.
 
@@ -437,25 +437,25 @@ def get_ops_backlog() -> dict[str, Any]:
 
 - [ ] **Step 4: Run the ops export tests to verify they pass**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_ops_export.py D:\tyh\knowledge-manager\tests\test_cli.py D:\tyh\knowledge-manager\tests\test_http_server.py -k "backlog or risky_misses" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_ops_export.py <workspace>\tests\test_cli.py <workspace>\tests\test_http_server.py -k "backlog or risky_misses" -v`
 
 Expected: ops export tests `PASS`.
 
 - [ ] **Step 5: Commit the ops control plane slice**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\ops_export.py D:\tyh\knowledge-manager\src\knowledge_manager\storage.py D:\tyh\knowledge-manager\src\knowledge_manager\cli.py D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py D:\tyh\knowledge-manager\src\knowledge_manager\mcp_server.py D:\tyh\knowledge-manager\tests\test_ops_export.py D:\tyh\knowledge-manager\tests\test_cli.py D:\tyh\knowledge-manager\tests\test_http_server.py
+git add <workspace>\src\knowledge_manager\ops_export.py <workspace>\src\knowledge_manager\storage.py <workspace>\src\knowledge_manager\cli.py <workspace>\src\knowledge_manager\http_server.py <workspace>\src\knowledge_manager\mcp_server.py <workspace>\tests\test_ops_export.py <workspace>\tests\test_cli.py <workspace>\tests\test_http_server.py
 git commit -m "feat: add ops exports and backlog control plane"
 ```
 
 ### Task 6: Make Eval A Real Deployment Gate Instead Of A Smoke Check
 
 **Files:**
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\eval_runner.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\schemas.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\cli.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_eval_runner.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_cli.py`
+- Modify: `<workspace>\src\knowledge_manager\eval_runner.py`
+- Modify: `<workspace>\src\knowledge_manager\schemas.py`
+- Modify: `<workspace>\src\knowledge_manager\cli.py`
+- Modify: `<workspace>\tests\test_eval_runner.py`
+- Modify: `<workspace>\tests\test_cli.py`
 
 - [ ] **Step 1: Write failing tests for baseline comparison, false-positive/false-negative accounting, and budget tracking**
 
@@ -478,7 +478,7 @@ def test_cli_eval_run_prints_failure_decomposition(tmp_path):
 
 - [ ] **Step 2: Run the eval tests to verify they fail**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_eval_runner.py D:\tyh\knowledge-manager\tests\test_cli.py -k "baseline or false_negative or policy_failures" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_eval_runner.py <workspace>\tests\test_cli.py -k "baseline or false_negative or policy_failures" -v`
 
 Expected: `FAIL` because the richer metrics and CLI reporting are missing.
 
@@ -505,28 +505,28 @@ def classify_eval_failure(case: EvalCaseResult) -> str:
 
 - [ ] **Step 4: Run the eval tests to verify they pass**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_eval_runner.py D:\tyh\knowledge-manager\tests\test_cli.py -k "baseline or false_negative or policy_failures" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_eval_runner.py <workspace>\tests\test_cli.py -k "baseline or false_negative or policy_failures" -v`
 
 Expected: eval-focused tests `PASS`.
 
 - [ ] **Step 5: Commit the eval gate slice**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\eval_runner.py D:\tyh\knowledge-manager\src\knowledge_manager\schemas.py D:\tyh\knowledge-manager\src\knowledge_manager\cli.py D:\tyh\knowledge-manager\tests\test_eval_runner.py D:\tyh\knowledge-manager\tests\test_cli.py
+git add <workspace>\src\knowledge_manager\eval_runner.py <workspace>\src\knowledge_manager\schemas.py <workspace>\src\knowledge_manager\cli.py <workspace>\tests\test_eval_runner.py <workspace>\tests\test_cli.py
 git commit -m "feat: turn eval into deployment gate"
 ```
 
 ### Task 7: Complete Enterprise Auth, Audit, And Scoped RBAC
 
 **Files:**
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\auth.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\audit.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\rbac.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\cli.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_enterprise.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_http_server.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_cli.py`
+- Modify: `<workspace>\src\knowledge_manager\auth.py`
+- Modify: `<workspace>\src\knowledge_manager\audit.py`
+- Modify: `<workspace>\src\knowledge_manager\rbac.py`
+- Modify: `<workspace>\src\knowledge_manager\http_server.py`
+- Modify: `<workspace>\src\knowledge_manager\cli.py`
+- Modify: `<workspace>\tests\test_enterprise.py`
+- Modify: `<workspace>\tests\test_http_server.py`
+- Modify: `<workspace>\tests\test_cli.py`
 
 - [ ] **Step 1: Write failing tests for signed JWT validation, group-role mapping, scoped module access, and audit separation**
 
@@ -547,7 +547,7 @@ def test_rbac_enforces_category_scope():
 
 - [ ] **Step 2: Run the enterprise auth tests to verify they fail**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_enterprise.py D:\tyh\knowledge-manager\tests\test_http_server.py D:\tyh\knowledge-manager\tests\test_cli.py -k "oidc or rbac or audit" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_enterprise.py <workspace>\tests\test_http_server.py <workspace>\tests\test_cli.py -k "oidc or rbac or audit" -v`
 
 Expected: `FAIL` because token signature validation and scoped permission checks are incomplete.
 
@@ -567,29 +567,29 @@ def can_access_module(self, claims: dict[str, Any], module: ModuleRecord, action
 
 - [ ] **Step 4: Run the enterprise auth tests to verify they pass**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_enterprise.py D:\tyh\knowledge-manager\tests\test_http_server.py D:\tyh\knowledge-manager\tests\test_cli.py -k "oidc or rbac or audit" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_enterprise.py <workspace>\tests\test_http_server.py <workspace>\tests\test_cli.py -k "oidc or rbac or audit" -v`
 
 Expected: enterprise trust tests `PASS`.
 
 - [ ] **Step 5: Commit the enterprise trust slice**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\auth.py D:\tyh\knowledge-manager\src\knowledge_manager\audit.py D:\tyh\knowledge-manager\src\knowledge_manager\rbac.py D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py D:\tyh\knowledge-manager\src\knowledge_manager\cli.py D:\tyh\knowledge-manager\tests\test_enterprise.py D:\tyh\knowledge-manager\tests\test_http_server.py D:\tyh\knowledge-manager\tests\test_cli.py
+git add <workspace>\src\knowledge_manager\auth.py <workspace>\src\knowledge_manager\audit.py <workspace>\src\knowledge_manager\rbac.py <workspace>\src\knowledge_manager\http_server.py <workspace>\src\knowledge_manager\cli.py <workspace>\tests\test_enterprise.py <workspace>\tests\test_http_server.py <workspace>\tests\test_cli.py
 git commit -m "feat: harden auth audit and scoped rbac"
 ```
 
 ### Task 8: Expose Dual Source/Module Views And Hybrid Retrieval Fallback
 
 **Files:**
-- Create: `D:\tyh\knowledge-manager\src\knowledge_manager\dual_view.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\storage.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\vector_index.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\mcp_server.py`
-- Create: `D:\tyh\knowledge-manager\tests\test_dual_view.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_http_server.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_mcp_server.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_watch_vector.py`
+- Create: `<workspace>\src\knowledge_manager\dual_view.py`
+- Modify: `<workspace>\src\knowledge_manager\storage.py`
+- Modify: `<workspace>\src\knowledge_manager\vector_index.py`
+- Modify: `<workspace>\src\knowledge_manager\http_server.py`
+- Modify: `<workspace>\src\knowledge_manager\mcp_server.py`
+- Create: `<workspace>\tests\test_dual_view.py`
+- Modify: `<workspace>\tests\test_http_server.py`
+- Modify: `<workspace>\tests\test_mcp_server.py`
+- Modify: `<workspace>\tests\test_watch_vector.py`
 
 - [ ] **Step 1: Write failing tests for dual-view projection and fallback-to-module resolution**
 
@@ -611,7 +611,7 @@ def test_vector_fallback_returns_module_resolution_not_raw_chunk(tmp_path):
 
 - [ ] **Step 2: Run the dual-view and fallback tests to verify they fail**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_dual_view.py D:\tyh\knowledge-manager\tests\test_http_server.py D:\tyh\knowledge-manager\tests\test_mcp_server.py D:\tyh\knowledge-manager\tests\test_watch_vector.py -k "dual_view or vector_fallback" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_dual_view.py <workspace>\tests\test_http_server.py <workspace>\tests\test_mcp_server.py <workspace>\tests\test_watch_vector.py -k "dual_view or vector_fallback" -v`
 
 Expected: `FAIL` because the graph projection and module-resolved fallback are incomplete.
 
@@ -636,25 +636,25 @@ def resolve_vector_hit_to_module(self, hit: VectorHit) -> SearchResult | None:
 
 - [ ] **Step 4: Run the dual-view and fallback tests to verify they pass**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_dual_view.py D:\tyh\knowledge-manager\tests\test_http_server.py D:\tyh\knowledge-manager\tests\test_mcp_server.py D:\tyh\knowledge-manager\tests\test_watch_vector.py -k "dual_view or vector_fallback" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_dual_view.py <workspace>\tests\test_http_server.py <workspace>\tests\test_mcp_server.py <workspace>\tests\test_watch_vector.py -k "dual_view or vector_fallback" -v`
 
 Expected: dual-view and fallback tests `PASS`.
 
 - [ ] **Step 5: Commit the differentiator slice**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\dual_view.py D:\tyh\knowledge-manager\src\knowledge_manager\storage.py D:\tyh\knowledge-manager\src\knowledge_manager\vector_index.py D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py D:\tyh\knowledge-manager\src\knowledge_manager\mcp_server.py D:\tyh\knowledge-manager\tests\test_dual_view.py D:\tyh\knowledge-manager\tests\test_http_server.py D:\tyh\knowledge-manager\tests\test_mcp_server.py D:\tyh\knowledge-manager\tests\test_watch_vector.py
+git add <workspace>\src\knowledge_manager\dual_view.py <workspace>\src\knowledge_manager\storage.py <workspace>\src\knowledge_manager\vector_index.py <workspace>\src\knowledge_manager\http_server.py <workspace>\src\knowledge_manager\mcp_server.py <workspace>\tests\test_dual_view.py <workspace>\tests\test_http_server.py <workspace>\tests\test_mcp_server.py <workspace>\tests\test_watch_vector.py
 git commit -m "feat: add dual knowledge view and module-first vector fallback"
 ```
 
 ### Task 9: Production Readiness Gate, Docs, And Release Evidence
 
 **Files:**
-- Modify: `D:\tyh\knowledge-manager\README.md`
-- Modify: `D:\tyh\knowledge-manager\docs\superpowers\specs\2026-06-09-m13-enterprise.md`
-- Create: `D:\tyh\knowledge-manager\docs\runbooks\enterprise-rollout.md`
-- Create: `D:\tyh\knowledge-manager\docs\runbooks\eval-gate.md`
-- Modify: `D:\tyh\knowledge-manager\tests\test_integration.py`
+- Modify: `<workspace>\README.md`
+- Modify: `<workspace>\docs\superpowers\specs\2026-06-09-m13-enterprise.md`
+- Create: `<workspace>\docs\runbooks\enterprise-rollout.md`
+- Create: `<workspace>\docs\runbooks\eval-gate.md`
+- Modify: `<workspace>\tests\test_integration.py`
 
 - [ ] **Step 1: Write failing integration tests that represent the production gate**
 
@@ -673,7 +673,7 @@ def test_enterprise_ingest_route_eval_operate_flow(tmp_path):
 
 - [ ] **Step 2: Run the integration gate to verify it fails before docs and final wiring are complete**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_integration.py -k "enterprise_ingest_route_eval_operate_flow" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_integration.py -k "enterprise_ingest_route_eval_operate_flow" -v`
 
 Expected: `FAIL` until all end-to-end surfaces align.
 
@@ -691,14 +691,14 @@ Expected: `FAIL` until all end-to-end surfaces align.
 
 - [ ] **Step 4: Run the full enterprise verification sweep**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_schemas.py D:\tyh\knowledge-manager\tests\test_storage.py D:\tyh\knowledge-manager\tests\test_http_server.py D:\tyh\knowledge-manager\tests\test_mcp_server.py D:\tyh\knowledge-manager\tests\test_cli.py D:\tyh\knowledge-manager\tests\test_source_ingestion.py D:\tyh\knowledge-manager\tests\test_confluence.py D:\tyh\knowledge-manager\tests\test_notion.py D:\tyh\knowledge-manager\tests\test_policy.py D:\tyh\knowledge-manager\tests\test_ops_export.py D:\tyh\knowledge-manager\tests\test_eval_runner.py D:\tyh\knowledge-manager\tests\test_enterprise.py D:\tyh\knowledge-manager\tests\test_dual_view.py D:\tyh\knowledge-manager\tests\test_watch_vector.py D:\tyh\knowledge-manager\tests\test_integration.py -q`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_schemas.py <workspace>\tests\test_storage.py <workspace>\tests\test_http_server.py <workspace>\tests\test_mcp_server.py <workspace>\tests\test_cli.py <workspace>\tests\test_source_ingestion.py <workspace>\tests\test_confluence.py <workspace>\tests\test_notion.py <workspace>\tests\test_policy.py <workspace>\tests\test_ops_export.py <workspace>\tests\test_eval_runner.py <workspace>\tests\test_enterprise.py <workspace>\tests\test_dual_view.py <workspace>\tests\test_watch_vector.py <workspace>\tests\test_integration.py -q`
 
 Expected: full targeted enterprise suite `PASS`, with only pre-existing non-fatal dependency warnings allowed.
 
 - [ ] **Step 5: Commit the release gate slice**
 
 ```bash
-git add D:\tyh\knowledge-manager\README.md D:\tyh\knowledge-manager\docs\superpowers\specs\2026-06-09-m13-enterprise.md D:\tyh\knowledge-manager\docs\runbooks\enterprise-rollout.md D:\tyh\knowledge-manager\docs\runbooks\eval-gate.md D:\tyh\knowledge-manager\tests\test_integration.py
+git add <workspace>\README.md <workspace>\docs\superpowers\specs\2026-06-09-m13-enterprise.md <workspace>\docs\runbooks\enterprise-rollout.md <workspace>\docs\runbooks\eval-gate.md <workspace>\tests\test_integration.py
 git commit -m "docs: add enterprise rollout and release gates"
 ```
 

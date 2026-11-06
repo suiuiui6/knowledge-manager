@@ -1,5 +1,9 @@
 # Knowledge Manager
 
+[![CI](https://github.com/suiuiui6/knowledge-manager/actions/workflows/ci.yml/badge.svg)](https://github.com/suiuiui6/knowledge-manager/actions/workflows/ci.yml)
+[![Public surface](https://github.com/suiuiui6/knowledge-manager/actions/workflows/public-surface.yml/badge.svg)](https://github.com/suiuiui6/knowledge-manager/actions/workflows/public-surface.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Turn messy notes into structured modules that LLMs can load on demand via MCP.
 
 Knowledge Manager is a git-native knowledge system for agentic workflows. It stores knowledge as inspectable JSON modules, maintains a lightweight index, and serves both through a CLI and MCP server.
@@ -62,7 +66,12 @@ poetry install
 poetry run pytest -q
 poetry run black --check src tests scripts
 poetry run mypy src
+python -B tools/check_public_surface.py
 ```
+
+The public-surface workflow checks documentation, tracked paths, and
+credential-like content. It runs on every pull request and does not require a
+provider key.
 
 ## Architecture and scope
 
@@ -107,7 +116,7 @@ Provider credentials must be supplied through environment variables or controlle
 ## Installation
 
 ```bash
-git clone <repo>
+git clone https://github.com/suiuiui6/knowledge-manager.git
 cd knowledge-manager
 poetry install
 ```
@@ -378,9 +387,17 @@ Use `km --verbose ...` to enable operational logging during CLI runs. Verbose lo
 poetry run pytest -q
 poetry run black --check src tests scripts
 poetry run mypy src
+python -B tools/check_public_surface.py
 ```
 
 Validation reports are generated during verification and are kept out of the source release when they contain local paths or runtime artifacts. The repository includes durable assessment and runbook documentation under [`docs/`](docs/).
+
+## Contributing
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) before opening an issue or pull request.
+Run `python -B tools/check_public_surface.py` before submitting changes. Live
+provider checks are opt-in, and credentials must stay outside Git.
 
 ## Enterprise Operations
 

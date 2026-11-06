@@ -40,49 +40,49 @@ This plan deliberately does **not** claim “group-grade” or “multi-cluster�
 
 ### Existing files to extend
 
-- `D:\tyh\knowledge-manager\src\knowledge_manager\storage.py`
+- `<workspace>\src\knowledge_manager\storage.py`
   Responsibility: module persistence, retrieval path, report generation, mutation invalidation.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py`
+- `<workspace>\src\knowledge_manager\http_server.py`
   Responsibility: HTTP API behavior, upload behavior, readiness/metrics endpoints.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\mcp_server.py`
+- `<workspace>\src\knowledge_manager\mcp_server.py`
   Responsibility: MCP search and tool surfaces that currently inherit retrieval bottlenecks.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\ingestion_jobs.py`
+- `<workspace>\src\knowledge_manager\ingestion_jobs.py`
   Responsibility: durable job state model, checkpointing, job lifecycle.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\source_ingestion.py`
+- `<workspace>\src\knowledge_manager\source_ingestion.py`
   Responsibility: source sync orchestration and staging workflow.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\extractor.py`
+- `<workspace>\src\knowledge_manager\extractor.py`
   Responsibility: provider-backed extraction workload.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\materialized_views.py`
+- `<workspace>\src\knowledge_manager\materialized_views.py`
   Responsibility: current control-plane snapshot layer.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\admin_views.py`
+- `<workspace>\src\knowledge_manager\admin_views.py`
   Responsibility: admin dashboard aggregation.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\performance_benchmarks.py`
+- `<workspace>\src\knowledge_manager\performance_benchmarks.py`
   Responsibility: enterprise benchmark matrix and gate summary.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\cli.py`
+- `<workspace>\src\knowledge_manager\cli.py`
   Responsibility: operator commands, repair entrypoints, production diagnostics.
-- `D:\tyh\knowledge-manager\tests\test_storage.py`
-- `D:\tyh\knowledge-manager\tests\test_http_server.py`
-- `D:\tyh\knowledge-manager\tests\test_mcp_server.py`
-- `D:\tyh\knowledge-manager\tests\test_ingestion_jobs.py`
-- `D:\tyh\knowledge-manager\tests\test_performance_benchmarks.py`
+- `<workspace>\tests\test_storage.py`
+- `<workspace>\tests\test_http_server.py`
+- `<workspace>\tests\test_mcp_server.py`
+- `<workspace>\tests\test_ingestion_jobs.py`
+- `<workspace>\tests\test_performance_benchmarks.py`
 
 ### New files to create
 
-- `D:\tyh\knowledge-manager\src\knowledge_manager\search_projection.py`
+- `<workspace>\src\knowledge_manager\search_projection.py`
   Responsibility: precomputed search documents, term stats, and candidate metadata so the query path stops reparsing/scoring the whole KB.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\recommendation_index.py`
+- `<workspace>\src\knowledge_manager\recommendation_index.py`
   Responsibility: precomputed module-tag adjacency and archive/enrichment/review candidate inputs for recommendations.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\job_worker.py`
+- `<workspace>\src\knowledge_manager\job_worker.py`
   Responsibility: local background worker loop for upload extraction and source sync jobs.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\runtime_checks.py`
+- `<workspace>\src\knowledge_manager\runtime_checks.py`
   Responsibility: startup validation, readiness evaluation, metrics snapshot helpers, integrity checks.
-- `D:\tyh\knowledge-manager\tests\test_search_projection.py`
+- `<workspace>\tests\test_search_projection.py`
   Responsibility: projection build/incremental update/query path coverage.
-- `D:\tyh\knowledge-manager\tests\test_recommendation_index.py`
+- `<workspace>\tests\test_recommendation_index.py`
   Responsibility: recommendation preaggregation and invalidation coverage.
-- `D:\tyh\knowledge-manager\tests\test_runtime_checks.py`
+- `<workspace>\tests\test_runtime_checks.py`
   Responsibility: startup validation, readiness, metrics, and integrity endpoint coverage.
-- `D:\tyh\knowledge-manager\docs\runbooks\production-release-checklist.md`
+- `<workspace>\docs\runbooks\production-release-checklist.md`
   Responsibility: rollout steps, rollback triggers, recovery commands, and gate evidence checklist.
 
 ## Delivery Stages
@@ -96,10 +96,10 @@ This plan deliberately does **not** claim “group-grade” or “multi-cluster�
 ### Task 1: Replace Full-KB Search Scoring With A Production Search Projection
 
 **Files:**
-- Create: `D:\tyh\knowledge-manager\src\knowledge_manager\search_projection.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\storage.py`
-- Create: `D:\tyh\knowledge-manager\tests\test_search_projection.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_storage.py`
+- Create: `<workspace>\src\knowledge_manager\search_projection.py`
+- Modify: `<workspace>\src\knowledge_manager\storage.py`
+- Create: `<workspace>\tests\test_search_projection.py`
+- Modify: `<workspace>\tests\test_storage.py`
 
 - [ ] **Step 1: Write the failing projection and search-path tests**
 
@@ -187,7 +187,7 @@ def test_search_modules_uses_projection_candidates_before_scoring(tmp_path, monk
 
 - [ ] **Step 2: Run the focused tests to verify they fail**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_search_projection.py -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_search_projection.py -v`
 
 Expected: `FAIL` because `search_projection.py` does not exist and `search_modules()` still depends on full module traversal.
 
@@ -278,25 +278,25 @@ def delete_module(module_id: str, category: str, kb_path: Path) -> bool:
 
 - [ ] **Step 6: Run focused retrieval regressions**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_search_projection.py D:\tyh\knowledge-manager\tests\test_storage.py D:\tyh\knowledge-manager\tests\test_mcp_server.py -k "projection or search_modules" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_search_projection.py <workspace>\tests\test_storage.py <workspace>\tests\test_mcp_server.py -k "projection or search_modules" -v`
 
 Expected: all projection and search regressions `PASS`.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\search_projection.py D:\tyh\knowledge-manager\src\knowledge_manager\storage.py D:\tyh\knowledge-manager\tests\test_search_projection.py D:\tyh\knowledge-manager\tests\test_storage.py D:\tyh\knowledge-manager\tests\test_mcp_server.py
+git add <workspace>\src\knowledge_manager\search_projection.py <workspace>\src\knowledge_manager\storage.py <workspace>\tests\test_search_projection.py <workspace>\tests\test_storage.py <workspace>\tests\test_mcp_server.py
 git commit -m "feat: add production search projection"
 ```
 
 ### Task 2: Precompute Recommendation Inputs So `recommendations_http` Passes At `s` And `m`
 
 **Files:**
-- Create: `D:\tyh\knowledge-manager\src\knowledge_manager\recommendation_index.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\storage.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\materialized_views.py`
-- Create: `D:\tyh\knowledge-manager\tests\test_recommendation_index.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_storage.py`
+- Create: `<workspace>\src\knowledge_manager\recommendation_index.py`
+- Modify: `<workspace>\src\knowledge_manager\storage.py`
+- Modify: `<workspace>\src\knowledge_manager\materialized_views.py`
+- Create: `<workspace>\tests\test_recommendation_index.py`
+- Modify: `<workspace>\tests\test_storage.py`
 
 - [ ] **Step 1: Write the failing recommendation-index tests**
 
@@ -354,7 +354,7 @@ def test_generate_recommendations_uses_precomputed_pairs(tmp_path, monkeypatch):
 
 - [ ] **Step 2: Run the focused tests to verify they fail**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_recommendation_index.py -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_recommendation_index.py -v`
 
 Expected: `FAIL` because `recommendation_index.py` does not exist and recommendations still rebuild pairwise state inline.
 
@@ -402,26 +402,26 @@ def save_module(module: Module, kb_path: Path) -> None:
 
 - [ ] **Step 6: Run focused recommendation/control-plane tests**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_recommendation_index.py D:\tyh\knowledge-manager\tests\test_materialized_views.py D:\tyh\knowledge-manager\tests\test_storage.py -k "recommendation or recommendations_http or admin_dashboard" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_recommendation_index.py <workspace>\tests\test_materialized_views.py <workspace>\tests\test_storage.py -k "recommendation or recommendations_http or admin_dashboard" -v`
 
 Expected: all recommendation and control-plane tests `PASS`.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\recommendation_index.py D:\tyh\knowledge-manager\src\knowledge_manager\storage.py D:\tyh\knowledge-manager\src\knowledge_manager\materialized_views.py D:\tyh\knowledge-manager\tests\test_recommendation_index.py D:\tyh\knowledge-manager\tests\test_materialized_views.py D:\tyh\knowledge-manager\tests\test_storage.py
+git add <workspace>\src\knowledge_manager\recommendation_index.py <workspace>\src\knowledge_manager\storage.py <workspace>\src\knowledge_manager\materialized_views.py <workspace>\tests\test_recommendation_index.py <workspace>\tests\test_materialized_views.py <workspace>\tests\test_storage.py
 git commit -m "feat: precompute recommendation inputs"
 ```
 
 ### Task 3: Move Upload And Source Sync To A Real Local Background Worker
 
 **Files:**
-- Create: `D:\tyh\knowledge-manager\src\knowledge_manager\job_worker.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\ingestion_jobs.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\source_ingestion.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_http_server.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_ingestion_jobs.py`
+- Create: `<workspace>\src\knowledge_manager\job_worker.py`
+- Modify: `<workspace>\src\knowledge_manager\http_server.py`
+- Modify: `<workspace>\src\knowledge_manager\ingestion_jobs.py`
+- Modify: `<workspace>\src\knowledge_manager\source_ingestion.py`
+- Modify: `<workspace>\tests\test_http_server.py`
+- Modify: `<workspace>\tests\test_ingestion_jobs.py`
 
 - [ ] **Step 1: Write the failing async-worker tests**
 
@@ -462,7 +462,7 @@ def test_job_worker_executes_upload_job_and_marks_completed(tmp_path):
 
 - [ ] **Step 2: Run the focused tests to verify they fail**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_http_server.py D:\tyh\knowledge-manager\tests\test_ingestion_jobs.py -k "accepted_job_id or job_worker" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_http_server.py <workspace>\tests\test_ingestion_jobs.py -k "accepted_job_id or job_worker" -v`
 
 Expected: `FAIL` because `/api/upload` still extracts inline and no worker exists.
 
@@ -514,25 +514,25 @@ async def api_upload(...):
 
 - [ ] **Step 6: Run focused job/upload tests**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_http_server.py D:\tyh\knowledge-manager\tests\test_ingestion_jobs.py -k "upload or job_worker or source_sync" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_http_server.py <workspace>\tests\test_ingestion_jobs.py -k "upload or job_worker or source_sync" -v`
 
 Expected: upload and worker tests `PASS`.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\job_worker.py D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py D:\tyh\knowledge-manager\src\knowledge_manager\ingestion_jobs.py D:\tyh\knowledge-manager\src\knowledge_manager\source_ingestion.py D:\tyh\knowledge-manager\tests\test_http_server.py D:\tyh\knowledge-manager\tests\test_ingestion_jobs.py
+git add <workspace>\src\knowledge_manager\job_worker.py <workspace>\src\knowledge_manager\http_server.py <workspace>\src\knowledge_manager\ingestion_jobs.py <workspace>\src\knowledge_manager\source_ingestion.py <workspace>\tests\test_http_server.py <workspace>\tests\test_ingestion_jobs.py
 git commit -m "feat: move upload and source sync to local worker jobs"
 ```
 
 ### Task 4: Add Startup Validation, Readiness, Metrics, And Integrity Checks
 
 **Files:**
-- Create: `D:\tyh\knowledge-manager\src\knowledge_manager\runtime_checks.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\cli.py`
-- Create: `D:\tyh\knowledge-manager\tests\test_runtime_checks.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_http_server.py`
+- Create: `<workspace>\src\knowledge_manager\runtime_checks.py`
+- Modify: `<workspace>\src\knowledge_manager\http_server.py`
+- Modify: `<workspace>\src\knowledge_manager\cli.py`
+- Create: `<workspace>\tests\test_runtime_checks.py`
+- Modify: `<workspace>\tests\test_http_server.py`
 
 - [ ] **Step 1: Write the failing readiness and integrity tests**
 
@@ -575,7 +575,7 @@ def test_integrity_check_reports_missing_index_entry(tmp_path):
 
 - [ ] **Step 2: Run the focused tests to verify they fail**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_runtime_checks.py -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_runtime_checks.py -v`
 
 Expected: `FAIL` because readiness/integrity helpers do not exist.
 
@@ -621,24 +621,24 @@ def integrity_check_cmd(kb_path: str):
 
 - [ ] **Step 5: Run readiness/integrity tests**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_runtime_checks.py D:\tyh\knowledge-manager\tests\test_http_server.py -k "ready or integrity or metrics" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_runtime_checks.py <workspace>\tests\test_http_server.py -k "ready or integrity or metrics" -v`
 
 Expected: readiness, metrics, and integrity tests `PASS`.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\runtime_checks.py D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py D:\tyh\knowledge-manager\src\knowledge_manager\cli.py D:\tyh\knowledge-manager\tests\test_runtime_checks.py D:\tyh\knowledge-manager\tests\test_http_server.py
+git add <workspace>\src\knowledge_manager\runtime_checks.py <workspace>\src\knowledge_manager\http_server.py <workspace>\src\knowledge_manager\cli.py <workspace>\tests\test_runtime_checks.py <workspace>\tests\test_http_server.py
 git commit -m "feat: add production readiness and integrity checks"
 ```
 
 ### Task 5: Add Production Release Evidence, Soak Gates, And Rollback Runbook
 
 **Files:**
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\performance_benchmarks.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_performance_benchmarks.py`
-- Create: `D:\tyh\knowledge-manager\docs\runbooks\production-release-checklist.md`
-- Modify: `D:\tyh\knowledge-manager\docs\runbooks\enterprise-performance-test-plan.md`
+- Modify: `<workspace>\src\knowledge_manager\performance_benchmarks.py`
+- Modify: `<workspace>\tests\test_performance_benchmarks.py`
+- Create: `<workspace>\docs\runbooks\production-release-checklist.md`
+- Modify: `<workspace>\docs\runbooks\enterprise-performance-test-plan.md`
 
 - [ ] **Step 1: Write the failing production gate test**
 
@@ -667,7 +667,7 @@ def test_benchmark_report_includes_production_release_verdict(tmp_path):
 
 - [ ] **Step 2: Run the focused test to verify it fails**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_performance_benchmarks.py::test_benchmark_report_includes_production_release_verdict -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_performance_benchmarks.py::test_benchmark_report_includes_production_release_verdict -v`
 
 Expected: `FAIL` because release verdict is not yet part of the benchmark output.
 
@@ -706,17 +706,17 @@ def _evaluate_release_verdict(report: dict[str, Any]) -> dict[str, Any]:
 
 - [ ] **Step 5: Run the benchmark contract suite and the full remediated matrix**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_performance_benchmarks.py -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_performance_benchmarks.py -v`
 
 Run:
 
 ```powershell
-$env:PYTHONPATH='D:\tyh\knowledge-manager\src'
+$env:PYTHONPATH='<workspace>\src'
 @'
 from pathlib import Path
 from knowledge_manager.performance_benchmarks import BenchmarkConfig, run_enterprise_benchmark
 
-root = Path(r"D:\tyh\knowledge-manager\test-results\perf-run-production-gate")
+root = Path(r"<workspace>\test-results\perf-run-production-gate")
 scales = {
     "xs": dict(module_count=100, tenant_count=10, job_count=80, migration_document_count=100),
     "s": dict(module_count=250, tenant_count=20, job_count=200, migration_document_count=250),
@@ -742,7 +742,7 @@ Expected: benchmark tests `PASS`, and the produced matrix shows `release_verdict
 - [ ] **Step 6: Commit**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\performance_benchmarks.py D:\tyh\knowledge-manager\tests\test_performance_benchmarks.py D:\tyh\knowledge-manager\docs\runbooks\production-release-checklist.md D:\tyh\knowledge-manager\docs\runbooks\enterprise-performance-test-plan.md
+git add <workspace>\src\knowledge_manager\performance_benchmarks.py <workspace>\tests\test_performance_benchmarks.py <workspace>\docs\runbooks\production-release-checklist.md <workspace>\docs\runbooks\enterprise-performance-test-plan.md
 git commit -m "docs: add production release evidence and rollback checklist"
 ```
 

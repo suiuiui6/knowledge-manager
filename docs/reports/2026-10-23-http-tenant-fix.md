@@ -23,9 +23,9 @@
 
 ## 验证方法与证据
 
-环境为 Windows / CPython 3.14.3，结论标记 **audit-only-windows**。解释器为 `D:/tyh/km-locked-venvs/knowledge-manager-96lmHReR-py3.14/Scripts/python.exe`。分支 `feat/knowledge-manager-phase2`，HEAD `4683d463c538bf186e9d643f9b0a13a7e33b0078`；实际未提交源码、测试、脚本和锁文件 SHA256 见 `test-results/http-tenant-fix-20261023/snapshot.json`。
+环境为 Windows / CPython 3.14.3，结论标记 **audit-only-windows**。解释器为 `<workspace>/km-locked-venvs/knowledge-manager-96lmHReR-py3.14/Scripts/python.exe`。分支 `feat/knowledge-manager-phase2`，HEAD `4683d463c538bf186e9d643f9b0a13a7e33b0078`；实际未提交源码、测试、脚本和锁文件 SHA256 见 `test-results/http-tenant-fix-20261023/snapshot.json`。
 
-测试环境变量：`PYTHONUTF8=1`、`PYTHONPATH=src`、`TEMP/TMP=D:/tyh/km-install-temp`。HTTP 测试在获准的非沙箱执行环境运行，使用原始 pytest fixture，没有加载旧 tmp_path 替代插件。
+测试环境变量：`PYTHONUTF8=1`、`PYTHONPATH=src`、`TEMP/TMP=<workspace>/km-install-temp`。HTTP 测试在获准的非沙箱执行环境运行，使用原始 pytest fixture，没有加载旧 tmp_path 替代插件。
 
 新增 `tests/test_tenant_boundaries.py` 共 28 项：HTTP JSON/Markdown workspace 隔离、审核拒绝审计、短查询/投影查询/强制伴随模块、四种报表缓存预热顺序、MCP search/deep/load/expand/graph 引用隔离及存储不变性、跨 workspace 缓存、MCP 写入范围/新增归属/联合搜索、共享语义、资源全局读取策略、来源 stale 计数、全局资源注册。另在缓存、Markdown 和 MCP 既有测试中校正了 category 参数、维护队列执行时机，并加入 MCP 二次加载命中缓存的真实行为测试。
 
@@ -33,24 +33,24 @@
 
 | 检查 | 实际命令（上述解释器） | 退出码 / 结果 | 证据 |
 |---|---|---|---|
-| HTTP/MCP/tenancy 专项 | `-m pytest -q tests/test_tenant_boundaries.py tests/test_http_server.py tests/test_mcp_server.py tests/test_tenancy.py --basetemp D:/tyh/km-final-protocol --disable-warnings --junitxml test-results/http-tenant-fix-20261023/protocol.xml` | 0；158 passed | `protocol.log/xml` |
-| 全量测试 | `-m pytest -q --basetemp D:/tyh/km-final-full --disable-warnings --junitxml test-results/http-tenant-fix-20261023/full.xml` | 1；824 passed / 9 failed，342.38 秒 | `full.log/xml` |
-| 校正测试后的全量测试 | `-m pytest -q --basetemp D:/tyh/km-full-after-testfix --disable-warnings --junitxml test-results/http-tenant-fix-20261023/full-after-testfix.xml` | 1；832 passed / 3 failed，317.95 秒 | `full-after-testfix.log/xml` |
-| 缓存/Markdown/MCP 行为回归 | `-m pytest -q tests/test_cache.py tests/test_sync.py tests/test_mcp_server.py --basetemp D:/tyh/km-green-cache-sync-mcp3 --disable-warnings` | 0；73 passed | `cache-sync-mcp-final.log/xml` |
+| HTTP/MCP/tenancy 专项 | `-m pytest -q tests/test_tenant_boundaries.py tests/test_http_server.py tests/test_mcp_server.py tests/test_tenancy.py --basetemp <workspace>/km-final-protocol --disable-warnings --junitxml test-results/http-tenant-fix-20261023/protocol.xml` | 0；158 passed | `protocol.log/xml` |
+| 全量测试 | `-m pytest -q --basetemp <workspace>/km-final-full --disable-warnings --junitxml test-results/http-tenant-fix-20261023/full.xml` | 1；824 passed / 9 failed，342.38 秒 | `full.log/xml` |
+| 校正测试后的全量测试 | `-m pytest -q --basetemp <workspace>/km-full-after-testfix --disable-warnings --junitxml test-results/http-tenant-fix-20261023/full-after-testfix.xml` | 1；832 passed / 3 failed，317.95 秒 | `full-after-testfix.log/xml` |
+| 缓存/Markdown/MCP 行为回归 | `-m pytest -q tests/test_cache.py tests/test_sync.py tests/test_mcp_server.py --basetemp <workspace>/km-green-cache-sync-mcp3 --disable-warnings` | 0；73 passed | `cache-sync-mcp-final.log/xml` |
 | 本次修改测试格式 | `-m black --check tests/test_cache.py tests/test_sync.py` | 0；2 文件合规 | `black-testfix-final.log` |
 | 完整格式检查 | `-m black --check --workers 1 src tests scripts` | 1；84 文件需格式化、32 文件合规 | `black-final.log` |
-| 干净安装冒烟 | `scripts/verify_install_smoke.py --work-dir D:/tyh/km-install-temp` | 0；8 项检查通过 | `install-smoke.json` |
+| 干净安装冒烟 | `scripts/verify_install_smoke.py --work-dir <workspace>/km-install-temp` | 0；8 项检查通过 | `install-smoke.json` |
 | 类型检查 | `-m mypy src` | 1；100 errors / 26 files | `mypy.log` |
 
-安装冒烟使用 `PIP_NO_INDEX=1`、`PIP_FIND_LINKS=D:/tyh/km-wheelhouse`、`PIP_CONSTRAINT=D:/tyh/km-locked-constraints.txt`，清空 `PYTHONPATH`；由当前项目构建 wheel，在新建虚拟环境安装并执行实际 CLI 检查。
+安装冒烟使用 `PIP_NO_INDEX=1`、`PIP_FIND_LINKS=<workspace>/km-wheelhouse`、`PIP_CONSTRAINT=<workspace>/km-locked-constraints.txt`，清空 `PYTHONPATH`；由当前项目构建 wheel，在新建虚拟环境安装并执行实际 CLI 检查。
 
 Black 最初两个沙箱内只读检查未正常结束，核实进程归属后仅终止本轮对应进程；上表为非沙箱重跑的实际完成结果。未通过大范围格式化掩盖历史格式债务，仅格式化新增回归文件与小型 tenancy 文件。类型错误与历史记录同为 100 个，不以数量相同替代整体验收。
 
-对照上批 `D:/tyh/km-locked-tests.xml` 的失败用例集合：13 个减为 3 个，**新增失败集合为空**。本轮通过校正真实接口和维护执行时机，消除了缓存 4 项和 Markdown 2 项；前一轮已消除 HTTP/MCP 4 项。剩余为管理面板 ops/staging 复用、推荐 telemetry 复用、非 Git 目录 changelog，各 1 项，均仍是基线失败集合中的项目。
+对照上批 `<workspace>/km-locked-tests.xml` 的失败用例集合：13 个减为 3 个，**新增失败集合为空**。本轮通过校正真实接口和维护执行时机，消除了缓存 4 项和 Markdown 2 项；前一轮已消除 HTTP/MCP 4 项。剩余为管理面板 ops/staging 复用、推荐 telemetry 复用、非 Git 目录 changelog，各 1 项，均仍是基线失败集合中的项目。
 
 最终测试快照记录 119 个输入文件的 SHA256；结果和基线差集记录于 `verification-summary-after-testfix.json`。新加测试为 28 项，另增加 1 个 MCP 缓存行为测试和 1 个 Markdown 队列时机测试，原有用例保留，整体总数为 835。
 
-用户确认提交后，2026-10-23 再次校验全部 119 个输入文件和上批依赖哈希，均未变化，`pip check` 退出码 0。提交前重跑同范围协议测试，仅 basetemp 改为 `D:/tyh/km-precommit-protocol`、报告名改为 `precommit-protocol.xml`：退出码 0，158 passed，38.48 秒；原全量失败及静态检查结果继续如实保留。依赖配置和安装证据已单独提交为 `8101341`，未推送。
+用户确认提交后，2026-10-23 再次校验全部 119 个输入文件和上批依赖哈希，均未变化，`pip check` 退出码 0。提交前重跑同范围协议测试，仅 basetemp 改为 `<workspace>/km-precommit-protocol`、报告名改为 `precommit-protocol.xml`：退出码 0，158 passed，38.48 秒；原全量失败及静态检查结果继续如实保留。依赖配置和安装证据已单独提交为 `8101341`，未推送。
 
 未执行部署、发布、真实服务 verify-deployment 或新的生产性能矩阵；没有启用或宣称 CI/分支保护机械阻断。
 

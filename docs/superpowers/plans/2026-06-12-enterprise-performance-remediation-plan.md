@@ -27,40 +27,40 @@ This plan is optimized against those real failures, not hypothetical ones.
 
 ### Existing files to modify
 
-- `D:\tyh\knowledge-manager\src\knowledge_manager\storage.py`
+- `<workspace>\src\knowledge_manager\storage.py`
   Responsibility: module enumeration, search hot path, health/recommendations/ops report inputs, index rebuild behavior.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py`
+- `<workspace>\src\knowledge_manager\http_server.py`
   Responsibility: HTTP endpoint timing, read-path integration, write-path integration, provider-backed path control.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\mcp_server.py`
+- `<workspace>\src\knowledge_manager\mcp_server.py`
   Responsibility: MCP read/tool path, research bugfix, federation behavior.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\chat.py`
+- `<workspace>\src\knowledge_manager\chat.py`
   Responsibility: provider-backed chat pipeline and retrieval fan-out cost.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\extractor.py`
+- `<workspace>\src\knowledge_manager\extractor.py`
   Responsibility: upload/extraction latency path and chunk behavior.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\performance_benchmarks.py`
+- `<workspace>\src\knowledge_manager\performance_benchmarks.py`
   Responsibility: benchmark coverage and regression gate.
-- `D:\tyh\knowledge-manager\tests\test_storage.py`
+- `<workspace>\tests\test_storage.py`
   Responsibility: hot-path behavior, cache invalidation, index consistency.
-- `D:\tyh\knowledge-manager\tests\test_http_server.py`
+- `<workspace>\tests\test_http_server.py`
   Responsibility: endpoint behavior under new cache/snapshot/index design.
-- `D:\tyh\knowledge-manager\tests\test_mcp_server.py`
+- `<workspace>\tests\test_mcp_server.py`
   Responsibility: MCP correctness, research tool regression coverage.
-- `D:\tyh\knowledge-manager\tests\test_performance_benchmarks.py`
+- `<workspace>\tests\test_performance_benchmarks.py`
   Responsibility: benchmark output contract and regression evidence.
 
 ### New files to create
 
-- `D:\tyh\knowledge-manager\src\knowledge_manager\module_cache.py`
+- `<workspace>\src\knowledge_manager\module_cache.py`
   Responsibility: process-local module list and module object cache with invalidation.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\lexical_index.py`
+- `<workspace>\src\knowledge_manager\lexical_index.py`
   Responsibility: persistent inverted index and precomputed term metadata for fast search.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\materialized_views.py`
+- `<workspace>\src\knowledge_manager\materialized_views.py`
   Responsibility: health/recommendations/ops/admin snapshot generation and reuse.
-- `D:\tyh\knowledge-manager\tests\test_module_cache.py`
+- `<workspace>\tests\test_module_cache.py`
   Responsibility: module cache and invalidation tests.
-- `D:\tyh\knowledge-manager\tests\test_lexical_index.py`
+- `<workspace>\tests\test_lexical_index.py`
   Responsibility: inverted index creation and query tests.
-- `D:\tyh\knowledge-manager\tests\test_materialized_views.py`
+- `<workspace>\tests\test_materialized_views.py`
   Responsibility: snapshot generation and stale/refresh tests.
 
 ## Delivery Stages
@@ -76,9 +76,9 @@ This plan is optimized against those real failures, not hypothetical ones.
 ### Task 1: Add Performance Invariants And Hot-Path Instrumentation
 
 **Files:**
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\performance_benchmarks.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_performance_benchmarks.py`
-- Test: `D:\tyh\knowledge-manager\tests\test_performance_benchmarks.py`
+- Modify: `<workspace>\src\knowledge_manager\performance_benchmarks.py`
+- Modify: `<workspace>\tests\test_performance_benchmarks.py`
+- Test: `<workspace>\tests\test_performance_benchmarks.py`
 
 - [ ] **Step 1: Write the failing benchmark contract test**
 
@@ -108,7 +108,7 @@ def test_benchmark_records_errors_and_resource_sections(tmp_path):
 
 - [ ] **Step 2: Run test to verify it fails if the contract is missing**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_performance_benchmarks.py::test_benchmark_records_errors_and_resource_sections -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_performance_benchmarks.py::test_benchmark_records_errors_and_resource_sections -v`
 Expected: `FAIL` if `resources` or `external_provider` are absent.
 
 - [ ] **Step 3: Ensure benchmark contract stays explicit**
@@ -136,23 +136,23 @@ report = {
 
 - [ ] **Step 4: Run the focused test to verify it passes**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_performance_benchmarks.py::test_benchmark_records_errors_and_resource_sections -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_performance_benchmarks.py::test_benchmark_records_errors_and_resource_sections -v`
 Expected: `PASS`
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\performance_benchmarks.py D:\tyh\knowledge-manager\tests\test_performance_benchmarks.py
+git add <workspace>\src\knowledge_manager\performance_benchmarks.py <workspace>\tests\test_performance_benchmarks.py
 git commit -m "test: lock benchmark report contract"
 ```
 
 ### Task 2: Eliminate Repeated Full-KB Module Enumeration
 
 **Files:**
-- Create: `D:\tyh\knowledge-manager\src\knowledge_manager\module_cache.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\storage.py`
-- Create: `D:\tyh\knowledge-manager\tests\test_module_cache.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_storage.py`
+- Create: `<workspace>\src\knowledge_manager\module_cache.py`
+- Modify: `<workspace>\src\knowledge_manager\storage.py`
+- Create: `<workspace>\tests\test_module_cache.py`
+- Modify: `<workspace>\tests\test_storage.py`
 
 - [ ] **Step 1: Write the failing cache invalidation test**
 
@@ -187,7 +187,7 @@ def test_list_modules_reuses_cached_module_set_until_storage_changes(tmp_path):
 
 - [ ] **Step 2: Run test to verify it fails before cache extraction**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_module_cache.py::test_list_modules_reuses_cached_module_set_until_storage_changes -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_module_cache.py::test_list_modules_reuses_cached_module_set_until_storage_changes -v`
 Expected: `FAIL` because `module_cache.py` does not exist yet.
 
 - [ ] **Step 3: Add a focused module cache**
@@ -275,23 +275,23 @@ def delete_module(module_id: str, category: str, kb_path: Path) -> bool:
 
 - [ ] **Step 6: Run focused tests**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_module_cache.py D:\tyh\knowledge-manager\tests\test_storage.py -k "list_modules or cache" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_module_cache.py <workspace>\tests\test_storage.py -k "list_modules or cache" -v`
 Expected: `PASS`
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\module_cache.py D:\tyh\knowledge-manager\src\knowledge_manager\storage.py D:\tyh\knowledge-manager\tests\test_module_cache.py D:\tyh\knowledge-manager\tests\test_storage.py
+git add <workspace>\src\knowledge_manager\module_cache.py <workspace>\src\knowledge_manager\storage.py <workspace>\tests\test_module_cache.py <workspace>\tests\test_storage.py
 git commit -m "feat: add module enumeration cache"
 ```
 
 ### Task 3: Replace Full-Scan Search With Persistent Lexical Index
 
 **Files:**
-- Create: `D:\tyh\knowledge-manager\src\knowledge_manager\lexical_index.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\storage.py`
-- Create: `D:\tyh\knowledge-manager\tests\test_lexical_index.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_storage.py`
+- Create: `<workspace>\src\knowledge_manager\lexical_index.py`
+- Modify: `<workspace>\src\knowledge_manager\storage.py`
+- Create: `<workspace>\tests\test_lexical_index.py`
+- Modify: `<workspace>\tests\test_storage.py`
 
 - [ ] **Step 1: Write the failing index query test**
 
@@ -326,7 +326,7 @@ def test_lexical_index_returns_candidate_keys_for_query(tmp_path):
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_lexical_index.py::test_lexical_index_returns_candidate_keys_for_query -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_lexical_index.py::test_lexical_index_returns_candidate_keys_for_query -v`
 Expected: `FAIL` because `lexical_index.py` does not exist yet.
 
 - [ ] **Step 3: Implement a persistent inverted index**
@@ -405,24 +405,24 @@ def rebuild_index(kb_path: Path) -> Index:
 
 - [ ] **Step 6: Run focused search/index tests**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_lexical_index.py D:\tyh\knowledge-manager\tests\test_storage.py -k "lexical or search" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_lexical_index.py <workspace>\tests\test_storage.py -k "lexical or search" -v`
 Expected: `PASS`
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\lexical_index.py D:\tyh\knowledge-manager\src\knowledge_manager\storage.py D:\tyh\knowledge-manager\tests\test_lexical_index.py D:\tyh\knowledge-manager\tests\test_storage.py
+git add <workspace>\src\knowledge_manager\lexical_index.py <workspace>\src\knowledge_manager\storage.py <workspace>\tests\test_lexical_index.py <workspace>\tests\test_storage.py
 git commit -m "feat: add persistent lexical retrieval index"
 ```
 
 ### Task 4: Materialize Health, Recommendations, And Ops Snapshots
 
 **Files:**
-- Create: `D:\tyh\knowledge-manager\src\knowledge_manager\materialized_views.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\storage.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\admin_views.py`
-- Create: `D:\tyh\knowledge-manager\tests\test_materialized_views.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_http_server.py`
+- Create: `<workspace>\src\knowledge_manager\materialized_views.py`
+- Modify: `<workspace>\src\knowledge_manager\storage.py`
+- Modify: `<workspace>\src\knowledge_manager\admin_views.py`
+- Create: `<workspace>\tests\test_materialized_views.py`
+- Modify: `<workspace>\tests\test_http_server.py`
 
 - [ ] **Step 1: Write the failing snapshot test**
 
@@ -444,7 +444,7 @@ def test_materialized_health_snapshot_reuses_cached_payload(tmp_path):
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_materialized_views.py::test_materialized_health_snapshot_reuses_cached_payload -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_materialized_views.py::test_materialized_health_snapshot_reuses_cached_payload -v`
 Expected: `FAIL` because `materialized_views.py` does not exist yet.
 
 - [ ] **Step 3: Add snapshot builder/loader primitives**
@@ -516,23 +516,23 @@ def _invalidate_materialized_views(kb_path: Path) -> None:
 
 - [ ] **Step 7: Run focused snapshot/control-plane tests**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_materialized_views.py D:\tyh\knowledge-manager\tests\test_http_server.py -k "health or recommendations or ops or admin_dashboard" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_materialized_views.py <workspace>\tests\test_http_server.py -k "health or recommendations or ops or admin_dashboard" -v`
 Expected: `PASS`
 
 - [ ] **Step 8: Commit**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\materialized_views.py D:\tyh\knowledge-manager\src\knowledge_manager\storage.py D:\tyh\knowledge-manager\src\knowledge_manager\admin_views.py D:\tyh\knowledge-manager\tests\test_materialized_views.py D:\tyh\knowledge-manager\tests\test_http_server.py
+git add <workspace>\src\knowledge_manager\materialized_views.py <workspace>\src\knowledge_manager\storage.py <workspace>\src\knowledge_manager\admin_views.py <workspace>\tests\test_materialized_views.py <workspace>\tests\test_http_server.py
 git commit -m "feat: materialize expensive control-plane views"
 ```
 
 ### Task 5: Remove Full `rebuild_index()` From Hot Write Paths
 
 **Files:**
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\storage.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_http_server.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_storage.py`
+- Modify: `<workspace>\src\knowledge_manager\storage.py`
+- Modify: `<workspace>\src\knowledge_manager\http_server.py`
+- Modify: `<workspace>\tests\test_http_server.py`
+- Modify: `<workspace>\tests\test_storage.py`
 
 - [ ] **Step 1: Write the failing incremental-index test**
 
@@ -567,7 +567,7 @@ def test_save_module_updates_index_without_full_rebuild(tmp_path):
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_storage.py::test_save_module_updates_index_without_full_rebuild -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_storage.py::test_save_module_updates_index_without_full_rebuild -v`
 Expected: `FAIL` if index mutation still depends entirely on `rebuild_index()`.
 
 - [ ] **Step 3: Add incremental index mutation helpers**
@@ -614,24 +614,24 @@ def rebuild_index(kb_path: Path) -> Index:
 
 - [ ] **Step 6: Run focused write-path tests**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_storage.py D:\tyh\knowledge-manager\tests\test_http_server.py -k "save_module or module_create or module_update or module_delete" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_storage.py <workspace>\tests\test_http_server.py -k "save_module or module_create or module_update or module_delete" -v`
 Expected: `PASS`
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\storage.py D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py D:\tyh\knowledge-manager\tests\test_storage.py D:\tyh\knowledge-manager\tests\test_http_server.py
+git add <workspace>\src\knowledge_manager\storage.py <workspace>\src\knowledge_manager\http_server.py <workspace>\tests\test_storage.py <workspace>\tests\test_http_server.py
 git commit -m "feat: make write paths incrementally update index"
 ```
 
 ### Task 6: Repair MCP Research And Bound Provider-Backed Workflows
 
 **Files:**
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\mcp_server.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\chat.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\extractor.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_mcp_server.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_http_server.py`
+- Modify: `<workspace>\src\knowledge_manager\mcp_server.py`
+- Modify: `<workspace>\src\knowledge_manager\chat.py`
+- Modify: `<workspace>\src\knowledge_manager\extractor.py`
+- Modify: `<workspace>\tests\test_mcp_server.py`
+- Modify: `<workspace>\tests\test_http_server.py`
 
 - [ ] **Step 1: Write the failing MCP research regression test**
 
@@ -645,7 +645,7 @@ async def test_research_tool_returns_json_error_or_result_instead_of_name_error(
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_mcp_server.py::test_research_tool_returns_json_error_or_result_instead_of_name_error -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_mcp_server.py::test_research_tool_returns_json_error_or_result_instead_of_name_error -v`
 Expected: `FAIL` with `_load_config_safe` leakage.
 
 - [ ] **Step 3: Fix the MCP research config load bug**
@@ -683,23 +683,23 @@ chunks = _chunk_text(text, min(self.config.chunk_size, 4000), self.config.chunk_
 
 - [ ] **Step 6: Run focused provider/MCP tests**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_mcp_server.py D:\tyh\knowledge-manager\tests\test_http_server.py -k "research or chat or upload" -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_mcp_server.py <workspace>\tests\test_http_server.py -k "research or chat or upload" -v`
 Expected: `PASS`
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\mcp_server.py D:\tyh\knowledge-manager\src\knowledge_manager\chat.py D:\tyh\knowledge-manager\src\knowledge_manager\extractor.py D:\tyh\knowledge-manager\tests\test_mcp_server.py D:\tyh\knowledge-manager\tests\test_http_server.py
+git add <workspace>\src\knowledge_manager\mcp_server.py <workspace>\src\knowledge_manager\chat.py <workspace>\src\knowledge_manager\extractor.py <workspace>\tests\test_mcp_server.py <workspace>\tests\test_http_server.py
 git commit -m "fix: repair mcp research and bound provider paths"
 ```
 
 ### Task 7: Re-Benchmark And Enforce Enterprise Gates
 
 **Files:**
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\performance_benchmarks.py`
-- Modify: `D:\tyh\knowledge-manager\docs\runbooks\enterprise-performance-test-plan.md`
-- Modify: `D:\tyh\knowledge-manager\README.md`
-- Test: `D:\tyh\knowledge-manager\tests\test_performance_benchmarks.py`
+- Modify: `<workspace>\src\knowledge_manager\performance_benchmarks.py`
+- Modify: `<workspace>\docs\runbooks\enterprise-performance-test-plan.md`
+- Modify: `<workspace>\README.md`
+- Test: `<workspace>\tests\test_performance_benchmarks.py`
 
 - [ ] **Step 1: Write the failing gate assertion test**
 
@@ -726,7 +726,7 @@ def test_benchmark_report_includes_gate_summary(tmp_path):
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_performance_benchmarks.py::test_benchmark_report_includes_gate_summary -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_performance_benchmarks.py::test_benchmark_report_includes_gate_summary -v`
 Expected: `FAIL` because gate summary does not exist yet.
 
 - [ ] **Step 3: Add benchmark pass/fail gates**
@@ -763,7 +763,7 @@ report["gate_summary"] = {
 Run:
 
 ```bash
-PYTHONPATH=D:\tyh\knowledge-manager\src python D:\tyh\knowledge-manager\src\knowledge_manager\performance_benchmarks.py
+PYTHONPATH=<workspace>\src python <workspace>\src\knowledge_manager\performance_benchmarks.py
 ```
 
 Expected:
@@ -775,7 +775,7 @@ Expected:
 - [ ] **Step 6: Commit**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\performance_benchmarks.py D:\tyh\knowledge-manager\docs\runbooks\enterprise-performance-test-plan.md D:\tyh\knowledge-manager\README.md D:\tyh\knowledge-manager\tests\test_performance_benchmarks.py
+git add <workspace>\src\knowledge_manager\performance_benchmarks.py <workspace>\docs\runbooks\enterprise-performance-test-plan.md <workspace>\README.md <workspace>\tests\test_performance_benchmarks.py
 git commit -m "docs: add enterprise performance gates"
 ```
 

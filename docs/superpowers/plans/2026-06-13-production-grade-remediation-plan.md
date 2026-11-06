@@ -56,64 +56,64 @@ For this repo's current architecture, "production-grade" means all of the follow
 
 ### Existing files to extend
 
-- `D:\tyh\knowledge-manager\src\knowledge_manager\auth.py`
+- `<workspace>\src\knowledge_manager\auth.py`
   Responsibility: auth config loading, token/OIDC validation, request auth subject population.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\rbac.py`
+- `<workspace>\src\knowledge_manager\rbac.py`
   Responsibility: role mapping and permission checks.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\tenancy.py`
+- `<workspace>\src\knowledge_manager\tenancy.py`
   Responsibility: tenant visibility rules and tenant override checks.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py`
+- `<workspace>\src\knowledge_manager\http_server.py`
   Responsibility: FastAPI routes, request middleware, data/control-plane endpoints, upload enqueue.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\mcp_server.py`
+- `<workspace>\src\knowledge_manager\mcp_server.py`
   Responsibility: MCP resources and tools.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\cache.py`
+- `<workspace>\src\knowledge_manager\cache.py`
   Responsibility: MCP per-module cache.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\storage.py`
+- `<workspace>\src\knowledge_manager\storage.py`
   Responsibility: persistence, projections, recommendations, ops data, freshness semantics.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\runtime_checks.py`
+- `<workspace>\src\knowledge_manager\runtime_checks.py`
   Responsibility: readiness, integrity, metrics, repair.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\ingestion_jobs.py`
+- `<workspace>\src\knowledge_manager\ingestion_jobs.py`
   Responsibility: durable ingestion job state and recovery metadata.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\job_worker.py`
+- `<workspace>\src\knowledge_manager\job_worker.py`
   Responsibility: running queued ingestion and maintenance work.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\source_ingestion.py`
+- `<workspace>\src\knowledge_manager\source_ingestion.py`
   Responsibility: source registry and source-sync orchestration.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\admin_views.py`
+- `<workspace>\src\knowledge_manager\admin_views.py`
   Responsibility: admin dashboard aggregation.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\ops_export.py`
+- `<workspace>\src\knowledge_manager\ops_export.py`
   Responsibility: export shaping for review/source/risky-miss backlogs.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\audit.py`
+- `<workspace>\src\knowledge_manager\audit.py`
   Responsibility: append/read audit log events.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\performance_benchmarks.py`
+- `<workspace>\src\knowledge_manager\performance_benchmarks.py`
   Responsibility: benchmark report generation and release verdict calculation.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\cli.py`
+- `<workspace>\src\knowledge_manager\cli.py`
   Responsibility: operator commands, worker entrypoint, release verification command.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\schemas.py`
+- `<workspace>\src\knowledge_manager\schemas.py`
   Responsibility: config schemas, source/job ownership fields, security configuration.
-- `D:\tyh\knowledge-manager\tests\test_http_server.py`
-- `D:\tyh\knowledge-manager\tests\test_enterprise.py`
-- `D:\tyh\knowledge-manager\tests\test_mcp_server.py`
-- `D:\tyh\knowledge-manager\tests\test_cache.py`
-- `D:\tyh\knowledge-manager\tests\test_ingestion_jobs.py`
-- `D:\tyh\knowledge-manager\tests\test_runtime_checks.py`
-- `D:\tyh\knowledge-manager\tests\test_storage.py`
-- `D:\tyh\knowledge-manager\tests\test_performance_benchmarks.py`
-- `D:\tyh\knowledge-manager\docs\runbooks\production-release-checklist.md`
-- `D:\tyh\knowledge-manager\docs\runbooks\enterprise-performance-test-plan.md`
+- `<workspace>\tests\test_http_server.py`
+- `<workspace>\tests\test_enterprise.py`
+- `<workspace>\tests\test_mcp_server.py`
+- `<workspace>\tests\test_cache.py`
+- `<workspace>\tests\test_ingestion_jobs.py`
+- `<workspace>\tests\test_runtime_checks.py`
+- `<workspace>\tests\test_storage.py`
+- `<workspace>\tests\test_performance_benchmarks.py`
+- `<workspace>\docs\runbooks\production-release-checklist.md`
+- `<workspace>\docs\runbooks\enterprise-performance-test-plan.md`
 
 ### New files to create
 
-- `D:\tyh\knowledge-manager\src\knowledge_manager\http_authz.py`
+- `<workspace>\src\knowledge_manager\http_authz.py`
   Responsibility: request identity resolution, auth fail-closed checks, tenant-scope resolution, HTTP permission guards.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\tenant_views.py`
+- `<workspace>\src\knowledge_manager\tenant_views.py`
   Responsibility: tenant-filtered index/tree/graph/recommendation/admin projections reused across HTTP and MCP.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\worker_service.py`
+- `<workspace>\src\knowledge_manager\worker_service.py`
   Responsibility: queue polling, stale-job recovery, worker heartbeat loop outside the API thread.
-- `D:\tyh\knowledge-manager\tests\test_worker_service.py`
+- `<workspace>\tests\test_worker_service.py`
   Responsibility: worker loop, stale-job recovery, enqueue-only HTTP behavior.
-- `D:\tyh\knowledge-manager\tests\test_audit.py`
+- `<workspace>\tests\test_audit.py`
   Responsibility: audit event shape, request ID propagation, denial logging.
-- `D:\tyh\knowledge-manager\scripts\verify_production_readiness.py`
+- `<workspace>\scripts\verify_production_readiness.py`
   Responsibility: one-command release verification across readiness, integrity, and required benchmark scales.
 
 ## Delivery Stages
@@ -141,12 +141,12 @@ For this repo's current architecture, "production-grade" means all of the follow
 ### Task 1 (P0): Fail-Closed Auth, HTTP RBAC, And Reviewer Anti-Spoofing
 
 **Files:**
-- Create: `D:\tyh\knowledge-manager\src\knowledge_manager\http_authz.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\auth.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\schemas.py`
-- Test: `D:\tyh\knowledge-manager\tests\test_http_server.py`
-- Test: `D:\tyh\knowledge-manager\tests\test_enterprise.py`
+- Create: `<workspace>\src\knowledge_manager\http_authz.py`
+- Modify: `<workspace>\src\knowledge_manager\auth.py`
+- Modify: `<workspace>\src\knowledge_manager\http_server.py`
+- Modify: `<workspace>\src\knowledge_manager\schemas.py`
+- Test: `<workspace>\tests\test_http_server.py`
+- Test: `<workspace>\tests\test_enterprise.py`
 
 - [ ] **Step 1: Write the failing security tests for production fail-closed, RBAC, and reviewer spoofing**
 
@@ -243,7 +243,7 @@ def test_http_staging_rejects_forged_reviewer_identity(tmp_path):
 
 - [ ] **Step 2: Run the focused P0 auth tests and verify they fail**
 
-Run: `$env:PYTHONPATH='D:\tyh\knowledge-manager\src'; python -m pytest D:\tyh\knowledge-manager\tests\test_http_server.py -k "production_mode_without_auth_config_fails_closed or viewer_cannot_access_write_or_control_plane_routes or http_staging_rejects_forged_reviewer_identity" -v --basetemp C:\tmp\km-pytest`
+Run: `$env:PYTHONPATH='<workspace>\src'; python -m pytest <workspace>\tests\test_http_server.py -k "production_mode_without_auth_config_fails_closed or viewer_cannot_access_write_or_control_plane_routes or http_staging_rejects_forged_reviewer_identity" -v --basetemp C:\tmp\km-pytest`
 
 Expected: `FAIL` because production mode is not fail-closed, RBAC is not enforced on these routes, and reviewer identity is still trusted from the body.
 
@@ -356,14 +356,14 @@ def api_ops(request: Request):
 
 - [ ] **Step 5: Re-run focused tests plus the existing auth/RBAC suite**
 
-Run: `$env:PYTHONPATH='D:\tyh\knowledge-manager\src'; python -m pytest D:\tyh\knowledge-manager\tests\test_http_server.py D:\tyh\knowledge-manager\tests\test_enterprise.py -k "production_mode or reviewer or auth or permission or viewer_cannot" -v --basetemp C:\tmp\km-pytest`
+Run: `$env:PYTHONPATH='<workspace>\src'; python -m pytest <workspace>\tests\test_http_server.py <workspace>\tests\test_enterprise.py -k "production_mode or reviewer or auth or permission or viewer_cannot" -v --basetemp C:\tmp\km-pytest`
 
 Expected: new tests pass, existing enterprise auth/RBAC tests remain green.
 
 - [ ] **Step 6: Commit the Task 1 slice**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\http_authz.py D:\tyh\knowledge-manager\src\knowledge_manager\auth.py D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py D:\tyh\knowledge-manager\src\knowledge_manager\schemas.py D:\tyh\knowledge-manager\tests\test_http_server.py D:\tyh\knowledge-manager\tests\test_enterprise.py
+git add <workspace>\src\knowledge_manager\http_authz.py <workspace>\src\knowledge_manager\auth.py <workspace>\src\knowledge_manager\http_server.py <workspace>\src\knowledge_manager\schemas.py <workspace>\tests\test_http_server.py <workspace>\tests\test_enterprise.py
 git commit -m "fix: fail closed auth and enforce http rbac"
 ```
 
@@ -378,19 +378,19 @@ git commit -m "fix: fail closed auth and enforce http rbac"
 ### Task 2 (P0): Derive Tenant Scope From Auth And Apply It Across HTTP Data And Control Plane
 
 **Files:**
-- Create: `D:\tyh\knowledge-manager\src\knowledge_manager\tenant_views.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\http_authz.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\tenancy.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\storage.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\schemas.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\ingestion_jobs.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\source_ingestion.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\admin_views.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\ops_export.py`
-- Test: `D:\tyh\knowledge-manager\tests\test_http_server.py`
-- Test: `D:\tyh\knowledge-manager\tests\test_ingestion_jobs.py`
-- Test: `D:\tyh\knowledge-manager\tests\test_enterprise.py`
+- Create: `<workspace>\src\knowledge_manager\tenant_views.py`
+- Modify: `<workspace>\src\knowledge_manager\http_authz.py`
+- Modify: `<workspace>\src\knowledge_manager\tenancy.py`
+- Modify: `<workspace>\src\knowledge_manager\http_server.py`
+- Modify: `<workspace>\src\knowledge_manager\storage.py`
+- Modify: `<workspace>\src\knowledge_manager\schemas.py`
+- Modify: `<workspace>\src\knowledge_manager\ingestion_jobs.py`
+- Modify: `<workspace>\src\knowledge_manager\source_ingestion.py`
+- Modify: `<workspace>\src\knowledge_manager\admin_views.py`
+- Modify: `<workspace>\src\knowledge_manager\ops_export.py`
+- Test: `<workspace>\tests\test_http_server.py`
+- Test: `<workspace>\tests\test_ingestion_jobs.py`
+- Test: `<workspace>\tests\test_enterprise.py`
 
 - [ ] **Step 1: Write the failing tenant-scope tests using auth-derived scope instead of caller-chosen scope**
 
@@ -443,7 +443,7 @@ def test_admin_dashboard_and_source_jobs_filter_by_owned_tenant(tmp_path):
 
 - [ ] **Step 2: Run the focused tenant tests and verify they fail**
 
-Run: `$env:PYTHONPATH='D:\tyh\knowledge-manager\src'; python -m pytest D:\tyh\knowledge-manager\tests\test_http_server.py D:\tyh\knowledge-manager\tests\test_ingestion_jobs.py -k "override_tenant_scope or authenticated_tenant_scope_filters or source_jobs_filter_by_owned_tenant" -v --basetemp C:\tmp\km-pytest`
+Run: `$env:PYTHONPATH='<workspace>\src'; python -m pytest <workspace>\tests\test_http_server.py <workspace>\tests\test_ingestion_jobs.py -k "override_tenant_scope or authenticated_tenant_scope_filters or source_jobs_filter_by_owned_tenant" -v --basetemp C:\tmp\km-pytest`
 
 Expected: `FAIL` because tenant scope is still caller-controlled and jobs/dashboard data do not yet carry tenant ownership.
 
@@ -545,12 +545,12 @@ def api_admin_dashboard(request: Request, tenant_id: str = Query(""), workspace_
 
 - [ ] **Step 6: Re-run tenant HTTP tests and commit the Task 2 slice**
 
-Run: `$env:PYTHONPATH='D:\tyh\knowledge-manager\src'; python -m pytest D:\tyh\knowledge-manager\tests\test_http_server.py D:\tyh\knowledge-manager\tests\test_ingestion_jobs.py D:\tyh\knowledge-manager\tests\test_enterprise.py -k "tenant or override_tenant_scope or dashboard or source_jobs" -v --basetemp C:\tmp\km-pytest`
+Run: `$env:PYTHONPATH='<workspace>\src'; python -m pytest <workspace>\tests\test_http_server.py <workspace>\tests\test_ingestion_jobs.py <workspace>\tests\test_enterprise.py -k "tenant or override_tenant_scope or dashboard or source_jobs" -v --basetemp C:\tmp\km-pytest`
 
 Expected: tenant-scoped HTTP reads and control-plane views now derive scope from auth subject by default, while admin overrides remain explicit and guarded.
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\tenant_views.py D:\tyh\knowledge-manager\src\knowledge_manager\http_authz.py D:\tyh\knowledge-manager\src\knowledge_manager\tenancy.py D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py D:\tyh\knowledge-manager\src\knowledge_manager\storage.py D:\tyh\knowledge-manager\src\knowledge_manager\schemas.py D:\tyh\knowledge-manager\src\knowledge_manager\ingestion_jobs.py D:\tyh\knowledge-manager\src\knowledge_manager\source_ingestion.py D:\tyh\knowledge-manager\src\knowledge_manager\admin_views.py D:\tyh\knowledge-manager\src\knowledge_manager\ops_export.py D:\tyh\knowledge-manager\tests\test_http_server.py D:\tyh\knowledge-manager\tests\test_ingestion_jobs.py D:\tyh\knowledge-manager\tests\test_enterprise.py
+git add <workspace>\src\knowledge_manager\tenant_views.py <workspace>\src\knowledge_manager\http_authz.py <workspace>\src\knowledge_manager\tenancy.py <workspace>\src\knowledge_manager\http_server.py <workspace>\src\knowledge_manager\storage.py <workspace>\src\knowledge_manager\schemas.py <workspace>\src\knowledge_manager\ingestion_jobs.py <workspace>\src\knowledge_manager\source_ingestion.py <workspace>\src\knowledge_manager\admin_views.py <workspace>\src\knowledge_manager\ops_export.py <workspace>\tests\test_http_server.py <workspace>\tests\test_ingestion_jobs.py <workspace>\tests\test_enterprise.py
 git commit -m "fix: derive tenant scope from auth across http surfaces"
 ```
 
@@ -564,11 +564,11 @@ git commit -m "fix: derive tenant scope from auth across http surfaces"
 ### Task 3 (P0): Lock Down MCP Multi-Tenant Exposure And Fix Cache Key Collisions
 
 **Files:**
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\cache.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\mcp_server.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\schemas.py`
-- Test: `D:\tyh\knowledge-manager\tests\test_cache.py`
-- Test: `D:\tyh\knowledge-manager\tests\test_mcp_server.py`
+- Modify: `<workspace>\src\knowledge_manager\cache.py`
+- Modify: `<workspace>\src\knowledge_manager\mcp_server.py`
+- Modify: `<workspace>\src\knowledge_manager\schemas.py`
+- Test: `<workspace>\tests\test_cache.py`
+- Test: `<workspace>\tests\test_mcp_server.py`
 
 - [ ] **Step 1: Write the failing cache-isolation and MCP multi-tenant tests**
 
@@ -616,7 +616,7 @@ async def test_deep_search_expand_module_and_knowledge_graph_honor_trusted_tenan
 
 - [ ] **Step 2: Run the focused MCP/cache tests and verify they fail**
 
-Run: `$env:PYTHONPATH='D:\tyh\knowledge-manager\src'; python -m pytest D:\tyh\knowledge-manager\tests\test_cache.py D:\tyh\knowledge-manager\tests\test_mcp_server.py -k "cache_isolates_by_namespace_category_and_module_id or multi_tenant_mcp_disables_global_resources or honor_trusted_tenant" -v --basetemp C:\tmp\km-pytest`
+Run: `$env:PYTHONPATH='<workspace>\src'; python -m pytest <workspace>\tests\test_cache.py <workspace>\tests\test_mcp_server.py -k "cache_isolates_by_namespace_category_and_module_id or multi_tenant_mcp_disables_global_resources or honor_trusted_tenant" -v --basetemp C:\tmp\km-pytest`
 
 Expected: `FAIL` because MCP cache keys still omit category and MCP global resources are still exposed in multi-tenant mode.
 
@@ -713,14 +713,14 @@ def deep_search_tool(query: str, category: str = "", namespace: str = "default",
 
 - [ ] **Step 5: Re-run MCP/cache tests plus existing MCP tenant tests**
 
-Run: `$env:PYTHONPATH='D:\tyh\knowledge-manager\src'; python -m pytest D:\tyh\knowledge-manager\tests\test_cache.py D:\tyh\knowledge-manager\tests\test_mcp_server.py -k "tenant or cache_isolates_by_namespace_category_and_module_id or namespace_isolation or trusted_tenant" -v --basetemp C:\tmp\km-pytest`
+Run: `$env:PYTHONPATH='<workspace>\src'; python -m pytest <workspace>\tests\test_cache.py <workspace>\tests\test_mcp_server.py -k "tenant or cache_isolates_by_namespace_category_and_module_id or namespace_isolation or trusted_tenant" -v --basetemp C:\tmp\km-pytest`
 
 Expected: cache collisions are eliminated, global MCP resources are not available in multi-tenant mode, and tool outputs stay inside trusted tenant scope.
 
 - [ ] **Step 6: Commit the Task 3 slice**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\cache.py D:\tyh\knowledge-manager\src\knowledge_manager\mcp_server.py D:\tyh\knowledge-manager\src\knowledge_manager\schemas.py D:\tyh\knowledge-manager\tests\test_cache.py D:\tyh\knowledge-manager\tests\test_mcp_server.py
+git add <workspace>\src\knowledge_manager\cache.py <workspace>\src\knowledge_manager\mcp_server.py <workspace>\src\knowledge_manager\schemas.py <workspace>\tests\test_cache.py <workspace>\tests\test_mcp_server.py
 git commit -m "fix: lock down mcp multi-tenant exposure and cache keys"
 ```
 
@@ -734,17 +734,17 @@ git commit -m "fix: lock down mcp multi-tenant exposure and cache keys"
 ### Task 4 (P0): Make Readiness Truthful, Fix `updated_at`, And Verify All Required Benchmark Scales
 
 **Files:**
-- Create: `D:\tyh\knowledge-manager\scripts\verify_production_readiness.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\runtime_checks.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\storage.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\auth.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\performance_benchmarks.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\cli.py`
-- Test: `D:\tyh\knowledge-manager\tests\test_runtime_checks.py`
-- Test: `D:\tyh\knowledge-manager\tests\test_storage.py`
-- Test: `D:\tyh\knowledge-manager\tests\test_http_server.py`
-- Test: `D:\tyh\knowledge-manager\tests\test_performance_benchmarks.py`
+- Create: `<workspace>\scripts\verify_production_readiness.py`
+- Modify: `<workspace>\src\knowledge_manager\runtime_checks.py`
+- Modify: `<workspace>\src\knowledge_manager\storage.py`
+- Modify: `<workspace>\src\knowledge_manager\auth.py`
+- Modify: `<workspace>\src\knowledge_manager\http_server.py`
+- Modify: `<workspace>\src\knowledge_manager\performance_benchmarks.py`
+- Modify: `<workspace>\src\knowledge_manager\cli.py`
+- Test: `<workspace>\tests\test_runtime_checks.py`
+- Test: `<workspace>\tests\test_storage.py`
+- Test: `<workspace>\tests\test_http_server.py`
+- Test: `<workspace>\tests\test_performance_benchmarks.py`
 
 - [ ] **Step 1: Write the failing readiness, freshness, and multi-scale verification tests**
 
@@ -808,7 +808,7 @@ def test_verify_production_readiness_requires_all_required_scales(tmp_path):
 
 - [ ] **Step 2: Run the focused readiness/freshness tests and verify they fail**
 
-Run: `$env:PYTHONPATH='D:\tyh\knowledge-manager\src'; python -m pytest D:\tyh\knowledge-manager\tests\test_runtime_checks.py D:\tyh\knowledge-manager\tests\test_storage.py D:\tyh\knowledge-manager\tests\test_performance_benchmarks.py -k "production_mode_has_no_auth or failed_jobs_and_expired_leases or refreshes_updated_at_for_summary_change or requires_all_required_scales" -v --basetemp C:\tmp\km-pytest`
+Run: `$env:PYTHONPATH='<workspace>\src'; python -m pytest <workspace>\tests\test_runtime_checks.py <workspace>\tests\test_storage.py <workspace>\tests\test_performance_benchmarks.py -k "production_mode_has_no_auth or failed_jobs_and_expired_leases or refreshes_updated_at_for_summary_change or requires_all_required_scales" -v --basetemp C:\tmp\km-pytest`
 
 Expected: `FAIL` because readiness is too shallow, `updated_at` is stale for summary/content changes, and release verification does not aggregate required scales.
 
@@ -912,16 +912,16 @@ def main() -> int:
 
 - [ ] **Step 5: Re-run production-gate tests and smoke the verification script**
 
-Run: `$env:PYTHONPATH='D:\tyh\knowledge-manager\src'; python -m pytest D:\tyh\knowledge-manager\tests\test_runtime_checks.py D:\tyh\knowledge-manager\tests\test_storage.py D:\tyh\knowledge-manager\tests\test_http_server.py D:\tyh\knowledge-manager\tests\test_performance_benchmarks.py -k "ready or integrity or updated_at or release_verdict or required_scales" -v --basetemp C:\tmp\km-pytest`
+Run: `$env:PYTHONPATH='<workspace>\src'; python -m pytest <workspace>\tests\test_runtime_checks.py <workspace>\tests\test_storage.py <workspace>\tests\test_http_server.py <workspace>\tests\test_performance_benchmarks.py -k "ready or integrity or updated_at or release_verdict or required_scales" -v --basetemp C:\tmp\km-pytest`
 
-Run: `python D:\tyh\knowledge-manager\scripts\verify_production_readiness.py --kb-path D:\tyh\knowledge-manager\kb --matrix-summary D:\tyh\knowledge-manager\test-results\perf-run-production-gate-20260613-r5\matrix-summary.json`
+Run: `python <workspace>\scripts\verify_production_readiness.py --kb-path <workspace>\kb --matrix-summary <workspace>\test-results\perf-run-production-gate-20260613-r5\matrix-summary.json`
 
 Expected: tests pass; the script exits non-zero if any required scale, readiness check, or integrity check fails.
 
 - [ ] **Step 6: Commit the Task 4 slice**
 
 ```bash
-git add D:\tyh\knowledge-manager\scripts\verify_production_readiness.py D:\tyh\knowledge-manager\src\knowledge_manager\runtime_checks.py D:\tyh\knowledge-manager\src\knowledge_manager\storage.py D:\tyh\knowledge-manager\src\knowledge_manager\auth.py D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py D:\tyh\knowledge-manager\src\knowledge_manager\performance_benchmarks.py D:\tyh\knowledge-manager\src\knowledge_manager\cli.py D:\tyh\knowledge-manager\tests\test_runtime_checks.py D:\tyh\knowledge-manager\tests\test_storage.py D:\tyh\knowledge-manager\tests\test_http_server.py D:\tyh\knowledge-manager\tests\test_performance_benchmarks.py
+git add <workspace>\scripts\verify_production_readiness.py <workspace>\src\knowledge_manager\runtime_checks.py <workspace>\src\knowledge_manager\storage.py <workspace>\src\knowledge_manager\auth.py <workspace>\src\knowledge_manager\http_server.py <workspace>\src\knowledge_manager\performance_benchmarks.py <workspace>\src\knowledge_manager\cli.py <workspace>\tests\test_runtime_checks.py <workspace>\tests\test_storage.py <workspace>\tests\test_http_server.py <workspace>\tests\test_performance_benchmarks.py
 git commit -m "feat: add truthful production readiness gates"
 ```
 
@@ -935,13 +935,13 @@ git commit -m "feat: add truthful production readiness gates"
 ### Task 5 (P1 / Pre-Cutover If Upload Is Enabled): Replace In-Process Threads With A Durable Worker Loop
 
 **Files:**
-- Create: `D:\tyh\knowledge-manager\src\knowledge_manager\worker_service.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\ingestion_jobs.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\job_worker.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\cli.py`
-- Test: `D:\tyh\knowledge-manager\tests\test_ingestion_jobs.py`
-- Create: `D:\tyh\knowledge-manager\tests\test_worker_service.py`
+- Create: `<workspace>\src\knowledge_manager\worker_service.py`
+- Modify: `<workspace>\src\knowledge_manager\ingestion_jobs.py`
+- Modify: `<workspace>\src\knowledge_manager\job_worker.py`
+- Modify: `<workspace>\src\knowledge_manager\http_server.py`
+- Modify: `<workspace>\src\knowledge_manager\cli.py`
+- Test: `<workspace>\tests\test_ingestion_jobs.py`
+- Create: `<workspace>\tests\test_worker_service.py`
 
 - [ ] **Step 1: Write the failing worker durability tests**
 
@@ -986,7 +986,7 @@ def test_worker_run_once_drains_queued_jobs(tmp_path):
 
 - [ ] **Step 2: Run the focused worker tests and verify they fail**
 
-Run: `$env:PYTHONPATH='D:\tyh\knowledge-manager\src'; python -m pytest D:\tyh\knowledge-manager\tests\test_ingestion_jobs.py D:\tyh\knowledge-manager\tests\test_worker_service.py -k "stale_running_jobs or upload_endpoint_only_enqueues_job or worker_run_once_drains_queued_jobs" -v --basetemp C:\tmp\km-pytest`
+Run: `$env:PYTHONPATH='<workspace>\src'; python -m pytest <workspace>\tests\test_ingestion_jobs.py <workspace>\tests\test_worker_service.py -k "stale_running_jobs or upload_endpoint_only_enqueues_job or worker_run_once_drains_queued_jobs" -v --basetemp C:\tmp\km-pytest`
 
 Expected: `FAIL` because queue recovery and enqueue-only API behavior do not exist yet.
 
@@ -1059,7 +1059,7 @@ def worker_run(ctx: click.Context, once: bool, poll_interval: float) -> None:
 - [ ] **Step 6: Commit the Task 5 slice**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\worker_service.py D:\tyh\knowledge-manager\src\knowledge_manager\ingestion_jobs.py D:\tyh\knowledge-manager\src\knowledge_manager\job_worker.py D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py D:\tyh\knowledge-manager\src\knowledge_manager\cli.py D:\tyh\knowledge-manager\tests\test_ingestion_jobs.py D:\tyh\knowledge-manager\tests\test_worker_service.py
+git add <workspace>\src\knowledge_manager\worker_service.py <workspace>\src\knowledge_manager\ingestion_jobs.py <workspace>\src\knowledge_manager\job_worker.py <workspace>\src\knowledge_manager\http_server.py <workspace>\src\knowledge_manager\cli.py <workspace>\tests\test_ingestion_jobs.py <workspace>\tests\test_worker_service.py
 git commit -m "feat: add durable worker loop and queue recovery"
 ```
 
@@ -1073,15 +1073,15 @@ git commit -m "feat: add durable worker loop and queue recovery"
 ### Task 6 (P1): Enrich Auditability, Add Request Correlation, And Document Rollout / Rollback
 
 **Files:**
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\audit.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\http_authz.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\performance_benchmarks.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\cli.py`
-- Create: `D:\tyh\knowledge-manager\tests\test_audit.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_http_server.py`
-- Modify: `D:\tyh\knowledge-manager\docs\runbooks\production-release-checklist.md`
-- Modify: `D:\tyh\knowledge-manager\docs\runbooks\enterprise-performance-test-plan.md`
+- Modify: `<workspace>\src\knowledge_manager\audit.py`
+- Modify: `<workspace>\src\knowledge_manager\http_authz.py`
+- Modify: `<workspace>\src\knowledge_manager\http_server.py`
+- Modify: `<workspace>\src\knowledge_manager\performance_benchmarks.py`
+- Modify: `<workspace>\src\knowledge_manager\cli.py`
+- Create: `<workspace>\tests\test_audit.py`
+- Modify: `<workspace>\tests\test_http_server.py`
+- Modify: `<workspace>\docs\runbooks\production-release-checklist.md`
+- Modify: `<workspace>\docs\runbooks\enterprise-performance-test-plan.md`
 
 - [ ] **Step 1: Write the failing audit and request-correlation tests**
 
@@ -1125,7 +1125,7 @@ def test_tenant_override_denial_is_audited(tmp_path):
 
 - [ ] **Step 2: Run the focused audit tests and verify they fail**
 
-Run: `$env:PYTHONPATH='D:\tyh\knowledge-manager\src'; python -m pytest D:\tyh\knowledge-manager\tests\test_audit.py D:\tyh\knowledge-manager\tests\test_http_server.py -k "request_id or audit or tenant_override_denial" -v --basetemp C:\tmp\km-pytest`
+Run: `$env:PYTHONPATH='<workspace>\src'; python -m pytest <workspace>\tests\test_audit.py <workspace>\tests\test_http_server.py -k "request_id or audit or tenant_override_denial" -v --basetemp C:\tmp\km-pytest`
 
 Expected: `FAIL` because request correlation and HTTP security action audit events are not emitted yet.
 
@@ -1203,16 +1203,16 @@ log_audit_event(
 
 - [ ] **Step 5: Re-run audit tests and verify docs mention multi-scale gates and rollback**
 
-Run: `$env:PYTHONPATH='D:\tyh\knowledge-manager\src'; python -m pytest D:\tyh\knowledge-manager\tests\test_audit.py D:\tyh\knowledge-manager\tests\test_http_server.py -k "audit or request_id or denial" -v --basetemp C:\tmp\km-pytest`
+Run: `$env:PYTHONPATH='<workspace>\src'; python -m pytest <workspace>\tests\test_audit.py <workspace>\tests\test_http_server.py -k "audit or request_id or denial" -v --basetemp C:\tmp\km-pytest`
 
-Run: `Select-String -Path D:\tyh\knowledge-manager\docs\runbooks\production-release-checklist.md,D:\tyh\knowledge-manager\docs\runbooks\enterprise-performance-test-plan.md -Pattern "production_mode","rollback","xs","s","m","verify_production_readiness"`
+Run: `Select-String -Path <workspace>\docs\runbooks\production-release-checklist.md,<workspace>\docs\runbooks\enterprise-performance-test-plan.md -Pattern "production_mode","rollback","xs","s","m","verify_production_readiness"`
 
 Expected: audit tests pass and both runbooks contain explicit release-sequencing and rollback language.
 
 - [ ] **Step 6: Commit the Task 6 slice**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\audit.py D:\tyh\knowledge-manager\src\knowledge_manager\http_authz.py D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py D:\tyh\knowledge-manager\src\knowledge_manager\performance_benchmarks.py D:\tyh\knowledge-manager\src\knowledge_manager\cli.py D:\tyh\knowledge-manager\tests\test_audit.py D:\tyh\knowledge-manager\tests\test_http_server.py D:\tyh\knowledge-manager\docs\runbooks\production-release-checklist.md D:\tyh\knowledge-manager\docs\runbooks\enterprise-performance-test-plan.md
+git add <workspace>\src\knowledge_manager\audit.py <workspace>\src\knowledge_manager\http_authz.py <workspace>\src\knowledge_manager\http_server.py <workspace>\src\knowledge_manager\performance_benchmarks.py <workspace>\src\knowledge_manager\cli.py <workspace>\tests\test_audit.py <workspace>\tests\test_http_server.py <workspace>\docs\runbooks\production-release-checklist.md <workspace>\docs\runbooks\enterprise-performance-test-plan.md
 git commit -m "feat: add audit correlation and rollout guidance"
 ```
 

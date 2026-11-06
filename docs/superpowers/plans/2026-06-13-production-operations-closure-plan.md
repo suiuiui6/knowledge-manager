@@ -30,38 +30,38 @@ This plan therefore assumes the remaining work is operational, not retrieval-alg
 
 ### Existing files to extend
 
-- `D:\tyh\knowledge-manager\src\knowledge_manager\cli.py`
+- `<workspace>\src\knowledge_manager\cli.py`
   Responsibility: operator commands and release-support commands.
-- `D:\tyh\knowledge-manager\tests\test_cli.py`
+- `<workspace>\tests\test_cli.py`
   Responsibility: CLI behavior verification.
-- `D:\tyh\knowledge-manager\docs\runbooks\production-release-checklist.md`
+- `<workspace>\docs\runbooks\production-release-checklist.md`
   Responsibility: final release, cutover, rollback, and operator procedure.
-- `D:\tyh\knowledge-manager\docs\runbooks\enterprise-performance-test-plan.md`
+- `<workspace>\docs\runbooks\enterprise-performance-test-plan.md`
   Responsibility: benchmark evidence and release-gate interpretation.
-- `D:\tyh\knowledge-manager\README.md`
+- `<workspace>\README.md`
   Responsibility: top-level operator onboarding and deployment entry points.
 
 ### New files to create
 
-- `D:\tyh\knowledge-manager\deploy\systemd\knowledge-manager-api.service`
+- `<workspace>\deploy\systemd\knowledge-manager-api.service`
   Responsibility: supervised API startup.
-- `D:\tyh\knowledge-manager\deploy\systemd\knowledge-manager-worker.service`
+- `<workspace>\deploy\systemd\knowledge-manager-worker.service`
   Responsibility: supervised worker startup.
-- `D:\tyh\knowledge-manager\deploy\caddy\Caddyfile`
+- `<workspace>\deploy\caddy\Caddyfile`
   Responsibility: TLS termination and reverse proxy example.
-- `D:\tyh\knowledge-manager\deploy\logrotate\knowledge-manager`
+- `<workspace>\deploy\logrotate\knowledge-manager`
   Responsibility: JSONL audit / app log retention example.
-- `D:\tyh\knowledge-manager\.env.production.example`
+- `<workspace>\.env.production.example`
   Responsibility: documented production environment variable contract.
-- `D:\tyh\knowledge-manager\scripts\backup_kb.py`
+- `<workspace>\scripts\backup_kb.py`
   Responsibility: create timestamped backup bundles for the KB, audit logs, jobs, and config.
-- `D:\tyh\knowledge-manager\scripts\restore_kb.py`
+- `<workspace>\scripts\restore_kb.py`
   Responsibility: restore a backup bundle into a target KB path safely.
-- `D:\tyh\knowledge-manager\tests\test_backup_restore.py`
+- `<workspace>\tests\test_backup_restore.py`
   Responsibility: backup/restore round-trip and guardrail verification.
-- `D:\tyh\knowledge-manager\docs\runbooks\backup-restore-drill.md`
+- `<workspace>\docs\runbooks\backup-restore-drill.md`
   Responsibility: operational drill procedure and acceptance rules.
-- `D:\tyh\knowledge-manager\docs\runbooks\observability-and-alerting.md`
+- `<workspace>\docs\runbooks\observability-and-alerting.md`
   Responsibility: logs, metrics, alerts, and capacity watchpoints.
 
 ## Delivery Stages
@@ -74,12 +74,12 @@ This plan therefore assumes the remaining work is operational, not retrieval-alg
 ### Task 1: Check In Production Deployment Artifacts
 
 **Files:**
-- Create: `D:\tyh\knowledge-manager\deploy\systemd\knowledge-manager-api.service`
-- Create: `D:\tyh\knowledge-manager\deploy\systemd\knowledge-manager-worker.service`
-- Create: `D:\tyh\knowledge-manager\deploy\caddy\Caddyfile`
-- Create: `D:\tyh\knowledge-manager\.env.production.example`
-- Modify: `D:\tyh\knowledge-manager\README.md`
-- Modify: `D:\tyh\knowledge-manager\docs\runbooks\production-release-checklist.md`
+- Create: `<workspace>\deploy\systemd\knowledge-manager-api.service`
+- Create: `<workspace>\deploy\systemd\knowledge-manager-worker.service`
+- Create: `<workspace>\deploy\caddy\Caddyfile`
+- Create: `<workspace>\.env.production.example`
+- Modify: `<workspace>\README.md`
+- Modify: `<workspace>\docs\runbooks\production-release-checklist.md`
 
 - [ ] **Step 1: Write the deployment artifact tests as documentation assertions**
 
@@ -104,7 +104,7 @@ def test_readme_mentions_deploy_entrypoints():
 
 - [ ] **Step 2: Run the focused artifact tests and verify they fail**
 
-Run: `$env:PYTHONPATH='D:\tyh\knowledge-manager\src'; $env:PYTEST_DEBUG_TEMPROOT='D:\tyh\knowledge-manager\tmp\pytest'; python -m pytest D:\tyh\knowledge-manager\tests\test_cli.py -k "production_artifacts_exist or deploy_entrypoints" -q`
+Run: `$env:PYTHONPATH='<workspace>\src'; $env:PYTEST_DEBUG_TEMPROOT='<workspace>\tmp\pytest'; python -m pytest <workspace>\tests\test_cli.py -k "production_artifacts_exist or deploy_entrypoints" -q`
 
 Expected: `FAIL` because these files and references do not exist yet.
 
@@ -200,25 +200,25 @@ OPENAI_API_KEY=replace-me
 
 - [ ] **Step 7: Re-run the artifact tests**
 
-Run: `$env:PYTHONPATH='D:\tyh\knowledge-manager\src'; $env:PYTEST_DEBUG_TEMPROOT='D:\tyh\knowledge-manager\tmp\pytest'; python -m pytest D:\tyh\knowledge-manager\tests\test_cli.py -k "production_artifacts_exist or deploy_entrypoints" -q`
+Run: `$env:PYTHONPATH='<workspace>\src'; $env:PYTEST_DEBUG_TEMPROOT='<workspace>\tmp\pytest'; python -m pytest <workspace>\tests\test_cli.py -k "production_artifacts_exist or deploy_entrypoints" -q`
 
 Expected: `PASS`.
 
 - [ ] **Step 8: Commit**
 
 ```bash
-git add D:\tyh\knowledge-manager\deploy\systemd\knowledge-manager-api.service D:\tyh\knowledge-manager\deploy\systemd\knowledge-manager-worker.service D:\tyh\knowledge-manager\deploy\caddy\Caddyfile D:\tyh\knowledge-manager\.env.production.example D:\tyh\knowledge-manager\README.md D:\tyh\knowledge-manager\docs\runbooks\production-release-checklist.md D:\tyh\knowledge-manager\tests\test_cli.py
+git add <workspace>\deploy\systemd\knowledge-manager-api.service <workspace>\deploy\systemd\knowledge-manager-worker.service <workspace>\deploy\caddy\Caddyfile <workspace>\.env.production.example <workspace>\README.md <workspace>\docs\runbooks\production-release-checklist.md <workspace>\tests\test_cli.py
 git commit -m "ops: add production deployment artifacts"
 ```
 
 ### Task 2: Add Tested Backup And Restore Tooling
 
 **Files:**
-- Create: `D:\tyh\knowledge-manager\scripts\backup_kb.py`
-- Create: `D:\tyh\knowledge-manager\scripts\restore_kb.py`
-- Create: `D:\tyh\knowledge-manager\tests\test_backup_restore.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\cli.py`
-- Create: `D:\tyh\knowledge-manager\docs\runbooks\backup-restore-drill.md`
+- Create: `<workspace>\scripts\backup_kb.py`
+- Create: `<workspace>\scripts\restore_kb.py`
+- Create: `<workspace>\tests\test_backup_restore.py`
+- Modify: `<workspace>\src\knowledge_manager\cli.py`
+- Create: `<workspace>\docs\runbooks\backup-restore-drill.md`
 
 - [ ] **Step 1: Write the failing backup/restore tests**
 
@@ -260,7 +260,7 @@ def test_restore_script_recreates_index_file(tmp_path):
 
 - [ ] **Step 2: Run the backup/restore tests and verify they fail**
 
-Run: `$env:PYTHONPATH='D:\tyh\knowledge-manager\src;D:\tyh\knowledge-manager'; $env:PYTEST_DEBUG_TEMPROOT='D:\tyh\knowledge-manager\tmp\pytest'; python -m pytest D:\tyh\knowledge-manager\tests\test_backup_restore.py -q`
+Run: `$env:PYTHONPATH='<workspace>\src;<workspace>'; $env:PYTEST_DEBUG_TEMPROOT='<workspace>\tmp\pytest'; python -m pytest <workspace>\tests\test_backup_restore.py -q`
 
 Expected: `FAIL` because the scripts and CLI wrappers do not exist yet.
 
@@ -354,24 +354,24 @@ def backup_restore(bundle: Path, target_kb: Path) -> None:
 
 - [ ] **Step 6: Re-run the backup/restore tests**
 
-Run: `$env:PYTHONPATH='D:\tyh\knowledge-manager\src;D:\tyh\knowledge-manager'; $env:PYTEST_DEBUG_TEMPROOT='D:\tyh\knowledge-manager\tmp\pytest'; python -m pytest D:\tyh\knowledge-manager\tests\test_backup_restore.py D:\tyh\knowledge-manager\tests\test_cli.py -k "backup or restore" -q`
+Run: `$env:PYTHONPATH='<workspace>\src;<workspace>'; $env:PYTEST_DEBUG_TEMPROOT='<workspace>\tmp\pytest'; python -m pytest <workspace>\tests\test_backup_restore.py <workspace>\tests\test_cli.py -k "backup or restore" -q`
 
 Expected: `PASS`.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add D:\tyh\knowledge-manager\scripts\backup_kb.py D:\tyh\knowledge-manager\scripts\restore_kb.py D:\tyh\knowledge-manager\tests\test_backup_restore.py D:\tyh\knowledge-manager\src\knowledge_manager\cli.py D:\tyh\knowledge-manager\docs\runbooks\backup-restore-drill.md D:\tyh\knowledge-manager\tests\test_cli.py
+git add <workspace>\scripts\backup_kb.py <workspace>\scripts\restore_kb.py <workspace>\tests\test_backup_restore.py <workspace>\src\knowledge_manager\cli.py <workspace>\docs\runbooks\backup-restore-drill.md <workspace>\tests\test_cli.py
 git commit -m "ops: add backup and restore tooling"
 ```
 
 ### Task 3: Add Log Retention And Observability Guidance
 
 **Files:**
-- Create: `D:\tyh\knowledge-manager\deploy\logrotate\knowledge-manager`
-- Create: `D:\tyh\knowledge-manager\docs\runbooks\observability-and-alerting.md`
-- Modify: `D:\tyh\knowledge-manager\docs\runbooks\production-release-checklist.md`
-- Modify: `D:\tyh\knowledge-manager\README.md`
+- Create: `<workspace>\deploy\logrotate\knowledge-manager`
+- Create: `<workspace>\docs\runbooks\observability-and-alerting.md`
+- Modify: `<workspace>\docs\runbooks\production-release-checklist.md`
+- Modify: `<workspace>\README.md`
 
 - [ ] **Step 1: Write the observability documentation assertions**
 
@@ -390,7 +390,7 @@ def test_observability_runbook_mentions_metrics_alerts_and_logs():
 
 - [ ] **Step 2: Run the observability assertions and verify they fail**
 
-Run: `$env:PYTHONPATH='D:\tyh\knowledge-manager\src'; $env:PYTEST_DEBUG_TEMPROOT='D:\tyh\knowledge-manager\tmp\pytest'; python -m pytest D:\tyh\knowledge-manager\tests\test_cli.py -k "observability_runbook_mentions_metrics_alerts_and_logs" -q`
+Run: `$env:PYTHONPATH='<workspace>\src'; $env:PYTEST_DEBUG_TEMPROOT='<workspace>\tmp\pytest'; python -m pytest <workspace>\tests\test_cli.py -k "observability_runbook_mentions_metrics_alerts_and_logs" -q`
 
 Expected: `FAIL`.
 
@@ -446,23 +446,23 @@ Expected: `FAIL`.
 
 - [ ] **Step 6: Re-run the observability assertions**
 
-Run: `$env:PYTHONPATH='D:\tyh\knowledge-manager\src'; $env:PYTEST_DEBUG_TEMPROOT='D:\tyh\knowledge-manager\tmp\pytest'; python -m pytest D:\tyh\knowledge-manager\tests\test_cli.py -k "observability_runbook_mentions_metrics_alerts_and_logs" -q`
+Run: `$env:PYTHONPATH='<workspace>\src'; $env:PYTEST_DEBUG_TEMPROOT='<workspace>\tmp\pytest'; python -m pytest <workspace>\tests\test_cli.py -k "observability_runbook_mentions_metrics_alerts_and_logs" -q`
 
 Expected: `PASS`.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add D:\tyh\knowledge-manager\deploy\logrotate\knowledge-manager D:\tyh\knowledge-manager\docs\runbooks\observability-and-alerting.md D:\tyh\knowledge-manager\docs\runbooks\production-release-checklist.md D:\tyh\knowledge-manager\README.md D:\tyh\knowledge-manager\tests\test_cli.py
+git add <workspace>\deploy\logrotate\knowledge-manager <workspace>\docs\runbooks\observability-and-alerting.md <workspace>\docs\runbooks\production-release-checklist.md <workspace>\README.md <workspace>\tests\test_cli.py
 git commit -m "ops: add observability and log retention guidance"
 ```
 
 ### Task 4: Add A Release-Support Evidence Bundle Command
 
 **Files:**
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\cli.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_cli.py`
-- Modify: `D:\tyh\knowledge-manager\docs\runbooks\production-release-checklist.md`
+- Modify: `<workspace>\src\knowledge_manager\cli.py`
+- Modify: `<workspace>\tests\test_cli.py`
+- Modify: `<workspace>\docs\runbooks\production-release-checklist.md`
 
 - [ ] **Step 1: Write the failing CLI test for the evidence bundle**
 
@@ -485,7 +485,7 @@ def test_support_bundle_writes_release_evidence(tmp_path, runner):
 
 - [ ] **Step 2: Run the focused CLI test and verify it fails**
 
-Run: `$env:PYTHONPATH='D:\tyh\knowledge-manager\src'; $env:PYTEST_DEBUG_TEMPROOT='D:\tyh\knowledge-manager\tmp\pytest'; python -m pytest D:\tyh\knowledge-manager\tests\test_cli.py -k "support_bundle_writes_release_evidence" -q`
+Run: `$env:PYTHONPATH='<workspace>\src'; $env:PYTEST_DEBUG_TEMPROOT='<workspace>\tmp\pytest'; python -m pytest <workspace>\tests\test_cli.py -k "support_bundle_writes_release_evidence" -q`
 
 Expected: `FAIL`.
 
@@ -532,23 +532,23 @@ km --kb <kb> support bundle --output-dir <dir> --matrix-summary <fresh-matrix-su
 
 - [ ] **Step 5: Re-run the CLI bundle test**
 
-Run: `$env:PYTHONPATH='D:\tyh\knowledge-manager\src'; $env:PYTEST_DEBUG_TEMPROOT='D:\tyh\knowledge-manager\tmp\pytest'; python -m pytest D:\tyh\knowledge-manager\tests\test_cli.py -k "support_bundle_writes_release_evidence" -q`
+Run: `$env:PYTHONPATH='<workspace>\src'; $env:PYTEST_DEBUG_TEMPROOT='<workspace>\tmp\pytest'; python -m pytest <workspace>\tests\test_cli.py -k "support_bundle_writes_release_evidence" -q`
 
 Expected: `PASS`.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\cli.py D:\tyh\knowledge-manager\tests\test_cli.py D:\tyh\knowledge-manager\docs\runbooks\production-release-checklist.md
+git add <workspace>\src\knowledge_manager\cli.py <workspace>\tests\test_cli.py <workspace>\docs\runbooks\production-release-checklist.md
 git commit -m "ops: add release support bundle command"
 ```
 
 ### Task 5: Tighten Release Governance And Capacity Boundaries
 
 **Files:**
-- Modify: `D:\tyh\knowledge-manager\docs\runbooks\production-release-checklist.md`
-- Modify: `D:\tyh\knowledge-manager\docs\runbooks\enterprise-performance-test-plan.md`
-- Modify: `D:\tyh\knowledge-manager\docs\runbooks\backup-restore-drill.md`
+- Modify: `<workspace>\docs\runbooks\production-release-checklist.md`
+- Modify: `<workspace>\docs\runbooks\enterprise-performance-test-plan.md`
+- Modify: `<workspace>\docs\runbooks\backup-restore-drill.md`
 
 - [ ] **Step 1: Add explicit “production-ready” definition to the release checklist**
 
@@ -585,14 +585,14 @@ The current repository may be called production-ready only when all of the follo
 
 - [ ] **Step 4: Verify the governance language is present**
 
-Run: `Select-String -Path D:\tyh\knowledge-manager\docs\runbooks\production-release-checklist.md,D:\tyh\knowledge-manager\docs\runbooks\enterprise-performance-test-plan.md,D:\tyh\knowledge-manager\docs\runbooks\backup-restore-drill.md -Pattern "production-ready","30 days","Capacity Boundary","monthly"`
+Run: `Select-String -Path <workspace>\docs\runbooks\production-release-checklist.md,<workspace>\docs\runbooks\enterprise-performance-test-plan.md,<workspace>\docs\runbooks\backup-restore-drill.md -Pattern "production-ready","30 days","Capacity Boundary","monthly"`
 
 Expected: all required governance phrases are present.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add D:\tyh\knowledge-manager\docs\runbooks\production-release-checklist.md D:\tyh\knowledge-manager\docs\runbooks\enterprise-performance-test-plan.md D:\tyh\knowledge-manager\docs\runbooks\backup-restore-drill.md
+git add <workspace>\docs\runbooks\production-release-checklist.md <workspace>\docs\runbooks\enterprise-performance-test-plan.md <workspace>\docs\runbooks\backup-restore-drill.md
 git commit -m "docs: tighten production governance rules"
 ```
 

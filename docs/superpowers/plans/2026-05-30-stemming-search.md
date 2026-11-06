@@ -12,12 +12,12 @@
 
 ## Background — read before starting
 
-The repository already has a global `--verbose/-v` option in [src/knowledge_manager/cli.py](D:/tyh/knowledge-manager/src/knowledge_manager/cli.py:64), but the logging behavior is incomplete and inconsistent:
+The repository already has a global `--verbose/-v` option in [src/knowledge_manager/cli.py](<workspace>/src/knowledge_manager/cli.py:64), but the logging behavior is incomplete and inconsistent:
 
 1. `cli.py` configures root logging with `logging.basicConfig(...)`, but only the `add` command actually emits operational logs.
 2. `llm_clients.py` logs DeepSeek request metadata and logs full HTTP error bodies, but Claude/OpenAI paths emit no equivalent progress logs.
 3. The current debug output is not tested, and there is no guard against accidentally logging full prompt/response bodies during extraction.
-4. Existing CLI tests in [tests/test_cli.py](D:/tyh/knowledge-manager/tests/test_cli.py:46) do not cover `--verbose`, and client tests in [tests/test_llm.py](D:/tyh/knowledge-manager/tests/test_llm.py:34) assert request shape only.
+4. Existing CLI tests in [tests/test_cli.py](<workspace>/tests/test_cli.py:46) do not cover `--verbose`, and client tests in [tests/test_llm.py](<workspace>/tests/test_llm.py:34) assert request shape only.
 
 The implementation should make verbose mode genuinely useful for `km add` while keeping the logging surface intentionally small and safe.
 
@@ -165,7 +165,7 @@ Expected: both tests PASS.
 
 - [ ] **Step 1: Inspect current extractor flow before editing**
 
-Read [src/knowledge_manager/extractor.py](D:/tyh/knowledge-manager/src/knowledge_manager/extractor.py) fully and identify the exact points where these logs should go:
+Read [src/knowledge_manager/extractor.py](<workspace>/src/knowledge_manager/extractor.py) fully and identify the exact points where these logs should go:
 
 1. Before chunking/extraction starts.
 2. After chunking decides how many chunks will be processed.
@@ -275,7 +275,7 @@ Expected: new log-focused tests PASS, existing client tests still PASS.
 
 - [ ] **Step 1: Add a brief README note**
 
-Update [README.md](D:/tyh/knowledge-manager/README.md) in the CLI usage area or feature list to mention that `km add --verbose` prints extraction progress for debugging. Keep it short; one bullet or one sentence is enough. Example wording:
+Update [README.md](<workspace>/README.md) in the CLI usage area or feature list to mention that `km add --verbose` prints extraction progress for debugging. Keep it short; one bullet or one sentence is enough. Example wording:
 
 ```markdown
 - `km add --verbose` shows extraction progress, provider/model selection, and staging activity for debugging.

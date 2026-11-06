@@ -7,10 +7,10 @@
 
 ## 一、测试环境
 
-- **知识库路径**: `D:/tyh/knowledge_base`
+- **知识库路径**: `<workspace>/knowledge_base`
 - **LLM 提供商**: DeepSeek (deepseek-v4-pro)
 - **测试内容**: OAuth 2.0 授权流程说明文档（约 10 行简短文本）
-- **MCP 服务器**: 已注册到 Claude Code (`C:\Users\14156\.claude\.mcp.json`)
+- **MCP 服务器**: 已注册到 Claude Code (`<user-home>\.claude\.mcp.json`)
 
 ---
 
@@ -20,7 +20,7 @@
 
 **命令**:
 ```bash
-km --kb-path D:/tyh/knowledge_base add test_input.txt -c auth
+km --kb-path <workspace>/knowledge_base add test_input.txt -c auth
 ```
 
 **结果**:
@@ -51,7 +51,7 @@ km --kb-path D:/tyh/knowledge_base add test_input.txt -c auth
 
 **命令**:
 ```bash
-km --kb-path D:/tyh/knowledge_base review
+km --kb-path <workspace>/knowledge_base review
 ```
 
 **结果**:
@@ -75,7 +75,7 @@ Categories: 1
 
 **命令**:
 ```bash
-km --kb-path D:/tyh/knowledge_base serve
+km --kb-path <workspace>/knowledge_base serve
 ```
 
 **MCP 协议测试结果**:
@@ -246,35 +246,35 @@ km --kb-path D:/tyh/knowledge_base serve
 
 ```bash
 # 1. 初始化知识库
-km init D:/tyh/knowledge_base
+km init <workspace>/knowledge_base
 
 # 2. 配置 DeepSeek API
-km --kb-path D:/tyh/knowledge_base config set llm_providers.deepseek.api_key sk-***
-km --kb-path D:/tyh/knowledge_base config set llm_providers.deepseek.model deepseek-v4-pro
-km --kb-path D:/tyh/knowledge_base config set llm_providers.deepseek.base_url https://api.deepseek.com
-km --kb-path D:/tyh/knowledge_base config set llm_providers.deepseek.default true
+km --kb-path <workspace>/knowledge_base config set llm_providers.deepseek.api_key sk-***
+km --kb-path <workspace>/knowledge_base config set llm_providers.deepseek.model deepseek-v4-pro
+km --kb-path <workspace>/knowledge_base config set llm_providers.deepseek.base_url https://api.deepseek.com
+km --kb-path <workspace>/knowledge_base config set llm_providers.deepseek.default true
 
 # 3. 提取知识模块
-km --kb-path D:/tyh/knowledge_base add test_input.txt -c auth
+km --kb-path <workspace>/knowledge_base add test_input.txt -c auth
 
 # 4. 审核模块
-km --kb-path D:/tyh/knowledge_base review
+km --kb-path <workspace>/knowledge_base review
 
 # 5. 查看统计
-km --kb-path D:/tyh/knowledge_base stats
+km --kb-path <workspace>/knowledge_base stats
 
 # 6. 启动 MCP 服务器
-km --kb-path D:/tyh/knowledge_base serve
+km --kb-path <workspace>/knowledge_base serve
 
 # 7. 搜索测试
-km --kb-path D:/tyh/knowledge_base search "oauth token"
+km --kb-path <workspace>/knowledge_base search "oauth token"
 
 # 8. 查看模块
-km --kb-path D:/tyh/knowledge_base show authorization-code-flow -c auth
+km --kb-path <workspace>/knowledge_base show authorization-code-flow -c auth
 ```
 
 ---
 
 **验证人**: Claude (Sonnet 4.6)  
-**项目地址**: `D:\tyh\knowledge-manager`  
-**知识库地址**: `D:\tyh\knowledge_base`
+**项目地址**: `<workspace>`
+**知识库地址**: `<workspace>\knowledge_base`

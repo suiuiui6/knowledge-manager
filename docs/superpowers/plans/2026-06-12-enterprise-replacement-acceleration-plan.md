@@ -28,57 +28,57 @@
 ## File Structure
 
 ### Existing files to extend
-- `D:\tyh\knowledge-manager\src\knowledge_manager\storage.py`
+- `<workspace>\src\knowledge_manager\storage.py`
   Responsibility: retrieval telemetry, job persistence, tenant-aware module operations, governance reports.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\source_ingestion.py`
+- `<workspace>\src\knowledge_manager\source_ingestion.py`
   Responsibility: asynchronous source pull orchestration, checkpoints, import pipelines, migration adapters.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\cli.py`
+- `<workspace>\src\knowledge_manager\cli.py`
   Responsibility: operator job control, migration commands, eval workflows, tenant administration.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py`
+- `<workspace>\src\knowledge_manager\http_server.py`
   Responsibility: admin APIs, job APIs, migration APIs, permission-aware reads, admin dashboards.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\mcp_server.py`
+- `<workspace>\src\knowledge_manager\mcp_server.py`
   Responsibility: retrieval explanations, tenant-safe access, migration-safe resource views.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\eval_runner.py`
+- `<workspace>\src\knowledge_manager\eval_runner.py`
   Responsibility: goldens, ranking diagnostics, regression budgets, offline retrieval benchmarking.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\vector_index.py`
+- `<workspace>\src\knowledge_manager\vector_index.py`
   Responsibility: semantic recall plumbing, hybrid scoring, backend abstraction.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\auth.py`
+- `<workspace>\src\knowledge_manager\auth.py`
   Responsibility: auth claim resolution and tenant-aware request identity.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\rbac.py`
+- `<workspace>\src\knowledge_manager\rbac.py`
   Responsibility: policy inheritance, tenant/category/module scopes, effective access resolution.
-- `D:\tyh\knowledge-manager\README.md`
+- `<workspace>\README.md`
   Responsibility: positioning, migration claims, rollout guidance, operator commands.
-- `D:\tyh\knowledge-manager\tests\test_storage.py`
+- `<workspace>\tests\test_storage.py`
   Responsibility: retrieval telemetry, tenant isolation, job persistence.
-- `D:\tyh\knowledge-manager\tests\test_http_server.py`
+- `<workspace>\tests\test_http_server.py`
   Responsibility: admin API, migration API, job API, permission surfaces.
-- `D:\tyh\knowledge-manager\tests\test_mcp_server.py`
+- `<workspace>\tests\test_mcp_server.py`
   Responsibility: governed retrieval explanations, tenant-safe resources.
-- `D:\tyh\knowledge-manager\tests\test_cli.py`
+- `<workspace>\tests\test_cli.py`
   Responsibility: operator command coverage.
-- `D:\tyh\knowledge-manager\tests\test_eval_runner.py`
+- `<workspace>\tests\test_eval_runner.py`
   Responsibility: ranking diagnostics and regression budgets.
-- `D:\tyh\knowledge-manager\tests\test_integration.py`
+- `<workspace>\tests\test_integration.py`
   Responsibility: end-to-end ingest/eval/ops/migration replacement gates.
 
 ### New files to create
-- `D:\tyh\knowledge-manager\src\knowledge_manager\retrieval_eval.py`
+- `<workspace>\src\knowledge_manager\retrieval_eval.py`
   Responsibility: ranking diagnostics, hit-position analysis, nDCG/MRR/recall metrics, golden replay helpers.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\ingestion_jobs.py`
+- `<workspace>\src\knowledge_manager\ingestion_jobs.py`
   Responsibility: append-only ingestion job model, retries, leases, checkpoints, orchestration state.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\migration.py`
+- `<workspace>\src\knowledge_manager\migration.py`
   Responsibility: import/export adapters, incumbent metadata normalization, dry-run migration summaries.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\tenancy.py`
+- `<workspace>\src\knowledge_manager\tenancy.py`
   Responsibility: tenant/workspace model, isolation rules, workspace inheritance helpers.
-- `D:\tyh\knowledge-manager\src\knowledge_manager\admin_views.py`
+- `<workspace>\src\knowledge_manager\admin_views.py`
   Responsibility: dashboard aggregation tailored to enterprise operators.
-- `D:\tyh\knowledge-manager\tests\test_retrieval_eval.py`
+- `<workspace>\tests\test_retrieval_eval.py`
   Responsibility: ranking diagnostics and hybrid scoring coverage.
-- `D:\tyh\knowledge-manager\tests\test_ingestion_jobs.py`
+- `<workspace>\tests\test_ingestion_jobs.py`
   Responsibility: job checkpoints, retry semantics, resume behavior.
-- `D:\tyh\knowledge-manager\tests\test_migration.py`
+- `<workspace>\tests\test_migration.py`
   Responsibility: dry-run summaries, import normalization, rollback evidence.
-- `D:\tyh\knowledge-manager\tests\test_tenancy.py`
+- `<workspace>\tests\test_tenancy.py`
   Responsibility: tenant isolation and inheritance rules.
 
 ## Delivery Stages
@@ -92,11 +92,11 @@
 ### Task 1: Prove Retrieval Superiority With Real Ranking Diagnostics
 
 **Files:**
-- Create: `D:\tyh\knowledge-manager\src\knowledge_manager\retrieval_eval.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\eval_runner.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\storage.py`
-- Create: `D:\tyh\knowledge-manager\tests\test_retrieval_eval.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_eval_runner.py`
+- Create: `<workspace>\src\knowledge_manager\retrieval_eval.py`
+- Modify: `<workspace>\src\knowledge_manager\eval_runner.py`
+- Modify: `<workspace>\src\knowledge_manager\storage.py`
+- Create: `<workspace>\tests\test_retrieval_eval.py`
+- Modify: `<workspace>\tests\test_eval_runner.py`
 
 - [ ] **Step 1: Write the failing ranking diagnostics test**
 
@@ -117,7 +117,7 @@ def test_score_ranked_case_reports_mrr_ndcg_and_hit_position():
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_retrieval_eval.py::test_score_ranked_case_reports_mrr_ndcg_and_hit_position -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_retrieval_eval.py::test_score_ranked_case_reports_mrr_ndcg_and_hit_position -v`
 Expected: `FAIL` because `retrieval_eval.py` does not exist yet.
 
 - [ ] **Step 3: Write minimal ranking diagnostic implementation**
@@ -152,24 +152,24 @@ def score_ranked_case(required_modules: list[str], found_modules: list[str]) -> 
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_retrieval_eval.py::test_score_ranked_case_reports_mrr_ndcg_and_hit_position -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_retrieval_eval.py::test_score_ranked_case_reports_mrr_ndcg_and_hit_position -v`
 Expected: `PASS`
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\retrieval_eval.py D:\tyh\knowledge-manager\src\knowledge_manager\eval_runner.py D:\tyh\knowledge-manager\src\knowledge_manager\storage.py D:\tyh\knowledge-manager\tests\test_retrieval_eval.py D:\tyh\knowledge-manager\tests\test_eval_runner.py
+git add <workspace>\src\knowledge_manager\retrieval_eval.py <workspace>\src\knowledge_manager\eval_runner.py <workspace>\src\knowledge_manager\storage.py <workspace>\tests\test_retrieval_eval.py <workspace>\tests\test_eval_runner.py
 git commit -m "feat: add retrieval ranking diagnostics"
 ```
 
 ### Task 2: Add Hybrid Retrieval Scoring That Can Beat Naive RAG Recall
 
 **Files:**
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\storage.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\vector_index.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\retrieval_eval.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_storage.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_watch_vector.py`
+- Modify: `<workspace>\src\knowledge_manager\storage.py`
+- Modify: `<workspace>\src\knowledge_manager\vector_index.py`
+- Modify: `<workspace>\src\knowledge_manager\retrieval_eval.py`
+- Modify: `<workspace>\tests\test_storage.py`
+- Modify: `<workspace>\tests\test_watch_vector.py`
 
 - [ ] **Step 1: Write the failing hybrid ranking test**
 
@@ -192,7 +192,7 @@ def test_hybrid_search_promotes_supported_vector_hit_without_losing_policy_contr
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_watch_vector.py::test_hybrid_search_promotes_supported_vector_hit_without_losing_policy_controls -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_watch_vector.py::test_hybrid_search_promotes_supported_vector_hit_without_losing_policy_controls -v`
 Expected: `FAIL` because hybrid scoring does not exist yet.
 
 - [ ] **Step 3: Implement minimal hybrid scoring**
@@ -220,26 +220,26 @@ def _merge_hybrid_scores(
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_watch_vector.py::test_hybrid_search_promotes_supported_vector_hit_without_losing_policy_controls -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_watch_vector.py::test_hybrid_search_promotes_supported_vector_hit_without_losing_policy_controls -v`
 Expected: `PASS`
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\storage.py D:\tyh\knowledge-manager\src\knowledge_manager\vector_index.py D:\tyh\knowledge-manager\src\knowledge_manager\retrieval_eval.py D:\tyh\knowledge-manager\tests\test_storage.py D:\tyh\knowledge-manager\tests\test_watch_vector.py
+git add <workspace>\src\knowledge_manager\storage.py <workspace>\src\knowledge_manager\vector_index.py <workspace>\src\knowledge_manager\retrieval_eval.py <workspace>\tests\test_storage.py <workspace>\tests\test_watch_vector.py
 git commit -m "feat: add hybrid lexical semantic retrieval"
 ```
 
 ### Task 3: Replace Manual Source Pull With Durable Ingestion Jobs
 
 **Files:**
-- Create: `D:\tyh\knowledge-manager\src\knowledge_manager\ingestion_jobs.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\source_ingestion.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\cli.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py`
-- Create: `D:\tyh\knowledge-manager\tests\test_ingestion_jobs.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_cli.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_http_server.py`
+- Create: `<workspace>\src\knowledge_manager\ingestion_jobs.py`
+- Modify: `<workspace>\src\knowledge_manager\source_ingestion.py`
+- Modify: `<workspace>\src\knowledge_manager\cli.py`
+- Modify: `<workspace>\src\knowledge_manager\http_server.py`
+- Create: `<workspace>\tests\test_ingestion_jobs.py`
+- Modify: `<workspace>\tests\test_cli.py`
+- Modify: `<workspace>\tests\test_http_server.py`
 
 - [ ] **Step 1: Write the failing ingestion job lifecycle test**
 
@@ -262,7 +262,7 @@ def test_ingestion_job_claim_complete_round_trip(tmp_path):
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_ingestion_jobs.py::test_ingestion_job_claim_complete_round_trip -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_ingestion_jobs.py::test_ingestion_job_claim_complete_round_trip -v`
 Expected: `FAIL` because `ingestion_jobs.py` does not exist yet.
 
 - [ ] **Step 3: Implement minimal append-only ingestion job storage**
@@ -286,23 +286,23 @@ def create_ingestion_job(kb_path: Path, source_id: str, trigger: str) -> Ingesti
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_ingestion_jobs.py::test_ingestion_job_claim_complete_round_trip -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_ingestion_jobs.py::test_ingestion_job_claim_complete_round_trip -v`
 Expected: `PASS`
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\ingestion_jobs.py D:\tyh\knowledge-manager\src\knowledge_manager\source_ingestion.py D:\tyh\knowledge-manager\src\knowledge_manager\cli.py D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py D:\tyh\knowledge-manager\tests\test_ingestion_jobs.py D:\tyh\knowledge-manager\tests\test_cli.py D:\tyh\knowledge-manager\tests\test_http_server.py
+git add <workspace>\src\knowledge_manager\ingestion_jobs.py <workspace>\src\knowledge_manager\source_ingestion.py <workspace>\src\knowledge_manager\cli.py <workspace>\src\knowledge_manager\http_server.py <workspace>\tests\test_ingestion_jobs.py <workspace>\tests\test_cli.py <workspace>\tests\test_http_server.py
 git commit -m "feat: add durable ingestion jobs"
 ```
 
 ### Task 4: Add Checkpoints, Resume, And Backpressure For Large Imports
 
 **Files:**
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\ingestion_jobs.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\source_ingestion.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_ingestion_jobs.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_source_ingestion.py`
+- Modify: `<workspace>\src\knowledge_manager\ingestion_jobs.py`
+- Modify: `<workspace>\src\knowledge_manager\source_ingestion.py`
+- Modify: `<workspace>\tests\test_ingestion_jobs.py`
+- Modify: `<workspace>\tests\test_source_ingestion.py`
 
 - [ ] **Step 1: Write the failing resume test**
 
@@ -321,7 +321,7 @@ def test_ingestion_job_resume_preserves_checkpoint(tmp_path):
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_ingestion_jobs.py::test_ingestion_job_resume_preserves_checkpoint -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_ingestion_jobs.py::test_ingestion_job_resume_preserves_checkpoint -v`
 Expected: `FAIL` because checkpoint resume is missing.
 
 - [ ] **Step 3: Implement minimal checkpoint persistence**
@@ -342,25 +342,25 @@ def update_ingestion_checkpoint(kb_path: Path, job_id: str, cursor: str, pages_s
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_ingestion_jobs.py::test_ingestion_job_resume_preserves_checkpoint -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_ingestion_jobs.py::test_ingestion_job_resume_preserves_checkpoint -v`
 Expected: `PASS`
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\ingestion_jobs.py D:\tyh\knowledge-manager\src\knowledge_manager\source_ingestion.py D:\tyh\knowledge-manager\tests\test_ingestion_jobs.py D:\tyh\knowledge-manager\tests\test_source_ingestion.py
+git add <workspace>\src\knowledge_manager\ingestion_jobs.py <workspace>\src\knowledge_manager\source_ingestion.py <workspace>\tests\test_ingestion_jobs.py <workspace>\tests\test_source_ingestion.py
 git commit -m "feat: add ingestion checkpoints and resume"
 ```
 
 ### Task 5: Introduce Real Enterprise Tenancy And Workspace Isolation
 
 **Files:**
-- Create: `D:\tyh\knowledge-manager\src\knowledge_manager\tenancy.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\storage.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\auth.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\rbac.py`
-- Create: `D:\tyh\knowledge-manager\tests\test_tenancy.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_enterprise.py`
+- Create: `<workspace>\src\knowledge_manager\tenancy.py`
+- Modify: `<workspace>\src\knowledge_manager\storage.py`
+- Modify: `<workspace>\src\knowledge_manager\auth.py`
+- Modify: `<workspace>\src\knowledge_manager\rbac.py`
+- Create: `<workspace>\tests\test_tenancy.py`
+- Modify: `<workspace>\tests\test_enterprise.py`
 
 - [ ] **Step 1: Write the failing tenant isolation test**
 
@@ -381,7 +381,7 @@ def test_list_modules_only_returns_requested_tenant_modules(tmp_path):
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_tenancy.py::test_list_modules_only_returns_requested_tenant_modules -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_tenancy.py::test_list_modules_only_returns_requested_tenant_modules -v`
 Expected: `FAIL` because tenant model does not exist yet.
 
 - [ ] **Step 3: Implement minimal tenant context and filtering**
@@ -402,25 +402,25 @@ def module_visible_to_tenant(module: Module, tenant: TenantContext | None) -> bo
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_tenancy.py::test_list_modules_only_returns_requested_tenant_modules -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_tenancy.py::test_list_modules_only_returns_requested_tenant_modules -v`
 Expected: `PASS`
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\tenancy.py D:\tyh\knowledge-manager\src\knowledge_manager\storage.py D:\tyh\knowledge-manager\src\knowledge_manager\auth.py D:\tyh\knowledge-manager\src\knowledge_manager\rbac.py D:\tyh\knowledge-manager\tests\test_tenancy.py D:\tyh\knowledge-manager\tests\test_enterprise.py
+git add <workspace>\src\knowledge_manager\tenancy.py <workspace>\src\knowledge_manager\storage.py <workspace>\src\knowledge_manager\auth.py <workspace>\src\knowledge_manager\rbac.py <workspace>\tests\test_tenancy.py <workspace>\tests\test_enterprise.py
 git commit -m "feat: add tenant aware module isolation"
 ```
 
 ### Task 6: Make Permission Resolution Explainable And Enterprise-Scoped
 
 **Files:**
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\rbac.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\mcp_server.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_enterprise.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_http_server.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_mcp_server.py`
+- Modify: `<workspace>\src\knowledge_manager\rbac.py`
+- Modify: `<workspace>\src\knowledge_manager\http_server.py`
+- Modify: `<workspace>\src\knowledge_manager\mcp_server.py`
+- Modify: `<workspace>\tests\test_enterprise.py`
+- Modify: `<workspace>\tests\test_http_server.py`
+- Modify: `<workspace>\tests\test_mcp_server.py`
 
 - [ ] **Step 1: Write the failing permission explanation test**
 
@@ -439,7 +439,7 @@ def test_permission_checker_reports_effective_reason():
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_enterprise.py::test_permission_checker_reports_effective_reason -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_enterprise.py::test_permission_checker_reports_effective_reason -v`
 Expected: `FAIL` because explainability helper is missing.
 
 - [ ] **Step 3: Implement minimal explainable decision model**
@@ -461,25 +461,25 @@ def explain_module_access(self, groups: list[str], module: dict) -> AccessDecisi
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_enterprise.py::test_permission_checker_reports_effective_reason -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_enterprise.py::test_permission_checker_reports_effective_reason -v`
 Expected: `PASS`
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\rbac.py D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py D:\tyh\knowledge-manager\src\knowledge_manager\mcp_server.py D:\tyh\knowledge-manager\tests\test_enterprise.py D:\tyh\knowledge-manager\tests\test_http_server.py D:\tyh\knowledge-manager\tests\test_mcp_server.py
+git add <workspace>\src\knowledge_manager\rbac.py <workspace>\src\knowledge_manager\http_server.py <workspace>\src\knowledge_manager\mcp_server.py <workspace>\tests\test_enterprise.py <workspace>\tests\test_http_server.py <workspace>\tests\test_mcp_server.py
 git commit -m "feat: explain effective enterprise access decisions"
 ```
 
 ### Task 7: Build Migration Tooling That Removes Switching Friction
 
 **Files:**
-- Create: `D:\tyh\knowledge-manager\src\knowledge_manager\migration.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\cli.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py`
-- Create: `D:\tyh\knowledge-manager\tests\test_migration.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_cli.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_http_server.py`
+- Create: `<workspace>\src\knowledge_manager\migration.py`
+- Modify: `<workspace>\src\knowledge_manager\cli.py`
+- Modify: `<workspace>\src\knowledge_manager\http_server.py`
+- Create: `<workspace>\tests\test_migration.py`
+- Modify: `<workspace>\tests\test_cli.py`
+- Modify: `<workspace>\tests\test_http_server.py`
 
 - [ ] **Step 1: Write the failing dry-run migration summary test**
 
@@ -500,7 +500,7 @@ def test_dry_run_import_reports_creates_updates_and_skips(tmp_path):
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_migration.py::test_dry_run_import_reports_creates_updates_and_skips -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_migration.py::test_dry_run_import_reports_creates_updates_and_skips -v`
 Expected: `FAIL` because migration module does not exist yet.
 
 - [ ] **Step 3: Implement minimal dry-run import summary**
@@ -521,24 +521,24 @@ def dry_run_import(source_path: Path, source_kind: str) -> ImportSummary:
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_migration.py::test_dry_run_import_reports_creates_updates_and_skips -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_migration.py::test_dry_run_import_reports_creates_updates_and_skips -v`
 Expected: `PASS`
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\migration.py D:\tyh\knowledge-manager\src\knowledge_manager\cli.py D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py D:\tyh\knowledge-manager\tests\test_migration.py D:\tyh\knowledge-manager\tests\test_cli.py D:\tyh\knowledge-manager\tests\test_http_server.py
+git add <workspace>\src\knowledge_manager\migration.py <workspace>\src\knowledge_manager\cli.py <workspace>\src\knowledge_manager\http_server.py <workspace>\tests\test_migration.py <workspace>\tests\test_cli.py <workspace>\tests\test_http_server.py
 git commit -m "feat: add migration dry run tooling"
 ```
 
 ### Task 8: Give Operators An Enterprise Admin View Instead Of Raw Reports
 
 **Files:**
-- Create: `D:\tyh\knowledge-manager\src\knowledge_manager\admin_views.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py`
-- Modify: `D:\tyh\knowledge-manager\src\knowledge_manager\ops_export.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_http_server.py`
-- Modify: `D:\tyh\knowledge-manager\tests\test_ops_export.py`
+- Create: `<workspace>\src\knowledge_manager\admin_views.py`
+- Modify: `<workspace>\src\knowledge_manager\http_server.py`
+- Modify: `<workspace>\src\knowledge_manager\ops_export.py`
+- Modify: `<workspace>\tests\test_http_server.py`
+- Modify: `<workspace>\tests\test_ops_export.py`
 
 - [ ] **Step 1: Write the failing admin dashboard aggregation test**
 
@@ -559,7 +559,7 @@ def test_build_admin_dashboard_reports_jobs_backlog_and_eval_regressions(tmp_pat
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_http_server.py::test_build_admin_dashboard_reports_jobs_backlog_and_eval_regressions -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_http_server.py::test_build_admin_dashboard_reports_jobs_backlog_and_eval_regressions -v`
 Expected: `FAIL` because admin dashboard module does not exist yet.
 
 - [ ] **Step 3: Implement minimal admin dashboard aggregation**
@@ -576,22 +576,22 @@ def build_admin_dashboard(kb_path: Path) -> dict[str, Any]:
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_http_server.py::test_build_admin_dashboard_reports_jobs_backlog_and_eval_regressions -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_http_server.py::test_build_admin_dashboard_reports_jobs_backlog_and_eval_regressions -v`
 Expected: `PASS`
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add D:\tyh\knowledge-manager\src\knowledge_manager\admin_views.py D:\tyh\knowledge-manager\src\knowledge_manager\http_server.py D:\tyh\knowledge-manager\src\knowledge_manager\ops_export.py D:\tyh\knowledge-manager\tests\test_http_server.py D:\tyh\knowledge-manager\tests\test_ops_export.py
+git add <workspace>\src\knowledge_manager\admin_views.py <workspace>\src\knowledge_manager\http_server.py <workspace>\src\knowledge_manager\ops_export.py <workspace>\tests\test_http_server.py <workspace>\tests\test_ops_export.py
 git commit -m "feat: add enterprise admin dashboard view"
 ```
 
 ### Task 9: Add A Replacement-Grade End-To-End Migration Gate
 
 **Files:**
-- Modify: `D:\tyh\knowledge-manager\tests\test_integration.py`
-- Modify: `D:\tyh\knowledge-manager\README.md`
-- Create: `D:\tyh\knowledge-manager\docs\runbooks\migration-cutover.md`
+- Modify: `<workspace>\tests\test_integration.py`
+- Modify: `<workspace>\README.md`
+- Create: `<workspace>\docs\runbooks\migration-cutover.md`
 
 - [ ] **Step 1: Write the failing replacement-flow integration test**
 
@@ -610,7 +610,7 @@ def test_replacement_flow_import_ingest_eval_and_ops(runner, integration_kb, mon
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_integration.py::test_replacement_flow_import_ingest_eval_and_ops -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_integration.py::test_replacement_flow_import_ingest_eval_and_ops -v`
 Expected: `FAIL` until migration flow is wired end-to-end.
 
 - [ ] **Step 3: Implement minimal cutover documentation and final wiring**
@@ -628,31 +628,31 @@ Expected: `FAIL` until migration flow is wired end-to-end.
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_integration.py::test_replacement_flow_import_ingest_eval_and_ops -v`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_integration.py::test_replacement_flow_import_ingest_eval_and_ops -v`
 Expected: `PASS`
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add D:\tyh\knowledge-manager\tests\test_integration.py D:\tyh\knowledge-manager\README.md D:\tyh\knowledge-manager\docs\runbooks\migration-cutover.md
+git add <workspace>\tests\test_integration.py <workspace>\README.md <workspace>\docs\runbooks\migration-cutover.md
 git commit -m "docs: add migration cutover gate"
 ```
 
 ### Task 10: Run The Enterprise Replacement Verification Sweep
 
 **Files:**
-- Modify: `D:\tyh\knowledge-manager\README.md`
-- Modify: `D:\tyh\knowledge-manager\docs\superpowers\plans\2026-06-12-enterprise-replacement-acceleration-plan.md`
-- Modify: `D:\tyh\knowledge-manager\tests\test_integration.py`
+- Modify: `<workspace>\README.md`
+- Modify: `<workspace>\docs\superpowers\plans\2026-06-12-enterprise-replacement-acceleration-plan.md`
+- Modify: `<workspace>\tests\test_integration.py`
 
 - [ ] **Step 1: Run focused replacement verification**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_retrieval_eval.py D:\tyh\knowledge-manager\tests\test_ingestion_jobs.py D:\tyh\knowledge-manager\tests\test_tenancy.py D:\tyh\knowledge-manager\tests\test_migration.py -q`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_retrieval_eval.py <workspace>\tests\test_ingestion_jobs.py <workspace>\tests\test_tenancy.py <workspace>\tests\test_migration.py -q`
 Expected: all focused replacement tests `PASS`
 
 - [ ] **Step 2: Run enterprise full suite**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_schemas.py D:\tyh\knowledge-manager\tests\test_storage.py D:\tyh\knowledge-manager\tests\test_http_server.py D:\tyh\knowledge-manager\tests\test_mcp_server.py D:\tyh\knowledge-manager\tests\test_cli.py D:\tyh\knowledge-manager\tests\test_source_ingestion.py D:\tyh\knowledge-manager\tests\test_confluence.py D:\tyh\knowledge-manager\tests\test_notion.py D:\tyh\knowledge-manager\tests\test_policy.py D:\tyh\knowledge-manager\tests\test_ops_export.py D:\tyh\knowledge-manager\tests\test_eval_runner.py D:\tyh\knowledge-manager\tests\test_enterprise.py D:\tyh\knowledge-manager\tests\test_dual_view.py D:\tyh\knowledge-manager\tests\test_watch_vector.py D:\tyh\knowledge-manager\tests\test_retrieval_eval.py D:\tyh\knowledge-manager\tests\test_ingestion_jobs.py D:\tyh\knowledge-manager\tests\test_tenancy.py D:\tyh\knowledge-manager\tests\test_migration.py D:\tyh\knowledge-manager\tests\test_integration.py -q`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_schemas.py <workspace>\tests\test_storage.py <workspace>\tests\test_http_server.py <workspace>\tests\test_mcp_server.py <workspace>\tests\test_cli.py <workspace>\tests\test_source_ingestion.py <workspace>\tests\test_confluence.py <workspace>\tests\test_notion.py <workspace>\tests\test_policy.py <workspace>\tests\test_ops_export.py <workspace>\tests\test_eval_runner.py <workspace>\tests\test_enterprise.py <workspace>\tests\test_dual_view.py <workspace>\tests\test_watch_vector.py <workspace>\tests\test_retrieval_eval.py <workspace>\tests\test_ingestion_jobs.py <workspace>\tests\test_tenancy.py <workspace>\tests\test_migration.py <workspace>\tests\test_integration.py -q`
 Expected: full enterprise replacement suite `PASS`
 
 - [ ] **Step 3: Update release positioning**
@@ -669,13 +669,13 @@ Expected: full enterprise replacement suite `PASS`
 
 - [ ] **Step 4: Re-run README/spec validation checks**
 
-Run: `PYTHONPATH=D:\tyh\knowledge-manager\src python -m pytest D:\tyh\knowledge-manager\tests\test_integration.py -k "replacement_flow or enterprise_ingest_eval_ops_flow" -q`
+Run: `PYTHONPATH=<workspace>\src python -m pytest <workspace>\tests\test_integration.py -k "replacement_flow or enterprise_ingest_eval_ops_flow" -q`
 Expected: `PASS`
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add D:\tyh\knowledge-manager\README.md D:\tyh\knowledge-manager\docs\superpowers\plans\2026-06-12-enterprise-replacement-acceleration-plan.md D:\tyh\knowledge-manager\tests\test_integration.py
+git add <workspace>\README.md <workspace>\docs\superpowers\plans\2026-06-12-enterprise-replacement-acceleration-plan.md <workspace>\tests\test_integration.py
 git commit -m "docs: certify enterprise replacement readiness"
 ```
 

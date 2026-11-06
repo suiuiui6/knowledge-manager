@@ -171,7 +171,7 @@
   poetry run black --check src tests scripts
   poetry run mypy src
   python scripts/verify_install_smoke.py
-  python scripts/verify_production_readiness.py --kb-path D:\\tyh\\knowledge-manager\\kb --matrix-summary D:\\tyh\\knowledge-manager\\test-results\\phase1-current\\matrix-summary.json
+  python scripts/verify_production_readiness.py --kb-path <workspace>\\kb --matrix-summary <workspace>\\test-results\\phase1-current\\matrix-summary.json
   ```
 
 - [ ] **Step 6: Commit the performance batch only with fresh evidence**

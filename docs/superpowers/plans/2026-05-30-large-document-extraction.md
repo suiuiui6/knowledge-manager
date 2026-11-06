@@ -4,7 +4,7 @@
 
 **Goal:** Make `km add` reliably extract useful modules from long specs and reports without regressing the current small-document workflow.
 
-**Architecture:** Keep the existing extractor pipeline in [src/knowledge_manager/extractor.py](D:/tyh/knowledge-manager/src/knowledge_manager/extractor.py:58), but strengthen the weak points that still hurt large documents: naive character slicing, chunk prompts that lack context, and a global cap that can let early chunks starve later sections. This is an incremental improvement to the current one-pass chunked extraction path, not a rewrite to full RAG or a new storage model.
+**Architecture:** Keep the existing extractor pipeline in [src/knowledge_manager/extractor.py](<workspace>/src/knowledge_manager/extractor.py:58), but strengthen the weak points that still hurt large documents: naive character slicing, chunk prompts that lack context, and a global cap that can let early chunks starve later sections. This is an incremental improvement to the current one-pass chunked extraction path, not a rewrite to full RAG or a new storage model.
 
 **Tech Stack:** Python 3.10+, `httpx`, `pydantic`, `click`, `pytest`.
 
@@ -12,15 +12,15 @@
 
 ## Background - read before starting
 
-The strongest evidence for this task is the large-document testing report in [test-results/scalability.md](D:/tyh/knowledge-manager/test-results/scalability.md:378):
+The strongest evidence for this task is the large-document testing report in [test-results/scalability.md](<workspace>/test-results/scalability.md:378):
 
 1. The report marks large document extraction as a high-severity issue: current behavior fails on comprehensive specs/reports and is called out as the top scalability bottleneck.
-2. The report recommends chunking or multi-pass extraction, but the repo has already moved partway there: [src/knowledge_manager/extractor.py](D:/tyh/knowledge-manager/src/knowledge_manager/extractor.py:44) now includes `_chunk_text(...)`, and the LLM clients already use a 60 second timeout in [src/knowledge_manager/llm_clients.py](D:/tyh/knowledge-manager/src/knowledge_manager/llm_clients.py:33) and [src/knowledge_manager/llm_clients.py](D:/tyh/knowledge-manager/src/knowledge_manager/llm_clients.py:61).
+2. The report recommends chunking or multi-pass extraction, but the repo has already moved partway there: [src/knowledge_manager/extractor.py](<workspace>/src/knowledge_manager/extractor.py:44) now includes `_chunk_text(...)`, and the LLM clients already use a 60 second timeout in [src/knowledge_manager/llm_clients.py](<workspace>/src/knowledge_manager/llm_clients.py:33) and [src/knowledge_manager/llm_clients.py](<workspace>/src/knowledge_manager/llm_clients.py:61).
 3. That means the remaining gap is not "add chunking from scratch." The real issue is extraction quality and coverage on long documents:
    - chunks are still split on raw character count rather than document boundaries,
    - the prompt does not tell the LLM where the chunk sits in the larger document,
-   - [Extractor.extract](D:/tyh/knowledge-manager/src/knowledge_manager/extractor.py:78) enforces the global module cap while walking chunks in order, so early chunks can consume the whole budget before later sections are seen.
-4. Configuration already exposes `chunk_size`, `chunk_overlap`, and `max_modules_per_extraction` in [src/knowledge_manager/schemas.py](D:/tyh/knowledge-manager/src/knowledge_manager/schemas.py:122), and `km add` already routes through the extractor in [src/knowledge_manager/cli.py](D:/tyh/knowledge-manager/src/knowledge_manager/cli.py:322). The implementation should build on those hooks rather than inventing a second ingestion path.
+   - [Extractor.extract](<workspace>/src/knowledge_manager/extractor.py:78) enforces the global module cap while walking chunks in order, so early chunks can consume the whole budget before later sections are seen.
+4. Configuration already exposes `chunk_size`, `chunk_overlap`, and `max_modules_per_extraction` in [src/knowledge_manager/schemas.py](<workspace>/src/knowledge_manager/schemas.py:122), and `km add` already routes through the extractor in [src/knowledge_manager/cli.py](<workspace>/src/knowledge_manager/cli.py:322). The implementation should build on those hooks rather than inventing a second ingestion path.
 
 The plan below is therefore scoped to making the current chunked extractor good enough for long-form design docs, not to building a full outline-first system unless the improved one-pass path still fails validation.
 
@@ -46,7 +46,7 @@ No new runtime modules should be added unless the extractor becomes unmanageably
 
 - [ ] **Step 1: Write splitter tests first**
 
-Add unit tests around `_chunk_text(...)` in [tests/test_llm.py](D:/tyh/knowledge-manager/tests/test_llm.py:221) that capture the behavior we actually want for long documentation:
+Add unit tests around `_chunk_text(...)` in [tests/test_llm.py](<workspace>/tests/test_llm.py:221) that capture the behavior we actually want for long documentation:
 
 1. Prefer splitting at section boundaries when the text contains Markdown headings.
 2. Otherwise prefer paragraph boundaries (`\n\n`) before falling back to raw character slicing.
@@ -57,7 +57,7 @@ Use synthetic Markdown-like text rather than fixtures so the tests stay focused 
 
 - [ ] **Step 2: Refactor `_chunk_text(...)` into a boundary-aware splitter**
 
-Update [src/knowledge_manager/extractor.py](D:/tyh/knowledge-manager/src/knowledge_manager/extractor.py:44) so chunking tries increasingly weaker boundaries in this order:
+Update [src/knowledge_manager/extractor.py](<workspace>/src/knowledge_manager/extractor.py:44) so chunking tries increasingly weaker boundaries in this order:
 
 1. Markdown headings such as `#`, `##`, `###`.
 2. Blank-line paragraph breaks.
@@ -75,7 +75,7 @@ The point is not perfect semantic segmentation. The point is to stop cutting spe
 
 - [ ] **Step 3: Keep logs aligned with the stronger splitter**
 
-Update extractor logs in [src/knowledge_manager/extractor.py](D:/tyh/knowledge-manager/src/knowledge_manager/extractor.py:66) so verbose runs can show how many chunks were prepared and, if useful, whether fallback splitting was needed. Keep this metadata-only and avoid logging chunk bodies.
+Update extractor logs in [src/knowledge_manager/extractor.py](<workspace>/src/knowledge_manager/extractor.py:66) so verbose runs can show how many chunks were prepared and, if useful, whether fallback splitting was needed. Keep this metadata-only and avoid logging chunk bodies.
 
 - [ ] **Step 4: Run the chunking unit tests**
 
@@ -103,11 +103,11 @@ Append extractor tests that fail under the current implementation:
 2. A case where the first chunk returns many modules and the last chunk returns a critical distinct module; the final output should not always be only the earliest chunk’s modules.
 3. A case where chunk prompts need chunk position metadata, asserted by inspecting the prompt passed to the mocked LLM.
 
-The current `test_extractor_global_cap_across_chunks` in [tests/test_llm.py](D:/tyh/knowledge-manager/tests/test_llm.py:281) encodes the existing early-chunk bias. Replace that expectation with the desired fair-coverage behavior instead of preserving a bad invariant.
+The current `test_extractor_global_cap_across_chunks` in [tests/test_llm.py](<workspace>/tests/test_llm.py:281) encodes the existing early-chunk bias. Replace that expectation with the desired fair-coverage behavior instead of preserving a bad invariant.
 
 - [ ] **Step 2: Enrich the extraction prompt with chunk context**
 
-Modify `EXTRACTION_PROMPT` and `_extract_chunk(...)` in [src/knowledge_manager/extractor.py](D:/tyh/knowledge-manager/src/knowledge_manager/extractor.py:11) so each chunked request includes:
+Modify `EXTRACTION_PROMPT` and `_extract_chunk(...)` in [src/knowledge_manager/extractor.py](<workspace>/src/knowledge_manager/extractor.py:11) so each chunked request includes:
 
 1. `Chunk: X of Y` metadata.
 2. A short instruction that this is only part of a larger document.
@@ -118,7 +118,7 @@ Do not add unrelated schema changes here. This prompt change is about reducing d
 
 - [ ] **Step 3: Stop letting early chunks consume the entire global budget**
 
-Refactor [Extractor.extract](D:/tyh/knowledge-manager/src/knowledge_manager/extractor.py:63) so cross-chunk aggregation is document-wide and deterministic:
+Refactor [Extractor.extract](<workspace>/src/knowledge_manager/extractor.py:63) so cross-chunk aggregation is document-wide and deterministic:
 
 1. Process all prepared chunks unless an individual LLM call fails.
 2. Collect chunk-local module lists first instead of trimming the final answer while still iterating.
@@ -157,7 +157,7 @@ Expected: prompt-context tests, fair-aggregation tests, and legacy extractor tes
 
 - [ ] **Step 1: Add a realistic long-document ingest test**
 
-Append an integration test to [tests/test_integration.py](D:/tyh/knowledge-manager/tests/test_integration.py:150) that simulates a long Markdown source file with several sections, for example auth, storage, deployment, and observability.
+Append an integration test to [tests/test_integration.py](<workspace>/tests/test_integration.py:150) that simulates a long Markdown source file with several sections, for example auth, storage, deployment, and observability.
 
 Patch `Extractor.extract` only if necessary to keep this test scoped to the CLI workflow. If you want to validate the real extractor behavior instead, prefer patching the LLM client response sequence rather than bypassing extraction entirely.
 
@@ -190,7 +190,7 @@ Expected: existing extract/review integration tests still pass, plus the new lar
 
 - [ ] **Step 1: Validate the improved one-pass flow against the original failure mode**
 
-Use the same class of input described in [test-results/scalability.md](D:/tyh/knowledge-manager/test-results/scalability.md:380): a long spec/report rather than a short note file. The question is whether boundary-aware chunking plus fair aggregation fixes the practical problem.
+Use the same class of input described in [test-results/scalability.md](<workspace>/test-results/scalability.md:380): a long spec/report rather than a short note file. The question is whether boundary-aware chunking plus fair aggregation fixes the practical problem.
 
 - [ ] **Step 2: Only add multi-pass extraction if the improved one-pass path still fails**
 
@@ -203,7 +203,7 @@ Do not implement that second pass pre-emptively in this change. The current repo
 
 - [ ] **Step 3: Document user-visible changes if any config or behavior changed**
 
-If you introduce a new config field or materially change how chunking behaves, add one short note to [README.md](D:/tyh/knowledge-manager/README.md:71) in the extraction/config section. If there is no user-visible change, skip the README edit.
+If you introduce a new config field or materially change how chunking behaves, add one short note to [README.md](<workspace>/README.md:71) in the extraction/config section. If there is no user-visible change, skip the README edit.
 
 ---
 

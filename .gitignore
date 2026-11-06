@@ -35,9 +35,12 @@ env/
 
 # Testing
 .pytest_cache/
+.pytest-tmp-*/
 .coverage
 htmlcov/
 .tox/
+/test_*.py
+/debug_*.py
 
 # Knowledge base (for testing)
 test_kb/

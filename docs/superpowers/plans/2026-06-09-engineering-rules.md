@@ -29,7 +29,7 @@
 ### 1.1 目录结构约定
 
 ```
-D:/tyh/knowledge-manager/          ← Python 包根目录 (poetry)
+<workspace>/          ← Python 包根目录 (poetry)
 ├── src/knowledge_manager/          ← 所有 Python 源码
 │   ├── http_server.py              ← M1: FastAPI 端点 (新)
 │   ├── ui_fallback.py              ← M1: 零构建回退 HTML (新)
@@ -299,12 +299,12 @@ master ← 主分支 (稳定，可发布)
 [ ] 未提交 config.json / .env
 ```
 
-### 5.4 子模块管理（父仓库 D:/tyh）
+### 5.4 子模块管理（父仓库 <workspace>）
 
 父仓库通过 git submodule 跟踪 knowledge-manager。每次 knowledge-manager 有重要更新后：
 
 ```bash
-cd D:/tyh
+cd <workspace>
 git add knowledge-manager
 git commit -m "chore: bump knowledge-manager submodule (M1 complete)"
 ```
