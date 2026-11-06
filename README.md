@@ -73,6 +73,10 @@ The public-surface workflow checks documentation, tracked paths, and
 credential-like content. It runs on every pull request and does not require a
 provider key.
 
+M-scale performance evidence is a manual, non-blocking workflow. The current
+50k-module run records a known segmentation fault; it is not a merge gate and
+does not represent production-scale readiness.
+
 ## Architecture and scope
 
 Knowledge Manager follows the workflow `extract -> staging -> review -> publish -> serve`. It provides a CLI, an MCP stdio server, and a FastAPI HTTP service over Git-native JSON modules with atomic file updates and inspectable indexes. The design targets small to medium knowledge bases where reviewability and version control matter more than operating a large retrieval platform.

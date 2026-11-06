@@ -43,7 +43,7 @@
   - Public surface：success（runs `42210245091`、`42210245103`）
   - CI：success（runs `42210245068`、`42210245056`）
   - Reliability evidence：success（runs `42210245054`、`42210245088`）
-  - M-scale：in_progress（run `42210245058`）
+  - M-scale：failure（run `42210663318`，50k 模块基准发生 segmentation fault，exit 139）
 - 未创建 PR；本次直接更新分支。
 - 未执行部署、生产性能矩阵或备份恢复演练。
 
@@ -53,10 +53,11 @@
 - 关闭 Steam++ 后直连 GitHub 被拒绝；当前环境依赖该加速器出网。
 - 最终通过 GitHub API 上传 Git objects 完成发布，不依赖 Git smart HTTP push。
 - 当前 shell 默认注入 `127.0.0.1:9` 代理变量；后续常规 Git push 仍需可用网络和认证。
+- M-scale 已改为手动、非阻断证据工作流；50k 模块运行仍有已知 segfault，不能作为生产规模通过的证据。
 
 ## 下一步
 
-1. 等待 M-scale run `42210245058` 完成并记录结论。
+1. 排查 M-scale 50k 模块 segfault；在修复前保持手动、非阻断。
 2. 在 GitHub 页面确认默认分支展示 `0.5.2` README、CI 徽章和 runbook。
 3. 后续用可用网络验证常规 `git push` 路径，避免依赖 Git Data API。
 4. 继续把 Black/Mypy 历史债务作为独立质量工作处理，不提前提升为阻断门禁。
