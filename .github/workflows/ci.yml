@@ -17,14 +17,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install Poetry
-        run: python -m pip install --disable-pip-version-check poetry==2.4.1
-      - name: Install locked dependencies
-        run: python -m poetry install --no-interaction
+      - name: Install project and test tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m pip install pytest==8.4.2 pytest-asyncio==0.23.8 pytest-cov==4.1.0
       - name: Run full test suite
         run: |
-          poetry_env="$(python -m poetry env info --path)"
-          "$poetry_env/bin/python" - <<'PY'
+          python - <<'PY'
           import subprocess
           import sys
           import xml.etree.ElementTree as ET
@@ -79,15 +79,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install Poetry
-        run: python -m pip install --disable-pip-version-check poetry==2.4.1
-      - name: Install locked dependencies
-        run: python -m poetry install --no-interaction
+      - name: Install project and quality tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m pip install black==24.10.0 mypy==1.20.2
       - name: Check formatting
-        run: |
-          poetry_env="$(python -m poetry env info --path)"
-          "$poetry_env/bin/python" -m black --check src tests scripts
+        run: python -m black --check src tests scripts
       - name: Check types
-        run: |
-          poetry_env="$(python -m poetry env info --path)"
-          "$poetry_env/bin/python" -m mypy src
+        run: python -m mypy src

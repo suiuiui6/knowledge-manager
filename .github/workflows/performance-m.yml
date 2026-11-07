@@ -19,13 +19,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install Poetry
-        run: python -m pip install --disable-pip-version-check poetry==2.4.1
-      - name: Install locked dependencies
-        run: python -m poetry install --no-interaction
+      - name: Install project
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
       - name: Run M-scale benchmark
         run: |
-          poetry run python scripts/run_enterprise_benchmark.py \
+          python scripts/run_enterprise_benchmark.py \
             --kb-path "$RUNNER_TEMP/km-m-kb" \
             --output-dir "$RUNNER_TEMP/km-m-evidence" \
             --module-count 50000 \

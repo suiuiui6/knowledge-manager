@@ -114,7 +114,14 @@ customer testimonials or production benchmarks.
 
 ## Validation and CI
 
-The repository uses Ubuntu GitHub Actions with the versions locked in `poetry.lock`. The full pytest suite is the blocking merge gate. Black and Mypy run as separate quality reports while the repository's existing formatting and typing debt is being reduced. Windows checks are currently `audit-only-windows` because the local sandbox can prevent pytest from creating temporary directories; they are not represented as a passing production gate.
+The repository uses Ubuntu GitHub Actions. CI installs the project from
+`pyproject.toml`, runs the full pytest suite, builds and installs the wheel, and
+exercises `km demo`. Black and Mypy run as separate quality reports while the
+repository's existing formatting and typing debt is being reduced. The Poetry
+lock remains the local developer lockfile; CI uses the official PyPI index
+instead of a regional mirror. Windows checks are currently `audit-only-windows`
+because the local sandbox can prevent pytest from creating temporary
+directories; they are not represented as a passing production gate.
 
 Run the same checks locally after installing the project:
 
