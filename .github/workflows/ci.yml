@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: ["main", "master", "feat/**"]
+    branches: ["main", "master", "feat/**", "codex/**"]
   pull_request:
 
 permissions:
@@ -54,6 +54,21 @@ jobs:
         with:
           name: pytest-results
           path: test-results/junit.xml
+
+  package:
+    name: Build and install the wheel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --disable-pip-version-check build
+      - run: python -m build
+      - run: python -m pip install --force-reinstall dist/*.whl
+      - run: km --version
+      - run: km demo "$RUNNER_TEMP/km-demo"
+      - run: km --kb-path "$RUNNER_TEMP/km-demo" search "rollback deployment"
 
   quality:
     name: Static quality report

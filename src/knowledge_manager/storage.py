@@ -1188,7 +1188,14 @@ def generate_changelog(kb_path: Path) -> dict | None:
     cmd = ["git", "-C", str(kb_path), "log", "--format=%H||%an||%s"]
     if since_arg:
         cmd.append(since_arg)
-    result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    result = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+    )
     stdout = result.stdout or ""
     if result.returncode != 0 or not stdout.strip():
         return None
@@ -1204,9 +1211,18 @@ def generate_changelog(kb_path: Path) -> dict | None:
         # diff-tree returns nothing because there is no parent to diff against)
         show_result = subprocess.run(
             ["git", "-C", str(kb_path), "show", "--name-only", "--format=", commit_hash],
-            capture_output=True, text=True, check=False,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
         )
-        changed_files = [f for f in show_result.stdout.strip().split("\n") if f.endswith(".json") and f not in ("index.json", "config.json")]
+        show_stdout = show_result.stdout or ""
+        changed_files = [
+            f
+            for f in show_stdout.strip().split("\n")
+            if f.endswith(".json") and f not in ("index.json", "config.json")
+        ]
 
         if not changed_files:
             continue

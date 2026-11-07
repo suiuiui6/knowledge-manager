@@ -9,6 +9,7 @@ import httpx
 import pytest
 from click.testing import CliRunner
 
+from knowledge_manager import __version__
 from knowledge_manager.cli import cli
 from knowledge_manager.schemas import Module, ModuleContent, ModuleMetadata
 from knowledge_manager.storage import save_module, save_to_staging, save_index, rebuild_index, load_index
@@ -66,7 +67,7 @@ def test_cli_help(cli_runner):
 def test_cli_version(cli_runner):
     result = cli_runner.invoke(cli, ["--version"])
     assert result.exit_code == 0
-    assert "0.5.2" in result.output
+    assert __version__ in result.output
 
 
 def test_cli_init_creates_knowledge_base(cli_runner, tmp_path):
@@ -326,7 +327,7 @@ def test_support_bundle_includes_version(cli_runner, monkeypatch):
     assert result.exit_code == 0
     bundle_path = Path(result.output.strip())
     payload = json.loads(bundle_path.read_text(encoding="utf-8"))
-    assert payload["app_version"] == "0.5.2"
+    assert payload["app_version"] == __version__
     assert payload["production_verdict"]["ready_for_production"] is True
     assert payload["job_summary"]["total"] == 2
     assert payload["job_summary"]["failed"] == 1
