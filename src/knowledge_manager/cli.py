@@ -15,15 +15,13 @@ from rich.console import Console
 from rich.prompt import Prompt
 from rich.table import Table
 
+from knowledge_manager import __version__
+from knowledge_manager.bootstrap import initialize_knowledge_base
+from knowledge_manager.demo import DEMO_QUERY, seed_demo_kb
 from knowledge_manager.deploy_proof import validate_deploy_artifact_proofs
 from knowledge_manager.extractor import Extractor
 from knowledge_manager.llm_clients import create_client
-from knowledge_manager.schemas import (
-    Config,
-    ExtractionConfig,
-    Index,
-    LLMProviderConfig,
-)
+from knowledge_manager.schemas import Config, Index
 from knowledge_manager.storage import (
     approve_from_staging,
     delete_module,
@@ -106,7 +104,7 @@ def _require_kb(kb_path: Path) -> None:
 
 
 @click.group()
-@click.version_option("0.5.2", prog_name="km")
+@click.version_option(__version__, prog_name="km")
 @click.option(
     "--kb-path",
     type=click.Path(path_type=Path),
@@ -144,47 +142,42 @@ def init(ctx: click.Context, path: Optional[Path]) -> None:
     """Initialize a new knowledge base at PATH (or current directory)."""
     runtime_env = ctx.obj["runtime_env"]
     kb = Path(path) if path else runtime_env.kb_path
-    if (kb / "index.json").exists():
-        click.echo(f"Error: Knowledge base already exists at {kb}", err=True)
+    try:
+        initialize_knowledge_base(kb)
+    except FileExistsError as exc:
+        click.echo(f"Error: {exc}", err=True)
         raise click.Abort()
 
-    kb.mkdir(parents=True, exist_ok=True)
-    _staging_path(kb).mkdir(exist_ok=True)
-
-    # Write .gitignore template
-    gitignore = kb / ".gitignore"
-    gitignore.write_text(
-        "# Knowledge Manager — local and sensitive files\n"
-        ".staging/\n"
-        ".telemetry/\n"
-        "config.local.json\n",
-        encoding="utf-8",
-    )
-
-    overview = (
-        "A curated knowledge base of our team's technical methodology — "
-        "architecture decisions, implementation patterns, operational practices, "
-        "and lessons learned. Each module captures HOW we approach a topic, "
-        "not just what it means. Use the index to identify relevant modules, "
-        "then load the ones you need. Prefer modules with higher confidence "
-        "ratings. Cross-reference related modules when topics overlap."
-    )
-    save_index(Index(description=overview), kb)
-
-    default_config = Config(
-        llm_providers={
-            "deepseek": LLMProviderConfig(
-                api_key="",
-                model="deepseek-v4-pro",
-                base_url="https://api.deepseek.com",
-                default=True,
-            )
-        },
-        extraction=ExtractionConfig(provider="deepseek", auto_categorize=True),
-    )
-    _save_config(kb, default_config)
-
     click.echo(f"Initialized knowledge base at {kb}")
+
+
+@cli.command()
+@click.argument("path", type=click.Path(path_type=Path), required=False)
+def demo(path: Optional[Path]) -> None:
+    """Create a ready-to-search demo knowledge base without an API key."""
+    kb = Path(path) if path else Path.cwd() / "km-demo"
+    try:
+        seed = seed_demo_kb(kb)
+    except FileExistsError as exc:
+        click.echo(f"Error: {exc}", err=True)
+        raise click.Abort()
+
+    click.echo(f"Created demo knowledge base at {kb}")
+    click.echo(
+        f"  {seed.index.stats.total_modules} approved modules across "
+        f"{seed.index.stats.categories} categories"
+    )
+    click.echo(f"  {seed.staged.id} is staged for review")
+
+    results = search_modules(DEMO_QUERY, kb)
+    click.echo(f'\nSearch "{DEMO_QUERY}":')
+    for result in results[:2]:
+        click.echo(f"  {result.module.category}/{result.module.id} - {result.module.title}")
+
+    click.echo("\nTry next:")
+    click.echo(f"  km --kb-path {kb} review")
+    click.echo(f"  km --kb-path {kb} connect claude-code")
+    click.echo(f"  km --kb-path {kb} serve")
 
 
 @cli.command("list")
@@ -247,7 +240,7 @@ def search(ctx: click.Context, query: str, include_archived: bool = False) -> No
             r.module.metadata.confidence, ""
         )
         src_badge = "" if r.source == "direct" else " [related]"
-        click.echo(f"{r.module.category}/{r.module.id}{src_badge} {conf_badge} — {r.module.title}")
+        click.echo(f"{r.module.category}/{r.module.id}{src_badge} {conf_badge} - {r.module.title}")
         click.echo(f"  {r.module.summary}")
 
 
@@ -2240,7 +2233,7 @@ def support_bundle(ctx: click.Context, output_dir: Path, matrix_summary: Path) -
 
     payload = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "app_version": "0.5.2",
+        "app_version": __version__,
         "kb_path": str(kb),
         "config_summary": sanitize_config(cfg).model_dump(mode="json"),
         "readiness": evaluate_readiness(kb),
@@ -2435,16 +2428,28 @@ def _git_user_name(kb_path: Path) -> str:
     """Get the git user.name for the KB repo. Falls back to 'unknown'."""
     result = subprocess.run(
         ["git", "-C", str(kb_path), "config", "user.name"],
-        capture_output=True, text=True, check=False,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
     )
-    return result.stdout.strip() if result.returncode == 0 and result.stdout.strip() else "unknown"
+    stdout = result.stdout or ""
+    return stdout.strip() if result.returncode == 0 and stdout.strip() else "unknown"
 
 
 def _run_git(kb_path: Path, *args: str, capture: bool = True) -> subprocess.CompletedProcess:
     """Run a git command in the given KB directory."""
     cmd = ["git", "-C", str(kb_path)] + list(args)
     try:
-        return subprocess.run(cmd, capture_output=capture, text=True, check=False)
+        return subprocess.run(
+            cmd,
+            capture_output=capture,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+        )
     except FileNotFoundError:
         raise click.ClickException("Git is not installed or not on PATH. Install git to use remote KB features.")
 
@@ -2460,7 +2465,14 @@ def clone(url: str, path: Path | None) -> None:
         raise click.Abort()
 
     click.echo(f"Cloning {url} into {local_path}...")
-    result = subprocess.run(["git", "clone", url, str(local_path)], capture_output=True, text=True, check=False)
+    result = subprocess.run(
+        ["git", "clone", url, str(local_path)],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+    )
     if result.returncode != 0:
         click.echo(f"Error: git clone failed:\n{result.stderr.strip()}", err=True)
         raise click.Abort()

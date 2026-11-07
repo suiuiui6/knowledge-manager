@@ -3,57 +3,114 @@
 [![CI](https://github.com/suiuiui6/knowledge-manager/actions/workflows/ci.yml/badge.svg)](https://github.com/suiuiui6/knowledge-manager/actions/workflows/ci.yml)
 [![Public surface](https://github.com/suiuiui6/knowledge-manager/actions/workflows/public-surface.yml/badge.svg)](https://github.com/suiuiui6/knowledge-manager/actions/workflows/public-surface.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB.svg)](pyproject.toml)
 
-Turn messy notes into structured modules that LLMs can load on demand via MCP.
+**Give your AI agent a knowledge base you can review in a pull request.**
 
-Knowledge Manager is a git-native knowledge system for agentic workflows. It stores knowledge as inspectable JSON modules, maintains a lightweight index, and serves both through a CLI and MCP server.
+Knowledge Manager turns runbooks, design notes, and project knowledge into
+reviewable JSON modules. Agents find them through MCP and load only what they
+need. No vector database and no hosted service are required.
 
-**Who It’s For:** Teams running AI-assisted engineering workflows who want reusable, reviewable project knowledge without operating a full RAG stack.
+> 中文：把 runbooks 和项目笔记整理成可 review、可 diff 的 JSON 知识模块，
+> 通过 MCP 让 AI Agent 按需读取。不需要向量数据库，也不需要托管服务。
 
-- **Structured modules, not chunks.** Preserve intent with explicit sections (`overview`, `details`, `examples`, `references`, `caveats`).
-- **Git-native JSON storage.** Plain files, atomic writes, and easy review in pull requests.
-- **MCP-ready retrieval.** Expose index + module loading tools so clients can choose what to read at runtime.
+![Knowledge Manager demo](docs/assets/demo-terminal.svg)
+
+## Quick Start
+
+### 1. Try the demo without an API key
+
+```bash
+uv tool install git+https://github.com/suiuiui6/knowledge-manager.git
+km demo ./km-demo
+km --kb-path ./km-demo search "rollback deployment"
+```
+
+The demo creates four approved modules and one staged draft. It uses an empty
+provider key because the demo path does not call an LLM.
+
+`pipx` users can install the same build with:
+
+```bash
+pipx install git+https://github.com/suiuiui6/knowledge-manager.git
+```
+
+### 2. Connect an MCP client
+
+The built-in connector writes the MCP entry for a supported client:
+
+```bash
+km --kb-path ./km-demo connect claude-code
+```
+
+To preview the JSON without writing it:
+
+```bash
+km --kb-path ./km-demo connect claude-code --print
+```
+
+The expected entry is:
+
+```json
+{
+  "mcpServers": {
+    "knowledge-manager": {
+      "command": "km",
+      "args": ["--kb-path", "/absolute/path/to/km-demo", "serve"],
+      "env": {}
+    }
+  }
+}
+```
+
+Restart the client after changing the MCP configuration.
+
+### 3. Add your own notes
+
+Set a provider key in the environment, then run the review-gated workflow:
+
+```bash
+export DEEPSEEK_API_KEY="<your-key>"       # POSIX shells
+$env:DEEPSEEK_API_KEY = "<your-key>"       # PowerShell
+
+km init ./my-kb
+km --kb-path ./my-kb add notes.md -c engineering
+km --kb-path ./my-kb review
+km --kb-path ./my-kb serve
+```
+
+Never commit a real key. The generated `config.json` is ignored by Git and the
+documented provider flow reads credentials from the environment or local config.
 
 ## Why this approach?
 
-For small-to-medium knowledge bases (<= 1M words), structured modules are often simpler to operate than embedding-heavy pipelines.
+For small-to-medium knowledge bases (<= 1M words), structured modules are often
+simpler to operate than embedding-heavy pipelines.
 
 | Approach | Strength | Tradeoff |
 |----------|----------|----------|
 | Knowledge Manager | Human-readable modules + deterministic file storage | Requires a review step during ingest |
 | Classic RAG | Strong semantic recall at larger scale | More moving parts (chunking, embeddings, re-indexing) |
+| Hosted knowledge service | Managed operations and shared hosting | Less local control and a separate service to secure |
 
-## Quick Start
+**Who it is for:** Teams running AI-assisted engineering workflows who want
+reusable, reviewable project knowledge without operating a full RAG stack.
 
-### 1. Initialize a knowledge base
+- **Structured modules, not chunks.** Preserve intent with explicit sections
+  (`overview`, `details`, `examples`, `references`, `caveats`).
+- **Git-native JSON storage.** Plain files, atomic writes, and easy review in
+  pull requests.
+- **MCP-ready retrieval.** Expose index + module loading tools so clients can
+  choose what to read at runtime.
 
-```bash
-km init ./my_kb
-```
+## Reproducible walkthroughs
 
-### 2. Configure your provider
+- [Give Claude Code a reviewable knowledge base](docs/use-cases/claude-code.md)
+- [Extract a runbook with DeepSeek, then review it](docs/use-cases/deepseek-runbooks.md)
+- [Keep retrieval deterministic for a small team](docs/use-cases/reviewed-context.md)
 
-```bash
-km --kb-path ./my_kb config set llm_providers.deepseek.api_key "sk-..."
-```
-
-### 3. Extract from notes
-
-```bash
-km --kb-path ./my_kb add notes.txt -c auth
-```
-
-### 4. Review staged modules
-
-```bash
-km --kb-path ./my_kb review
-```
-
-### 5. Serve through MCP
-
-```bash
-km --kb-path ./my_kb serve
-```
+These are end-to-end walkthroughs with commands and expected observations, not
+customer testimonials or production benchmarks.
 
 ## Validation and CI
 
@@ -345,7 +402,8 @@ python3.11 /opt/knowledge-manager/scripts/collect_release_evidence.py --release-
 | `km config {set,get,list}` | Manage `config.json` |
 | `km serve` | Run MCP server over stdio |
 
-All commands accept a global `--kb-path PATH` (default: cwd).
+All commands accept a global `--kb-path PATH`. Without it, commands use
+`KM_KB_PATH` when set and fall back to the current directory.
 
 ## Configuration
 
@@ -403,7 +461,7 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and
 Run `python -B tools/check_public_surface.py` before submitting changes. Live
 provider checks are opt-in, and credentials must stay outside Git.
 
-## Enterprise Operations
+## Enterprise Replacement Summary
 
 - Register enterprise sources with `km source add-confluence` and `km source add-notion`.
 - Pull and stage changes with `km source pull <source-id>`.

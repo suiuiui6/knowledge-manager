@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="social-title social-desc">
+  <title id="social-title">Knowledge Manager</title>
+  <desc id="social-desc">Reviewable context for AI agents. Git-native JSON modules, MCP retrieval, no vector database.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0d1117"/>
+      <stop offset="1" stop-color="#161b22"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#58a6ff"/>
+      <stop offset="1" stop-color="#3fb950"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="640" fill="url(#bg)"/>
+  <g stroke="#21262d" stroke-width="1">
+    <path d="M0 160h1280M0 320h1280M0 480h1280M320 0v640M640 0v640M960 0v640"/>
+  </g>
+  <rect x="72" y="70" width="8" height="96" rx="4" fill="url(#accent)"/>
+  <text x="108" y="126" font-family="Segoe UI, Arial, sans-serif" font-size="72" font-weight="700" fill="#f0f6fc">Knowledge Manager</text>
+  <text x="108" y="184" font-family="Segoe UI, Arial, sans-serif" font-size="32" fill="#8b949e">Reviewable context for AI agents</text>
+  <text x="108" y="246" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="24" fill="#c9d1d9">Git-native JSON modules. MCP retrieval. No vector database.</text>
+  <g font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="600">
+    <rect x="108" y="300" width="104" height="44" rx="22" fill="#1f6feb"/>
+    <text x="138" y="329" fill="#ffffff">MCP</text>
+    <rect x="228" y="300" width="154" height="44" rx="22" fill="#238636"/>
+    <text x="250" y="329" fill="#ffffff">Git-native</text>
+    <rect x="398" y="300" width="180" height="44" rx="22" fill="#9e6a03"/>
+    <text x="420" y="329" fill="#ffffff">No vector DB</text>
+    <rect x="594" y="300" width="122" height="44" rx="22" fill="#6e40c9"/>
+    <text x="620" y="329" fill="#ffffff">Python</text>
+  </g>
+  <rect x="108" y="386" width="1064" height="172" rx="14" fill="#010409" stroke="#30363d" stroke-width="2"/>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="21">
+    <text x="136" y="428" fill="#f0f6fc">$ km demo ./km-demo</text>
+    <text x="136" y="462" fill="#3fb950">Created demo knowledge base at ./km-demo</text>
+    <text x="136" y="496" fill="#8b949e">4 approved modules. 1 staged draft. No API key.</text>
+    <text x="136" y="530" fill="#58a6ff">agent-workflows/rollback-deployment - Roll back a failed deployment safely</text>
+  </g>
+  <text x="108" y="604" font-family="Segoe UI, Arial, sans-serif" font-size="18" fill="#6e7681">github.com/suiuiui6/knowledge-manager</text>
+</svg>

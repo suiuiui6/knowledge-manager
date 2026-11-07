@@ -45,6 +45,8 @@ htmlcov/
 # Knowledge base (for testing)
 test_kb/
 .staging/
+km-demo/
+.release-demo/
 
 # Config with secrets
 config.json

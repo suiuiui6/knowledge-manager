@@ -7,10 +7,11 @@ import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 
+from knowledge_manager import __version__
 from knowledge_manager.file_locks import serialized_write
 
 
-APP_VERSION = "0.5.2"
+APP_VERSION = __version__
 
 
 def _timestamp() -> str:

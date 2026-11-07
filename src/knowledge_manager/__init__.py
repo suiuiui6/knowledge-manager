@@ -1,3 +1,3 @@
-"""Knowledge Manager - Lightweight AI knowledge management system"""
+"""Knowledge Manager - lightweight, reviewable knowledge for AI agents."""
 
-__version__ = "0.1.0"
+__version__ = "0.6.0"
