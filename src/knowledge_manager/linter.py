@@ -94,10 +94,14 @@ class DeepLinter:
             semantic_issues = []
 
         all_issues = structural_issues + semantic_issues
-        all_issues.sort(key=lambda c: (
-            {"error": 0, "warning": 1, "info": 2}.get(c.severity.value if hasattr(c.severity, 'value') else str(c.severity), 1),
-            -len(c.modules),
-        ))
+        all_issues.sort(
+            key=lambda c: (
+                {"error": 0, "warning": 1, "info": 2}.get(
+                    c.severity.value if hasattr(c.severity, "value") else str(c.severity), 1
+                ),
+                -len(c.modules),
+            )
+        )
         return all_issues
 
     def _generate_candidates(self, modules: list[Module]) -> list[tuple[Module, Module]]:
@@ -107,10 +111,12 @@ class DeepLinter:
                 if i >= j:
                     continue
                 key = (f"{a.category}/{a.id}", f"{b.category}/{b.id}")
-                if (PAIR_FILTERS["same_category"](a, b)
+                if (
+                    PAIR_FILTERS["same_category"](a, b)
                     or PAIR_FILTERS["shared_tags"](a, b)
                     or PAIR_FILTERS["mutual_reference"](a, b)
-                    or PAIR_FILTERS["title_overlap_keywords"](a, b)):
+                    or PAIR_FILTERS["title_overlap_keywords"](a, b)
+                ):
                     pairs.add(key)
 
         module_map = {f"{m.category}/{m.id}": m for m in modules}
@@ -130,57 +136,68 @@ class DeepLinter:
 
             for ref in module.metadata.related_modules:
                 if ref in module_status and module_status[ref] in ("deprecated", "archived"):
-                    issues.append(Contradiction(
-                        id=str(uuid.uuid4()),
-                        type=ContradictionType.STALE_REFERENCE,
-                        severity=Severity.WARNING,
-                        modules=[module_key, ref],
-                        description=f"Module references {module_status[ref]} module: {ref}",
-                        evidence=[ContradictionEvidence(
-                            module_key=module_key,
-                            field="metadata.related_modules",
-                            excerpt=ref,
-                            claim=f"References {ref}",
-                        )],
-                        suggestion=f"Update reference or remove from related_modules",
-                        auto_fixable=True,
-                        auto_fix_description=f"Remove {ref} from related_modules of {module_key}",
-                    ))
+                    issues.append(
+                        Contradiction(
+                            id=str(uuid.uuid4()),
+                            type=ContradictionType.STALE_REFERENCE,
+                            severity=Severity.WARNING,
+                            modules=[module_key, ref],
+                            description=f"Module references {module_status[ref]} module: {ref}",
+                            evidence=[
+                                ContradictionEvidence(
+                                    module_key=module_key,
+                                    field="metadata.related_modules",
+                                    excerpt=ref,
+                                    claim=f"References {ref}",
+                                )
+                            ],
+                            suggestion=f"Update reference or remove from related_modules",
+                            auto_fixable=True,
+                            auto_fix_description=f"Remove {ref} from related_modules of {module_key}",
+                        )
+                    )
 
                 if ref not in module_keys_set:
-                    issues.append(Contradiction(
-                        id=str(uuid.uuid4()),
-                        type=ContradictionType.STALE_REFERENCE,
-                        severity=Severity.ERROR,
-                        modules=[module_key],
-                        description=f"References non-existent module: {ref}",
-                        evidence=[ContradictionEvidence(
-                            module_key=module_key,
-                            field="metadata.related_modules",
-                            excerpt=ref,
-                            claim=f"References missing module {ref}",
-                        )],
-                        suggestion="Check for typos or create the missing module",
-                        auto_fixable=False,
-                    ))
+                    issues.append(
+                        Contradiction(
+                            id=str(uuid.uuid4()),
+                            type=ContradictionType.STALE_REFERENCE,
+                            severity=Severity.ERROR,
+                            modules=[module_key],
+                            description=f"References non-existent module: {ref}",
+                            evidence=[
+                                ContradictionEvidence(
+                                    module_key=module_key,
+                                    field="metadata.related_modules",
+                                    excerpt=ref,
+                                    claim=f"References missing module {ref}",
+                                )
+                            ],
+                            suggestion="Check for typos or create the missing module",
+                            auto_fixable=False,
+                        )
+                    )
 
             if module.metadata.expires_at:
                 from datetime import datetime, timezone
+
                 now = datetime.now(timezone.utc)
                 exp = module.metadata.expires_at
                 if exp.tzinfo is None:
                     exp = exp.replace(tzinfo=timezone.utc)
                 if now >= exp and module.metadata.status == "published":
-                    issues.append(Contradiction(
-                        id=str(uuid.uuid4()),
-                        type=ContradictionType.FACT,
-                        severity=Severity.WARNING,
-                        modules=[module_key],
-                        description=f"Module expired but still published",
-                        suggestion="Archive or update the module",
-                        auto_fixable=True,
-                        auto_fix_description="Mark as deprecated",
-                    ))
+                    issues.append(
+                        Contradiction(
+                            id=str(uuid.uuid4()),
+                            type=ContradictionType.FACT,
+                            severity=Severity.WARNING,
+                            modules=[module_key],
+                            description=f"Module expired but still published",
+                            suggestion="Archive or update the module",
+                            auto_fixable=True,
+                            auto_fix_description="Mark as deprecated",
+                        )
+                    )
 
         # Orphan detection
         all_keys = set(module_keys_set)
@@ -189,8 +206,9 @@ class DeepLinter:
             for ref in m.metadata.related_modules:
                 referenced.add(ref)
         for key in all_keys:
-            if key not in referenced and key not in [f"{m.category}/{m.id}" for m in modules
-                                                     if m.metadata.related_modules]:
+            if key not in referenced and key not in [
+                f"{m.category}/{m.id}" for m in modules if m.metadata.related_modules
+            ]:
                 pass  # Skip: having no references is normal for new modules
 
         return issues
@@ -259,4 +277,4 @@ class DeepLinter:
 
 def _chunked(seq, n):
     for i in range(0, len(seq), n):
-        yield seq[i:i + n]
+        yield seq[i : i + n]

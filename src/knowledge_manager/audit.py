@@ -7,15 +7,24 @@ from typing import Optional
 logger = logging.getLogger("knowledge_manager.audit")
 
 AUDIT_OPERATIONS = {
-    "module.create", "module.update", "module.delete",
-    "module.approve", "module.reject",
-    "staging.submit", "staging.approve", "staging.reject",
-    "admin.dashboard.read", "source.jobs.read",
+    "module.create",
+    "module.update",
+    "module.delete",
+    "module.approve",
+    "module.reject",
+    "staging.submit",
+    "staging.approve",
+    "staging.reject",
+    "admin.dashboard.read",
+    "source.jobs.read",
     "source.job.enqueue",
     "source.pull",
     "worker.run",
-    "config.update", "plugin.install", "plugin.uninstall",
-    "auth.login", "auth.logout",
+    "config.update",
+    "plugin.install",
+    "plugin.uninstall",
+    "auth.login",
+    "auth.logout",
     "authz.denied",
 }
 
@@ -71,9 +80,12 @@ def log_audit_event(kb_path: Path, event: AuditEvent) -> None:
         f.write(json.dumps(event.to_dict(), ensure_ascii=False) + "\n")
 
 
-def read_audit_log(kb_path: Path, since: Optional[str] = None,
-                   user: Optional[str] = None,
-                   operation: Optional[str] = None) -> list[dict]:
+def read_audit_log(
+    kb_path: Path,
+    since: Optional[str] = None,
+    user: Optional[str] = None,
+    operation: Optional[str] = None,
+) -> list[dict]:
     log_path = kb_path / ".audit" / "audit.jsonl"
     if not log_path.exists():
         return []
@@ -101,8 +113,7 @@ def read_audit_log(kb_path: Path, since: Optional[str] = None,
     return events
 
 
-def generate_compliance_report(kb_path: Path, period: str = "",
-                                fmt: str = "json") -> str:
+def generate_compliance_report(kb_path: Path, period: str = "", fmt: str = "json") -> str:
     events = read_audit_log(kb_path)
 
     if period:

@@ -24,9 +24,13 @@ def _parse_ui_port(raw_value: str) -> int:
     try:
         port = int(raw_value)
     except ValueError as exc:
-        raise RuntimeEnvError(f"KM_UI_PORT must be an integer between 1 and 65535; got {raw_value!r}") from exc
+        raise RuntimeEnvError(
+            f"KM_UI_PORT must be an integer between 1 and 65535; got {raw_value!r}"
+        ) from exc
     if not 1 <= port <= 65535:
-        raise RuntimeEnvError(f"KM_UI_PORT must be an integer between 1 and 65535; got {raw_value!r}")
+        raise RuntimeEnvError(
+            f"KM_UI_PORT must be an integer between 1 and 65535; got {raw_value!r}"
+        )
     return port
 
 

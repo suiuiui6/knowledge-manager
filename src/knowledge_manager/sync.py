@@ -58,13 +58,16 @@ class MarkdownSync:
                     parsed = parse_markdown_module(md_content)
                     parsed.created_at = module.created_at
                     from knowledge_manager.storage import save_module
+
                     save_module(parsed, kb_path)
                 except Exception as e:
-                    conflicts.append(SyncConflict(
-                        path=str(md_path),
-                        error=str(e),
-                        action_required="Manually fix Markdown format errors",
-                    ))
+                    conflicts.append(
+                        SyncConflict(
+                            path=str(md_path),
+                            error=str(e),
+                            action_required="Manually fix Markdown format errors",
+                        )
+                    )
 
         return conflicts
 
@@ -99,11 +102,13 @@ class MarkdownSync:
             "scale": 1,
         }
         import json
+
         (obsidian_dir / "graph.json").write_text(json.dumps(graph_config, indent=2))
 
         templates_dir = obsidian_dir / "templates"
         templates_dir.mkdir(exist_ok=True)
-        (templates_dir / "module.md").write_text("""---
+        (templates_dir / "module.md").write_text(
+            """---
 id: ""
 category: ""
 title: ""
@@ -135,7 +140,9 @@ updated_at: ""
 
 # 注意事项
 
-""", encoding="utf-8")
+""",
+            encoding="utf-8",
+        )
 
         count = 0
         for module in list_modules(kb_path):

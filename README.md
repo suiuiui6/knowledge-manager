@@ -123,6 +123,10 @@ instead of a regional mirror. Windows checks are currently `audit-only-windows`
 because the local sandbox can prevent pytest from creating temporary
 directories; they are not represented as a passing production gate.
 
+Black is enforced across `src`, `tests`, and `scripts`. Mypy freezes the
+existing legacy typing debt and requires new modules to pass without being
+added to the baseline.
+
 Run the same checks locally after installing the project:
 
 ```bash

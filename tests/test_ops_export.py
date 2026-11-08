@@ -15,11 +15,22 @@ from knowledge_manager.schemas import (
     StagingMeta,
 )
 from knowledge_manager.source_ingestion import save_source_registry
-from knowledge_manager.storage import load_search_events, record_search_event, save_module, save_staging_meta, search_modules
+from knowledge_manager.storage import (
+    load_search_events,
+    record_search_event,
+    save_module,
+    save_staging_meta,
+    search_modules,
+)
 
 
 def test_generate_review_backlog_export_accepts_precomputed_inputs(tmp_path, monkeypatch):
-    from knowledge_manager.schemas import LifecycleBacklog, OpsReport, SourceBacklogEntry, StagingMeta
+    from knowledge_manager.schemas import (
+        LifecycleBacklog,
+        OpsReport,
+        SourceBacklogEntry,
+        StagingMeta,
+    )
 
     kb = tmp_path / "kb"
     kb.mkdir()
@@ -54,7 +65,10 @@ def test_generate_review_backlog_export_accepts_precomputed_inputs(tmp_path, mon
 def test_generate_review_backlog_export_includes_stale_sources(tmp_path):
     kb = tmp_path / "kb"
     kb.mkdir()
-    (kb / "index.json").write_text('{"version":"1.0","categories":{},"graph":{},"stats":{"total_modules":0,"total_words":0,"categories":0},"updated_at":"2026-06-12T00:00:00Z"}', encoding="utf-8")
+    (kb / "index.json").write_text(
+        '{"version":"1.0","categories":{},"graph":{},"stats":{"total_modules":0,"total_words":0,"categories":0},"updated_at":"2026-06-12T00:00:00Z"}',
+        encoding="utf-8",
+    )
     save_source_registry(
         SourceRegistry(
             sources={
@@ -164,7 +178,9 @@ def test_generate_source_backlog_export_accepts_precomputed_report(tmp_path, mon
 
     export = generate_source_backlog_export(
         kb,
-        report=OpsReport(source_backlog=[SourceBacklogEntry(source_id="team-docs", tracked_pages=1)]),
+        report=OpsReport(
+            source_backlog=[SourceBacklogEntry(source_id="team-docs", tracked_pages=1)]
+        ),
     )
 
     assert export["total"] == 1

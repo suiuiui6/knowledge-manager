@@ -16,7 +16,9 @@ class ModuleCache:
     def _make_key(module_id: str, namespace: str = "default", category: str = "") -> str:
         return f"{namespace}:{category}:{module_id}"
 
-    def get(self, module_id: str, namespace: str = "default", category: str = "") -> Optional[Module]:
+    def get(
+        self, module_id: str, namespace: str = "default", category: str = ""
+    ) -> Optional[Module]:
         if not self._enabled:
             return None
         key = self._make_key(module_id, namespace, category)

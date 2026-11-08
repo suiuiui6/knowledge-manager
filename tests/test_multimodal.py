@@ -4,7 +4,10 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from knowledge_manager.extractor import (
-    Extractor, IMAGE_PROMPT, REPO_PROMPT, MEETING_PROMPT,
+    Extractor,
+    IMAGE_PROMPT,
+    REPO_PROMPT,
+    MEETING_PROMPT,
 )
 from knowledge_manager.llm_clients import BaseLLMClient
 from knowledge_manager.schemas import ExtractionConfig, Module

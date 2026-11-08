@@ -19,6 +19,7 @@ class Wikilink:
 @dataclass
 class BlockReference:
     """A resolved reference to a specific section/paragraph within a module."""
+
     module_key: str
     module_title: str
     section_name: str = ""
@@ -50,7 +51,9 @@ def parse_transclusions(text: str) -> list[Wikilink]:
         display = match.group(3).strip() if match.group(3) else ""
         uid = f"!{target}#{section}"
         if uid not in seen:
-            links.append(Wikilink(target=target, section=section, display_text=display, is_transclude=True))
+            links.append(
+                Wikilink(target=target, section=section, display_text=display, is_transclude=True)
+            )
             seen.add(uid)
     return links
 
@@ -139,7 +142,9 @@ def resolve_block_reference(wikilink: Wikilink, kb_path: Path) -> BlockReference
     section_lower = wikilink.section.lower().replace("-", " ")
 
     # Try to find heading matching section name
-    heading_pattern = re.compile(rf"^#{{{1,3}}}\s*(.*?{re.escape(section_lower)}.*?)$", re.IGNORECASE | re.MULTILINE)
+    heading_pattern = re.compile(
+        rf"^#{{{1,3}}}\s*(.*?{re.escape(section_lower)}.*?)$", re.IGNORECASE | re.MULTILINE
+    )
     match = heading_pattern.search(full_text)
     if match:
         # Extract content under this heading until next heading
@@ -151,7 +156,7 @@ def resolve_block_reference(wikilink: Wikilink, kb_path: Path) -> BlockReference
         # Fallback: search for the section name anywhere in text
         idx = full_text.lower().find(section_lower)
         if idx >= 0:
-            ref.section_text = full_text[max(0, idx - 20):idx + 400].strip()
+            ref.section_text = full_text[max(0, idx - 20) : idx + 400].strip()
 
     return ref
 
@@ -181,10 +186,15 @@ def extract_transclusions(text: str, kb_path: Path) -> str:
 
 
 def auto_update_related_modules(module, kb_path: Path) -> list[str]:
-    full_text = " ".join([
-        module.content.overview, module.content.details,
-        module.content.examples, module.content.references, module.content.caveats,
-    ])
+    full_text = " ".join(
+        [
+            module.content.overview,
+            module.content.details,
+            module.content.examples,
+            module.content.references,
+            module.content.caveats,
+        ]
+    )
     links = parse_wikilinks(full_text)
     resolved = resolve_wikilinks(links, kb_path)
     new_related = set(module.metadata.related_modules)

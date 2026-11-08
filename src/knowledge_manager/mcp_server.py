@@ -5,7 +5,11 @@ from pathlib import Path
 from mcp.server.fastmcp import FastMCP
 
 from knowledge_manager.cache import ModuleCache
-from knowledge_manager.tenancy import TenantContext, module_visible_to_tenant, scope_visible_to_tenant
+from knowledge_manager.tenancy import (
+    TenantContext,
+    module_visible_to_tenant,
+    scope_visible_to_tenant,
+)
 from knowledge_manager.tenant_views import (
     build_tenant_graph,
     build_tenant_index,
@@ -65,7 +69,9 @@ def _load_projection_documents(kb_path: Path) -> dict[str, dict]:
     if payload is None:
         payload = build_search_projection(kb_path)
     documents = payload.get("documents", {})
-    if documents and not all(projection_document_complete(document) for document in documents.values()):
+    if documents and not all(
+        projection_document_complete(document) for document in documents.values()
+    ):
         payload = build_search_projection(kb_path)
         documents = payload.get("documents", {})
     return documents
@@ -126,15 +132,13 @@ def create_server(
     resolved_security_mode = security_mode or (
         "multi_tenant" if cfg and cfg.security.multi_tenant_mode else "single_tenant"
     )
-    global_resources_enabled = not (
-        cfg and cfg.security.mcp_global_resources == "disabled"
-    )
+    global_resources_enabled = not (cfg and cfg.security.mcp_global_resources == "disabled")
     untrusted_global_resources_allowed = global_resources_enabled and not (
         resolved_security_mode == "multi_tenant" and session_tenant is None
     )
-    config_allows_global_reads = not (
-        resolved_security_mode == "multi_tenant"
-    ) or bool(cfg and cfg.security.allow_global_reads)
+    config_allows_global_reads = not (resolved_security_mode == "multi_tenant") or bool(
+        cfg and cfg.security.allow_global_reads
+    )
 
     def _resolve_kb(namespace: str) -> Path:
         """Resolve a namespace to its kb_path. 'default' maps to the main KB."""
@@ -151,10 +155,14 @@ def create_server(
             if config_allows_global_reads or not session_tenant.allow_global_reads:
                 return session_tenant
             return session_tenant.model_copy(update={"allow_global_reads": False})
-        return TenantContext(
-            tenant_id=tenant_id,
-            allow_global_reads=config_allows_global_reads,
-        ) if tenant_id else None
+        return (
+            TenantContext(
+                tenant_id=tenant_id,
+                allow_global_reads=config_allows_global_reads,
+            )
+            if tenant_id
+            else None
+        )
 
     def _tenant_scoped_resources_available() -> bool:
         return session_tenant is not None
@@ -170,12 +178,17 @@ def create_server(
             return True
         from knowledge_manager.audit import AuditEvent, log_audit_event
 
-        log_audit_event(kb_path, AuditEvent(
-            user="mcp-agent", operation="authz.denied",
-            tenant_id=session_tenant.tenant_id if session_tenant else "",
-            resource=f"{module.category}/{module.id}", result="denied",
-            details=f"{operation}: module outside trusted session scope",
-        ))
+        log_audit_event(
+            kb_path,
+            AuditEvent(
+                user="mcp-agent",
+                operation="authz.denied",
+                tenant_id=session_tenant.tenant_id if session_tenant else "",
+                resource=f"{module.category}/{module.id}",
+                result="denied",
+                details=f"{operation}: module outside trusted session scope",
+            ),
+        )
         return False
 
     mcp = FastMCP("knowledge-manager")
@@ -183,18 +196,21 @@ def create_server(
     # ── Main KB resources ──
 
     if untrusted_global_resources_allowed or _tenant_scoped_resources_available():
+
         @mcp.resource("knowledge://index")
         def get_index() -> str:
             if session_tenant is not None:
                 return build_tenant_index(kb_path, session_tenant).model_dump_json()
             index = load_index(kb_path)
             if index is None:
-                return json.dumps({
-                    "version": "1.0",
-                    "description": "Empty knowledge base — use `km add` to populate",
-                    "categories": {},
-                    "stats": {},
-                })
+                return json.dumps(
+                    {
+                        "version": "1.0",
+                        "description": "Empty knowledge base — use `km add` to populate",
+                        "categories": {},
+                        "stats": {},
+                    }
+                )
             return index.model_dump_json()
 
         @mcp.resource("knowledge://changelog/{module_key}")
@@ -219,6 +235,7 @@ def create_server(
             if resolved_security_mode == "multi_tenant":
                 return _resource_access_denied()
             from knowledge_manager.storage import generate_health_report
+
             report = generate_health_report(kb_path)
             return report.model_dump_json(indent=2)
 
@@ -228,9 +245,12 @@ def create_server(
             if resolved_security_mode == "multi_tenant":
                 return _resource_access_denied()
             from knowledge_manager.storage import load_module, compute_module_health
+
             parts = module_key.split("/", 1)
             if len(parts) != 2:
-                return json.dumps({"error": f"Invalid module key: {module_key}. Use 'category/id' format."})
+                return json.dumps(
+                    {"error": f"Invalid module key: {module_key}. Use 'category/id' format."}
+                )
             mod = load_module(parts[1], parts[0], kb_path)
             if mod is None:
                 return json.dumps({"error": f"Module not found: {module_key}"})
@@ -243,6 +263,7 @@ def create_server(
             if resolved_security_mode == "multi_tenant":
                 return _resource_access_denied()
             from knowledge_manager.storage import aggregate_usage_stats
+
             data = aggregate_usage_stats(kb_path, period_days=30)
             return data.model_dump_json(indent=2)
 
@@ -250,8 +271,11 @@ def create_server(
         def get_recommendations() -> str:
             """Get actionable recommendations for KB improvement."""
             if session_tenant is not None:
-                return build_tenant_recommendations(kb_path, session_tenant).model_dump_json(indent=2)
+                return build_tenant_recommendations(kb_path, session_tenant).model_dump_json(
+                    indent=2
+                )
             from knowledge_manager.storage import generate_recommendations
+
             report = generate_recommendations(kb_path)
             return report.model_dump_json(indent=2)
 
@@ -279,6 +303,7 @@ def create_server(
             return json.dumps(export, ensure_ascii=False, indent=2)
 
         if resolved_security_mode != "multi_tenant":
+
             @mcp.resource("knowledge://ops/backlog/risky-misses")
             def get_ops_backlog_risky_misses() -> str:
                 """Get queries that surfaced no final results."""
@@ -293,18 +318,26 @@ def create_server(
 
             export = generate_source_backlog_export(kb_path)
             items = filter_source_backlog_items(kb_path, session_tenant, export.get("items", []))
-            return json.dumps({**export, "total": len(items), "items": items}, ensure_ascii=False, indent=2)
+            return json.dumps(
+                {**export, "total": len(items), "items": items}, ensure_ascii=False, indent=2
+            )
 
         @mcp.resource("knowledge://dual-view")
         def get_dual_view() -> str:
             """Get source-to-module and module-to-source projection data."""
             from knowledge_manager.dual_view import build_dual_view
 
-            return json.dumps(build_dual_view(kb_path, tenant=session_tenant), ensure_ascii=False, indent=2)
+            return json.dumps(
+                build_dual_view(kb_path, tenant=session_tenant), ensure_ascii=False, indent=2
+            )
 
     # ── Federation: namespace-scoped resources ──
 
-    if federation and untrusted_global_resources_allowed and resolved_security_mode != "multi_tenant":
+    if (
+        federation
+        and untrusted_global_resources_allowed
+        and resolved_security_mode != "multi_tenant"
+    ):
         # Register namespace-scoped resources programmatically
         for ns_name, ns_data in federation.items():
             ns_path = ns_data["path"]
@@ -316,25 +349,33 @@ def create_server(
                     if index is None:
                         return json.dumps({"error": f"Namespace '{name}' has no index"})
                     return index.model_dump_json()
+
                 return handler
+
             _make_index(ns_path)
 
             def _make_health(path, name=ns_name):
                 @mcp.resource(f"knowledge://{ns_name}/health")
                 def handler() -> str:
                     from knowledge_manager.storage import generate_health_report
+
                     report = generate_health_report(path)
                     return report.model_dump_json(indent=2)
+
                 return handler
+
             _make_health(ns_path)
 
             def _make_stats(path, name=ns_name):
                 @mcp.resource(f"knowledge://{ns_name}/stats")
                 def handler() -> str:
                     from knowledge_manager.storage import aggregate_usage_stats
+
                     data = aggregate_usage_stats(path, period_days=30)
                     return data.model_dump_json(indent=2)
+
                 return handler
+
             _make_stats(ns_path)
 
             def _make_changelog(path, name=ns_name):
@@ -342,7 +383,9 @@ def create_server(
                 def handler() -> str:
                     changelogs = load_changelogs(path, days=7)
                     return json.dumps(changelogs, indent=2)
+
                 return handler
+
             _make_changelog(ns_path)
 
         @mcp.resource("knowledge://federation/index")
@@ -371,7 +414,12 @@ def create_server(
     @mcp.tool(name="knowledge_graph")
     def knowledge_graph_tool(query: str = "", tenant_id: str = "") -> str:
         """Return knowledge graph statistics or find related modules by query."""
-        from knowledge_manager.storage import analyze_graph, detect_clusters, search_modules, list_modules
+        from knowledge_manager.storage import (
+            analyze_graph,
+            detect_clusters,
+            search_modules,
+            list_modules,
+        )
 
         try:
             tenant = _effective_tenant(tenant_id)
@@ -395,16 +443,23 @@ def create_server(
 
         if tenant is not None:
             graph = build_tenant_graph(kb_path, tenant)
-            return json.dumps({"stats": graph.stats, "clusters": [], "graph": graph.model_dump()}, indent=2)
+            return json.dumps(
+                {"stats": graph.stats, "clusters": [], "graph": graph.model_dump()}, indent=2
+            )
         gs = analyze_graph(kb_path)
         clusters = detect_clusters(kb_path)
-        return json.dumps({
-            "stats": gs.model_dump(),
-            "clusters": [c.model_dump() for c in clusters],
-        }, indent=2)
+        return json.dumps(
+            {
+                "stats": gs.model_dump(),
+                "clusters": [c.model_dump() for c in clusters],
+            },
+            indent=2,
+        )
 
     @mcp.tool(name="load_module")
-    def load_module_tool(module_id: str, category: str, namespace: str = "default", tenant_id: str = "") -> str:
+    def load_module_tool(
+        module_id: str, category: str, namespace: str = "default", tenant_id: str = ""
+    ) -> str:
         """Load a full knowledge module by ID and category. Use namespace for federated KBs."""
         target_kb = _resolve_kb(namespace)
         try:
@@ -512,7 +567,9 @@ def create_server(
         return json.dumps(result, indent=2)
 
     @mcp.tool(name="expand_module")
-    def expand_module_tool(module_id: str, category: str, namespace: str = "default", tenant_id: str = "") -> str:
+    def expand_module_tool(
+        module_id: str, category: str, namespace: str = "default", tenant_id: str = ""
+    ) -> str:
         """Load a module and its directly related neighbor modules (1-hop graph expansion)."""
         target_kb = _resolve_kb(namespace)
         try:
@@ -530,30 +587,39 @@ def create_server(
                 continue
             n = load_module(parts[1], parts[0], target_kb)
             if n is not None and (tenant is None or module_visible_to_tenant(n, tenant)):
-                neighbors.append({
-                    "id": n.id,
-                    "category": n.category,
-                    "title": n.title,
-                    "summary": n.summary,
-                    "tags": n.metadata.tags,
-                    "confidence": n.metadata.confidence,
-                    "caveats": n.content.caveats,
-                    "related_modules": module_for_tenant(n, target_kb, tenant).metadata.related_modules,
-                })
+                neighbors.append(
+                    {
+                        "id": n.id,
+                        "category": n.category,
+                        "title": n.title,
+                        "summary": n.summary,
+                        "tags": n.metadata.tags,
+                        "confidence": n.metadata.confidence,
+                        "caveats": n.content.caveats,
+                        "related_modules": module_for_tenant(
+                            n, target_kb, tenant
+                        ).metadata.related_modules,
+                    }
+                )
 
-        return json.dumps({
-            "module": {
-                "id": module.id,
-                "category": module.category,
-                "title": module.title,
-                "summary": module.summary,
-                "confidence": module.metadata.confidence,
+        return json.dumps(
+            {
+                "module": {
+                    "id": module.id,
+                    "category": module.category,
+                    "title": module.title,
+                    "summary": module.summary,
+                    "confidence": module.metadata.confidence,
+                },
+                "neighbors": neighbors,
             },
-            "neighbors": neighbors,
-        }, separators=(",", ":"))
+            separators=(",", ":"),
+        )
 
     @mcp.tool(name="deep_search")
-    def deep_search_tool(query: str, category: str = "", namespace: str = "default", tenant_id: str = "") -> str:
+    def deep_search_tool(
+        query: str, category: str = "", namespace: str = "default", tenant_id: str = ""
+    ) -> str:
         """Search, expand top results, and load full content — all in one call.
 
         Returns top-3 search results with full module content, plus neighbors for
@@ -598,13 +664,15 @@ def create_server(
                 neighbor = _projection_neighbor(target_kb, ref)
                 if neighbor is None or not _projection_visible_to_tenant(neighbor, tenant):
                     continue
-                neighbors.append({
-                    "id": neighbor["id"],
-                    "category": neighbor["category"],
-                    "title": neighbor["title"],
-                    "summary": neighbor["summary"],
-                    "confidence": neighbor["confidence"],
-                })
+                neighbors.append(
+                    {
+                        "id": neighbor["id"],
+                        "category": neighbor["category"],
+                        "title": neighbor["title"],
+                        "summary": neighbor["summary"],
+                        "confidence": neighbor["confidence"],
+                    }
+                )
             module_data["neighbors"] = neighbors
             output.append(module_data)
         return json.dumps(output, separators=(",", ":"))
@@ -633,6 +701,7 @@ def create_server(
     # ── Lint resource (M7) ──
 
     if untrusted_global_resources_allowed and resolved_security_mode != "multi_tenant":
+
         @mcp.resource("knowledge://lint")
         def get_lint() -> str:
             """Get knowledge base contradiction and structural issue report."""
@@ -670,14 +739,21 @@ def create_server(
         researcher = Researcher(kb_path, cfg.research, llm_client)
 
         result = await researcher.research(query, depth)
-        return json.dumps({
-            "query": result.query,
-            "temporary_answer": result.answer_synthesis[:500],
-            "staged_modules": result.staged_ids,
-            "sources_used": result.sources_used,
-            "took_ms": result.took_ms,
-            "hint": f"Use km review to review staged modules: {', '.join(result.staged_ids)}" if result.staged_ids else "",
-        }, indent=2)
+        return json.dumps(
+            {
+                "query": result.query,
+                "temporary_answer": result.answer_synthesis[:500],
+                "staged_modules": result.staged_ids,
+                "sources_used": result.sources_used,
+                "took_ms": result.took_ms,
+                "hint": (
+                    f"Use km review to review staged modules: {', '.join(result.staged_ids)}"
+                    if result.staged_ids
+                    else ""
+                ),
+            },
+            indent=2,
+        )
 
     # ── Federation: federated_search tool ──
 
@@ -703,7 +779,9 @@ def create_server(
                     output["results"][ns_name] = {"error": f"Unknown namespace: {ns_name}"}
                     continue
                 ns_path = federation[ns_name]["path"]
-                ns_results = search_modules(query, ns_path, limit=top_per_ns, tenant=_effective_tenant())
+                ns_results = search_modules(
+                    query, ns_path, limit=top_per_ns, tenant=_effective_tenant()
+                )
                 output["results"][ns_name] = [
                     {
                         "id": r.module.id,
@@ -726,8 +804,14 @@ def create_server(
     # ── Write Tools (P0) ──
 
     @mcp.tool(name="create_module")
-    def create_module_tool(title: str, content: str, category: str = "general",
-                           summary: str = "", tags: str = "", confidence: str = "medium") -> str:
+    def create_module_tool(
+        title: str,
+        content: str,
+        category: str = "general",
+        summary: str = "",
+        tags: str = "",
+        confidence: str = "medium",
+    ) -> str:
         """Create a new knowledge module and stage it for review.
 
         Args:
@@ -749,6 +833,7 @@ def create_server(
             confidence = "medium"
 
         import re as _re
+
         mod_id = _re.sub(r"[^a-z0-9-]", "", title.lower().replace(" ", "-"))[:50]
 
         module = Module(
@@ -775,18 +860,27 @@ def create_server(
         meta = StagingMeta(module_id=mod_id, submitted_by="mcp-agent")
         save_staging_meta(meta, staging)
 
-        return json.dumps({
-            "status": "staged",
-            "module_id": mod_id,
-            "category": category,
-            "title": title,
-            "hint": f"Module staged for review. Use km review approve {category}/{mod_id} to publish.",
-        }, indent=2)
+        return json.dumps(
+            {
+                "status": "staged",
+                "module_id": mod_id,
+                "category": category,
+                "title": title,
+                "hint": f"Module staged for review. Use km review approve {category}/{mod_id} to publish.",
+            },
+            indent=2,
+        )
 
     @mcp.tool(name="update_module")
-    def update_module_tool(module_id: str, category: str, title: str = "",
-                           content: str = "", summary: str = "",
-                           tags: str = "", confidence: str = "") -> str:
+    def update_module_tool(
+        module_id: str,
+        category: str,
+        title: str = "",
+        content: str = "",
+        summary: str = "",
+        tags: str = "",
+        confidence: str = "",
+    ) -> str:
         """Update an existing module's fields. Only specified fields are changed.
 
         Args:
@@ -816,12 +910,15 @@ def create_server(
             mod.metadata.confidence = confidence
 
         save_module(mod, kb_path)
-        return json.dumps({
-            "status": "updated",
-            "module_id": module_id,
-            "category": category,
-            "title": mod.title,
-        }, indent=2)
+        return json.dumps(
+            {
+                "status": "updated",
+                "module_id": module_id,
+                "category": category,
+                "title": mod.title,
+            },
+            indent=2,
+        )
 
     @mcp.tool(name="delete_module")
     def delete_module_tool(module_id: str, category: str) -> str:
@@ -839,11 +936,14 @@ def create_server(
 
         mod.metadata.status = "archived"
         save_module(mod, kb_path)
-        return json.dumps({
-            "status": "archived",
-            "module_id": module_id,
-            "category": category,
-            "hint": "Module archived. Use include_archived=true in search to find it.",
-        }, indent=2)
+        return json.dumps(
+            {
+                "status": "archived",
+                "module_id": module_id,
+                "category": category,
+                "hint": "Module archived. Use include_archived=true in search to find it.",
+            },
+            indent=2,
+        )
 
     return mcp

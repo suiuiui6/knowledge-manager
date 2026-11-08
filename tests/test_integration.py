@@ -1,4 +1,5 @@
 """Integration tests covering full end-to-end workflows."""
+
 import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -61,9 +62,7 @@ def test_full_workflow_manual_module(runner, integration_kb):
     assert result.exit_code == 0
     assert "oauth-flow" in result.output
 
-    result = runner.invoke(
-        cli, ["--kb-path", str(integration_kb), "search", "oauth"]
-    )
+    result = runner.invoke(cli, ["--kb-path", str(integration_kb), "search", "oauth"])
     assert result.exit_code == 0
     assert "oauth-flow" in result.output
 
@@ -126,9 +125,7 @@ def test_config_workflow(runner, integration_kb):
     assert result.exit_code == 0
     assert "openai" in result.output
 
-    result = runner.invoke(
-        cli, ["--kb-path", str(integration_kb), "config", "list"]
-    )
+    result = runner.invoke(cli, ["--kb-path", str(integration_kb), "config", "list"])
     assert result.exit_code == 0
     assert "llm_providers" in result.output
 
@@ -157,9 +154,10 @@ def test_extract_review_approve_workflow(runner, integration_kb):
     async def fake_extract(self, text, category, existing_categories=""):
         return extracted
 
-    with patch("knowledge_manager.cli.Extractor.extract", new=fake_extract), patch(
-        "knowledge_manager.cli.create_client"
-    ) as mock_create:
+    with (
+        patch("knowledge_manager.cli.Extractor.extract", new=fake_extract),
+        patch("knowledge_manager.cli.create_client") as mock_create,
+    ):
         mock_create.return_value = MagicMock()
         result = runner.invoke(
             cli,
@@ -178,9 +176,7 @@ def test_extract_review_approve_workflow(runner, integration_kb):
     staged = list_staging(integration_kb / ".staging")
     assert len(staged) == 2
 
-    result = runner.invoke(
-        cli, ["--kb-path", str(integration_kb), "review"], input="a\na\n"
-    )
+    result = runner.invoke(cli, ["--kb-path", str(integration_kb), "review"], input="a\na\n")
     assert result.exit_code == 0
 
     assert load_module("auth-jwt", "auth", integration_kb) is not None
@@ -195,9 +191,7 @@ def test_extract_review_reject_workflow(runner, integration_kb):
     """staged -> review reject -> nothing persisted, staging cleared."""
     save_to_staging(make_module("rejected", "draft"), integration_kb / ".staging")
 
-    result = runner.invoke(
-        cli, ["--kb-path", str(integration_kb), "review"], input="r\n"
-    )
+    result = runner.invoke(cli, ["--kb-path", str(integration_kb), "review"], input="r\n")
     assert result.exit_code == 0
 
     assert load_module("rejected", "draft", integration_kb) is None
@@ -209,9 +203,10 @@ def test_serve_command_wires_up(runner, integration_kb):
     save_module(make_module("hello", "general"), integration_kb)
     rebuild_index(integration_kb)
 
-    with patch("knowledge_manager.mcp_server.create_server") as mock_create_server, patch(
-        "knowledge_manager.cli.asyncio.run"
-    ) as mock_run:
+    with (
+        patch("knowledge_manager.mcp_server.create_server") as mock_create_server,
+        patch("knowledge_manager.cli.asyncio.run") as mock_run,
+    ):
         mock_server = mock_create_server.return_value
         mock_server.run_stdio_async = MagicMock()
 
@@ -286,7 +281,9 @@ def test_enterprise_ingest_eval_ops_flow(runner, integration_kb, monkeypatch, tm
 
     monkeypatch.setattr("knowledge_manager.confluence.ConfluenceClient.list_pages", fake_list_pages)
     monkeypatch.setattr("knowledge_manager.cli.Extractor.extract", fake_extract)
-    monkeypatch.setattr("knowledge_manager.cli.create_client", lambda provider_name, provider_cfg: MagicMock())
+    monkeypatch.setattr(
+        "knowledge_manager.cli.create_client", lambda provider_name, provider_cfg: MagicMock()
+    )
 
     pull = runner.invoke(cli, ["--kb-path", str(integration_kb), "source", "pull", "team-docs"])
     assert pull.exit_code == 0
@@ -391,7 +388,9 @@ def test_replacement_flow_import_ingest_eval_and_ops(runner, integration_kb, mon
 
     monkeypatch.setattr("knowledge_manager.confluence.ConfluenceClient.list_pages", fake_list_pages)
     monkeypatch.setattr("knowledge_manager.cli.Extractor.extract", fake_extract)
-    monkeypatch.setattr("knowledge_manager.cli.create_client", lambda provider_name, provider_cfg: MagicMock())
+    monkeypatch.setattr(
+        "knowledge_manager.cli.create_client", lambda provider_name, provider_cfg: MagicMock()
+    )
 
     pull = runner.invoke(cli, ["--kb-path", str(integration_kb), "source", "pull", "team-docs"])
     assert pull.exit_code == 0

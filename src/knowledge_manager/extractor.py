@@ -146,7 +146,9 @@ class Extractor:
     def _effective_chunk_size(self) -> int:
         return min(self.config.chunk_size, 4000)
 
-    async def extract(self, text: str, category: str, existing_categories: str = "") -> List[Module]:
+    async def extract(
+        self, text: str, category: str, existing_categories: str = ""
+    ) -> List[Module]:
         max_modules = self._effective_max_modules()
         chunks = _chunk_text(text, self._effective_chunk_size(), self.config.chunk_overlap)
         logger.info(
@@ -171,7 +173,9 @@ class Extractor:
                 )
                 break
             logger.debug("Processing chunk %s/%s (%s characters)", ci, len(chunks), len(chunk))
-            chunk_modules = await self._extract_chunk(chunk, category, existing_categories, ci, len(chunks))
+            chunk_modules = await self._extract_chunk(
+                chunk, category, existing_categories, ci, len(chunks)
+            )
             for module in chunk_modules:
                 if len(modules) >= max_modules:
                     break
@@ -181,11 +185,18 @@ class Extractor:
                 seen_ids.add(module.id)
                 modules.append(module)
 
-        logger.info("Successfully extracted %s modules across %s chunk(s)", len(modules), len(chunks))
+        logger.info(
+            "Successfully extracted %s modules across %s chunk(s)", len(modules), len(chunks)
+        )
         return modules
 
     async def _extract_chunk(
-        self, text: str, category: str, existing_categories: str, chunk_index: int, total_chunks: int
+        self,
+        text: str,
+        category: str,
+        existing_categories: str,
+        chunk_index: int,
+        total_chunks: int,
     ) -> List[Module]:
         prompt = EXTRACTION_PROMPT.format(
             category=category,
@@ -199,8 +210,8 @@ class Extractor:
             total_chunks,
             len(prompt),
             category,
-                    self._effective_max_modules(),
-                )
+            self._effective_max_modules(),
+        )
 
         items = await self._call_llm_with_retry(prompt, chunk_index, total_chunks)
         if not items:
@@ -218,7 +229,7 @@ class Extractor:
                         content_data[key] = ", ".join(str(v) for v in val)
                 meta_data = item.get("metadata", {})
                 llm_category = item.get("category") if self.config.auto_categorize else None
-                module_category = (llm_category or category)
+                module_category = llm_category or category
                 module = Module(
                     id=item["id"],
                     category=module_category,
@@ -259,38 +270,56 @@ class Extractor:
         for attempt in range(max_retries + 1):
             logger.info(
                 "Calling LLM for chunk %s/%s (attempt %s/%s)",
-                chunk_index, total_chunks, attempt + 1, max_retries + 1,
+                chunk_index,
+                total_chunks,
+                attempt + 1,
+                max_retries + 1,
             )
             try:
                 raw = await self.llm.complete(prompt)
                 logger.debug(
                     "Received LLM response for chunk %s/%s attempt %s (%s characters)",
-                    chunk_index, total_chunks, attempt + 1, len(raw),
+                    chunk_index,
+                    total_chunks,
+                    attempt + 1,
+                    len(raw),
                 )
             except Exception:
                 logger.exception(
                     "LLM call failed for chunk %s/%s attempt %s",
-                    chunk_index, total_chunks, attempt + 1,
+                    chunk_index,
+                    total_chunks,
+                    attempt + 1,
                 )
                 return None
 
             raw = _strip_markdown_json(raw)
             logger.debug(
                 "Normalized LLM response for chunk %s/%s attempt %s to %s characters",
-                chunk_index, total_chunks, attempt + 1, len(raw),
+                chunk_index,
+                total_chunks,
+                attempt + 1,
+                len(raw),
             )
 
             try:
                 items = json.loads(raw)
                 logger.debug(
                     "Parsed JSON for chunk %s/%s attempt %s into %s item(s)",
-                    chunk_index, total_chunks, attempt + 1,
+                    chunk_index,
+                    total_chunks,
+                    attempt + 1,
                     len(items) if isinstance(items, list) else "non-list",
                 )
             except json.JSONDecodeError as e:
                 logger.error(
                     "JSON decode failed for chunk %s/%s attempt %s at position %s: %s (response_length=%s)",
-                    chunk_index, total_chunks, attempt + 1, e.pos, e.msg, len(raw),
+                    chunk_index,
+                    total_chunks,
+                    attempt + 1,
+                    e.pos,
+                    e.msg,
+                    len(raw),
                 )
                 if attempt < max_retries:
                     prompt = (
@@ -304,7 +333,10 @@ class Extractor:
             if not isinstance(items, list):
                 logger.error(
                     "Expected list response for chunk %s/%s attempt %s, got %s",
-                    chunk_index, total_chunks, attempt + 1, type(items).__name__,
+                    chunk_index,
+                    total_chunks,
+                    attempt + 1,
+                    type(items).__name__,
                 )
                 if attempt < max_retries:
                     prompt = (
@@ -319,14 +351,18 @@ class Extractor:
 
         return None
 
-    async def extract_from_image(self, image_path: str, category: str, existing_categories: str = "") -> list:
+    async def extract_from_image(
+        self, image_path: str, category: str, existing_categories: str = ""
+    ) -> list:
         max_modules = self._effective_max_modules()
         prompt = IMAGE_PROMPT.format(category=category, max_modules=max_modules)
 
         try:
             raw = await self.llm.complete_vision(prompt, image_path)
         except NotImplementedError:
-            logger.warning("Vision not supported by current LLM provider; falling back to filename-only extraction")
+            logger.warning(
+                "Vision not supported by current LLM provider; falling back to filename-only extraction"
+            )
             text = f"Image file: {Path(image_path).name}\nPath: {image_path}"
             return await self.extract(text, category, existing_categories)
         except Exception:
@@ -335,11 +371,16 @@ class Extractor:
 
         return self._parse_modules(raw, category)
 
-    def extract_from_repo(self, repo_path: str, category: str, existing_categories: str = "") -> list:
+    def extract_from_repo(
+        self, repo_path: str, category: str, existing_categories: str = ""
+    ) -> list:
         import asyncio as _asyncio
+
         return _asyncio.run(self._extract_from_repo_async(repo_path, category, existing_categories))
 
-    async def _extract_from_repo_async(self, repo_path: str, category: str, existing_categories: str = "") -> list:
+    async def _extract_from_repo_async(
+        self, repo_path: str, category: str, existing_categories: str = ""
+    ) -> list:
         root = Path(repo_path)
         if not root.exists():
             logger.warning("Repo path does not exist: %s", repo_path)
@@ -362,9 +403,12 @@ class Extractor:
 
     def extract_from_meeting(self, text: str, category: str, existing_categories: str = "") -> list:
         import asyncio as _asyncio
+
         return _asyncio.run(self._extract_from_meeting_async(text, category, existing_categories))
 
-    async def _extract_from_meeting_async(self, text: str, category: str, existing_categories: str = "") -> list:
+    async def _extract_from_meeting_async(
+        self, text: str, category: str, existing_categories: str = ""
+    ) -> list:
         max_modules = self._effective_max_modules()
         prompt = MEETING_PROMPT.format(category=category, text=text, max_modules=max_modules)
 
@@ -439,12 +483,23 @@ class Extractor:
     @staticmethod
     def _read_key_files(root: Path, max_bytes: int = 6000) -> str:
         key_patterns = [
-            "README*", "ARCHITECTURE*", "ARCH*", "CONTRIBUTING*",
-            "pyproject.toml", "Cargo.toml", "package.json", "go.mod",
-            "Makefile", "docker-compose*", "Dockerfile*",
-            "config*", "*.yaml", "*.yml",
+            "README*",
+            "ARCHITECTURE*",
+            "ARCH*",
+            "CONTRIBUTING*",
+            "pyproject.toml",
+            "Cargo.toml",
+            "package.json",
+            "go.mod",
+            "Makefile",
+            "docker-compose*",
+            "Dockerfile*",
+            "config*",
+            "*.yaml",
+            "*.yml",
         ]
         import fnmatch
+
         parts = []
         total = 0
         for pattern in key_patterns:

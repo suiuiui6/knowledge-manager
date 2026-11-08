@@ -14,9 +14,15 @@ logger = logging.getLogger("knowledge_manager.researcher")
 
 
 FORBIDDEN_PATHS = [
-    "/etc/", "/proc/", "/sys/",
-    "~/.ssh/", "~/.aws/", "~/.config/",
-    "*.env", "*.key", "*.pem",
+    "/etc/",
+    "/proc/",
+    "/sys/",
+    "~/.ssh/",
+    "~/.aws/",
+    "~/.config/",
+    "*.env",
+    "*.key",
+    "*.pem",
 ]
 
 
@@ -65,6 +71,7 @@ class Researcher:
         on_progress: Callable[[ResearchProgress], None] | None = None,
     ) -> ResearchResult:
         import time
+
         t_start = time.time()
         depth = depth or self.config.default_depth
         llm_calls = 0
@@ -79,12 +86,16 @@ class Researcher:
 
         # Step 2: Select sources
         if on_progress:
-            on_progress(ResearchProgress("select", f"Selecting from {len(self.config.sources)} sources..."))
+            on_progress(
+                ResearchProgress("select", f"Selecting from {len(self.config.sources)} sources...")
+            )
         assignments = self._assign_sources(sub_queries)
 
         # Step 3: Parallel search
         if on_progress:
-            on_progress(ResearchProgress("search", f"Searching {len(self.config.sources)} sources..."))
+            on_progress(
+                ResearchProgress("search", f"Searching {len(self.config.sources)} sources...")
+            )
         all_results: list[SourceResult] = []
         tasks = []
         for sub_q, sources in assignments.items():
@@ -98,7 +109,9 @@ class Researcher:
 
         # Step 4: Synthesize
         if on_progress:
-            on_progress(ResearchProgress("synthesize", f"Synthesizing {len(all_results)} sources..."))
+            on_progress(
+                ResearchProgress("synthesize", f"Synthesizing {len(all_results)} sources...")
+            )
         synthesis = await self._synthesize(query, all_results, depth)
         llm_calls += 1
 
@@ -130,6 +143,7 @@ Question: {query}
 Return ONLY a JSON array of strings. Example: ["sub-question 1", "sub-question 2"]"""
         try:
             import json
+
             resp = await self.llm.complete(prompt)
             parsed = json.loads(resp.strip())
             if isinstance(parsed, list):
@@ -166,27 +180,43 @@ Return ONLY a JSON array of strings. Example: ["sub-question 1", "sub-question 2
         for kw in keywords[:5]:
             try:
                 output = subprocess.run(
-                    ["rg", "-l", "-i", kw, str(repo_path),
-                     "--glob=!vendor/**", "--glob=!node_modules/**",
-                     "--glob=!.git/**", "--glob=!__pycache__/**"],
-                    capture_output=True, text=True, timeout=10,
+                    [
+                        "rg",
+                        "-l",
+                        "-i",
+                        kw,
+                        str(repo_path),
+                        "--glob=!vendor/**",
+                        "--glob=!node_modules/**",
+                        "--glob=!.git/**",
+                        "--glob=!__pycache__/**",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
                 )
                 for file_path in output.stdout.strip().split("\n")[:3]:
                     if file_path:
                         try:
-                            content = Path(file_path).read_text(encoding="utf-8", errors="ignore")[:2000]
-                            chunks.append(SourceChunk(
-                                source_label=f"code:{source.path}",
-                                file_path=file_path,
-                                content=content,
-                                relevance=0.6,
-                            ))
+                            content = Path(file_path).read_text(encoding="utf-8", errors="ignore")[
+                                :2000
+                            ]
+                            chunks.append(
+                                SourceChunk(
+                                    source_label=f"code:{source.path}",
+                                    file_path=file_path,
+                                    content=content,
+                                    relevance=0.6,
+                                )
+                            )
                         except Exception:
                             pass
             except Exception:
                 continue
 
-        return SourceResult(source_label=f"code_repo:{source.path}", chunks=chunks, total_found=len(chunks))
+        return SourceResult(
+            source_label=f"code_repo:{source.path}", chunks=chunks, total_found=len(chunks)
+        )
 
     async def _search_doc_dir(self, query: str, source: ResearchSource) -> SourceResult:
         doc_path = Path(source.path).expanduser().resolve()
@@ -200,12 +230,14 @@ Return ONLY a JSON array of strings. Example: ["sub-question 1", "sub-question 2
                 try:
                     content = f.read_text(encoding="utf-8", errors="ignore")[:2000]
                     if _quick_relevance(content, query) > 0.3:
-                        chunks.append(SourceChunk(
-                            source_label=f"doc:{source.path}",
-                            file_path=str(f),
-                            content=content,
-                            relevance=_quick_relevance(content, query),
-                        ))
+                        chunks.append(
+                            SourceChunk(
+                                source_label=f"doc:{source.path}",
+                                file_path=str(f),
+                                content=content,
+                                relevance=_quick_relevance(content, query),
+                            )
+                        )
                 except Exception:
                     pass
                 if len(chunks) >= 5:
@@ -213,12 +245,15 @@ Return ONLY a JSON array of strings. Example: ["sub-question 1", "sub-question 2
             if len(chunks) >= 5:
                 break
 
-        return SourceResult(source_label=f"doc_dir:{source.path}", chunks=chunks, total_found=len(chunks))
+        return SourceResult(
+            source_label=f"doc_dir:{source.path}", chunks=chunks, total_found=len(chunks)
+        )
 
     async def _search_web(self, query: str, source: ResearchSource) -> SourceResult:
         chunks = []
         try:
             import httpx
+
             search_url = source.config.get("search_url", "https://html.duckduckgo.com/html/")
             async with httpx.AsyncClient() as client:
                 resp = await client.get(
@@ -230,11 +265,12 @@ Return ONLY a JSON array of strings. Example: ["sub-question 1", "sub-question 2
                 if resp.status_code == 200:
                     # Extract text from HTML results
                     import re as _re
+
                     text = _re.sub(r"<[^>]+>", " ", resp.text)
                     text = _re.sub(r"\s+", " ", text)
                     # Split into ~500 char chunks
                     for i in range(0, min(len(text), 3000), 500):
-                        chunks.append(text[i:i+500])
+                        chunks.append(text[i : i + 500])
         except Exception as e:
             logger.warning("Web search failed for %s: %s", query, e)
 
@@ -251,6 +287,7 @@ Return ONLY a JSON array of lowercase strings.
 Query: {query}"""
         try:
             import json
+
             resp = await self.llm.complete(prompt)
             parsed = json.loads(resp.strip())
             if isinstance(parsed, list):
@@ -321,8 +358,19 @@ Provide a concise answer (Chinese, max 500 words). Cite sources using [source:la
     def _validate_source(self, source: ResearchSource) -> None:
         if source.type in ("code_repo", "doc_dir"):
             p = str(Path(source.path).expanduser().resolve()).replace("\\", "/")
-            forbidden = [r"/etc(/|$)", r"/proc(/|$)", r"/sys(/|$)", r"\.env$", r"\.key$", r"\.pem$", r"\.ssh(/|$)", r"\.aws(/|$)", r"\.config(/|$)"]
+            forbidden = [
+                r"/etc(/|$)",
+                r"/proc(/|$)",
+                r"/sys(/|$)",
+                r"\.env$",
+                r"\.key$",
+                r"\.pem$",
+                r"\.ssh(/|$)",
+                r"\.aws(/|$)",
+                r"\.config(/|$)",
+            ]
             import re
+
             for fb in forbidden:
                 if re.search(fb, p):
                     raise ValueError(f"Source path matches forbidden pattern {fb}")
@@ -340,4 +388,4 @@ def _quick_relevance(text: str, query: str) -> float:
 
 def _chunked(seq: list, n: int):
     for i in range(0, len(seq), n):
-        yield seq[i:i + n]
+        yield seq[i : i + n]

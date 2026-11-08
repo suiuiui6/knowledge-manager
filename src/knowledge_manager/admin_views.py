@@ -29,7 +29,8 @@ def build_admin_dashboard(kb_path: Path, tenant: TenantContext | None = None) ->
 
     if tenant is not None:
         jobs = [
-            job for job in jobs
+            job
+            for job in jobs
             if (
                 (not job.tenant_id and tenant.allow_global_reads)
                 or job.tenant_id == tenant.tenant_id
@@ -72,4 +73,6 @@ def build_admin_dashboard(kb_path: Path, tenant: TenantContext | None = None) ->
         "review_backlog": review_backlog,
         "eval_regressions": [],
     }
-    return store_materialized_view(kb_path, "admin_dashboard", payload) if tenant is None else payload
+    return (
+        store_materialized_view(kb_path, "admin_dashboard", payload) if tenant is None else payload
+    )

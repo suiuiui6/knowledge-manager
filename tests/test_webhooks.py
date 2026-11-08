@@ -98,7 +98,16 @@ def test_load_webhook_failures_with_data(tmp_path):
     kb.mkdir(parents=True, exist_ok=True)
     failures_path = kb / ".webhook_failures.jsonl"
     failures_path.write_text(
-        json.dumps({"event": "test", "url": "https://example.com", "retry_count": 0, "max_attempts": 3, "payload": "{}"}) + "\n"
+        json.dumps(
+            {
+                "event": "test",
+                "url": "https://example.com",
+                "retry_count": 0,
+                "max_attempts": 3,
+                "payload": "{}",
+            }
+        )
+        + "\n"
     )
     records = load_webhook_failures(kb)
     assert len(records) == 1
@@ -118,10 +127,17 @@ def test_retry_webhooks_max_attempts(tmp_path):
     kb.mkdir(parents=True, exist_ok=True)
     failures_path = kb / ".webhook_failures.jsonl"
     failures_path.write_text(
-        json.dumps({
-            "event": "test", "url": "https://not-real.example.com/nope",
-            "status_code": 500, "payload": "{}", "retry_count": 3, "max_attempts": 3,
-        }) + "\n"
+        json.dumps(
+            {
+                "event": "test",
+                "url": "https://not-real.example.com/nope",
+                "status_code": 500,
+                "payload": "{}",
+                "retry_count": 3,
+                "max_attempts": 3,
+            }
+        )
+        + "\n"
     )
     # Should not retry (max attempts reached) and should keep the record
     count = retry_webhooks(kb)

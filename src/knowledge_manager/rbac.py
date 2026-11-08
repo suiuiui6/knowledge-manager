@@ -87,9 +87,11 @@ def check_permission(user: str, permission: str, kb_path: Path) -> bool:
 
 def require_permission(permission: str):
     """Decorator for CLI commands that require a specific permission."""
+
     def decorator(func):
         func.__rbac_permission__ = permission
         return func
+
     return decorator
 
 

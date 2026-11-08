@@ -15,8 +15,16 @@ def _write_auth_fixture(kb):
                 "provider": "token",
                 "oidc_config": {
                     "static_tokens": {
-                        "reviewer-team-a": {"sub": "rachel", "tenant_id": "team-a", "workspace_id": "ws-a"},
-                        "editor-team-a": {"sub": "alice", "tenant_id": "team-a", "workspace_id": "ws-a"},
+                        "reviewer-team-a": {
+                            "sub": "rachel",
+                            "tenant_id": "team-a",
+                            "workspace_id": "ws-a",
+                        },
+                        "editor-team-a": {
+                            "sub": "alice",
+                            "tenant_id": "team-a",
+                            "workspace_id": "ws-a",
+                        },
                         "admin-root": {"sub": "root", "groups": ["admins"]},
                     }
                 },
@@ -49,7 +57,10 @@ def test_module_create_emits_audit_event_with_user_tenant_and_request_id(tmp_pat
             "category": "ops",
             "title": "Audit module",
             "summary": "Audit module summary.",
-            "content": {"overview": "Audit overview.", "details": "Audit details long enough for validation."},
+            "content": {
+                "overview": "Audit overview.",
+                "details": "Audit details long enough for validation.",
+            },
             "submit_to_staging": False,
         },
     )
@@ -72,11 +83,15 @@ def test_tenant_override_denial_is_audited(tmp_path):
     save_index(Index(description="audit"), kb)
     client = TestClient(create_app(kb))
 
-    response = client.get("/api/index?tenant_id=team-b", headers={"Authorization": "Bearer editor-team-a"})
+    response = client.get(
+        "/api/index?tenant_id=team-b", headers={"Authorization": "Bearer editor-team-a"}
+    )
 
     events = read_audit_log(kb)
     assert response.status_code == 403
-    assert any(event["operation"] == "authz.denied" and event["result"] == "denied" for event in events)
+    assert any(
+        event["operation"] == "authz.denied" and event["result"] == "denied" for event in events
+    )
 
 
 def test_module_create_tenant_override_denial_is_audited(tmp_path):
@@ -263,7 +278,9 @@ def test_staging_approve_emits_audit_event(tmp_path, monkeypatch):
     )
     save_to_staging(staged, kb / ".staging")
     save_staging_meta(StagingMeta(module_id="review-me", status="pending"), kb / ".staging")
-    monkeypatch.setattr("knowledge_manager.storage.approve_from_staging", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        "knowledge_manager.storage.approve_from_staging", lambda *_args, **_kwargs: None
+    )
     client = TestClient(create_app(kb))
 
     response = client.post(
@@ -291,7 +308,9 @@ def test_staging_approve_pending_emits_audit_event(tmp_path):
     kb.mkdir()
     _write_auth_fixture(kb)
     save_index(Index(description="audit"), kb)
-    (kb / "config.json").write_text(json.dumps({"review": {"required_approvals": 2}}), encoding="utf-8")
+    (kb / "config.json").write_text(
+        json.dumps({"review": {"required_approvals": 2}}), encoding="utf-8"
+    )
     staged = Module(
         id="review-me",
         category="ops",
@@ -373,7 +392,10 @@ def test_admin_dashboard_read_emits_audit_event(tmp_path, monkeypatch):
     kb.mkdir()
     _write_auth_fixture(kb)
     save_index(Index(description="audit"), kb)
-    monkeypatch.setattr("knowledge_manager.admin_views.build_admin_dashboard", lambda *_args, **_kwargs: {"ok": True})
+    monkeypatch.setattr(
+        "knowledge_manager.admin_views.build_admin_dashboard",
+        lambda *_args, **_kwargs: {"ok": True},
+    )
     client = TestClient(create_app(kb))
 
     response = client.get(
@@ -437,7 +459,9 @@ def test_upload_enqueue_emits_audit_event(tmp_path, monkeypatch):
     kb.mkdir()
     _write_auth_fixture(kb)
     save_index(Index(description="audit"), kb)
-    monkeypatch.setattr("knowledge_manager.http_server._start_upload_job", lambda *_args, **_kwargs: "job-upload-1")
+    monkeypatch.setattr(
+        "knowledge_manager.http_server._start_upload_job", lambda *_args, **_kwargs: "job-upload-1"
+    )
     client = TestClient(create_app(kb))
 
     response = client.post(

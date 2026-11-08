@@ -67,12 +67,30 @@ Return ONLY JSON:
 
 class FSRSScheduler:
     DEFAULT_WEIGHTS = [
-        0.4072, 1.1829, 3.1262, 15.4722, 7.2102, 0.5316,
-        1.0651, 0.0234, 1.616, 0.0304, 0.0611, 1.8455,
-        0.172, 0.913, 2.6026, 0.3674, 0.7462, 0.9478, 0.0,
+        0.4072,
+        1.1829,
+        3.1262,
+        15.4722,
+        7.2102,
+        0.5316,
+        1.0651,
+        0.0234,
+        1.616,
+        0.0304,
+        0.0611,
+        1.8455,
+        0.172,
+        0.913,
+        2.6026,
+        0.3674,
+        0.7462,
+        0.9478,
+        0.0,
     ]
 
-    def schedule(self, card: MemoryCard, grade: ReviewGrade, review_time: datetime | None = None) -> MemoryCard:
+    def schedule(
+        self, card: MemoryCard, grade: ReviewGrade, review_time: datetime | None = None
+    ) -> MemoryCard:
         review_time = review_time or datetime.now(timezone.utc)
         state = card.fsrs_state
         G = int(grade)
@@ -90,7 +108,11 @@ class FSRSScheduler:
         elif reps == 0:
             # First review
             difficulty = max(0.01, min(1.0, difficulty + self.DEFAULT_WEIGHTS[4] * (G - 3)))
-            base_intervals = {ReviewGrade.HARD: 0.5/24, ReviewGrade.GOOD: 1.0, ReviewGrade.EASY: 4.0}
+            base_intervals = {
+                ReviewGrade.HARD: 0.5 / 24,
+                ReviewGrade.GOOD: 1.0,
+                ReviewGrade.EASY: 4.0,
+            }
             interval_days = base_intervals.get(grade, 1.0)
             stability = interval_days
         else:
@@ -100,23 +122,34 @@ class FSRSScheduler:
                 stability = stability * 1.2
                 interval_days = stability * 0.5
             elif G == ReviewGrade.GOOD:
-                stability = stability * (1 + math.exp(self.DEFAULT_WEIGHTS[8]) * (11 - difficulty)
-                                         * (stability ** -self.DEFAULT_WEIGHTS[9])
-                                         * (math.exp(self.DEFAULT_WEIGHTS[10] * (1 - retrievability)) - 1))
+                stability = stability * (
+                    1
+                    + math.exp(self.DEFAULT_WEIGHTS[8])
+                    * (11 - difficulty)
+                    * (stability ** -self.DEFAULT_WEIGHTS[9])
+                    * (math.exp(self.DEFAULT_WEIGHTS[10] * (1 - retrievability)) - 1)
+                )
                 interval_days = stability
             else:  # EASY
-                stability = stability * (1 + math.exp(self.DEFAULT_WEIGHTS[8]) * (11 - difficulty)
-                                         * (stability ** -self.DEFAULT_WEIGHTS[9])
-                                         * (math.exp(self.DEFAULT_WEIGHTS[10] * (1 - retrievability)) - 1))
+                stability = stability * (
+                    1
+                    + math.exp(self.DEFAULT_WEIGHTS[8])
+                    * (11 - difficulty)
+                    * (stability ** -self.DEFAULT_WEIGHTS[9])
+                    * (math.exp(self.DEFAULT_WEIGHTS[10] * (1 - retrievability)) - 1)
+                )
                 interval_days = stability * 1.5
 
         interval_days = max(0.0007, interval_days)
         reps += 1
 
         card.fsrs_state = {
-            "stability": stability, "difficulty": difficulty,
-            "elapsed_days": 0, "scheduled_days": interval_days,
-            "reps": reps, "lapses": lapses,
+            "stability": stability,
+            "difficulty": difficulty,
+            "elapsed_days": 0,
+            "scheduled_days": interval_days,
+            "reps": reps,
+            "lapses": lapses,
             "last_review": review_time.isoformat(),
         }
         card.last_review_at = review_time
@@ -128,11 +161,13 @@ class FSRSScheduler:
     def get_due_cards(self, cards: list[MemoryCard], limit: int = 20) -> list[MemoryCard]:
         now = datetime.now(timezone.utc)
         due = [c for c in cards if c.next_review_at is None or c.next_review_at <= now]
-        due.sort(key=lambda c: (
-            c.next_review_at or now,
-            -c.fsrs_state.get("difficulty", 0),
-            c.fsrs_state.get("stability", 0),
-        ))
+        due.sort(
+            key=lambda c: (
+                c.next_review_at or now,
+                -c.fsrs_state.get("difficulty", 0),
+                c.fsrs_state.get("stability", 0),
+            )
+        )
         return due[:limit]
 
 
@@ -149,8 +184,10 @@ class CardGenerator:
         content = "\n\n".join(content_parts)
 
         prompt = CARD_GENERATION_PROMPT.format(
-            title=module.title, category=module.category,
-            summary=module.summary, content=content,
+            title=module.title,
+            category=module.category,
+            summary=module.summary,
+            content=content,
         )
 
         cards = []

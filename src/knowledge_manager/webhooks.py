@@ -18,6 +18,7 @@ FAILURES_FILE = ".webhook_failures.jsonl"
 def _load_webhook_config(kb_path: Path) -> WebhookConfig | None:
     """Load webhook config from KB config, returning None if disabled or absent."""
     from knowledge_manager.storage import _load_config_safe
+
     cfg = _load_config_safe(kb_path)
     if cfg is None or not cfg.webhooks.enabled or not cfg.webhooks.endpoints:
         return None
@@ -73,6 +74,7 @@ def emit_event(
 
         try:
             import httpx
+
             # Fire-and-forget: try once synchronously, log failure if it fails
             try:
                 resp = httpx.post(
@@ -135,6 +137,7 @@ def retry_webhooks(kb_path: Path) -> int:
         return 0
 
     import httpx
+
     retried = 0
     remaining: list[dict] = []
 

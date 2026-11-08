@@ -24,13 +24,9 @@ def make_openai_config() -> LLMProviderConfig:
     return LLMProviderConfig(api_key="sk-openai-test", model="gpt-4")
 
 
-MOCK_OPENAI_RESPONSE = {
-    "choices": [{"message": {"content": "hello"}}]
-}
+MOCK_OPENAI_RESPONSE = {"choices": [{"message": {"content": "hello"}}]}
 
-MOCK_CLAUDE_RESPONSE = {
-    "content": [{"text": "hello"}]
-}
+MOCK_CLAUDE_RESPONSE = {"content": [{"text": "hello"}]}
 
 
 @pytest.mark.asyncio
@@ -140,21 +136,23 @@ def test_create_client_openai():
 
 # --- Extractor tests ---
 
-VALID_EXTRACTION_JSON = json.dumps([
-    {
-        "id": "auth-jwt",
-        "title": "JWT Authentication",
-        "summary": "How JWT tokens work in our system for authentication purposes",
-        "content": {
-            "overview": "JWT tokens are used for stateless authentication",
-            "details": "Tokens are signed with RS256 and expire after 24 hours",
-            "examples": "",
-            "references": "",
-            "caveats": "",
-        },
-        "metadata": {"tags": ["auth", "jwt"], "confidence": "high"},
-    }
-])
+VALID_EXTRACTION_JSON = json.dumps(
+    [
+        {
+            "id": "auth-jwt",
+            "title": "JWT Authentication",
+            "summary": "How JWT tokens work in our system for authentication purposes",
+            "content": {
+                "overview": "JWT tokens are used for stateless authentication",
+                "details": "Tokens are signed with RS256 and expire after 24 hours",
+                "examples": "",
+                "references": "",
+                "caveats": "",
+            },
+            "metadata": {"tags": ["auth", "jwt"], "confidence": "high"},
+        }
+    ]
+)
 
 
 @pytest.mark.asyncio
@@ -194,19 +192,21 @@ async def test_extractor_returns_empty_on_invalid_json():
 
 @pytest.mark.asyncio
 async def test_extractor_respects_max_modules():
-    many = json.dumps([
-        {
-            "id": f"mod-{i}",
-            "title": f"Module {i} Title",
-            "summary": f"Summary for module {i} which is long enough to pass validation",
-            "content": {
-                "overview": "Overview text that is long enough",
-                "details": "Details text that is definitely long enough to pass",
-            },
-            "metadata": {},
-        }
-        for i in range(15)
-    ])
+    many = json.dumps(
+        [
+            {
+                "id": f"mod-{i}",
+                "title": f"Module {i} Title",
+                "summary": f"Summary for module {i} which is long enough to pass validation",
+                "content": {
+                    "overview": "Overview text that is long enough",
+                    "details": "Details text that is definitely long enough to pass",
+                },
+                "metadata": {},
+            }
+            for i in range(15)
+        ]
+    )
     mock_llm = AsyncMock()
     mock_llm.complete = AsyncMock(return_value=many)
 
@@ -309,25 +309,27 @@ async def test_extractor_logs_metadata_without_content_leak(caplog):
     assert VALID_EXTRACTION_JSON not in caplog.text
 
 
-METHODOLOGY_EXTRACTION_JSON = json.dumps([
-    {
-        "category": "auth",
-        "id": "jwt-token-strategy",
-        "title": "JWT Token Strategy",
-        "summary": "We use short-lived access tokens with refresh rotation for API auth",
-        "content": {
-            "overview": "Our auth strategy uses RS256-signed JWTs with 15min expiry and rotating refresh tokens",
-            "details": "We chose RS256 over HS256 so the API gateway can validate without shared secrets. Refresh tokens rotate on each use to limit replay window. Token blacklist is maintained in Redis.",
-            "examples": "Authorization: Bearer eyJ...\n\ncurl -H 'Authorization: Bearer $TOKEN' https://api.example.com/v1/users",
-            "references": "auth/oauth-2-0-framework, auth/access-token-usage",
-            "caveats": "Short expiry means clients must handle 401s gracefully and retry with refresh. Redis blacklist is a SPOF — fail open if Redis is unavailable."
-        },
-        "metadata": {"tags": ["jwt", "auth", "tokens", "security"], "confidence": "high"},
-    }
-])
+METHODOLOGY_EXTRACTION_JSON = json.dumps(
+    [
+        {
+            "category": "auth",
+            "id": "jwt-token-strategy",
+            "title": "JWT Token Strategy",
+            "summary": "We use short-lived access tokens with refresh rotation for API auth",
+            "content": {
+                "overview": "Our auth strategy uses RS256-signed JWTs with 15min expiry and rotating refresh tokens",
+                "details": "We chose RS256 over HS256 so the API gateway can validate without shared secrets. Refresh tokens rotate on each use to limit replay window. Token blacklist is maintained in Redis.",
+                "examples": "Authorization: Bearer eyJ...\n\ncurl -H 'Authorization: Bearer $TOKEN' https://api.example.com/v1/users",
+                "references": "auth/oauth-2-0-framework, auth/access-token-usage",
+                "caveats": "Short expiry means clients must handle 401s gracefully and retry with refresh. Redis blacklist is a SPOF — fail open if Redis is unavailable.",
+            },
+            "metadata": {"tags": ["jwt", "auth", "tokens", "security"], "confidence": "high"},
+        }
+    ]
+)
 
 INVALID_THEN_VALID_JSON = [
-    'not valid json at all {{{broken',
+    "not valid json at all {{{broken",
     METHODOLOGY_EXTRACTION_JSON,
 ]
 
@@ -349,10 +351,12 @@ async def test_extractor_retries_on_json_failure():
 async def test_extractor_handles_list_response_even_on_second_try():
     """After a non-list response on attempt 1, retry should get list on attempt 2."""
     mock_llm = AsyncMock()
-    mock_llm.complete = AsyncMock(side_effect=[
-        '{"not": "a list"}',
-        METHODOLOGY_EXTRACTION_JSON,
-    ])
+    mock_llm.complete = AsyncMock(
+        side_effect=[
+            '{"not": "a list"}',
+            METHODOLOGY_EXTRACTION_JSON,
+        ]
+    )
 
     extractor = Extractor(mock_llm, ExtractionConfig())
     modules = await extractor.extract("raw text about JWT", "auth")
@@ -371,7 +375,11 @@ async def test_extractor_methodology_prompt_includes_category_context():
     await extractor.extract("raw text", "auth")
 
     call_text = mock_llm.complete.call_args[0][0]
-    assert "methodology" in call_text.lower() or "how we" in call_text.lower() or "our approach" in call_text.lower()
+    assert (
+        "methodology" in call_text.lower()
+        or "how we" in call_text.lower()
+        or "our approach" in call_text.lower()
+    )
     assert "auth" in call_text
 
 
@@ -400,36 +408,38 @@ async def test_extractor_returns_empty_on_llm_exception():
     assert mock_llm.complete.await_count == 1  # No retry on exception
 
 
-AUTO_CATEGORIZE_JSON = json.dumps([
-    {
-        "category": "auth",
-        "id": "jwt-token-strategy",
-        "title": "JWT Token Strategy",
-        "summary": "We use short-lived access tokens with refresh rotation for API auth",
-        "content": {
-            "overview": "Our auth strategy uses RS256-signed JWTs with 15min expiry",
-            "details": "We chose RS256 over HS256 so the API gateway can validate without shared secrets.",
-            "examples": "",
-            "references": "",
-            "caveats": "",
+AUTO_CATEGORIZE_JSON = json.dumps(
+    [
+        {
+            "category": "auth",
+            "id": "jwt-token-strategy",
+            "title": "JWT Token Strategy",
+            "summary": "We use short-lived access tokens with refresh rotation for API auth",
+            "content": {
+                "overview": "Our auth strategy uses RS256-signed JWTs with 15min expiry",
+                "details": "We chose RS256 over HS256 so the API gateway can validate without shared secrets.",
+                "examples": "",
+                "references": "",
+                "caveats": "",
+            },
+            "metadata": {"tags": ["jwt", "auth"], "confidence": "high"},
         },
-        "metadata": {"tags": ["jwt", "auth"], "confidence": "high"},
-    },
-    {
-        "category": "database",
-        "id": "connection-pool-sizing",
-        "title": "Connection Pool Sizing",
-        "summary": "Postgres connection pool sizing for our workload pattern",
-        "content": {
-            "overview": "We size pools based on active query count, not connection count",
-            "details": "Our workload is read-heavy with occasional writes. We use PgBouncer in transaction mode.",
-            "examples": "",
-            "references": "",
-            "caveats": "",
+        {
+            "category": "database",
+            "id": "connection-pool-sizing",
+            "title": "Connection Pool Sizing",
+            "summary": "Postgres connection pool sizing for our workload pattern",
+            "content": {
+                "overview": "We size pools based on active query count, not connection count",
+                "details": "Our workload is read-heavy with occasional writes. We use PgBouncer in transaction mode.",
+                "examples": "",
+                "references": "",
+                "caveats": "",
+            },
+            "metadata": {"tags": ["database", "performance"], "confidence": "high"},
         },
-        "metadata": {"tags": ["database", "performance"], "confidence": "high"},
-    },
-])
+    ]
+)
 
 
 @pytest.mark.asyncio
@@ -450,16 +460,20 @@ async def test_auto_categorize_uses_llm_category_field():
 @pytest.mark.asyncio
 async def test_auto_categorize_fallback_when_no_category_in_response():
     """When LLM doesn't include category in a module, fall back to the parameter."""
-    no_cat = json.dumps([{
-        "id": "some-module",
-        "title": "Some Module Title",
-        "summary": "A summary that is long enough",
-        "content": {
-            "overview": "Overview text that is long enough",
-            "details": "Details text that is definitely long enough to pass validation",
-        },
-        "metadata": {"tags": ["test"], "confidence": "high"},
-    }])
+    no_cat = json.dumps(
+        [
+            {
+                "id": "some-module",
+                "title": "Some Module Title",
+                "summary": "A summary that is long enough",
+                "content": {
+                    "overview": "Overview text that is long enough",
+                    "details": "Details text that is definitely long enough to pass validation",
+                },
+                "metadata": {"tags": ["test"], "confidence": "high"},
+            }
+        ]
+    )
     mock_llm = AsyncMock()
     mock_llm.complete = AsyncMock(return_value=no_cat)
 

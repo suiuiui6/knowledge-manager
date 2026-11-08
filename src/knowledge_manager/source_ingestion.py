@@ -59,7 +59,9 @@ def _load_runtime_config(kb_path: Path) -> Config:
 
 def _is_transient_source_pull_error(exc: Exception) -> bool:
     message = str(exc).lower()
-    return any(token in message for token in ("timeout", "timed out", "429", "rate limit", "tempor"))
+    return any(
+        token in message for token in ("timeout", "timed out", "429", "rate limit", "tempor")
+    )
 
 
 def _registry_path(kb_path: Path) -> Path:
@@ -122,7 +124,9 @@ def _source_category(source: SourceDefinition) -> str:
     return "general"
 
 
-def _stamp_module(module: Module, source: SourceDefinition, page: IngestionPage, run_id: str) -> Module:
+def _stamp_module(
+    module: Module, source: SourceDefinition, page: IngestionPage, run_id: str
+) -> Module:
     excerpt = page.body_text[:200]
     return module.model_copy(
         update={
@@ -251,7 +255,9 @@ async def run_source_sync_once(kb_path: Path, source_id: str) -> IngestionSummar
                     page_limit=source_def.notion.page_limit,
                     cursor=source_def.sync.last_cursor,
                 )
-            return await ingest_confluence_pages(source_def, pages, kb_path, extractor, next_cursor=next_cursor)
+            return await ingest_confluence_pages(
+                source_def, pages, kb_path, extractor, next_cursor=next_cursor
+            )
         except Exception as exc:
             last_error = exc
             if not _is_transient_source_pull_error(exc) or attempt == 2:

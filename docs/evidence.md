@@ -9,6 +9,8 @@ Commands run against the final local snapshot:
 
 ```text
 python -B -m pytest -q                 869 passed
+python -m black --check src tests scripts  132 files unchanged
+python -m mypy src                      success, 61 source files
 python -B tools/check_public_surface.py PASS
 python -m build --no-isolation         sdist + wheel built
 ```

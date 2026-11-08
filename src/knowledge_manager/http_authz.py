@@ -102,11 +102,15 @@ def resolve_tenant_context(
 
     if subject is None:
         if auth_cfg is None or not auth_cfg.provider:
-            return TenantContext(
-                tenant_id=tenant_id,
-                workspace_id=workspace_id,
-                allow_global_reads=allow_global_reads,
-            ) if tenant_id else None
+            return (
+                TenantContext(
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    allow_global_reads=allow_global_reads,
+                )
+                if tenant_id
+                else None
+            )
         return None
 
     requested_tenant = tenant_id.strip()
@@ -160,10 +164,14 @@ def enforce_subject_module_access(
     if not module_visible_to_tenant(module, tenant):
         if request is not None:
             _log_authz_denial(
-                request, kb_path, "Module outside authorized scope",
+                request,
+                kb_path,
+                "Module outside authorized scope",
                 resource=f"{module.category}/{module.id}",
             )
-        raise HTTPException(status_code=404, detail=f"Module not found: {module.category}/{module.id}")
+        raise HTTPException(
+            status_code=404, detail=f"Module not found: {module.category}/{module.id}"
+        )
 
 
 def enforce_subject_metadata_override(

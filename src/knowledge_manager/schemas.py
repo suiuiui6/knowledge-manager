@@ -169,13 +169,15 @@ class Module(BaseModel):
     metadata: ModuleMetadata = Field(default_factory=ModuleMetadata)
 
     def word_count(self) -> int:
-        text = " ".join([
-            self.content.overview,
-            self.content.details,
-            self.content.examples,
-            self.content.references,
-            self.content.caveats,
-        ])
+        text = " ".join(
+            [
+                self.content.overview,
+                self.content.details,
+                self.content.examples,
+                self.content.references,
+                self.content.caveats,
+            ]
+        )
         return len(text.split())
 
     def to_file_path(self, base_path: Path) -> Path:
@@ -444,10 +446,10 @@ class Config(BaseModel):
 
 
 class HealthScore(BaseModel):
-    freshness: float = 0.0       # 0-100
-    usage: float = 0.0           # 0-100
-    completeness: float = 0.0    # 0-100
-    overall: float = 0.0         # weighted 0-100
+    freshness: float = 0.0  # 0-100
+    usage: float = 0.0  # 0-100
+    completeness: float = 0.0  # 0-100
+    overall: float = 0.0  # weighted 0-100
 
 
 class ModuleHealth(BaseModel):
@@ -569,7 +571,7 @@ class Recommendation(BaseModel):
     module_id: str
     category: str
     title: str
-    score: float = 0.0       # 0-1, higher = stronger recommendation
+    score: float = 0.0  # 0-1, higher = stronger recommendation
     reason: str = ""
     detail: Dict[str, Any] = Field(default_factory=dict)
 
@@ -615,6 +617,7 @@ class OpsReport(BaseModel):
 
 class PlatformConfig(BaseModel):
     """Mapping from platform name to its MCP config path."""
+
     name: str
     config_path: str  # relative to home or cwd (e.g. "~/.claude/mcp.json")
     description: str = ""

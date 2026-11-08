@@ -15,42 +15,98 @@ from knowledge_manager.schemas import (
 
 class TestTitleOverlap:
     def test_overlap(self):
-        a = Module(id="a", category="x", title="JWT Token Configuration", summary="test summary text here ok",
-                   content=ModuleContent(overview="overview text for testing", details="a details with enough chars for validation"),
-                   metadata=ModuleMetadata(tags=["jwt"]))
-        b = Module(id="b", category="x", title="JWT Token Rotation", summary="test summary text here ok",
-                   content=ModuleContent(overview="overview text for testing", details="b details with enough chars for validation"),
-                   metadata=ModuleMetadata(tags=["jwt"]))
+        a = Module(
+            id="a",
+            category="x",
+            title="JWT Token Configuration",
+            summary="test summary text here ok",
+            content=ModuleContent(
+                overview="overview text for testing",
+                details="a details with enough chars for validation",
+            ),
+            metadata=ModuleMetadata(tags=["jwt"]),
+        )
+        b = Module(
+            id="b",
+            category="x",
+            title="JWT Token Rotation",
+            summary="test summary text here ok",
+            content=ModuleContent(
+                overview="overview text for testing",
+                details="b details with enough chars for validation",
+            ),
+            metadata=ModuleMetadata(tags=["jwt"]),
+        )
         assert _title_keyword_overlap(a, b) > 0.5
 
     def test_no_overlap(self):
-        a = Module(id="a", category="x", title="JWT Config", summary="test summary text here ok",
-                   content=ModuleContent(overview="overview text for testing", details="a details with enough chars for validation"),
-                   metadata=ModuleMetadata(tags=["jwt"]))
-        b = Module(id="b", category="x", title="Database Pooling", summary="test summary text here ok",
-                   content=ModuleContent(overview="overview text for testing", details="b details with enough chars for validation"),
-                   metadata=ModuleMetadata(tags=["db"]))
+        a = Module(
+            id="a",
+            category="x",
+            title="JWT Config",
+            summary="test summary text here ok",
+            content=ModuleContent(
+                overview="overview text for testing",
+                details="a details with enough chars for validation",
+            ),
+            metadata=ModuleMetadata(tags=["jwt"]),
+        )
+        b = Module(
+            id="b",
+            category="x",
+            title="Database Pooling",
+            summary="test summary text here ok",
+            content=ModuleContent(
+                overview="overview text for testing",
+                details="b details with enough chars for validation",
+            ),
+            metadata=ModuleMetadata(tags=["db"]),
+        )
         assert _title_keyword_overlap(a, b) == 0.0
 
 
 class TestPairFilters:
     @pytest.fixture
     def mod_a(self):
-        return Module(id="a", category="auth", title="JWT Config", summary="test summary text here",
-                      content=ModuleContent(overview="overview for mod a test", details="details for mod a with enough chars for validation"),
-                      metadata=ModuleMetadata(tags=["jwt", "auth"], related_modules=["auth/b"]))
+        return Module(
+            id="a",
+            category="auth",
+            title="JWT Config",
+            summary="test summary text here",
+            content=ModuleContent(
+                overview="overview for mod a test",
+                details="details for mod a with enough chars for validation",
+            ),
+            metadata=ModuleMetadata(tags=["jwt", "auth"], related_modules=["auth/b"]),
+        )
 
     @pytest.fixture
     def mod_b(self):
-        return Module(id="b", category="auth", title="OAuth Flow", summary="test summary text here",
-                      content=ModuleContent(overview="overview for mod b test", details="details for mod b with enough chars for validation"),
-                      metadata=ModuleMetadata(tags=["oauth", "auth"], related_modules=["auth/a"]))
+        return Module(
+            id="b",
+            category="auth",
+            title="OAuth Flow",
+            summary="test summary text here",
+            content=ModuleContent(
+                overview="overview for mod b test",
+                details="details for mod b with enough chars for validation",
+            ),
+            metadata=ModuleMetadata(tags=["oauth", "auth"], related_modules=["auth/a"]),
+        )
 
     @pytest.fixture
     def mod_c(self):
-        return Module(id="c", category="deploy", title="K8s Config", summary="test summary text here",
-                      content=ModuleContent(overview="overview for mod c test", details="details for mod c with enough chars for validation"),
-                      metadata=ModuleMetadata(tags=["k8s", "deploy"]))
+        return Module(
+            id="c",
+            category="deploy",
+            title="K8s Config",
+            summary="test summary text here",
+            content=ModuleContent(
+                overview="overview for mod c test",
+                details="details for mod c with enough chars for validation",
+            ),
+            metadata=ModuleMetadata(tags=["k8s", "deploy"]),
+        )
 
     def test_same_category(self, mod_a, mod_b):
         assert PAIR_FILTERS["same_category"](mod_a, mod_b) is True
@@ -82,16 +138,26 @@ class TestDeepLinter:
         save_index(Index(description="Test KB"), kb)
 
         mod_a = Module(
-            id="jwt", category="auth", title="JWT Configuration",
+            id="jwt",
+            category="auth",
+            title="JWT Configuration",
             summary="JWT token settings for authentication",
-            content=ModuleContent(overview="JWT overview", details="JWT details with enough chars for validation"),
-            metadata=ModuleMetadata(tags=["jwt", "auth"], confidence="high",
-                                    related_modules=["auth/old-session"]),
+            content=ModuleContent(
+                overview="JWT overview", details="JWT details with enough chars for validation"
+            ),
+            metadata=ModuleMetadata(
+                tags=["jwt", "auth"], confidence="high", related_modules=["auth/old-session"]
+            ),
         )
         mod_b = Module(
-            id="old-session", category="auth", title="Old Session Management",
+            id="old-session",
+            category="auth",
+            title="Old Session Management",
             summary="Legacy session management approach",
-            content=ModuleContent(overview="old session overview", details="old session details with enough chars here"),
+            content=ModuleContent(
+                overview="old session overview",
+                details="old session details with enough chars here",
+            ),
             metadata=ModuleMetadata(tags=["session"], confidence="low", status="deprecated"),
         )
         save_module(mod_a, kb)
@@ -116,6 +182,7 @@ class TestDeepLinter:
 
     def test_generate_candidates(self, kb_with_modules):
         from knowledge_manager.storage import list_modules
+
         linter = DeepLinter(kb_with_modules)
         modules = list_modules(kb_with_modules)
         candidates = linter._generate_candidates(modules)

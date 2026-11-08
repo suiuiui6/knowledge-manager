@@ -99,16 +99,21 @@ class ChatPipeline:
         t_start = time.time()
 
         # ── Step 1: Query understanding ──
-        yield ChatEvent("status", {"stage": "query_understanding", "message": "Understanding query..."})
+        yield ChatEvent(
+            "status", {"stage": "query_understanding", "message": "Understanding query..."}
+        )
 
         rewritten = await self._rewrite_query(query, history)
         intent = _classify_intent(rewritten)
 
-        yield ChatEvent("status", {
-            "stage": "query_understanding",
-            "rewritten": rewritten,
-            "intent": intent,
-        })
+        yield ChatEvent(
+            "status",
+            {
+                "stage": "query_understanding",
+                "rewritten": rewritten,
+                "intent": intent,
+            },
+        )
 
         # ── Step 2: Multi-recall ──
         yield ChatEvent("status", {"stage": "retrieval", "message": "Retrieving knowledge..."})
@@ -124,16 +129,23 @@ class ChatPipeline:
             tree=tree_results,
             keyword=keyword_results,
             vector=vector_results,
-            weights={"tree": 0.35 if tree_results else 0, "keyword": 0.65 if not tree_results else 0.40, "vector": 0.25 if vector_results else 0},
+            weights={
+                "tree": 0.35 if tree_results else 0,
+                "keyword": 0.65 if not tree_results else 0.40,
+                "vector": 0.25 if vector_results else 0,
+            },
         )
         top_modules = fused[:3]
 
-        yield ChatEvent("status", {
-            "stage": "ranking",
-            "candidates": len(fused),
-            "selected": len(top_modules),
-            "top_titles": [m["title"] for m in top_modules],
-        })
+        yield ChatEvent(
+            "status",
+            {
+                "stage": "ranking",
+                "candidates": len(fused),
+                "selected": len(top_modules),
+                "top_titles": [m["title"] for m in top_modules],
+            },
+        )
 
         # ── Step 4: Context assembly ──
         yield ChatEvent("status", {"stage": "context_assembly", "message": "Assembling context..."})
@@ -161,27 +173,35 @@ class ChatPipeline:
             if len(parts) == 2:
                 mod = load_module(parts[1], parts[0], self.kb_path)
             if mod:
-                cited_modules.append({
-                    "key": key,
-                    "title": mod.title,
-                    "snippet": mod.summary,
-                    "confidence": mod.metadata.confidence,
-                })
-                yield ChatEvent("citation", {
-                    "key": key,
-                    "title": mod.title,
-                    "snippet": mod.summary,
-                    "confidence": mod.metadata.confidence,
-                })
+                cited_modules.append(
+                    {
+                        "key": key,
+                        "title": mod.title,
+                        "snippet": mod.summary,
+                        "confidence": mod.metadata.confidence,
+                    }
+                )
+                yield ChatEvent(
+                    "citation",
+                    {
+                        "key": key,
+                        "title": mod.title,
+                        "snippet": mod.summary,
+                        "confidence": mod.metadata.confidence,
+                    },
+                )
 
         follow_ups = await self._generate_follow_ups(query, full_response)
 
         took_ms = int((time.time() - t_start) * 1000)
-        yield ChatEvent("done", {
-            "took_ms": took_ms,
-            "sources": cited_modules,
-            "follow_ups": follow_ups,
-        })
+        yield ChatEvent(
+            "done",
+            {
+                "took_ms": took_ms,
+                "sources": cited_modules,
+                "follow_ups": follow_ups,
+            },
+        )
 
     async def _rewrite_query(self, query: str, history: list[dict]) -> str:
         if not history:
@@ -235,15 +255,17 @@ class ChatPipeline:
             if len(parts) == 2:
                 mod = load_module(parts[1], parts[0], self.kb_path)
                 if mod:
-                    return [{
-                        "key": result.final_module_key,
-                        "title": result.final_title or mod.title,
-                        "summary": result.final_summary or mod.summary,
-                        "confidence": mod.metadata.confidence,
-                        "source": "tree",
-                        "module": mod,
-                        "navigation_confidence": result.confidence,
-                    }]
+                    return [
+                        {
+                            "key": result.final_module_key,
+                            "title": result.final_title or mod.title,
+                            "summary": result.final_summary or mod.summary,
+                            "confidence": mod.metadata.confidence,
+                            "source": "tree",
+                            "module": mod,
+                            "navigation_confidence": result.confidence,
+                        }
+                    ]
         return []
 
     async def _vector_recall(self, query: str) -> list[dict]:
@@ -254,10 +276,7 @@ class ChatPipeline:
         except Exception:
             logger.warning("Vector recall failed", exc_info=True)
             return []
-        return [
-            {"key": key, "score": float(score), "source": "vector"}
-            for key, score in results
-        ]
+        return [{"key": key, "score": float(score), "source": "vector"} for key, score in results]
 
     def _rrf_fuse(
         self,
@@ -309,16 +328,21 @@ class ChatPipeline:
             lines.append(line)
             used += line_tokens
 
-        module_context = "\n".join(lines) if lines else "No relevant modules found in the knowledge base."
+        module_context = (
+            "\n".join(lines) if lines else "No relevant modules found in the knowledge base."
+        )
         return SYSTEM_PROMPT.format(module_context=module_context)
 
     @staticmethod
     def _estimate_tokens(text: str) -> int:
         return len(text) // 3
 
-    async def _stream_llm(self, system: str, user: str, temperature: float = 0.3) -> AsyncIterator[str]:
+    async def _stream_llm(
+        self, system: str, user: str, temperature: float = 0.3
+    ) -> AsyncIterator[str]:
         try:
             import httpx
+
             cfg = self.llm.config
             base = cfg.base_url or "https://api.deepseek.com"
             url = f"{base}/v1/chat/completions"
@@ -336,7 +360,9 @@ class ChatPipeline:
             headers = {"Authorization": f"Bearer {cfg.api_key}"}
 
             async with httpx.AsyncClient() as client:
-                async with client.stream("POST", url, json=payload, headers=headers, timeout=120) as resp:
+                async with client.stream(
+                    "POST", url, json=payload, headers=headers, timeout=120
+                ) as resp:
                     resp.raise_for_status()
                     async for line in resp.aiter_lines():
                         if line.startswith("data: "):
@@ -354,9 +380,7 @@ class ChatPipeline:
         except Exception as e:
             logger.warning("Streaming failed, falling back to non-streaming: %s", e)
             try:
-                response = await self.llm.complete(
-                    f"{system}\n\nUser query: {user}\n\nAnswer:"
-                )
+                response = await self.llm.complete(f"{system}\n\nUser query: {user}\n\nAnswer:")
                 yield response
             except Exception:
                 yield "Sorry, I couldn't generate a response. Please try again."
@@ -372,7 +396,9 @@ class ChatPipeline:
             if key.replace("/", " ") in chunk_lower or key in chunk:
                 return key
             # Check title words overlap
-            title_words = set(title.lower().split()) & {w for w in chunk_lower.split() if len(w) > 3}
+            title_words = set(title.lower().split()) & {
+                w for w in chunk_lower.split() if len(w) > 3
+            }
             score = len(title_words)
             if score > best_score and score >= 3:
                 best_score = score
@@ -393,7 +419,7 @@ class ChatPipeline:
             # Check if title words cluster in response (3+ consecutive words)
             title_significant = [w for w in title.split() if len(w) > 3]
             for i in range(len(title_significant) - 2):
-                trigram = " ".join(title_significant[i:i+3])
+                trigram = " ".join(title_significant[i : i + 3])
                 if trigram in response_lower:
                     cited.add(key)
                     break

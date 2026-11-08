@@ -13,6 +13,7 @@ def slugify(title: str) -> str:
     try:
         import jieba
         from itertools import accumulate
+
         words = list(jieba.cut(title))
         initials = "".join(w[0] for w in words if w.strip())
         if len(initials) >= 3:
@@ -57,7 +58,12 @@ def build_tree_from_markdown(md_text: str, category: str) -> TreeNode:
         else:
             if current_module:
                 full_path = f"{current_module.path}#{node_id}"
-                node = TreeNode(id=f"{current_module.id}#{node_id}", type=TreeNodeType.SECTION, title=title, path=full_path)
+                node = TreeNode(
+                    id=f"{current_module.id}#{node_id}",
+                    type=TreeNodeType.SECTION,
+                    title=title,
+                    path=full_path,
+                )
                 current_module.children.append(node)
                 stack.append((level, node))
 
@@ -69,7 +75,9 @@ async def build_tree_from_llm(modules: list, llm_client) -> TreeNode:
     for m in modules:
         key = f"{m.category}/{m.id}"
         tags_str = ", ".join(m.metadata.tags[:5]) if hasattr(m.metadata, "tags") else ""
-        summaries.append(f"- [{key}] {m.title}: {m.summary[:100]}  tags:[{tags_str}]  related:{m.metadata.related_modules[:3]}")
+        summaries.append(
+            f"- [{key}] {m.title}: {m.summary[:100]}  tags:[{tags_str}]  related:{m.metadata.related_modules[:3]}"
+        )
 
     module_text = "\n".join(summaries[:200])
 
@@ -103,6 +111,7 @@ Return ONLY a JSON tree structure:
 
     try:
         import json
+
         data = json.loads(response.strip())
         root = TreeNode(id="root", type=TreeNodeType.ROOT, title="Knowledge Base")
         _parse_llm_tree(data, root)
@@ -113,6 +122,7 @@ Return ONLY a JSON tree structure:
 
 def _parse_llm_tree(data: dict, parent: TreeNode) -> None:
     import json as _json
+
     for child_data in data.get("children", []):
         node_type = TreeNodeType(child_data.get("type", "module"))
         node = TreeNode(

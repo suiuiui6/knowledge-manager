@@ -7,7 +7,11 @@ import pytest
 def test_benchmark_gate_rejects_fast_errors():
     from knowledge_manager.performance_benchmarks import _evaluate_gate_summary
 
-    report = {"benchmarks": {"http": {"search_http": {"mean_ms": 1, "p95_ms": 1, "errors": ["RuntimeError"]}}}}
+    report = {
+        "benchmarks": {
+            "http": {"search_http": {"mean_ms": 1, "p95_ms": 1, "errors": ["RuntimeError"]}}
+        }
+    }
     assert _evaluate_gate_summary(report)["search_http"]["status"] == "fail"
 
 
@@ -16,10 +20,16 @@ def test_benchmark_seeds_without_per_module_index_rewrites(tmp_path, monkeypatch
 
     calls = []
     monkeypatch.setattr(perf, "save_module", lambda *args, **kwargs: calls.append(kwargs))
-    perf._seed_modules(perf.BenchmarkConfig(kb_path=tmp_path / "kb", output_dir=tmp_path / "out", module_count=4))
+    perf._seed_modules(
+        perf.BenchmarkConfig(kb_path=tmp_path / "kb", output_dir=tmp_path / "out", module_count=4)
+    )
     assert not calls
     from knowledge_manager.storage import load_index
-    assert sum(len(category.modules) for category in load_index(tmp_path / "kb").categories.values()) == 4
+
+    assert (
+        sum(len(category.modules) for category in load_index(tmp_path / "kb").categories.values())
+        == 4
+    )
 
 
 def test_backup_refuses_output_inside_source(tmp_path):

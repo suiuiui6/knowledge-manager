@@ -20,8 +20,7 @@ from knowledge_manager.schemas import (
 
 def test_module_content_valid():
     content = ModuleContent(
-        overview="This is an overview",
-        details="These are detailed technical notes"
+        overview="This is an overview", details="These are detailed technical notes"
     )
     assert content.overview == "This is an overview"
     assert content.details == "These are detailed technical notes"
@@ -36,7 +35,7 @@ def test_module_content_with_all_fields():
         details="Details text with more content",
         examples="Example code",
         references="https://example.com",
-        caveats="Known issues"
+        caveats="Known issues",
     )
     assert content.examples == "Example code"
     assert content.references == "https://example.com"
@@ -74,7 +73,7 @@ def test_module_metadata_with_values():
         tags=["auth", "security"],
         related_modules=["auth/jwt-tokens"],
         confidence="high",
-        source="team documentation"
+        source="team documentation",
     )
     assert metadata.tags == ["auth", "security"]
     assert metadata.related_modules == ["auth/jwt-tokens"]
@@ -147,7 +146,9 @@ def test_source_registry_validates_keys_and_timestamps():
         }
     )
 
-    assert registry.sources["team-docs"].sync.last_synced_at == synced_at.replace(tzinfo=timezone.utc)
+    assert registry.sources["team-docs"].sync.last_synced_at == synced_at.replace(
+        tzinfo=timezone.utc
+    )
 
 
 def test_source_registry_rejects_key_id_mismatch():
@@ -204,12 +205,14 @@ def test_default_timestamps_are_timezone_aware():
 
 def test_extraction_config_auto_categorize_default():
     from knowledge_manager.schemas import ExtractionConfig
+
     cfg = ExtractionConfig()
     assert cfg.auto_categorize is False
 
 
 def test_extraction_config_auto_categorize_explicit():
     from knowledge_manager.schemas import ExtractionConfig
+
     cfg = ExtractionConfig(auto_categorize=True)
     assert cfg.auto_categorize is True
 
@@ -221,20 +224,29 @@ def test_index_graph_field_defaults_empty():
 
 def test_index_graph_is_built_from_related_modules():
     from knowledge_manager.schemas import ExtractionConfig
+
     index = Index()
     m1 = Module(
-        id="jwt", category="auth",
+        id="jwt",
+        category="auth",
         title="JWT Tokens Module",
         summary="Handling JSON Web Tokens for authentication",
-        content=ModuleContent(overview="A JWT overview for testing", details="Detailed JWT notes for testing graph build"),
-        metadata=ModuleMetadata(tags=["auth"], related_modules=["auth/oauth-flow"])
+        content=ModuleContent(
+            overview="A JWT overview for testing",
+            details="Detailed JWT notes for testing graph build",
+        ),
+        metadata=ModuleMetadata(tags=["auth"], related_modules=["auth/oauth-flow"]),
     )
     m2 = Module(
-        id="oauth-flow", category="auth",
+        id="oauth-flow",
+        category="auth",
         title="OAuth 2.0 Flow Module",
         summary="Implementing OAuth 2.0 authorization flow",
-        content=ModuleContent(overview="OAuth overview for testing", details="Detailed OAuth notes for testing graph build"),
-        metadata=ModuleMetadata(tags=["auth"], related_modules=["auth/jwt", "api/rate-limit"])
+        content=ModuleContent(
+            overview="OAuth overview for testing",
+            details="Detailed OAuth notes for testing graph build",
+        ),
+        metadata=ModuleMetadata(tags=["auth"], related_modules=["auth/jwt", "api/rate-limit"]),
     )
     index.add_module(m1)
     index.add_module(m2)
@@ -249,19 +261,19 @@ def test_config_supports_agent_task_and_risk_routing_policy():
 
     cfg = Config.model_validate(
         {
-                "routing_policy": {
-                    "task_type_category_priorities": {"incident-response": ["runbook"]},
-                    "risk_level_companions": {"high": ["policy/change-approval"]},
-                    "risk_level_allowed_statuses": {"high": ["reviewed", "published"]},
-                    "task_type_allowed_statuses": {"production-change": ["published"]},
-                    "agent_overrides": {
-                        "incident-agent": {
-                            "category_priorities": {"how-to": ["runbook"]},
-                            "task_type_category_priorities": {"incident-response": ["policy"]},
-                            "risk_level_allowed_statuses": {"high": ["published"]},
-                        }
-                    },
-                }
+            "routing_policy": {
+                "task_type_category_priorities": {"incident-response": ["runbook"]},
+                "risk_level_companions": {"high": ["policy/change-approval"]},
+                "risk_level_allowed_statuses": {"high": ["reviewed", "published"]},
+                "task_type_allowed_statuses": {"production-change": ["published"]},
+                "agent_overrides": {
+                    "incident-agent": {
+                        "category_priorities": {"how-to": ["runbook"]},
+                        "task_type_category_priorities": {"incident-response": ["policy"]},
+                        "risk_level_allowed_statuses": {"high": ["published"]},
+                    }
+                },
+            }
         }
     )
 
@@ -269,17 +281,22 @@ def test_config_supports_agent_task_and_risk_routing_policy():
     assert cfg.routing_policy.risk_level_companions["high"] == ["policy/change-approval"]
     assert cfg.routing_policy.risk_level_allowed_statuses["high"] == ["reviewed", "published"]
     assert cfg.routing_policy.task_type_allowed_statuses["production-change"] == ["published"]
-    assert cfg.routing_policy.agent_overrides["incident-agent"].category_priorities["how-to"] == ["runbook"]
+    assert cfg.routing_policy.agent_overrides["incident-agent"].category_priorities["how-to"] == [
+        "runbook"
+    ]
 
 
 def test_index_graph_cleaned_on_remove_module():
     index = Index()
     m1 = Module(
-        id="jwt", category="auth",
+        id="jwt",
+        category="auth",
         title="JWT Tokens Module",
         summary="Handling JSON Web Tokens",
-        content=ModuleContent(overview="Overview text for testing", details="Detailed notes for testing graph removal"),
-        metadata=ModuleMetadata(tags=["auth"], related_modules=["auth/oauth-flow"])
+        content=ModuleContent(
+            overview="Overview text for testing", details="Detailed notes for testing graph removal"
+        ),
+        metadata=ModuleMetadata(tags=["auth"], related_modules=["auth/oauth-flow"]),
     )
     index.add_module(m1)
     assert "auth/jwt" in index.graph
@@ -289,18 +306,21 @@ def test_index_graph_cleaned_on_remove_module():
 
 def test_telemetry_config_defaults():
     from knowledge_manager.schemas import TelemetryConfig
+
     cfg = TelemetryConfig()
     assert cfg.enabled is True
 
 
 def test_telemetry_config_disabled():
     from knowledge_manager.schemas import TelemetryConfig
+
     cfg = TelemetryConfig(enabled=False)
     assert cfg.enabled is False
 
 
 def test_config_includes_telemetry():
     from knowledge_manager.schemas import Config, TelemetryConfig
+
     cfg = Config()
     assert cfg.telemetry is not None
     assert cfg.telemetry.enabled is True
@@ -323,6 +343,7 @@ def test_metadata_supports_expiry():
 
 def test_config_supports_synonyms():
     from knowledge_manager.schemas import Config
+
     cfg = Config(synonyms={"token": ["jwt", "bearer"]})
     assert cfg.synonyms == {"token": ["jwt", "bearer"]}
 

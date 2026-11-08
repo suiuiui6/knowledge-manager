@@ -193,7 +193,9 @@ def fail_ingestion_job(kb_path: Path, job_id: str, error: str) -> IngestionJob:
 
 
 @serialized_write
-def update_ingestion_checkpoint(kb_path: Path, job_id: str, cursor: str, pages_seen: int) -> IngestionJob:
+def update_ingestion_checkpoint(
+    kb_path: Path, job_id: str, cursor: str, pages_seen: int
+) -> IngestionJob:
     job = load_ingestion_job(kb_path, job_id)
     if job is None:
         raise FileNotFoundError(job_id)

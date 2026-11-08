@@ -15,10 +15,26 @@ def _write_auth_fixture(kb: Path) -> None:
                 "provider": "token",
                 "oidc_config": {
                     "static_tokens": {
-                        "viewer-team-a": {"sub": "victor", "tenant_id": "team-a", "workspace_id": "ws-a"},
-                        "reviewer-team-a": {"sub": "rachel", "tenant_id": "team-a", "workspace_id": "ws-a"},
-                        "editor-team-a": {"sub": "alice", "tenant_id": "team-a", "workspace_id": "ws-a"},
-                        "admin-team-a": {"sub": "ada", "tenant_id": "team-a", "workspace_id": "ws-a"},
+                        "viewer-team-a": {
+                            "sub": "victor",
+                            "tenant_id": "team-a",
+                            "workspace_id": "ws-a",
+                        },
+                        "reviewer-team-a": {
+                            "sub": "rachel",
+                            "tenant_id": "team-a",
+                            "workspace_id": "ws-a",
+                        },
+                        "editor-team-a": {
+                            "sub": "alice",
+                            "tenant_id": "team-a",
+                            "workspace_id": "ws-a",
+                        },
+                        "admin-team-a": {
+                            "sub": "ada",
+                            "tenant_id": "team-a",
+                            "workspace_id": "ws-a",
+                        },
                         "admin-root": {"sub": "root", "groups": ["admins"]},
                     }
                 },
@@ -53,9 +69,13 @@ def client(tmp_path):
     save_index(idx, kb)
 
     mod = Module(
-        id="test-mod", category="general", title="Test Module Title",
+        id="test-mod",
+        category="general",
+        title="Test Module Title",
         summary="A test module for HTTP tests.",
-        content=ModuleContent(overview="test overview content", details="test details content here"),
+        content=ModuleContent(
+            overview="test overview content", details="test details content here"
+        ),
         metadata=ModuleMetadata(tags=["test", "api"], confidence="high", status="published"),
     )
     save_module(mod, kb)
@@ -153,7 +173,10 @@ class TestHealth:
         assert load_derived_index_state(kb)["status"] == "dirty"
         readiness_before = client.get("/api/ready")
         assert readiness_before.status_code == 503
-        assert any("derived indexes are not ready" in reason for reason in readiness_before.json()["reasons"])
+        assert any(
+            "derived indexes are not ready" in reason
+            for reason in readiness_before.json()["reasons"]
+        )
 
         assert run_worker_loop(kb, once=True, poll_interval=0.01) >= 1
         assert load_derived_index_state(kb)["status"] == "ready"
@@ -161,7 +184,9 @@ class TestHealth:
         assert readiness_after.status_code == 200
         assert readiness_after.json()["ready"] is True
 
-        initial_search = client.post("/api/search", json={"query": "initial consistency loop", "top_k": 10})
+        initial_search = client.post(
+            "/api/search", json={"query": "initial consistency loop", "top_k": 10}
+        )
         assert initial_search.status_code == 200
         assert any(item["id"] == "consistency-loop" for item in initial_search.json()["results"])
 
@@ -179,13 +204,21 @@ class TestHealth:
 
         update = client.put(
             "/api/modules/ops/consistency-loop",
-            json={"title": "Updated consistency loop module", "summary": "Updated consistency loop summary text."},
+            json={
+                "title": "Updated consistency loop module",
+                "summary": "Updated consistency loop summary text.",
+            },
         )
         assert update.status_code == 200
         assert load_derived_index_state(kb)["status"] == "dirty"
         assert run_worker_loop(kb, once=True, poll_interval=0.01) >= 1
-        updated_search = client.post("/api/search", json={"query": "updated consistency loop", "top_k": 10})
-        assert any(item["title"] == "Updated consistency loop module" for item in updated_search.json()["results"])
+        updated_search = client.post(
+            "/api/search", json={"query": "updated consistency loop", "top_k": 10}
+        )
+        assert any(
+            item["title"] == "Updated consistency loop module"
+            for item in updated_search.json()["results"]
+        )
         mcp_updated = asyncio.run(mcp_search("updated consistency loop"))
         assert any(item["title"] == "Updated consistency loop module" for item in mcp_updated)
 
@@ -193,7 +226,9 @@ class TestHealth:
         assert delete.status_code == 200
         assert load_derived_index_state(kb)["status"] == "dirty"
         assert run_worker_loop(kb, once=True, poll_interval=0.01) >= 1
-        deleted_search = client.post("/api/search", json={"query": "updated consistency loop", "top_k": 10})
+        deleted_search = client.post(
+            "/api/search", json={"query": "updated consistency loop", "top_k": 10}
+        )
         assert all(item["id"] != "consistency-loop" for item in deleted_search.json()["results"])
         mcp_deleted = asyncio.run(mcp_search("updated consistency loop"))
         assert all(item["id"] != "consistency-loop" for item in mcp_deleted)
@@ -218,20 +253,23 @@ class TestHealth:
         secured_client = TestClient(create_app(kb))
 
         assert secured_client.get("/api/ready").status_code == 503
-        assert secured_client.post(
-            "/api/modules",
-            json={
-                "id": "ops-guide",
-                "category": "ops",
-                "title": "Ops Guide",
-                "summary": "Ops guide summary.",
-                "content": {
-                    "overview": "Ops overview.",
-                    "details": "Ops details long enough for validation.",
+        assert (
+            secured_client.post(
+                "/api/modules",
+                json={
+                    "id": "ops-guide",
+                    "category": "ops",
+                    "title": "Ops Guide",
+                    "summary": "Ops guide summary.",
+                    "content": {
+                        "overview": "Ops overview.",
+                        "details": "Ops details long enough for validation.",
+                    },
+                    "submit_to_staging": False,
                 },
-                "submit_to_staging": False,
-            },
-        ).status_code == 503
+            ).status_code
+            == 503
+        )
 
     def test_multi_tenant_search_hides_global_modules_by_default(self, tmp_path):
         kb = tmp_path / "kb"
@@ -461,7 +499,9 @@ class TestModules:
         )
 
         tenant_client = TestClient(create_app(kb))
-        response = tenant_client.get("/api/modules", headers={"Authorization": "Bearer editor-team-a"})
+        response = tenant_client.get(
+            "/api/modules", headers={"Authorization": "Bearer editor-team-a"}
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -601,7 +641,9 @@ class TestModules:
         save_index(Index(description="write path"), kb)
         monkeypatch.setattr(
             "knowledge_manager.storage.rebuild_index",
-            lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("full rebuild should not run")),
+            lambda *_args, **_kwargs: (_ for _ in ()).throw(
+                AssertionError("full rebuild should not run")
+            ),
         )
 
         write_client = TestClient(create_app(kb))
@@ -637,7 +679,10 @@ class TestModules:
                 "category": "ops",
                 "title": "Perf write",
                 "summary": "summary text",
-                "content": {"overview": "overview text", "details": "details long enough for validation"},
+                "content": {
+                    "overview": "overview text",
+                    "details": "details long enough for validation",
+                },
                 "submit_to_staging": False,
             },
         )
@@ -786,21 +831,24 @@ class TestModules:
         secured_client = TestClient(create_app(kb))
         headers = {"Authorization": "Bearer viewer-team-a"}
 
-        assert secured_client.post(
-            "/api/modules",
-            headers=headers,
-            json={
-                "id": "viewer-write",
-                "category": "ops",
-                "title": "Viewer write",
-                "summary": "Viewer write summary.",
-                "content": {
-                    "overview": "Viewer write overview.",
-                    "details": "Viewer write details long enough for validation.",
+        assert (
+            secured_client.post(
+                "/api/modules",
+                headers=headers,
+                json={
+                    "id": "viewer-write",
+                    "category": "ops",
+                    "title": "Viewer write",
+                    "summary": "Viewer write summary.",
+                    "content": {
+                        "overview": "Viewer write overview.",
+                        "details": "Viewer write details long enough for validation.",
+                    },
+                    "submit_to_staging": False,
                 },
-                "submit_to_staging": False,
-            },
-        ).status_code == 403
+            ).status_code
+            == 403
+        )
         assert secured_client.get("/api/staging", headers=headers).status_code == 403
         assert secured_client.get("/api/ops", headers=headers).status_code == 403
 
@@ -826,7 +874,9 @@ class TestModules:
         save_staging_meta(StagingMeta(module_id="review-me", status="pending"), kb / ".staging")
         monkeypatch.setattr(
             "knowledge_manager.storage.rebuild_index",
-            lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("full rebuild should not run")),
+            lambda *_args, **_kwargs: (_ for _ in ()).throw(
+                AssertionError("full rebuild should not run")
+            ),
         )
 
         review_client = TestClient(create_app(kb))
@@ -869,7 +919,13 @@ class TestModules:
         assert response.status_code == 422
 
     def test_staging_list_uses_authenticated_tenant_scope(self, tmp_path):
-        from knowledge_manager.schemas import Index, Module, ModuleContent, ModuleMetadata, StagingMeta
+        from knowledge_manager.schemas import (
+            Index,
+            Module,
+            ModuleContent,
+            ModuleMetadata,
+            StagingMeta,
+        )
         from knowledge_manager.storage import save_index, save_staging_meta, save_to_staging
 
         kb = tmp_path / "kb"
@@ -904,7 +960,9 @@ class TestModules:
         save_staging_meta(StagingMeta(module_id="review-b", status="pending"), kb / ".staging")
 
         secured_client = TestClient(create_app(kb))
-        response = secured_client.get("/api/staging", headers={"Authorization": "Bearer reviewer-team-a"})
+        response = secured_client.get(
+            "/api/staging", headers={"Authorization": "Bearer reviewer-team-a"}
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -912,7 +970,13 @@ class TestModules:
         assert data["items"][0]["module_id"] == "review-a"
 
     def test_staging_approve_rejects_cross_tenant_module(self, tmp_path):
-        from knowledge_manager.schemas import Index, Module, ModuleContent, ModuleMetadata, StagingMeta
+        from knowledge_manager.schemas import (
+            Index,
+            Module,
+            ModuleContent,
+            ModuleMetadata,
+            StagingMeta,
+        )
         from knowledge_manager.storage import save_index, save_staging_meta, save_to_staging
 
         kb = tmp_path / "kb"
@@ -997,7 +1061,9 @@ class TestSearch:
         )
 
         tenant_client = TestClient(create_app(kb))
-        r = tenant_client.post("/api/search", json={"query": "rollback safely", "tenant_id": "team-a"})
+        r = tenant_client.post(
+            "/api/search", json={"query": "rollback safely", "tenant_id": "team-a"}
+        )
         assert r.status_code == 200
         data = r.json()
         assert len(data["results"]) == 1
@@ -1154,11 +1220,7 @@ class TestSearch:
         save_index(Index(description="Policy KB"), kb)
         (kb / "config.json").write_text(
             json.dumps(
-                {
-                    "routing_policy": {
-                        "risk_level_allowed_statuses": {"high": ["published"]}
-                    }
-                }
+                {"routing_policy": {"risk_level_allowed_statuses": {"high": ["published"]}}}
             ),
             encoding="utf-8",
         )
@@ -1216,7 +1278,9 @@ class TestSearch:
                 "groups": ["grp-reviewers"],
                 "category": "finance",
                 "module_id": "fin-1",
-                "roles": {"reviewer": {"permissions": ["module:read"], "scopes": ["category:policy"]}},
+                "roles": {
+                    "reviewer": {"permissions": ["module:read"], "scopes": ["category:policy"]}
+                },
                 "group_mapping": {"grp-reviewers": ["reviewer"]},
             },
         )
@@ -1282,7 +1346,9 @@ class TestGraph:
         )
 
         tenant_client = TestClient(create_app(kb))
-        response = tenant_client.get("/api/graph", headers={"Authorization": "Bearer editor-team-a"})
+        response = tenant_client.get(
+            "/api/graph", headers={"Authorization": "Bearer editor-team-a"}
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -1397,7 +1463,9 @@ class TestOps:
 
         save_index(Index(description="Ops KB"), kb)
         (kb / "config.json").write_text(
-            json.dumps({"routing_policy": {"risk_level_allowed_statuses": {"high": ["published"]}}}),
+            json.dumps(
+                {"routing_policy": {"risk_level_allowed_statuses": {"high": ["published"]}}}
+            ),
             encoding="utf-8",
         )
         save_module(
@@ -1424,7 +1492,14 @@ class TestOps:
         assert "policy_suppressed_modules" in data
 
     def test_ops_report_uses_authenticated_tenant_scope(self, tmp_path):
-        from knowledge_manager.schemas import ConfluenceSourceConfig, Index, Module, ModuleContent, ModuleMetadata, SourceDefinition
+        from knowledge_manager.schemas import (
+            ConfluenceSourceConfig,
+            Index,
+            Module,
+            ModuleContent,
+            ModuleMetadata,
+            SourceDefinition,
+        )
         from knowledge_manager.source_ingestion import upsert_source
         from knowledge_manager.storage import save_index, save_module
 
@@ -1433,7 +1508,9 @@ class TestOps:
         _write_auth_fixture(kb)
         save_index(Index(description="Ops KB"), kb)
         (kb / "config.json").write_text(
-            json.dumps({"routing_policy": {"risk_level_allowed_statuses": {"high": ["published"]}}}),
+            json.dumps(
+                {"routing_policy": {"risk_level_allowed_statuses": {"high": ["published"]}}}
+            ),
             encoding="utf-8",
         )
         upsert_source(
@@ -1531,7 +1608,13 @@ class TestOps:
         assert data["items"][0]["module_id"] == "review-me"
 
     def test_ops_backlog_review_uses_authenticated_tenant_scope(self, tmp_path):
-        from knowledge_manager.schemas import Index, Module, ModuleContent, ModuleMetadata, StagingMeta
+        from knowledge_manager.schemas import (
+            Index,
+            Module,
+            ModuleContent,
+            ModuleMetadata,
+            StagingMeta,
+        )
         from knowledge_manager.storage import save_index, save_staging_meta, save_to_staging
 
         kb = tmp_path / "kb"
@@ -1679,7 +1762,9 @@ class TestOps:
         )
 
         ops_client = TestClient(create_app(kb))
-        r = ops_client.get("/api/ops/backlog/source", headers={"Authorization": "Bearer reviewer-team-a"})
+        r = ops_client.get(
+            "/api/ops/backlog/source", headers={"Authorization": "Bearer reviewer-team-a"}
+        )
 
         assert r.status_code == 200
         data = r.json()
@@ -1877,8 +1962,12 @@ class TestOps:
         kb.mkdir()
         _write_auth_fixture(kb)
         save_index(Index(description="jobs tenant view"), kb)
-        create_ingestion_job(kb, source_id="team-docs-a", trigger="manual", tenant_id="team-a", workspace_id="ws-a")
-        create_ingestion_job(kb, source_id="team-docs-b", trigger="manual", tenant_id="team-b", workspace_id="ws-b")
+        create_ingestion_job(
+            kb, source_id="team-docs-a", trigger="manual", tenant_id="team-a", workspace_id="ws-a"
+        )
+        create_ingestion_job(
+            kb, source_id="team-docs-b", trigger="manual", tenant_id="team-b", workspace_id="ws-b"
+        )
 
         jobs_client = TestClient(create_app(kb))
         r = jobs_client.get("/api/source/jobs", headers={"Authorization": "Bearer reviewer-team-a"})
@@ -1897,7 +1986,9 @@ class TestOps:
         kb.mkdir()
         _write_auth_fixture(kb)
         save_index(Index(description="jobs tenant override"), kb)
-        create_ingestion_job(kb, source_id="team-docs-b", trigger="manual", tenant_id="team-b", workspace_id="ws-b")
+        create_ingestion_job(
+            kb, source_id="team-docs-b", trigger="manual", tenant_id="team-b", workspace_id="ws-b"
+        )
 
         jobs_client = TestClient(create_app(kb))
         r = jobs_client.get(
@@ -2027,8 +2118,12 @@ class TestOps:
             ),
             kb,
         )
-        create_ingestion_job(kb, source_id="team-docs-a", trigger="manual", tenant_id="team-a", workspace_id="ws-a")
-        create_ingestion_job(kb, source_id="team-docs-b", trigger="manual", tenant_id="team-b", workspace_id="ws-b")
+        create_ingestion_job(
+            kb, source_id="team-docs-a", trigger="manual", tenant_id="team-a", workspace_id="ws-a"
+        )
+        create_ingestion_job(
+            kb, source_id="team-docs-b", trigger="manual", tenant_id="team-b", workspace_id="ws-b"
+        )
 
         staged_a = Module(
             id="review-a",
@@ -2082,7 +2177,9 @@ class TestStats:
 
 
 class TestUpload:
-    def test_upload_endpoint_returns_accepted_job_id_and_does_not_extract_inline(self, tmp_path, monkeypatch):
+    def test_upload_endpoint_returns_accepted_job_id_and_does_not_extract_inline(
+        self, tmp_path, monkeypatch
+    ):
         from knowledge_manager.http_server import create_app
 
         started = {"job_id": ""}
@@ -2091,7 +2188,9 @@ class TestUpload:
             started["job_id"] = "job-upload-1"
             return "job-upload-1"
 
-        monkeypatch.setattr("knowledge_manager.http_server._start_upload_job", fake_start_upload_job)
+        monkeypatch.setattr(
+            "knowledge_manager.http_server._start_upload_job", fake_start_upload_job
+        )
 
         client = TestClient(create_app(tmp_path))
         response = client.post(
@@ -2126,7 +2225,10 @@ class TestUpload:
         _write_auth_fixture(tmp_path)
         save_index(Index(description="upload auth"), tmp_path)
 
-        monkeypatch.setattr("knowledge_manager.http_server._start_upload_job", lambda *_args, **_kwargs: "job-upload-1")
+        monkeypatch.setattr(
+            "knowledge_manager.http_server._start_upload_job",
+            lambda *_args, **_kwargs: "job-upload-1",
+        )
 
         client = TestClient(create_app(tmp_path))
         response = client.post(

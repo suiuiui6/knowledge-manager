@@ -15,8 +15,7 @@ class BaseLLMClient(ABC):
         self.config = config
 
     @abstractmethod
-    async def complete(self, prompt: str) -> str:
-        ...
+    async def complete(self, prompt: str) -> str: ...
 
     async def complete_vision(self, prompt: str, image_path: str) -> str:
         raise NotImplementedError("Vision not supported by this provider")
@@ -31,7 +30,11 @@ class DeepSeekClient(BaseLLMClient):
             "temperature": self.config.temperature,
             "max_tokens": self.config.max_tokens,
         }
-        logger.debug("DeepSeek request prepared for model=%s max_tokens=%s", self.config.model, self.config.max_tokens)
+        logger.debug(
+            "DeepSeek request prepared for model=%s max_tokens=%s",
+            self.config.model,
+            self.config.max_tokens,
+        )
 
         async with httpx.AsyncClient() as client:
             try:
@@ -90,10 +93,17 @@ class ClaudeClient(BaseLLMClient):
 
     async def complete_vision(self, prompt: str, image_path: str) -> str:
         import base64
+
         img_bytes = Path(image_path).read_bytes()
         b64 = base64.b64encode(img_bytes).decode()
         ext = Path(image_path).suffix.lower()
-        mime = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "gif": "image/gif", "webp": "image/webp"}.get(ext.lstrip("."), "image/png")
+        mime = {
+            "jpg": "image/jpeg",
+            "jpeg": "image/jpeg",
+            "png": "image/png",
+            "gif": "image/gif",
+            "webp": "image/webp",
+        }.get(ext.lstrip("."), "image/png")
 
         async with httpx.AsyncClient() as client:
             resp = await client.post(
@@ -101,10 +111,18 @@ class ClaudeClient(BaseLLMClient):
                 json={
                     "model": self.config.model,
                     "max_tokens": self.config.max_tokens,
-                    "messages": [{"role": "user", "content": [
-                        {"type": "text", "text": prompt},
-                        {"type": "image", "source": {"type": "base64", "media_type": mime, "data": b64}},
-                    ]}],
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": prompt},
+                                {
+                                    "type": "image",
+                                    "source": {"type": "base64", "media_type": mime, "data": b64},
+                                },
+                            ],
+                        }
+                    ],
                 },
                 headers={
                     "x-api-key": self.config.api_key,
@@ -151,20 +169,35 @@ class OpenAIClient(BaseLLMClient):
 
     async def complete_vision(self, prompt: str, image_path: str) -> str:
         import base64
+
         img_bytes = Path(image_path).read_bytes()
         b64 = base64.b64encode(img_bytes).decode()
         ext = Path(image_path).suffix.lower()
-        mime = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "gif": "image/gif", "webp": "image/webp"}.get(ext.lstrip("."), "image/png")
+        mime = {
+            "jpg": "image/jpeg",
+            "jpeg": "image/jpeg",
+            "png": "image/png",
+            "gif": "image/gif",
+            "webp": "image/webp",
+        }.get(ext.lstrip("."), "image/png")
 
         async with httpx.AsyncClient() as client:
             resp = await client.post(
                 f"{self.config.base_url or 'https://api.openai.com'}/v1/chat/completions",
                 json={
                     "model": self.config.model,
-                    "messages": [{"role": "user", "content": [
-                        {"type": "text", "text": prompt},
-                        {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}},
-                    ]}],
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": prompt},
+                                {
+                                    "type": "image_url",
+                                    "image_url": {"url": f"data:{mime};base64,{b64}"},
+                                },
+                            ],
+                        }
+                    ],
                     "temperature": self.config.temperature,
                     "max_tokens": self.config.max_tokens,
                 },

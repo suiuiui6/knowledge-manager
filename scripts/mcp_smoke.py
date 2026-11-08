@@ -3,6 +3,7 @@
 Run from the project root:
     poetry run python scripts/mcp_smoke.py
 """
+
 import asyncio
 import json
 import sys
@@ -46,17 +47,27 @@ def _pretty(label: str, payload) -> None:
 async def main() -> int:
     print(f"Launching: km --kb-path {KB} serve")
     proc = await asyncio.create_subprocess_exec(
-        "poetry", "run", "km", "--kb-path", str(KB), "serve",
+        "poetry",
+        "run",
+        "km",
+        "--kb-path",
+        str(KB),
+        "serve",
         stdin=asyncio.subprocess.PIPE,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
     try:
-        init = await _call(proc, 1, "initialize", {
-            "protocolVersion": "2024-11-05",
-            "capabilities": {},
-            "clientInfo": {"name": "smoke-test", "version": "0.1"},
-        })
+        init = await _call(
+            proc,
+            1,
+            "initialize",
+            {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {},
+                "clientInfo": {"name": "smoke-test", "version": "0.1"},
+            },
+        )
         _pretty("initialize result", init.get("result"))
 
         await _notify(proc, "notifications/initialized")
@@ -70,41 +81,76 @@ async def main() -> int:
         index_read = await _call(proc, 4, "resources/read", {"uri": "knowledge://index"})
         _pretty("resources/read knowledge://index", index_read.get("result"))
 
-        list_cats = await _call(proc, 5, "tools/call", {
-            "name": "list_categories",
-            "arguments": {},
-        })
+        list_cats = await _call(
+            proc,
+            5,
+            "tools/call",
+            {
+                "name": "list_categories",
+                "arguments": {},
+            },
+        )
         _pretty("call list_categories", list_cats.get("result"))
 
-        search_jwt = await _call(proc, 6, "tools/call", {
-            "name": "search_modules",
-            "arguments": {"query": "jwt signing"},
-        })
+        search_jwt = await _call(
+            proc,
+            6,
+            "tools/call",
+            {
+                "name": "search_modules",
+                "arguments": {"query": "jwt signing"},
+            },
+        )
         _pretty('call search_modules "jwt signing"', search_jwt.get("result"))
 
-        search_pool = await _call(proc, 7, "tools/call", {
-            "name": "search_modules",
-            "arguments": {"query": "postgres connection pool sizing"},
-        })
+        search_pool = await _call(
+            proc,
+            7,
+            "tools/call",
+            {
+                "name": "search_modules",
+                "arguments": {"query": "postgres connection pool sizing"},
+            },
+        )
         _pretty('call search_modules "postgres connection pool sizing"', search_pool.get("result"))
 
-        search_miss = await _call(proc, 8, "tools/call", {
-            "name": "search_modules",
-            "arguments": {"query": "kubernetes networking"},
-        })
-        _pretty('call search_modules "kubernetes networking" (should be empty)', search_miss.get("result"))
+        search_miss = await _call(
+            proc,
+            8,
+            "tools/call",
+            {
+                "name": "search_modules",
+                "arguments": {"query": "kubernetes networking"},
+            },
+        )
+        _pretty(
+            'call search_modules "kubernetes networking" (should be empty)',
+            search_miss.get("result"),
+        )
 
-        load = await _call(proc, 9, "tools/call", {
-            "name": "load_module",
-            "arguments": {"module_id": "jwt-tokens", "category": "auth"},
-        })
+        load = await _call(
+            proc,
+            9,
+            "tools/call",
+            {
+                "name": "load_module",
+                "arguments": {"module_id": "jwt-tokens", "category": "auth"},
+            },
+        )
         _pretty("call load_module jwt-tokens/auth", load.get("result"))
 
-        load_miss = await _call(proc, 10, "tools/call", {
-            "name": "load_module",
-            "arguments": {"module_id": "nonexistent", "category": "auth"},
-        })
-        _pretty("call load_module nonexistent/auth (should report not found)", load_miss.get("result"))
+        load_miss = await _call(
+            proc,
+            10,
+            "tools/call",
+            {
+                "name": "load_module",
+                "arguments": {"module_id": "nonexistent", "category": "auth"},
+            },
+        )
+        _pretty(
+            "call load_module nonexistent/auth (should report not found)", load_miss.get("result")
+        )
 
         return 0
     finally:

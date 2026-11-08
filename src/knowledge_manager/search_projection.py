@@ -58,7 +58,9 @@ def _project_module(module) -> dict[str, Any]:
         "tenant_id": module.metadata.tenant_id,
         "workspace_id": module.metadata.workspace_id,
         "stale_due_to_source_change": module.metadata.stale_due_to_source_change,
-        "expires_at": module.metadata.expires_at.isoformat() if module.metadata.expires_at else None,
+        "expires_at": (
+            module.metadata.expires_at.isoformat() if module.metadata.expires_at else None
+        ),
         "status": module.metadata.status,
         "created_at": module.created_at.isoformat(),
         "updated_at": module.updated_at.isoformat(),
@@ -169,7 +171,9 @@ def update_search_projection_for_module(kb_path: Path, module) -> dict[str, Any]
     return _write_projection(kb_path, payload)
 
 
-def remove_search_projection_for_module(kb_path: Path, category: str, module_id: str) -> dict[str, Any] | None:
+def remove_search_projection_for_module(
+    kb_path: Path, category: str, module_id: str
+) -> dict[str, Any] | None:
     payload = load_search_projection(kb_path)
     if payload is None:
         return None

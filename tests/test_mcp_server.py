@@ -9,7 +9,8 @@ from knowledge_manager.storage import load_module, save_module, save_index
 
 def make_module(id="auth-jwt", category="auth") -> Module:
     return Module(
-        id=id, category=category,
+        id=id,
+        category=category,
         title="JWT Authentication Guide",
         summary="How JWT tokens work in our system for authentication",
         content=ModuleContent(
@@ -29,11 +30,13 @@ def kb_path(tmp_path):
 @pytest.fixture
 def server(kb_path):
     from knowledge_manager.mcp_server import create_server
+
     return create_server(kb_path)
 
 
 def test_server_creates_fastmcp_instance(server):
     from mcp.server.fastmcp import FastMCP
+
     assert isinstance(server, FastMCP)
 
 
@@ -125,9 +128,7 @@ async def test_tool_load_module_reuses_category_aware_cache(kb_path):
 
     save_module(make_module(), kb_path)
     server = create_server(kb_path, cache=ModuleCache())
-    first = await server.call_tool(
-        "load_module", {"module_id": "auth-jwt", "category": "auth"}
-    )
+    first = await server.call_tool("load_module", {"module_id": "auth-jwt", "category": "auth"})
     assert "auth-jwt" in str(first)
 
     with patch(
@@ -238,7 +239,9 @@ async def test_tool_search_modules_uses_compact_json_serialization(server, kb_pa
 
 
 @pytest.mark.asyncio
-async def test_tool_search_modules_avoids_full_hydration_for_projection_hits(server, kb_path, monkeypatch):
+async def test_tool_search_modules_avoids_full_hydration_for_projection_hits(
+    server, kb_path, monkeypatch
+):
     save_module(
         Module(
             id="auth-jwt",
@@ -254,7 +257,9 @@ async def test_tool_search_modules_avoids_full_hydration_for_projection_hits(ser
     )
 
     def explode(*_args, **_kwargs):
-        raise AssertionError("MCP search should not hydrate full modules for projection-backed hits")
+        raise AssertionError(
+            "MCP search should not hydrate full modules for projection-backed hits"
+        )
 
     monkeypatch.setattr("knowledge_manager.storage.load_module", explode)
     monkeypatch.setattr("knowledge_manager.mcp_server.load_module", explode)
@@ -297,7 +302,9 @@ async def test_tool_search_modules_honors_tenant_filter(server, kb_path):
         kb_path,
     )
 
-    result = await server.call_tool("search_modules", {"query": "rollback safely", "tenant_id": "team-a"})
+    result = await server.call_tool(
+        "search_modules", {"query": "rollback safely", "tenant_id": "team-a"}
+    )
     raw = result[0].text if hasattr(result[0], "text") else str(result[0])
     assert '"tenant-a"' in raw
     assert '"tenant-b"' not in raw
@@ -472,13 +479,7 @@ async def test_session_tenant_ignores_caller_supplied_tenant_for_search(kb_path)
 @pytest.mark.asyncio
 async def test_tool_search_modules_filters_disallowed_statuses(server, kb_path):
     (kb_path / "config.json").write_text(
-        json.dumps(
-            {
-                "routing_policy": {
-                    "risk_level_allowed_statuses": {"high": ["published"]}
-                }
-            }
-        ),
+        json.dumps({"routing_policy": {"risk_level_allowed_statuses": {"high": ["published"]}}}),
         encoding="utf-8",
     )
     save_module(
@@ -536,8 +537,10 @@ async def test_tool_list_categories(server, kb_path):
 @pytest.mark.asyncio
 async def test_tool_expand_module_returns_module_and_neighbors(server, kb_path):
     from knowledge_manager.schemas import ModuleMetadata
+
     main = Module(
-        id="jwt", category="auth",
+        id="jwt",
+        category="auth",
         title="JWT tokens",
         summary="Handling JSON Web Tokens for auth",
         content=ModuleContent(
@@ -547,7 +550,8 @@ async def test_tool_expand_module_returns_module_and_neighbors(server, kb_path):
         metadata=ModuleMetadata(tags=["auth"], related_modules=["auth/oauth-flow"]),
     )
     neighbor = Module(
-        id="oauth-flow", category="auth",
+        id="oauth-flow",
+        category="auth",
         title="OAuth 2.0 flow",
         summary="OAuth 2.0 authorization flow setup",
         content=ModuleContent(
@@ -572,17 +576,21 @@ async def test_tool_expand_module_honors_trusted_session_tenant(kb_path):
     from knowledge_manager.schemas import ModuleMetadata
 
     main = Module(
-        id="jwt", category="auth",
+        id="jwt",
+        category="auth",
         title="JWT tokens",
         summary="Handling JSON Web Tokens for auth",
         content=ModuleContent(
             overview="A JWT overview for testing expand",
             details="Detailed JWT notes for testing expand tool behavior",
         ),
-        metadata=ModuleMetadata(tags=["auth"], related_modules=["auth/oauth-flow"], tenant_id="team-a"),
+        metadata=ModuleMetadata(
+            tags=["auth"], related_modules=["auth/oauth-flow"], tenant_id="team-a"
+        ),
     )
     neighbor = Module(
-        id="oauth-flow", category="auth",
+        id="oauth-flow",
+        category="auth",
         title="OAuth 2.0 flow",
         summary="OAuth 2.0 authorization flow setup",
         content=ModuleContent(
@@ -611,8 +619,10 @@ async def test_tool_expand_module_not_found(server, kb_path):
 @pytest.mark.asyncio
 async def test_tool_deep_search_returns_full_content(server, kb_path):
     from knowledge_manager.schemas import ModuleMetadata
+
     main = Module(
-        id="auth-jwt", category="auth",
+        id="auth-jwt",
+        category="auth",
         title="JWT authentication module",
         summary="How JWT tokens work in our system",
         content=ModuleContent(
@@ -622,7 +632,8 @@ async def test_tool_deep_search_returns_full_content(server, kb_path):
         metadata=ModuleMetadata(tags=["jwt"], related_modules=["auth/oauth-flow"]),
     )
     neighbor = Module(
-        id="oauth-flow", category="auth",
+        id="oauth-flow",
+        category="auth",
         title="OAuth flow module",
         summary="OAuth authorization flow details",
         content=ModuleContent(
@@ -649,17 +660,21 @@ async def test_tool_deep_search_honors_trusted_session_tenant(kb_path):
     from knowledge_manager.schemas import ModuleMetadata
 
     main = Module(
-        id="auth-jwt", category="auth",
+        id="auth-jwt",
+        category="auth",
         title="JWT authentication module",
         summary="How JWT tokens work in our system",
         content=ModuleContent(
             overview="JWT tokens are used for stateless authentication in our system.",
             details="Tokens are signed with RS256 and expire after 24 hours by default.",
         ),
-        metadata=ModuleMetadata(tags=["jwt"], related_modules=["auth/oauth-flow"], tenant_id="team-a"),
+        metadata=ModuleMetadata(
+            tags=["jwt"], related_modules=["auth/oauth-flow"], tenant_id="team-a"
+        ),
     )
     neighbor = Module(
-        id="oauth-flow", category="auth",
+        id="oauth-flow",
+        category="auth",
         title="OAuth flow module",
         summary="OAuth authorization flow details",
         content=ModuleContent(
@@ -683,7 +698,8 @@ async def test_tool_deep_search_avoids_unnecessary_full_hydration(server, kb_pat
     from knowledge_manager.schemas import ModuleMetadata
 
     main = Module(
-        id="auth-jwt", category="auth",
+        id="auth-jwt",
+        category="auth",
         title="JWT authentication module",
         summary="Stateless authentication guidance for production tokens.",
         content=ModuleContent(
@@ -693,7 +709,8 @@ async def test_tool_deep_search_avoids_unnecessary_full_hydration(server, kb_pat
         metadata=ModuleMetadata(tags=["jwt"], related_modules=["auth/oauth-flow"]),
     )
     neighbor = Module(
-        id="oauth-flow", category="auth",
+        id="oauth-flow",
+        category="auth",
         title="OAuth flow module",
         summary="OAuth authorization flow details",
         content=ModuleContent(
@@ -706,7 +723,9 @@ async def test_tool_deep_search_avoids_unnecessary_full_hydration(server, kb_pat
     save_module(neighbor, kb_path)
 
     def explode(*_args, **_kwargs):
-        raise AssertionError("deep_search should reuse projection-backed content instead of hydrating modules")
+        raise AssertionError(
+            "deep_search should reuse projection-backed content instead of hydrating modules"
+        )
 
     monkeypatch.setattr("knowledge_manager.storage.load_module", explode)
     monkeypatch.setattr("knowledge_manager.mcp_server.load_module", explode)
@@ -723,30 +742,40 @@ async def test_tool_deep_search_avoids_unnecessary_full_hydration(server, kb_pat
 @pytest.mark.asyncio
 async def test_session_context_boosts_recently_loaded(server, kb_path):
     """Loading a module should boost it in subsequent searches within the session."""
-    save_module(Module(
-        id="mod-a", category="general",
-        title="Zanzibar quick reference",
-        summary="Quick reference for zanzibar topic",
-        content=ModuleContent(
-            overview="Zanzibar overview for session boost comparison.",
-            details="Zanzibar details for mod-a — this module covers the basics.",
+    save_module(
+        Module(
+            id="mod-a",
+            category="general",
+            title="Zanzibar quick reference",
+            summary="Quick reference for zanzibar topic",
+            content=ModuleContent(
+                overview="Zanzibar overview for session boost comparison.",
+                details="Zanzibar details for mod-a — this module covers the basics.",
+            ),
         ),
-    ), kb_path)
-    save_module(Module(
-        id="mod-b", category="general",
-        title="Zanzibar deep dive",
-        summary="In-depth zanzibar module with details",
-        content=ModuleContent(
-            overview="Zanzibar overview for session boost testing.",
-            details="Zanzibar details for mod-b — provides comprehensive coverage.",
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="mod-b",
+            category="general",
+            title="Zanzibar deep dive",
+            summary="In-depth zanzibar module with details",
+            content=ModuleContent(
+                overview="Zanzibar overview for session boost testing.",
+                details="Zanzibar details for mod-b — provides comprehensive coverage.",
+            ),
         ),
-    ), kb_path)
+        kb_path,
+    )
 
     # Load mod-b first
     await server.call_tool("load_module", {"module_id": "mod-b", "category": "general"})
 
     # Verify load succeeded
-    load_result = await server.call_tool("load_module", {"module_id": "mod-b", "category": "general"})
+    load_result = await server.call_tool(
+        "load_module", {"module_id": "mod-b", "category": "general"}
+    )
     load_content = load_result[0].text if hasattr(load_result[0], "text") else str(load_result[0])
     assert "mod-b" in load_content, f"Load should succeed, got: {load_content[:200]}"
 
@@ -756,8 +785,9 @@ async def test_session_context_boosts_recently_loaded(server, kb_path):
     assert "mod-b" in content, f"Search should find mod-b, got: {content[:300]}"
     assert "mod-a" in content, f"Search should find mod-a, got: {content[:300]}"
     # mod-b should appear before mod-a (session boost applied after loading mod-b)
-    assert content.index("mod-b") < content.index("mod-a"), \
-        f"Session boost should rank loaded mod-b before mod-a"
+    assert content.index("mod-b") < content.index(
+        "mod-a"
+    ), f"Session boost should rank loaded mod-b before mod-a"
 
 
 # ── Phase 2C: MCP changelog resources ──
@@ -768,11 +798,23 @@ async def test_resource_changelog_returns_json(server, kb_path):
     """knowledge://changelog should return valid JSON."""
     (kb_path / ".changelog").mkdir(exist_ok=True)
     from datetime import date
+
     changelog_file = kb_path / ".changelog" / f"{date.today().isoformat()}.json"
-    changelog_file.write_text(json.dumps({
-        "date": date.today().isoformat(),
-        "commits": [{"hash": "abc1234", "author": "test", "message": "add module", "changes": {"added": ["test/mod"], "modified": [], "deleted": []}}],
-    }))
+    changelog_file.write_text(
+        json.dumps(
+            {
+                "date": date.today().isoformat(),
+                "commits": [
+                    {
+                        "hash": "abc1234",
+                        "author": "test",
+                        "message": "add module",
+                        "changes": {"added": ["test/mod"], "modified": [], "deleted": []},
+                    }
+                ],
+            }
+        )
+    )
 
     result = await server.read_resource("knowledge://changelog")
     content = result[0].content if hasattr(result[0], "content") else str(result[0])
@@ -787,11 +829,23 @@ async def test_resource_changelog_module_specific(server, kb_path):
     """knowledge://changelog/<key> should return entries for a specific module."""
     (kb_path / ".changelog").mkdir(exist_ok=True)
     from datetime import date
+
     changelog_file = kb_path / ".changelog" / f"{date.today().isoformat()}.json"
-    changelog_file.write_text(json.dumps({
-        "date": date.today().isoformat(),
-        "commits": [{"hash": "abc1234", "author": "test", "message": "add module", "changes": {"added": ["simplemod"], "modified": [], "deleted": []}}],
-    }))
+    changelog_file.write_text(
+        json.dumps(
+            {
+                "date": date.today().isoformat(),
+                "commits": [
+                    {
+                        "hash": "abc1234",
+                        "author": "test",
+                        "message": "add module",
+                        "changes": {"added": ["simplemod"], "modified": [], "deleted": []},
+                    }
+                ],
+            }
+        )
+    )
 
     # Simple key without slash for FastMCP template compatibility
     result = await server.read_resource("knowledge://changelog/simplemod")
@@ -817,18 +871,27 @@ async def test_resource_changelog_empty_when_missing(server, kb_path):
 async def test_search_modules_excludes_archived_by_default(server, kb_path):
     """search_modules should exclude archived modules when include_archived=false."""
     from knowledge_manager.schemas import ModuleMetadata
+
     active = Module(
-        id="active", category="test",
+        id="active",
+        category="test",
         title="Active Module",
         summary="An active test module for search",
-        content=ModuleContent(overview="Active module overview for testing.", details="Details for active module that are long enough."),
+        content=ModuleContent(
+            overview="Active module overview for testing.",
+            details="Details for active module that are long enough.",
+        ),
         metadata=ModuleMetadata(status="published"),
     )
     archived = Module(
-        id="archived", category="test",
+        id="archived",
+        category="test",
         title="Archived Module",
         summary="An archived test module for search",
-        content=ModuleContent(overview="Archived module overview for testing.", details="Details for archived module that are long enough."),
+        content=ModuleContent(
+            overview="Archived module overview for testing.",
+            details="Details for archived module that are long enough.",
+        ),
         metadata=ModuleMetadata(status="archived"),
     )
     save_module(active, kb_path)
@@ -844,18 +907,27 @@ async def test_search_modules_excludes_archived_by_default(server, kb_path):
 async def test_search_modules_includes_archived_when_requested(server, kb_path):
     """search_modules should include archived modules when include_archived=true."""
     from knowledge_manager.schemas import ModuleMetadata
+
     active = Module(
-        id="active2", category="test",
+        id="active2",
+        category="test",
         title="Active Module 2",
         summary="Another active module for search",
-        content=ModuleContent(overview="Active 2 overview for testing.", details="Details for active2 that are long enough."),
+        content=ModuleContent(
+            overview="Active 2 overview for testing.",
+            details="Details for active2 that are long enough.",
+        ),
         metadata=ModuleMetadata(status="published"),
     )
     archived = Module(
-        id="archived2", category="test",
+        id="archived2",
+        category="test",
         title="Archived Module 2",
         summary="Another archived module for search",
-        content=ModuleContent(overview="Archived 2 overview for testing.", details="Details for archived2 that are long enough."),
+        content=ModuleContent(
+            overview="Archived 2 overview for testing.",
+            details="Details for archived2 that are long enough.",
+        ),
         metadata=ModuleMetadata(status="archived"),
     )
     save_module(active, kb_path)
@@ -874,6 +946,7 @@ async def test_search_modules_includes_archived_when_requested(server, kb_path):
 async def test_resource_health_returns_report(server, kb_path):
     """knowledge://health should return health report JSON."""
     from knowledge_manager.storage import save_module, rebuild_index
+
     mod = make_module("h1", "auth")
     save_module(mod, kb_path)
     rebuild_index(kb_path)
@@ -890,6 +963,7 @@ async def test_resource_health_returns_report(server, kb_path):
 async def test_resource_health_module_specific(server, kb_path):
     """knowledge://health/<key> should return single module health (single-segment key)."""
     from knowledge_manager.storage import save_module, rebuild_index
+
     mod = make_module("h2mod", "auth")
     save_module(mod, kb_path)
     rebuild_index(kb_path)
@@ -933,6 +1007,7 @@ async def test_resource_stats_returns_json(server, kb_path):
 async def test_tool_knowledge_graph_global(server, kb_path):
     """knowledge_graph without query should return global stats + clusters."""
     from knowledge_manager.storage import save_module, rebuild_index
+
     mod = make_module("kg1", "auth")
     mod.metadata.related_modules = ["db/kg2"]
     save_module(mod, kb_path)
@@ -952,6 +1027,7 @@ async def test_tool_knowledge_graph_global(server, kb_path):
 async def test_tool_knowledge_graph_with_query(server, kb_path):
     """knowledge_graph with query should return related modules for matched modules."""
     from knowledge_manager.storage import save_module, rebuild_index
+
     mod = make_module("kg3", "auth")
     mod.metadata.related_modules = ["db/kg4"]
     save_module(mod, kb_path)
@@ -1012,6 +1088,7 @@ async def test_tool_knowledge_graph_honors_trusted_session_tenant(kb_path):
 async def test_resource_recommendations_returns_json(server, kb_path):
     """knowledge://recommendations should return recommendation report JSON."""
     from knowledge_manager.storage import save_module, rebuild_index
+
     mod = make_module("r1", "auth")
     save_module(mod, kb_path)
     rebuild_index(kb_path)
@@ -1172,6 +1249,7 @@ def federated_server(tmp_path):
 
 def load_index(path: Path):
     from knowledge_manager.storage import load_index as _load
+
     return _load(path)
 
 
@@ -1205,16 +1283,22 @@ async def test_tool_federated_search(federated_server):
 
 
 @pytest.mark.asyncio
-async def test_tool_federated_search_avoids_full_hydration_for_projection_hits(federated_server, monkeypatch):
+async def test_tool_federated_search_avoids_full_hydration_for_projection_hits(
+    federated_server, monkeypatch
+):
     server, main_path, ns_path = federated_server
 
     def explode(*_args, **_kwargs):
-        raise AssertionError("federated search should not hydrate full modules for projection-backed hits")
+        raise AssertionError(
+            "federated search should not hydrate full modules for projection-backed hits"
+        )
 
     monkeypatch.setattr("knowledge_manager.storage.load_module", explode)
     monkeypatch.setattr("knowledge_manager.mcp_server.load_module", explode)
 
-    result = await server.call_tool("federated_search", {"query": "authentication guide", "top_per_ns": 3})
+    result = await server.call_tool(
+        "federated_search", {"query": "authentication guide", "top_per_ns": 3}
+    )
     raw = result[0][0].text
     data = json.loads(raw)
 
@@ -1237,7 +1321,9 @@ async def test_tool_load_module_with_namespace(federated_server):
     """load_module with namespace=auth should load from the auth KB."""
     server, main_path, ns_path = federated_server
 
-    result = await server.call_tool("load_module", {"module_id": "auth-mod", "category": "auth", "namespace": "auth"})
+    result = await server.call_tool(
+        "load_module", {"module_id": "auth-mod", "category": "auth", "namespace": "auth"}
+    )
     raw = result[0][0].text
     assert "Auth Team Module" in raw
 
@@ -1261,7 +1347,9 @@ async def test_research_tool_returns_json_error_or_result_instead_of_name_error(
 
 
 @pytest.mark.asyncio
-async def test_research_tool_returns_success_payload_when_provider_is_configured(server, kb_path, monkeypatch):
+async def test_research_tool_returns_success_payload_when_provider_is_configured(
+    server, kb_path, monkeypatch
+):
     class FakeConfig:
         research = SimpleNamespace()
 
@@ -1283,8 +1371,12 @@ async def test_research_tool_returns_success_payload_when_provider_is_configured
                 took_ms=12.5,
             )
 
-    monkeypatch.setattr("knowledge_manager.mcp_server._load_config_safe", lambda _kb_path: FakeConfig())
-    monkeypatch.setattr("knowledge_manager.llm_clients.create_client", lambda *_args, **_kwargs: object())
+    monkeypatch.setattr(
+        "knowledge_manager.mcp_server._load_config_safe", lambda _kb_path: FakeConfig()
+    )
+    monkeypatch.setattr(
+        "knowledge_manager.llm_clients.create_client", lambda *_args, **_kwargs: object()
+    )
     monkeypatch.setattr("knowledge_manager.researcher.Researcher", FakeResearcher)
 
     result = await server.call_tool("research", {"query": "rollback workflow", "depth": "shallow"})

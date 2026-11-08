@@ -12,7 +12,13 @@ from click.testing import CliRunner
 from knowledge_manager import __version__
 from knowledge_manager.cli import cli
 from knowledge_manager.schemas import Module, ModuleContent, ModuleMetadata
-from knowledge_manager.storage import save_module, save_to_staging, save_index, rebuild_index, load_index
+from knowledge_manager.storage import (
+    save_module,
+    save_to_staging,
+    save_index,
+    rebuild_index,
+    load_index,
+)
 from knowledge_manager.schemas import Index
 from knowledge_manager.confluence import ConfluencePage
 
@@ -174,8 +180,12 @@ def test_cli_uses_runtime_env_kb_path_when_flag_is_omitted(cli_runner, monkeypat
     kb = Path("runtime-env-kb")
     seen = {}
     monkeypatch.setenv("KM_KB_PATH", str(kb))
-    monkeypatch.setattr("knowledge_manager.cli._require_kb", lambda path: seen.setdefault("kb_path", path))
-    monkeypatch.setattr("knowledge_manager.cli.load_index", lambda path: Index(description="runtime env"))
+    monkeypatch.setattr(
+        "knowledge_manager.cli._require_kb", lambda path: seen.setdefault("kb_path", path)
+    )
+    monkeypatch.setattr(
+        "knowledge_manager.cli.load_index", lambda path: Index(description="runtime env")
+    )
 
     result = cli_runner.invoke(cli, ["stats"])
 
@@ -307,8 +317,12 @@ def test_support_bundle_includes_version(cli_runner, monkeypatch):
         "knowledge_manager.performance_benchmarks.build_production_readiness_verdict",
         lambda kb_path, matrix_summary: {"ready_for_production": True},
     )
-    monkeypatch.setattr("knowledge_manager.runtime_checks.evaluate_readiness", lambda kb_path: {"ready": True})
-    monkeypatch.setattr("knowledge_manager.runtime_checks.run_integrity_check", lambda kb_path: {"ok": True})
+    monkeypatch.setattr(
+        "knowledge_manager.runtime_checks.evaluate_readiness", lambda kb_path: {"ready": True}
+    )
+    monkeypatch.setattr(
+        "knowledge_manager.runtime_checks.run_integrity_check", lambda kb_path: {"ok": True}
+    )
 
     result = cli_runner.invoke(
         cli,
@@ -338,8 +352,12 @@ def test_support_bundle_includes_version(cli_runner, monkeypatch):
     assert payload["release_evidence"]["verify_install_smoke_path"] == str(install_smoke_json)
     assert payload["release_evidence"]["restore_verify_deployment_path"] == str(restore_verify_json)
     assert payload["release_evidence"]["host_deploy_proof_path"] == str(host_deploy_proof_json)
-    assert payload["release_evidence"]["verify_release_artifacts_path"] == str(verify_release_artifacts_json)
-    assert payload["release_evidence"]["release_evidence_collection_path"] == str(release_evidence_collection_json)
+    assert payload["release_evidence"]["verify_release_artifacts_path"] == str(
+        verify_release_artifacts_json
+    )
+    assert payload["release_evidence"]["release_evidence_collection_path"] == str(
+        release_evidence_collection_json
+    )
     assert payload["release_evidence"]["backup_bundle_attachments"] == [
         "attachments/verify-production-readiness.json",
         "attachments/verify-deployment.json",
@@ -370,8 +388,12 @@ def test_support_bundle_reports_incomplete_release_evidence(cli_runner, monkeypa
         "knowledge_manager.performance_benchmarks.build_production_readiness_verdict",
         lambda kb_path, matrix_summary: {"ready_for_production": False},
     )
-    monkeypatch.setattr("knowledge_manager.runtime_checks.evaluate_readiness", lambda kb_path: {"ready": False})
-    monkeypatch.setattr("knowledge_manager.runtime_checks.run_integrity_check", lambda kb_path: {"ok": True})
+    monkeypatch.setattr(
+        "knowledge_manager.runtime_checks.evaluate_readiness", lambda kb_path: {"ready": False}
+    )
+    monkeypatch.setattr(
+        "knowledge_manager.runtime_checks.run_integrity_check", lambda kb_path: {"ok": True}
+    )
 
     result = cli_runner.invoke(
         cli,
@@ -450,8 +472,12 @@ def test_support_bundle_reports_stale_backup_restore_drill(cli_runner, monkeypat
         "knowledge_manager.performance_benchmarks.build_production_readiness_verdict",
         lambda kb_path, matrix_summary: {"ready_for_production": True},
     )
-    monkeypatch.setattr("knowledge_manager.runtime_checks.evaluate_readiness", lambda kb_path: {"ready": True})
-    monkeypatch.setattr("knowledge_manager.runtime_checks.run_integrity_check", lambda kb_path: {"ok": True})
+    monkeypatch.setattr(
+        "knowledge_manager.runtime_checks.evaluate_readiness", lambda kb_path: {"ready": True}
+    )
+    monkeypatch.setattr(
+        "knowledge_manager.runtime_checks.run_integrity_check", lambda kb_path: {"ok": True}
+    )
 
     result = cli_runner.invoke(
         cli,
@@ -472,8 +498,12 @@ def test_support_bundle_reports_stale_backup_restore_drill(cli_runner, monkeypat
     assert payload["release_evidence"]["complete"] is True
     assert payload["release_evidence"]["invalid"] == []
     assert payload["release_evidence"]["backup_restore_drill_within_30_days"] is False
-    assert payload["release_evidence"]["verify_release_artifacts_path"] == str(verify_release_artifacts_json)
-    assert payload["release_evidence"]["release_evidence_collection_path"] == str(release_evidence_collection_json)
+    assert payload["release_evidence"]["verify_release_artifacts_path"] == str(
+        verify_release_artifacts_json
+    )
+    assert payload["release_evidence"]["release_evidence_collection_path"] == str(
+        release_evidence_collection_json
+    )
     assert payload["release_evidence"]["deploy_artifact_proof_complete"] is False
 
 
@@ -520,8 +550,12 @@ def test_support_bundle_reports_invalid_release_evidence_content(cli_runner, mon
         "knowledge_manager.performance_benchmarks.build_production_readiness_verdict",
         lambda kb_path, matrix_summary: {"ready_for_production": True},
     )
-    monkeypatch.setattr("knowledge_manager.runtime_checks.evaluate_readiness", lambda kb_path: {"ready": True})
-    monkeypatch.setattr("knowledge_manager.runtime_checks.run_integrity_check", lambda kb_path: {"ok": True})
+    monkeypatch.setattr(
+        "knowledge_manager.runtime_checks.evaluate_readiness", lambda kb_path: {"ready": True}
+    )
+    monkeypatch.setattr(
+        "knowledge_manager.runtime_checks.run_integrity_check", lambda kb_path: {"ok": True}
+    )
 
     result = cli_runner.invoke(
         cli,
@@ -542,8 +576,8 @@ def test_support_bundle_reports_invalid_release_evidence_content(cli_runner, mon
     assert payload["release_evidence"]["complete"] is False
     assert payload["release_evidence"]["missing"] == []
     assert payload["release_evidence"]["invalid"] == [
-            "verify-production-readiness.json",
-            "verify-deployment.json",
+        "verify-production-readiness.json",
+        "verify-deployment.json",
         "verify-install-smoke.json",
         "restore-verify-deployment.json",
         "verify-release-artifacts.json",
@@ -571,7 +605,9 @@ def test_support_bundle_reports_invalid_deploy_artifact_proof_content(cli_runner
     restore_verify_json = output_dir / "restore-verify-deployment.json"
     restore_verify_json.write_text('{"ok": true}', encoding="utf-8")
     (output_dir / "knowledge-manager-api.unit.txt").write_text("broken api unit", encoding="utf-8")
-    (output_dir / "knowledge-manager-worker.unit.txt").write_text("broken worker unit", encoding="utf-8")
+    (output_dir / "knowledge-manager-worker.unit.txt").write_text(
+        "broken worker unit", encoding="utf-8"
+    )
     (output_dir / "caddy-validate.txt").write_text("caddy error", encoding="utf-8")
     (output_dir / "logrotate-check.txt").write_text("logrotate error", encoding="utf-8")
     backup_zip = create_backup_bundle(
@@ -588,8 +624,12 @@ def test_support_bundle_reports_invalid_deploy_artifact_proof_content(cli_runner
         "knowledge_manager.performance_benchmarks.build_production_readiness_verdict",
         lambda kb_path, matrix_summary: {"ready_for_production": True},
     )
-    monkeypatch.setattr("knowledge_manager.runtime_checks.evaluate_readiness", lambda kb_path: {"ready": True})
-    monkeypatch.setattr("knowledge_manager.runtime_checks.run_integrity_check", lambda kb_path: {"ok": True})
+    monkeypatch.setattr(
+        "knowledge_manager.runtime_checks.evaluate_readiness", lambda kb_path: {"ready": True}
+    )
+    monkeypatch.setattr(
+        "knowledge_manager.runtime_checks.run_integrity_check", lambda kb_path: {"ok": True}
+    )
 
     result = cli_runner.invoke(
         cli,
@@ -665,8 +705,12 @@ def test_support_bundle_reports_invalid_host_deploy_proof_content(cli_runner, mo
         "knowledge_manager.performance_benchmarks.build_production_readiness_verdict",
         lambda kb_path, matrix_summary: {"ready_for_production": True},
     )
-    monkeypatch.setattr("knowledge_manager.runtime_checks.evaluate_readiness", lambda kb_path: {"ready": True})
-    monkeypatch.setattr("knowledge_manager.runtime_checks.run_integrity_check", lambda kb_path: {"ok": True})
+    monkeypatch.setattr(
+        "knowledge_manager.runtime_checks.evaluate_readiness", lambda kb_path: {"ready": True}
+    )
+    monkeypatch.setattr(
+        "knowledge_manager.runtime_checks.run_integrity_check", lambda kb_path: {"ok": True}
+    )
 
     result = cli_runner.invoke(
         cli,
@@ -744,8 +788,12 @@ def test_support_bundle_reports_invalid_release_verifier_content(cli_runner, mon
         "knowledge_manager.performance_benchmarks.build_production_readiness_verdict",
         lambda kb_path, matrix_summary: {"ready_for_production": True},
     )
-    monkeypatch.setattr("knowledge_manager.runtime_checks.evaluate_readiness", lambda kb_path: {"ready": True})
-    monkeypatch.setattr("knowledge_manager.runtime_checks.run_integrity_check", lambda kb_path: {"ok": True})
+    monkeypatch.setattr(
+        "knowledge_manager.runtime_checks.evaluate_readiness", lambda kb_path: {"ready": True}
+    )
+    monkeypatch.setattr(
+        "knowledge_manager.runtime_checks.run_integrity_check", lambda kb_path: {"ok": True}
+    )
 
     result = cli_runner.invoke(
         cli,
@@ -764,13 +812,17 @@ def test_support_bundle_reports_invalid_release_verifier_content(cli_runner, mon
     assert result.exit_code == 0
     payload = json.loads(Path(result.output.strip()).read_text(encoding="utf-8"))
     assert payload["release_evidence"]["complete"] is False
-    assert payload["release_evidence"]["verify_release_artifacts_path"] == str(verify_release_artifacts_json)
+    assert payload["release_evidence"]["verify_release_artifacts_path"] == str(
+        verify_release_artifacts_json
+    )
     assert payload["release_evidence"]["invalid"] == [
         "verify-release-artifacts.json",
     ]
 
 
-def test_support_bundle_reports_invalid_release_evidence_collection_content(cli_runner, monkeypatch):
+def test_support_bundle_reports_invalid_release_evidence_collection_content(
+    cli_runner, monkeypatch
+):
     import os
     from datetime import datetime, timezone
 
@@ -828,8 +880,12 @@ def test_support_bundle_reports_invalid_release_evidence_collection_content(cli_
         "knowledge_manager.performance_benchmarks.build_production_readiness_verdict",
         lambda kb_path, matrix_summary: {"ready_for_production": True},
     )
-    monkeypatch.setattr("knowledge_manager.runtime_checks.evaluate_readiness", lambda kb_path: {"ready": True})
-    monkeypatch.setattr("knowledge_manager.runtime_checks.run_integrity_check", lambda kb_path: {"ok": True})
+    monkeypatch.setattr(
+        "knowledge_manager.runtime_checks.evaluate_readiness", lambda kb_path: {"ready": True}
+    )
+    monkeypatch.setattr(
+        "knowledge_manager.runtime_checks.run_integrity_check", lambda kb_path: {"ok": True}
+    )
 
     result = cli_runner.invoke(
         cli,
@@ -848,7 +904,9 @@ def test_support_bundle_reports_invalid_release_evidence_collection_content(cli_
     assert result.exit_code == 0
     payload = json.loads(Path(result.output.strip()).read_text(encoding="utf-8"))
     assert payload["release_evidence"]["complete"] is False
-    assert payload["release_evidence"]["release_evidence_collection_path"] == str(release_evidence_collection_json)
+    assert payload["release_evidence"]["release_evidence_collection_path"] == str(
+        release_evidence_collection_json
+    )
     assert payload["release_evidence"]["invalid"] == [
         "release-evidence-collection.json",
     ]
@@ -921,7 +979,10 @@ def test_single_node_deploy_artifacts_define_env_backed_services():
 
     assert "EnvironmentFile=/opt/knowledge-manager/.env.production" in api_service
     assert "ExecStart=/opt/knowledge-manager/.venv/bin/km serve --ui" in api_service
-    assert "ExecStart=/opt/knowledge-manager/.venv/bin/km worker run --poll-interval 1.0" in worker_service
+    assert (
+        "ExecStart=/opt/knowledge-manager/.venv/bin/km worker run --poll-interval 1.0"
+        in worker_service
+    )
     assert "reverse_proxy 127.0.0.1:8420" in caddyfile
     assert "km.example.com" in caddyfile
     assert "http://km.example.com" not in caddyfile
@@ -929,27 +990,73 @@ def test_single_node_deploy_artifacts_define_env_backed_services():
     assert "git clone <repo-url> /opt/knowledge-manager" in runbook
     assert "git checkout <release-ref>" in runbook
     assert "groupadd --system km" in runbook
-    assert "useradd --system --home /opt/knowledge-manager --shell /sbin/nologin --gid km km" in runbook
+    assert (
+        "useradd --system --home /opt/knowledge-manager --shell /sbin/nologin --gid km km"
+        in runbook
+    )
     assert "chown -R km:km /opt/knowledge-manager /var/log/knowledge-manager" in runbook
     assert "python3.11 -m venv /opt/knowledge-manager/.venv" in runbook
-    assert "/opt/knowledge-manager/.venv/bin/pip install --no-cache-dir --force-reinstall ." in runbook
+    assert (
+        "/opt/knowledge-manager/.venv/bin/pip install --no-cache-dir --force-reinstall ." in runbook
+    )
     assert "/opt/knowledge-manager/.venv/bin/km init /opt/knowledge-manager/kb" in runbook
     assert "/opt/knowledge-manager/.venv/bin/km --version" in runbook
-    assert "install -m 0644 deploy/logrotate/knowledge-manager /etc/logrotate.d/knowledge-manager" in runbook
+    assert (
+        "install -m 0644 deploy/logrotate/knowledge-manager /etc/logrotate.d/knowledge-manager"
+        in runbook
+    )
     assert "systemctl enable --now caddy" in runbook
-    assert "Review /opt/knowledge-manager/.env.production and confirm KM_KB_PATH, KM_UI_HOST, KM_UI_PORT, and KM_LOG_LEVEL before starting services." in runbook
-    assert 'RELEASE_DIR=/opt/knowledge-manager/release-artifacts/run-$(date +%Y%m%d%H%M%S)' in runbook
-    assert 'python3.11 /opt/knowledge-manager/scripts/verify_install_smoke.py --project-root /opt/knowledge-manager --python python3.11 --format json > "$RELEASE_DIR"/verify-install-smoke.json' in runbook
-    assert '/opt/knowledge-manager/.venv/bin/km --kb-path /opt/knowledge-manager/kb verify-production-readiness --matrix-summary <fresh-matrix-summary.json> > "$RELEASE_DIR"/verify-production-readiness.json' in runbook
-    assert '/opt/knowledge-manager/.venv/bin/km --kb-path /opt/knowledge-manager/kb verify-deployment --base-url http://127.0.0.1:8420 --matrix-summary <fresh-matrix-summary.json> --format json > "$RELEASE_DIR"/verify-deployment.json' in runbook
-    assert '/opt/knowledge-manager/.venv/bin/km --kb-path /opt/knowledge-manager/kb support bundle --output-dir "$RELEASE_DIR" --matrix-summary <fresh-matrix-summary.json>' in runbook
-    assert 'systemctl cat knowledge-manager-api > "$RELEASE_DIR"/knowledge-manager-api.unit.txt' in runbook
-    assert 'systemctl cat knowledge-manager-worker > "$RELEASE_DIR"/knowledge-manager-worker.unit.txt' in runbook
-    assert 'caddy validate --config /etc/caddy/Caddyfile > "$RELEASE_DIR"/caddy-validate.txt 2>&1' in runbook
-    assert 'logrotate -d /etc/logrotate.d/knowledge-manager > "$RELEASE_DIR"/logrotate-check.txt 2>&1' in runbook
-    assert "python3.11 /opt/knowledge-manager/scripts/verify_install_smoke.py --project-root /opt/knowledge-manager --python python3.11 --format text" in runbook
-    assert "/opt/knowledge-manager/.venv/bin/km --kb-path /opt/knowledge-manager/kb verify-deployment" in runbook
-    assert "/opt/knowledge-manager/.venv/bin/km --kb-path /opt/knowledge-manager/kb support bundle" in runbook
+    assert (
+        "Review /opt/knowledge-manager/.env.production and confirm KM_KB_PATH, KM_UI_HOST, KM_UI_PORT, and KM_LOG_LEVEL before starting services."
+        in runbook
+    )
+    assert (
+        "RELEASE_DIR=/opt/knowledge-manager/release-artifacts/run-$(date +%Y%m%d%H%M%S)" in runbook
+    )
+    assert (
+        'python3.11 /opt/knowledge-manager/scripts/verify_install_smoke.py --project-root /opt/knowledge-manager --python python3.11 --format json > "$RELEASE_DIR"/verify-install-smoke.json'
+        in runbook
+    )
+    assert (
+        '/opt/knowledge-manager/.venv/bin/km --kb-path /opt/knowledge-manager/kb verify-production-readiness --matrix-summary <fresh-matrix-summary.json> > "$RELEASE_DIR"/verify-production-readiness.json'
+        in runbook
+    )
+    assert (
+        '/opt/knowledge-manager/.venv/bin/km --kb-path /opt/knowledge-manager/kb verify-deployment --base-url http://127.0.0.1:8420 --matrix-summary <fresh-matrix-summary.json> --format json > "$RELEASE_DIR"/verify-deployment.json'
+        in runbook
+    )
+    assert (
+        '/opt/knowledge-manager/.venv/bin/km --kb-path /opt/knowledge-manager/kb support bundle --output-dir "$RELEASE_DIR" --matrix-summary <fresh-matrix-summary.json>'
+        in runbook
+    )
+    assert (
+        'systemctl cat knowledge-manager-api > "$RELEASE_DIR"/knowledge-manager-api.unit.txt'
+        in runbook
+    )
+    assert (
+        'systemctl cat knowledge-manager-worker > "$RELEASE_DIR"/knowledge-manager-worker.unit.txt'
+        in runbook
+    )
+    assert (
+        'caddy validate --config /etc/caddy/Caddyfile > "$RELEASE_DIR"/caddy-validate.txt 2>&1'
+        in runbook
+    )
+    assert (
+        'logrotate -d /etc/logrotate.d/knowledge-manager > "$RELEASE_DIR"/logrotate-check.txt 2>&1'
+        in runbook
+    )
+    assert (
+        "python3.11 /opt/knowledge-manager/scripts/verify_install_smoke.py --project-root /opt/knowledge-manager --python python3.11 --format text"
+        in runbook
+    )
+    assert (
+        "/opt/knowledge-manager/.venv/bin/km --kb-path /opt/knowledge-manager/kb verify-deployment"
+        in runbook
+    )
+    assert (
+        "/opt/knowledge-manager/.venv/bin/km --kb-path /opt/knowledge-manager/kb support bundle"
+        in runbook
+    )
     assert "/opt/knowledge-manager/.venv/bin/km backup restore" in runbook
     assert "systemctl status caddy" in runbook
     assert "replace the placeholder host" in runbook
@@ -960,7 +1067,9 @@ def test_single_node_deploy_artifacts_define_env_backed_services():
 
 def test_observability_runbook_mentions_metrics_logs_alerts_and_bundle():
     root = Path(__file__).resolve().parents[1]
-    text = (root / "docs" / "runbooks" / "observability-and-alerting.md").read_text(encoding="utf-8")
+    text = (root / "docs" / "runbooks" / "observability-and-alerting.md").read_text(
+        encoding="utf-8"
+    )
     assert "/api/metrics" in text
     assert "audit.jsonl" in text
     assert "verify-deployment" in text
@@ -995,25 +1104,54 @@ def test_governance_docs_reference_deployment_verification_and_release_ownership
     assert "verify-deployment" in readme
     assert "support bundle" in readme
     assert "python scripts/verify_install_smoke.py" in readme
-    assert 'RELEASE_DIR=/opt/knowledge-manager/release-artifacts/run-$(date +%Y%m%d%H%M%S)' in readme
-    assert 'python3.11 /opt/knowledge-manager/scripts/verify_install_smoke.py --project-root /opt/knowledge-manager --python python3.11 --format json > "$RELEASE_DIR"/verify-install-smoke.json' in readme
-    assert 'verify-production-readiness --matrix-summary <fresh-matrix-summary.json> > "$RELEASE_DIR"/verify-production-readiness.json' in readme
-    assert 'verify-deployment --base-url http://127.0.0.1:8420 --matrix-summary <fresh-matrix-summary.json> --format json > "$RELEASE_DIR"/verify-deployment.json' in readme
-    assert 'support bundle --output-dir "$RELEASE_DIR" --matrix-summary <fresh-matrix-summary.json>' in readme
+    assert (
+        "RELEASE_DIR=/opt/knowledge-manager/release-artifacts/run-$(date +%Y%m%d%H%M%S)" in readme
+    )
+    assert (
+        'python3.11 /opt/knowledge-manager/scripts/verify_install_smoke.py --project-root /opt/knowledge-manager --python python3.11 --format json > "$RELEASE_DIR"/verify-install-smoke.json'
+        in readme
+    )
+    assert (
+        'verify-production-readiness --matrix-summary <fresh-matrix-summary.json> > "$RELEASE_DIR"/verify-production-readiness.json'
+        in readme
+    )
+    assert (
+        'verify-deployment --base-url http://127.0.0.1:8420 --matrix-summary <fresh-matrix-summary.json> --format json > "$RELEASE_DIR"/verify-deployment.json'
+        in readme
+    )
+    assert (
+        'support bundle --output-dir "$RELEASE_DIR" --matrix-summary <fresh-matrix-summary.json>'
+        in readme
+    )
     assert 'collect_host_deploy_proof.py --output-dir "$RELEASE_DIR"' in readme
-    assert 'host-deploy-proof.json' in readme
+    assert "host-deploy-proof.json" in readme
     assert "30 days" in checklist
     assert "support bundle" in checklist
     assert "python scripts/verify_install_smoke.py" in checklist
-    assert 'python3.11 /opt/knowledge-manager/scripts/verify_install_smoke.py --project-root /opt/knowledge-manager --python python3.11 --format json > "$RELEASE_DIR"/verify-install-smoke.json' in checklist
-    assert 'verify-production-readiness --matrix-summary <fresh-matrix-summary.json> > "$RELEASE_DIR"/verify-production-readiness.json' in checklist
-    assert 'verify-deployment --base-url http://127.0.0.1:8420 --matrix-summary <fresh-matrix-summary.json> --format json > "$RELEASE_DIR"/verify-deployment.json' in checklist
-    assert 'python3.11 /opt/knowledge-manager/scripts/collect_release_evidence.py --release-dir "$RELEASE_DIR" --kb-path /opt/knowledge-manager/kb --base-url http://127.0.0.1:8420 --matrix-summary <fresh-matrix-summary.json>' in checklist
+    assert (
+        'python3.11 /opt/knowledge-manager/scripts/verify_install_smoke.py --project-root /opt/knowledge-manager --python python3.11 --format json > "$RELEASE_DIR"/verify-install-smoke.json'
+        in checklist
+    )
+    assert (
+        'verify-production-readiness --matrix-summary <fresh-matrix-summary.json> > "$RELEASE_DIR"/verify-production-readiness.json'
+        in checklist
+    )
+    assert (
+        'verify-deployment --base-url http://127.0.0.1:8420 --matrix-summary <fresh-matrix-summary.json> --format json > "$RELEASE_DIR"/verify-deployment.json'
+        in checklist
+    )
+    assert (
+        'python3.11 /opt/knowledge-manager/scripts/collect_release_evidence.py --release-dir "$RELEASE_DIR" --kb-path /opt/knowledge-manager/kb --base-url http://127.0.0.1:8420 --matrix-summary <fresh-matrix-summary.json>'
+        in checklist
+    )
     assert "complete == true" in checklist
     assert "backup_restore_drill_within_30_days == true" in checklist
     assert "deploy_artifact_proof_complete == true" in checklist
     assert "host-deploy-proof.json" in checklist
-    assert "/opt/knowledge-manager/.venv/bin/km --kb-path /opt/knowledge-manager/kb verify-deployment" in checklist
+    assert (
+        "/opt/knowledge-manager/.venv/bin/km --kb-path /opt/knowledge-manager/kb verify-deployment"
+        in checklist
+    )
     assert "/opt/knowledge-manager/.venv/bin/km backup restore" in checklist
     assert "/opt/knowledge-manager/.venv/bin/km worker run --once" in checklist
     assert "rollback" in checklist.lower()
@@ -1025,12 +1163,18 @@ def test_governance_docs_reference_deployment_verification_and_release_ownership
     assert "backup bundle path" in cutover
     assert "30 days" in backup_drill
     assert "verify-deployment" in backup_drill
-    assert 'RELEASE_DIR=/opt/knowledge-manager/release-artifacts/run-$(date +%Y%m%d%H%M%S)' in backup_drill
-    assert 'restore-verify-deployment.json' in backup_drill
+    assert (
+        "RELEASE_DIR=/opt/knowledge-manager/release-artifacts/run-$(date +%Y%m%d%H%M%S)"
+        in backup_drill
+    )
+    assert "restore-verify-deployment.json" in backup_drill
     assert '--attach "$RELEASE_DIR"/verify-production-readiness.json' in backup_drill
     assert '--attach "$RELEASE_DIR"/verify-deployment.json' in backup_drill
     assert '--attach "$RELEASE_DIR"/verify-install-smoke.json' in backup_drill
-    assert "/opt/knowledge-manager/.venv/bin/km --kb-path /opt/knowledge-manager/kb backup create" in backup_drill
+    assert (
+        "/opt/knowledge-manager/.venv/bin/km --kb-path /opt/knowledge-manager/kb backup create"
+        in backup_drill
+    )
     assert "/opt/knowledge-manager/.venv/bin/km backup restore" in backup_drill
 
 
@@ -1142,7 +1286,9 @@ def test_cli_add_extracts_to_staging(cli_runner, initialized_kb, tmp_path):
 
     assert result.exit_code == 0, result.output
     assert "Extracted" in result.output or "extracted" in result.output.lower()
-    staging_files = [f for f in (initialized_kb / ".staging").glob("*.json") if not f.name.endswith(".meta.json")]
+    staging_files = [
+        f for f in (initialized_kb / ".staging").glob("*.json") if not f.name.endswith(".meta.json")
+    ]
     assert len(staging_files) == 1
 
 
@@ -1165,9 +1311,7 @@ def test_cli_review_approve(cli_runner, initialized_kb):
     sample = make_module("auth-jwt", "auth")
     save_to_staging(sample, initialized_kb / ".staging")
 
-    result = cli_runner.invoke(
-        cli, ["--kb-path", str(initialized_kb), "review"], input="a\n"
-    )
+    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "review"], input="a\n")
     assert result.exit_code == 0
     assert (initialized_kb / "auth" / "auth-jwt.json").exists()
     assert not (initialized_kb / ".staging" / "auth-jwt.json").exists()
@@ -1177,9 +1321,7 @@ def test_cli_review_reject(cli_runner, initialized_kb):
     sample = make_module("auth-jwt", "auth")
     save_to_staging(sample, initialized_kb / ".staging")
 
-    result = cli_runner.invoke(
-        cli, ["--kb-path", str(initialized_kb), "review"], input="r\n"
-    )
+    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "review"], input="r\n")
     assert result.exit_code == 0
     assert not (initialized_kb / "auth" / "auth-jwt.json").exists()
     assert not (initialized_kb / ".staging" / "auth-jwt.json").exists()
@@ -1189,9 +1331,7 @@ def test_cli_review_skip(cli_runner, initialized_kb):
     sample = make_module("auth-jwt", "auth")
     save_to_staging(sample, initialized_kb / ".staging")
 
-    result = cli_runner.invoke(
-        cli, ["--kb-path", str(initialized_kb), "review"], input="s\n"
-    )
+    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "review"], input="s\n")
     assert result.exit_code == 0
     # Skipped — should remain in staging
     assert (initialized_kb / ".staging" / "auth-jwt.json").exists()
@@ -1297,9 +1437,13 @@ def test_cli_source_pull_stages_modules(cli_runner, initialized_kb, monkeypatch)
 
     monkeypatch.setattr("knowledge_manager.confluence.ConfluenceClient.list_pages", fake_list_pages)
     monkeypatch.setattr("knowledge_manager.cli.Extractor.extract", fake_extract)
-    monkeypatch.setattr("knowledge_manager.cli.create_client", lambda provider_name, provider_cfg: AsyncMock())
+    monkeypatch.setattr(
+        "knowledge_manager.cli.create_client", lambda provider_name, provider_cfg: AsyncMock()
+    )
 
-    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "source", "pull", "team-docs"])
+    result = cli_runner.invoke(
+        cli, ["--kb-path", str(initialized_kb), "source", "pull", "team-docs"]
+    )
     assert result.exit_code == 0, result.output
     assert "Job job-" in result.output
     assert "staged 1 modules" in result.output
@@ -1307,7 +1451,9 @@ def test_cli_source_pull_stages_modules(cli_runner, initialized_kb, monkeypatch)
     assert (initialized_kb / ".staging" / "jwt-playbook.meta.json").exists()
     assert any((initialized_kb / ".jobs" / "ingestion").glob("*.json"))
     events = read_audit_log(initialized_kb)
-    assert any(event["operation"] == "source.pull" and event["result"] == "success" for event in events)
+    assert any(
+        event["operation"] == "source.pull" and event["result"] == "success" for event in events
+    )
 
     status_result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "source", "status"])
     assert status_result.exit_code == 0
@@ -1356,9 +1502,13 @@ def test_cli_source_pull_notion_stages_modules(cli_runner, initialized_kb, monke
 
     monkeypatch.setattr("knowledge_manager.notion.NotionClient.list_pages", fake_list_pages)
     monkeypatch.setattr("knowledge_manager.cli.Extractor.extract", fake_extract)
-    monkeypatch.setattr("knowledge_manager.cli.create_client", lambda provider_name, provider_cfg: AsyncMock())
+    monkeypatch.setattr(
+        "knowledge_manager.cli.create_client", lambda provider_name, provider_cfg: AsyncMock()
+    )
 
-    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "source", "pull", "ops-notes"])
+    result = cli_runner.invoke(
+        cli, ["--kb-path", str(initialized_kb), "source", "pull", "ops-notes"]
+    )
     assert result.exit_code == 0, result.output
     assert "Job job-" in result.output
     assert "staged 1 modules" in result.output
@@ -1417,12 +1567,18 @@ def test_cli_source_pull_retries_transient_errors(cli_runner, initialized_kb, mo
     async def fake_extract(self, text, category, existing_categories=""):
         return [make_module("jwt-playbook", category)]
 
-    monkeypatch.setattr("knowledge_manager.confluence.ConfluenceClient.list_pages", flaky_list_pages)
+    monkeypatch.setattr(
+        "knowledge_manager.confluence.ConfluenceClient.list_pages", flaky_list_pages
+    )
     monkeypatch.setattr("knowledge_manager.cli.Extractor.extract", fake_extract)
-    monkeypatch.setattr("knowledge_manager.cli.create_client", lambda provider_name, provider_cfg: AsyncMock())
+    monkeypatch.setattr(
+        "knowledge_manager.cli.create_client", lambda provider_name, provider_cfg: AsyncMock()
+    )
     monkeypatch.setattr("knowledge_manager.cli.asyncio.sleep", AsyncMock())
 
-    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "source", "pull", "team-docs"])
+    result = cli_runner.invoke(
+        cli, ["--kb-path", str(initialized_kb), "source", "pull", "team-docs"]
+    )
 
     assert result.exit_code == 0, result.output
     assert attempts["count"] == 3
@@ -1461,11 +1617,17 @@ def test_cli_source_pull_does_not_retry_permanent_errors(cli_runner, initialized
         response = httpx.Response(401, request=request)
         raise httpx.HTTPStatusError("unauthorized", request=request, response=response)
 
-    monkeypatch.setattr("knowledge_manager.confluence.ConfluenceClient.list_pages", unauthorized_list_pages)
-    monkeypatch.setattr("knowledge_manager.cli.create_client", lambda provider_name, provider_cfg: AsyncMock())
+    monkeypatch.setattr(
+        "knowledge_manager.confluence.ConfluenceClient.list_pages", unauthorized_list_pages
+    )
+    monkeypatch.setattr(
+        "knowledge_manager.cli.create_client", lambda provider_name, provider_cfg: AsyncMock()
+    )
     monkeypatch.setattr("knowledge_manager.cli.asyncio.sleep", AsyncMock())
 
-    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "source", "pull", "team-docs"])
+    result = cli_runner.invoke(
+        cli, ["--kb-path", str(initialized_kb), "source", "pull", "team-docs"]
+    )
 
     assert result.exit_code != 0
     assert attempts["count"] == 1
@@ -1474,7 +1636,9 @@ def test_cli_source_pull_does_not_retry_permanent_errors(cli_runner, initialized
     assert job_files
     assert '"status": "failed"' in job_files[0].read_text(encoding="utf-8")
     events = read_audit_log(initialized_kb)
-    assert any(event["operation"] == "source.pull" and event["result"] == "failed" for event in events)
+    assert any(
+        event["operation"] == "source.pull" and event["result"] == "failed" for event in events
+    )
 
 
 def test_cli_eval_run(cli_runner, initialized_kb, tmp_path):
@@ -1516,12 +1680,10 @@ def test_cli_eval_run_shows_suppression_summary(cli_runner, initialized_kb, tmp_
                         "api_key": "",
                         "model": "deepseek-v4-pro",
                         "base_url": "https://api.deepseek.com",
-                        "default": True
+                        "default": True,
                     }
                 },
-                "routing_policy": {
-                    "risk_level_allowed_statuses": {"high": ["published"]}
-                }
+                "routing_policy": {"risk_level_allowed_statuses": {"high": ["published"]}},
             }
         ),
         encoding="utf-8",
@@ -1557,7 +1719,7 @@ def test_cli_eval_run_shows_suppression_summary(cli_runner, initialized_kb, tmp_
                         "required_modules": ["ops/published-ops", "ops/draft-ops"],
                         "risk_level": "high",
                         "task_type": "production-change",
-                        "top_k": 5
+                        "top_k": 5,
                     }
                 ],
             }
@@ -1603,9 +1765,13 @@ def test_cli_source_pull_records_sync_error(cli_runner, initialized_kb, monkeypa
         raise RuntimeError("confluence unavailable")
 
     monkeypatch.setattr("knowledge_manager.confluence.ConfluenceClient.list_pages", fail_list_pages)
-    monkeypatch.setattr("knowledge_manager.cli.create_client", lambda provider_name, provider_cfg: AsyncMock())
+    monkeypatch.setattr(
+        "knowledge_manager.cli.create_client", lambda provider_name, provider_cfg: AsyncMock()
+    )
 
-    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "source", "pull", "team-docs"])
+    result = cli_runner.invoke(
+        cli, ["--kb-path", str(initialized_kb), "source", "pull", "team-docs"]
+    )
     assert result.exit_code != 0
     assert "confluence unavailable" in result.output.lower()
 
@@ -1662,12 +1828,18 @@ def test_cli_source_pull_retries_transient_failure(cli_runner, initialized_kb, m
     async def fake_extract(self, text, category, existing_categories=""):
         return [make_module("jwt-playbook", category)]
 
-    monkeypatch.setattr("knowledge_manager.confluence.ConfluenceClient.list_pages", flaky_list_pages)
+    monkeypatch.setattr(
+        "knowledge_manager.confluence.ConfluenceClient.list_pages", flaky_list_pages
+    )
     monkeypatch.setattr("knowledge_manager.cli.Extractor.extract", fake_extract)
-    monkeypatch.setattr("knowledge_manager.cli.create_client", lambda provider_name, provider_cfg: AsyncMock())
+    monkeypatch.setattr(
+        "knowledge_manager.cli.create_client", lambda provider_name, provider_cfg: AsyncMock()
+    )
     monkeypatch.setattr("knowledge_manager.cli.asyncio.sleep", AsyncMock())
 
-    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "source", "pull", "team-docs"])
+    result = cli_runner.invoke(
+        cli, ["--kb-path", str(initialized_kb), "source", "pull", "team-docs"]
+    )
     assert result.exit_code == 0, result.output
     assert attempts["count"] == 3
     assert "staged 1 modules" in result.output
@@ -1721,13 +1893,20 @@ def test_cli_review_empty_staging(cli_runner, initialized_kb):
 
 
 def test_cli_search_shows_confidence_badges(cli_runner, initialized_kb):
-    save_module(Module(
-        id="conf-high", category="general",
-        title="High confidence module",
-        summary="A module with high confidence rating",
-        content=ModuleContent(overview="High confidence overview text", details="High confidence details for testing badges in CLI"),
-        metadata=ModuleMetadata(tags=["test"], confidence="high"),
-    ), initialized_kb)
+    save_module(
+        Module(
+            id="conf-high",
+            category="general",
+            title="High confidence module",
+            summary="A module with high confidence rating",
+            content=ModuleContent(
+                overview="High confidence overview text",
+                details="High confidence details for testing badges in CLI",
+            ),
+            metadata=ModuleMetadata(tags=["test"], confidence="high"),
+        ),
+        initialized_kb,
+    )
     rebuild_index(initialized_kb)
     result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "search", "confidence"])
     assert result.exit_code == 0
@@ -1735,20 +1914,34 @@ def test_cli_search_shows_confidence_badges(cli_runner, initialized_kb):
 
 
 def test_cli_search_shows_related_source_badge(cli_runner, initialized_kb):
-    save_module(Module(
-        id="graph-direct", category="general",
-        title="Direct match module",
-        summary="This module matches the query directly",
-        content=ModuleContent(overview="Direct match overview for testing.", details="Direct match details for testing source badges in CLI."),
-        metadata=ModuleMetadata(tags=["graph"], related_modules=["general/graph-neighbor"]),
-    ), initialized_kb)
-    save_module(Module(
-        id="graph-neighbor", category="general",
-        title="Neighbor module title",
-        summary="Neighbor module for graph expansion",
-        content=ModuleContent(overview="Neighbor overview for graph expansion testing.", details="Neighbor details for testing graph expansion source badges in CLI search."),
-        metadata=ModuleMetadata(tags=["graph"]),
-    ), initialized_kb)
+    save_module(
+        Module(
+            id="graph-direct",
+            category="general",
+            title="Direct match module",
+            summary="This module matches the query directly",
+            content=ModuleContent(
+                overview="Direct match overview for testing.",
+                details="Direct match details for testing source badges in CLI.",
+            ),
+            metadata=ModuleMetadata(tags=["graph"], related_modules=["general/graph-neighbor"]),
+        ),
+        initialized_kb,
+    )
+    save_module(
+        Module(
+            id="graph-neighbor",
+            category="general",
+            title="Neighbor module title",
+            summary="Neighbor module for graph expansion",
+            content=ModuleContent(
+                overview="Neighbor overview for graph expansion testing.",
+                details="Neighbor details for testing graph expansion source badges in CLI search.",
+            ),
+            metadata=ModuleMetadata(tags=["graph"]),
+        ),
+        initialized_kb,
+    )
     rebuild_index(initialized_kb)
     result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "search", "Direct match"])
     assert result.exit_code == 0
@@ -1788,20 +1981,25 @@ def test_cli_rank_retrain(cli_runner, initialized_kb):
 
 def test_cli_stale_shows_expired_module(cli_runner, initialized_kb):
     from datetime import datetime, timedelta, timezone
+
     yesterday = datetime.now(timezone.utc) - timedelta(days=1)
-    save_module(Module(
-        id="expired-mod", category="general",
-        title="Expired module",
-        summary="This module has already expired",
-        content=ModuleContent(
-            overview="Overview for expired module that should show in stale list.",
-            details="Details for expired module — this module is past its expiry date.",
+    save_module(
+        Module(
+            id="expired-mod",
+            category="general",
+            title="Expired module",
+            summary="This module has already expired",
+            content=ModuleContent(
+                overview="Overview for expired module that should show in stale list.",
+                details="Details for expired module — this module is past its expiry date.",
+            ),
+            metadata=ModuleMetadata(
+                tags=["test"],
+                expires_at=yesterday,
+            ),
         ),
-        metadata=ModuleMetadata(
-            tags=["test"],
-            expires_at=yesterday,
-        ),
-    ), initialized_kb)
+        initialized_kb,
+    )
     rebuild_index(initialized_kb)
 
     result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "stale"])
@@ -1811,21 +2009,26 @@ def test_cli_stale_shows_expired_module(cli_runner, initialized_kb):
 
 def test_cli_stale_shows_review_due_module(cli_runner, initialized_kb):
     from datetime import datetime, timedelta, timezone
+
     old_date = datetime.now(timezone.utc) - timedelta(days=40)
-    save_module(Module(
-        id="review-mod", category="general",
-        title="Module due for review",
-        summary="This module was updated long ago and should be reviewed",
-        content=ModuleContent(
-            overview="Overview for module that needs review based on interval.",
-            details="Details for review due module for testing stale command.",
+    save_module(
+        Module(
+            id="review-mod",
+            category="general",
+            title="Module due for review",
+            summary="This module was updated long ago and should be reviewed",
+            content=ModuleContent(
+                overview="Overview for module that needs review based on interval.",
+                details="Details for review due module for testing stale command.",
+            ),
+            metadata=ModuleMetadata(
+                tags=["test"],
+                review_interval_days=30,
+            ),
+            updated_at=old_date,
         ),
-        metadata=ModuleMetadata(
-            tags=["test"],
-            review_interval_days=30,
-        ),
-        updated_at=old_date,
-    ), initialized_kb)
+        initialized_kb,
+    )
     rebuild_index(initialized_kb)
 
     result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "stale"])
@@ -1858,18 +2061,41 @@ def test_init_creates_gitignore_template(cli_runner, tmp_path):
 def remote_kb(tmp_path):
     """Create a 'remote' git repo with a valid KM knowledge base."""
     import subprocess
+
     remote = tmp_path / "remote-kb"
     remote.mkdir()
     subprocess.run(["git", "-C", str(remote), "init"], capture_output=True, check=True)
-    subprocess.run(["git", "-C", str(remote), "config", "user.email", "kb@test.com"], capture_output=True, check=True)
-    subprocess.run(["git", "-C", str(remote), "config", "user.name", "KB Test"], capture_output=True, check=True)
+    subprocess.run(
+        ["git", "-C", str(remote), "config", "user.email", "kb@test.com"],
+        capture_output=True,
+        check=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(remote), "config", "user.name", "KB Test"],
+        capture_output=True,
+        check=True,
+    )
     # Create index.json
     from knowledge_manager.schemas import Index
+
     Index(description="Test remote KB").model_dump_json()
     import json
-    (remote / "index.json").write_text(json.dumps({"version": "1.0", "description": "Test remote KB", "categories": {}, "graph": {}, "usage": {"total_modules": 0, "total_words": 0, "categories": 0}}))
+
+    (remote / "index.json").write_text(
+        json.dumps(
+            {
+                "version": "1.0",
+                "description": "Test remote KB",
+                "categories": {},
+                "graph": {},
+                "usage": {"total_modules": 0, "total_words": 0, "categories": 0},
+            }
+        )
+    )
     subprocess.run(["git", "-C", str(remote), "add", "-A"], capture_output=True, check=True)
-    subprocess.run(["git", "-C", str(remote), "commit", "-m", "init"], capture_output=True, check=True)
+    subprocess.run(
+        ["git", "-C", str(remote), "commit", "-m", "init"], capture_output=True, check=True
+    )
     return remote
 
 
@@ -1892,14 +2118,23 @@ def test_cli_clone_rejects_existing_path(cli_runner, remote_kb, tmp_path):
 
 def test_cli_clone_warns_on_non_kb_repo(cli_runner, tmp_path):
     import subprocess
+
     non_kb = tmp_path / "non-kb"
     non_kb.mkdir()
     subprocess.run(["git", "-C", str(non_kb), "init"], capture_output=True, check=True)
-    subprocess.run(["git", "-C", str(non_kb), "config", "user.email", "test@test.com"], capture_output=True, check=True)
-    subprocess.run(["git", "-C", str(non_kb), "config", "user.name", "Test"], capture_output=True, check=True)
+    subprocess.run(
+        ["git", "-C", str(non_kb), "config", "user.email", "test@test.com"],
+        capture_output=True,
+        check=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(non_kb), "config", "user.name", "Test"], capture_output=True, check=True
+    )
     (non_kb / "README.md").write_text("Just a regular repo")
     subprocess.run(["git", "-C", str(non_kb), "add", "-A"], capture_output=True, check=True)
-    subprocess.run(["git", "-C", str(non_kb), "commit", "-m", "init"], capture_output=True, check=True)
+    subprocess.run(
+        ["git", "-C", str(non_kb), "commit", "-m", "init"], capture_output=True, check=True
+    )
 
     local = tmp_path / "clone-non-kb"
     result = cli_runner.invoke(cli, ["clone", str(non_kb), "--path", str(local)])
@@ -1915,13 +2150,23 @@ def test_cli_push_sanitizes_api_keys(cli_runner, initialized_kb):
     kb = initialized_kb
     # Set up git in the KB
     subprocess.run(["git", "-C", str(kb), "init"], capture_output=True, check=True)
-    subprocess.run(["git", "-C", str(kb), "config", "user.email", "kb@test.com"], capture_output=True, check=True)
-    subprocess.run(["git", "-C", str(kb), "config", "user.name", "KB Test"], capture_output=True, check=True)
+    subprocess.run(
+        ["git", "-C", str(kb), "config", "user.email", "kb@test.com"],
+        capture_output=True,
+        check=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(kb), "config", "user.name", "KB Test"], capture_output=True, check=True
+    )
     # Add a remote (point to a bare repo)
     bare = kb.parent / "bare.git"
     bare.mkdir()
     subprocess.run(["git", "-C", str(bare), "init", "--bare"], capture_output=True, check=True)
-    subprocess.run(["git", "-C", str(kb), "remote", "add", "origin", str(bare)], capture_output=True, check=True)
+    subprocess.run(
+        ["git", "-C", str(kb), "remote", "add", "origin", str(bare)],
+        capture_output=True,
+        check=True,
+    )
 
     # Set a real API key
     cfg = Config(
@@ -1955,44 +2200,74 @@ def test_init_creates_meaningful_description():
         index = load_index(kb)
         assert index is not None
         assert len(index.description) > 20, "Description should be more than just 'Knowledge base'"
-        assert "methodology" in index.description.lower() or "knowledge" in index.description.lower()
+        assert (
+            "methodology" in index.description.lower() or "knowledge" in index.description.lower()
+        )
 
 
 # ── Phase 2A: git collaboration tests ──
 
 
-
 def _init_git_in_dir(path: Path):
     """Ensure path is a git repo. If not, init and configure. Always rename branch to 'main'."""
     import subprocess
+
     if not (path / ".git").exists():
         subprocess.run(["git", "-C", str(path), "init"], capture_output=True, check=True)
-    subprocess.run(["git", "-C", str(path), "config", "user.email", "kb@test.com"], capture_output=True, check=True)
-    subprocess.run(["git", "-C", str(path), "config", "user.name", "Test User"], capture_output=True, check=True)
+    subprocess.run(
+        ["git", "-C", str(path), "config", "user.email", "kb@test.com"],
+        capture_output=True,
+        check=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(path), "config", "user.name", "Test User"],
+        capture_output=True,
+        check=True,
+    )
     # Ensure branch is named "main" (CLI hardcodes origin/main)
-    branch_result = subprocess.run(["git", "-C", str(path), "rev-parse", "--abbrev-ref", "HEAD"], capture_output=True, text=True)
+    branch_result = subprocess.run(
+        ["git", "-C", str(path), "rev-parse", "--abbrev-ref", "HEAD"],
+        capture_output=True,
+        text=True,
+    )
     if branch_result.stdout.strip() != "main":
-        subprocess.run(["git", "-C", str(path), "branch", "-m", "main"], capture_output=True, check=True)
+        subprocess.run(
+            ["git", "-C", str(path), "branch", "-m", "main"], capture_output=True, check=True
+        )
 
 
 def _create_bare_remote(kb: Path, remote_path: Path, push_initial: bool = True):
     """Helper: create a bare remote, set origin, optionally push initial commit."""
     import subprocess
+
     _init_git_in_dir(kb)
     remote_path.mkdir(parents=True, exist_ok=True)
-    subprocess.run(["git", "-C", str(remote_path), "init", "--bare"], capture_output=True, check=True)
+    subprocess.run(
+        ["git", "-C", str(remote_path), "init", "--bare"], capture_output=True, check=True
+    )
     # Remove existing origin if present
     subprocess.run(["git", "-C", str(kb), "remote", "remove", "origin"], capture_output=True)
-    subprocess.run(["git", "-C", str(kb), "remote", "add", "origin", str(remote_path)], capture_output=True, check=True)
+    subprocess.run(
+        ["git", "-C", str(kb), "remote", "add", "origin", str(remote_path)],
+        capture_output=True,
+        check=True,
+    )
     if push_initial:
         subprocess.run(["git", "-C", str(kb), "add", "-A"], capture_output=True, check=True)
-        subprocess.run(["git", "-C", str(kb), "commit", "--allow-empty", "-m", "init"], capture_output=True, check=True)
-        subprocess.run(["git", "-C", str(kb), "push", "-u", "origin", "main"], capture_output=True, check=True)
+        subprocess.run(
+            ["git", "-C", str(kb), "commit", "--allow-empty", "-m", "init"],
+            capture_output=True,
+            check=True,
+        )
+        subprocess.run(
+            ["git", "-C", str(kb), "push", "-u", "origin", "main"], capture_output=True, check=True
+        )
 
 
 def test_cli_pull_up_to_date(cli_runner, initialized_kb, tmp_path):
     """pull when already up to date should report so."""
     import subprocess
+
     kb = initialized_kb
     bare = tmp_path / "bare.git"
     _create_bare_remote(kb, bare)
@@ -2005,6 +2280,7 @@ def test_cli_pull_up_to_date(cli_runner, initialized_kb, tmp_path):
 def test_cli_pull_rebuilds_index(cli_runner, initialized_kb, tmp_path):
     """pull should rebuild the index after fetching."""
     import subprocess
+
     kb = initialized_kb
     bare = tmp_path / "bare.git"
     _create_bare_remote(kb, bare)
@@ -2021,6 +2297,7 @@ def test_cli_pull_rebuilds_index(cli_runner, initialized_kb, tmp_path):
 def test_cli_status_no_changes(cli_runner, initialized_kb, tmp_path):
     """status with no local changes should report clean."""
     import subprocess
+
     kb = initialized_kb
     bare = tmp_path / "bare.git"
     _create_bare_remote(kb, bare)
@@ -2034,6 +2311,7 @@ def test_cli_status_no_changes(cli_runner, initialized_kb, tmp_path):
 def test_cli_status_shows_added_modules(cli_runner, initialized_kb, tmp_path):
     """status should detect locally added module files."""
     import subprocess
+
     kb = initialized_kb
     bare = tmp_path / "bare.git"
     _create_bare_remote(kb, bare)
@@ -2041,7 +2319,9 @@ def test_cli_status_shows_added_modules(cli_runner, initialized_kb, tmp_path):
     # Add a new module locally and stage it
     mod = make_module("new-mod", "test")
     save_module(mod, kb)
-    subprocess.run(["git", "-C", str(kb), "add", "test/new-mod.json"], capture_output=True, check=True)
+    subprocess.run(
+        ["git", "-C", str(kb), "add", "test/new-mod.json"], capture_output=True, check=True
+    )
 
     result = cli_runner.invoke(cli, ["--kb-path", str(kb), "status"])
     assert result.exit_code == 0
@@ -2051,6 +2331,7 @@ def test_cli_status_shows_added_modules(cli_runner, initialized_kb, tmp_path):
 def test_cli_status_shows_modified_modules(cli_runner, initialized_kb, tmp_path):
     """status should detect locally modified module files."""
     import subprocess
+
     kb = initialized_kb
     bare = tmp_path / "bare.git"
     _create_bare_remote(kb, bare)
@@ -2059,8 +2340,12 @@ def test_cli_status_shows_modified_modules(cli_runner, initialized_kb, tmp_path)
     mod = make_module("mod-m", "test")
     save_module(mod, kb)
     subprocess.run(["git", "-C", str(kb), "add", "-A"], capture_output=True, check=True)
-    subprocess.run(["git", "-C", str(kb), "commit", "-m", "add module"], capture_output=True, check=True)
-    subprocess.run(["git", "-C", str(kb), "push", "origin", "main"], capture_output=True, check=True)
+    subprocess.run(
+        ["git", "-C", str(kb), "commit", "-m", "add module"], capture_output=True, check=True
+    )
+    subprocess.run(
+        ["git", "-C", str(kb), "push", "origin", "main"], capture_output=True, check=True
+    )
 
     # Modify locally
     mod.summary = "Updated summary for testing"
@@ -2074,6 +2359,7 @@ def test_cli_status_shows_modified_modules(cli_runner, initialized_kb, tmp_path)
 def test_cli_diff_new_module(cli_runner, initialized_kb, tmp_path):
     """diff for a module not in remote should report it as new."""
     import subprocess
+
     kb = initialized_kb
     bare = tmp_path / "bare.git"
     _create_bare_remote(kb, bare)
@@ -2090,6 +2376,7 @@ def test_cli_diff_new_module(cli_runner, initialized_kb, tmp_path):
 def test_cli_diff_shows_field_changes(cli_runner, initialized_kb, tmp_path):
     """diff should show field-level JSON differences."""
     import subprocess
+
     kb = initialized_kb
     bare = tmp_path / "bare.git"
     _create_bare_remote(kb, bare)
@@ -2098,8 +2385,12 @@ def test_cli_diff_shows_field_changes(cli_runner, initialized_kb, tmp_path):
     mod = make_module("mod-d", "test")
     save_module(mod, kb)
     subprocess.run(["git", "-C", str(kb), "add", "-A"], capture_output=True, check=True)
-    subprocess.run(["git", "-C", str(kb), "commit", "-m", "add module"], capture_output=True, check=True)
-    subprocess.run(["git", "-C", str(kb), "push", "origin", "main"], capture_output=True, check=True)
+    subprocess.run(
+        ["git", "-C", str(kb), "commit", "-m", "add module"], capture_output=True, check=True
+    )
+    subprocess.run(
+        ["git", "-C", str(kb), "push", "origin", "main"], capture_output=True, check=True
+    )
 
     # Modify locally
     mod.title = "Changed Title Here"
@@ -2108,12 +2399,17 @@ def test_cli_diff_shows_field_changes(cli_runner, initialized_kb, tmp_path):
 
     result = cli_runner.invoke(cli, ["--kb-path", str(kb), "diff", "test/mod-d"])
     assert result.exit_code == 0
-    assert "Changed Title Here" in result.output or "title" in result.output.lower() or "Changes in test/mod-d" in result.output
+    assert (
+        "Changed Title Here" in result.output
+        or "title" in result.output.lower()
+        or "Changes in test/mod-d" in result.output
+    )
 
 
 def test_cli_diff_no_changes(cli_runner, initialized_kb, tmp_path):
     """diff with no local changes should report no differences."""
     import subprocess
+
     kb = initialized_kb
     bare = tmp_path / "bare.git"
     _create_bare_remote(kb, bare)
@@ -2122,8 +2418,12 @@ def test_cli_diff_no_changes(cli_runner, initialized_kb, tmp_path):
     mod = make_module("mod-same", "test")
     save_module(mod, kb)
     subprocess.run(["git", "-C", str(kb), "add", "-A"], capture_output=True, check=True)
-    subprocess.run(["git", "-C", str(kb), "commit", "-m", "add module"], capture_output=True, check=True)
-    subprocess.run(["git", "-C", str(kb), "push", "origin", "main"], capture_output=True, check=True)
+    subprocess.run(
+        ["git", "-C", str(kb), "commit", "-m", "add module"], capture_output=True, check=True
+    )
+    subprocess.run(
+        ["git", "-C", str(kb), "push", "origin", "main"], capture_output=True, check=True
+    )
 
     result = cli_runner.invoke(cli, ["--kb-path", str(kb), "diff", "test/mod-same"])
     assert result.exit_code == 0
@@ -2146,7 +2446,11 @@ def test_json_diff_sections_detects_all_change_types():
         "category": "x",
         "title": "Old Title",
         "summary": "Old Summary",
-        "content": {"overview": "Old overview text.", "details": "Old details text that is long enough.", "examples": ""},
+        "content": {
+            "overview": "Old overview text.",
+            "details": "Old details text that is long enough.",
+            "examples": "",
+        },
         "metadata": {"tags": ["old"], "confidence": "high"},
     }
     local = {
@@ -2154,7 +2458,11 @@ def test_json_diff_sections_detects_all_change_types():
         "category": "x",
         "title": "New Title",
         "summary": "Old Summary",
-        "content": {"overview": "New overview text.", "details": "Old details text that is long enough.", "references": "Added ref"},
+        "content": {
+            "overview": "New overview text.",
+            "details": "Old details text that is long enough.",
+            "references": "Added ref",
+        },
         "metadata": {"tags": ["new"], "confidence": "low"},
     }
 
@@ -2184,6 +2492,7 @@ def _stage_module(kb: Path, module_id: str = "test-mod", category: str = "test")
     """Helper: add a module to staging and create metadata."""
     from knowledge_manager.storage import save_to_staging, save_staging_meta
     from knowledge_manager.schemas import Module, ModuleContent, ModuleMetadata, StagingMeta
+
     mod = Module(
         id=module_id,
         category=category,
@@ -2232,7 +2541,9 @@ def test_review_show_existing_module(cli_runner, initialized_kb):
 
 def test_review_show_missing_module(cli_runner, initialized_kb):
     """review show with nonexistent module should error."""
-    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "review", "show", "no-such-module"])
+    result = cli_runner.invoke(
+        cli, ["--kb-path", str(initialized_kb), "review", "show", "no-such-module"]
+    )
     assert result.exit_code != 0
 
 
@@ -2247,6 +2558,7 @@ def test_review_approve_merges_module(cli_runner, initialized_kb):
 
     # Module should now exist in KB
     from knowledge_manager.storage import load_module
+
     mod = load_module("mod-ok", "test", kb)
     assert mod is not None
     assert mod.title == "Review Test mod-ok"
@@ -2271,6 +2583,7 @@ def test_review_approve_requires_multiple_approvals(cli_runner, initialized_kb):
 
     # Module should NOT be in KB yet
     from knowledge_manager.storage import load_module, load_staging_meta
+
     assert load_module("mod-needs2", "test", kb) is None
 
     # Second approval
@@ -2282,7 +2595,9 @@ def test_review_approve_requires_multiple_approvals(cli_runner, initialized_kb):
 
 def test_review_approve_missing_module(cli_runner, initialized_kb):
     """approve with nonexistent module should error."""
-    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "review", "approve", "no-such"])
+    result = cli_runner.invoke(
+        cli, ["--kb-path", str(initialized_kb), "review", "approve", "no-such"]
+    )
     assert result.exit_code != 0
 
 
@@ -2291,15 +2606,24 @@ def test_review_request_changes(cli_runner, initialized_kb):
     kb = initialized_kb
     _stage_module(kb, "mod-rc")
 
-    result = cli_runner.invoke(cli, [
-        "--kb-path", str(kb), "review", "request-changes",
-        "mod-rc", "-m", "Needs more details in overview",
-    ])
+    result = cli_runner.invoke(
+        cli,
+        [
+            "--kb-path",
+            str(kb),
+            "review",
+            "request-changes",
+            "mod-rc",
+            "-m",
+            "Needs more details in overview",
+        ],
+    )
     assert result.exit_code == 0
     assert "Changes requested" in result.output
 
     # Verify meta was updated
     from knowledge_manager.storage import load_staging_meta
+
     staging = kb / ".staging"
     meta = load_staging_meta("mod-rc", staging)
     assert meta is not None
@@ -2314,9 +2638,16 @@ def test_review_request_changes_requires_comment(cli_runner, initialized_kb):
     kb = initialized_kb
     _stage_module(kb, "mod-rc2")
 
-    result = cli_runner.invoke(cli, [
-        "--kb-path", str(kb), "review", "request-changes", "mod-rc2",
-    ])
+    result = cli_runner.invoke(
+        cli,
+        [
+            "--kb-path",
+            str(kb),
+            "review",
+            "request-changes",
+            "mod-rc2",
+        ],
+    )
     assert result.exit_code != 0
 
 
@@ -2354,10 +2685,20 @@ def test_push_sends_webhook_when_configured(cli_runner, initialized_kb, tmp_path
     bare.mkdir(parents=True, exist_ok=True)
     subprocess.run(["git", "-C", str(bare), "init", "--bare"], capture_output=True, check=True)
     subprocess.run(["git", "-C", str(kb), "remote", "remove", "origin"], capture_output=True)
-    subprocess.run(["git", "-C", str(kb), "remote", "add", "origin", str(bare)], capture_output=True, check=True)
+    subprocess.run(
+        ["git", "-C", str(kb), "remote", "add", "origin", str(bare)],
+        capture_output=True,
+        check=True,
+    )
     subprocess.run(["git", "-C", str(kb), "add", "-A"], capture_output=True, check=True)
-    subprocess.run(["git", "-C", str(kb), "commit", "--allow-empty", "-m", "init"], capture_output=True, check=True)
-    subprocess.run(["git", "-C", str(kb), "push", "-u", "origin", "main"], capture_output=True, check=True)
+    subprocess.run(
+        ["git", "-C", str(kb), "commit", "--allow-empty", "-m", "init"],
+        capture_output=True,
+        check=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(kb), "push", "-u", "origin", "main"], capture_output=True, check=True
+    )
 
     cfg = Config(
         notifications=NotificationsConfig(
@@ -2389,10 +2730,20 @@ def test_push_webhook_failure_is_silent(cli_runner, initialized_kb, tmp_path):
     bare.mkdir(parents=True, exist_ok=True)
     subprocess.run(["git", "-C", str(bare), "init", "--bare"], capture_output=True, check=True)
     subprocess.run(["git", "-C", str(kb), "remote", "remove", "origin"], capture_output=True)
-    subprocess.run(["git", "-C", str(kb), "remote", "add", "origin", str(bare)], capture_output=True, check=True)
+    subprocess.run(
+        ["git", "-C", str(kb), "remote", "add", "origin", str(bare)],
+        capture_output=True,
+        check=True,
+    )
     subprocess.run(["git", "-C", str(kb), "add", "-A"], capture_output=True, check=True)
-    subprocess.run(["git", "-C", str(kb), "commit", "--allow-empty", "-m", "init"], capture_output=True, check=True)
-    subprocess.run(["git", "-C", str(kb), "push", "-u", "origin", "main"], capture_output=True, check=True)
+    subprocess.run(
+        ["git", "-C", str(kb), "commit", "--allow-empty", "-m", "init"],
+        capture_output=True,
+        check=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(kb), "push", "-u", "origin", "main"], capture_output=True, check=True
+    )
 
     cfg = Config(
         notifications=NotificationsConfig(
@@ -2410,14 +2761,23 @@ def test_push_webhook_failure_is_silent(cli_runner, initialized_kb, tmp_path):
 
 def test_config_set_webhook_url(cli_runner, initialized_kb):
     """config set should support notifications.webhook_url."""
-    result = cli_runner.invoke(cli, [
-        "--kb-path", str(initialized_kb),
-        "config", "set", "notifications.webhook_url", "https://hooks.example.com/test",
-    ])
+    result = cli_runner.invoke(
+        cli,
+        [
+            "--kb-path",
+            str(initialized_kb),
+            "config",
+            "set",
+            "notifications.webhook_url",
+            "https://hooks.example.com/test",
+        ],
+    )
     assert result.exit_code == 0
 
     # Verify it was saved
-    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "config", "get", "notifications.webhook_url"])
+    result = cli_runner.invoke(
+        cli, ["--kb-path", str(initialized_kb), "config", "get", "notifications.webhook_url"]
+    )
     assert result.exit_code == 0
     assert "hooks.example.com" in result.output
 
@@ -2432,11 +2792,14 @@ def test_cli_deprecate_module(cli_runner, initialized_kb):
     save_module(mod, kb)
     rebuild_index(kb)
 
-    result = cli_runner.invoke(cli, ["--kb-path", str(kb), "deprecate", "test/mod-dep", "--reason", "Outdated"])
+    result = cli_runner.invoke(
+        cli, ["--kb-path", str(kb), "deprecate", "test/mod-dep", "--reason", "Outdated"]
+    )
     assert result.exit_code == 0
     assert "deprecated" in result.output.lower()
 
     from knowledge_manager.storage import load_module
+
     loaded = load_module("mod-dep", "test", kb)
     assert loaded is not None
     assert loaded.metadata.status == "deprecated"
@@ -2460,6 +2823,7 @@ def test_cli_archive_module(cli_runner, initialized_kb):
     assert "archived" in result.output.lower()
 
     from knowledge_manager.storage import load_module
+
     loaded = load_module("mod-arch", "test", kb)
     assert loaded is not None
     assert loaded.metadata.status == "archived"
@@ -2487,7 +2851,9 @@ def test_cli_search_include_archived(cli_runner, initialized_kb):
     assert "No matches" in result.output
 
     # Search with --include-archived
-    result = cli_runner.invoke(cli, ["--kb-path", str(kb), "search", "--include-archived", "hidden"])
+    result = cli_runner.invoke(
+        cli, ["--kb-path", str(kb), "search", "--include-archived", "hidden"]
+    )
     assert result.exit_code == 0
     assert "hidden-mod" in result.output
 
@@ -2514,7 +2880,9 @@ def test_cli_health_show_module_detail(cli_runner, initialized_kb):
     save_module(mod, initialized_kb)
     rebuild_index(initialized_kb)
 
-    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "health", "--module", "auth/h2"])
+    result = cli_runner.invoke(
+        cli, ["--kb-path", str(initialized_kb), "health", "--module", "auth/h2"]
+    )
     assert result.exit_code == 0
     assert "Module Health: h2" in result.output
     assert "Freshness" in result.output
@@ -2523,13 +2891,17 @@ def test_cli_health_show_module_detail(cli_runner, initialized_kb):
 
 def test_cli_health_module_not_found(cli_runner, initialized_kb):
     """km health --module with invalid module should error."""
-    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "health", "--module", "auth/nope"])
+    result = cli_runner.invoke(
+        cli, ["--kb-path", str(initialized_kb), "health", "--module", "auth/nope"]
+    )
     assert result.exit_code != 0
 
 
 def test_cli_health_module_invalid_format(cli_runner, initialized_kb):
     """km health --module without slash should error."""
-    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "health", "--module", "noslash"])
+    result = cli_runner.invoke(
+        cli, ["--kb-path", str(initialized_kb), "health", "--module", "noslash"]
+    )
     assert result.exit_code != 0
 
 
@@ -2548,11 +2920,14 @@ def test_cli_health_at_risk(cli_runner, initialized_kb):
 def test_cli_health_json_format(cli_runner, initialized_kb):
     """km health --format json should output valid JSON."""
     import json
+
     mod = make_module("h4", "auth")
     save_module(mod, initialized_kb)
     rebuild_index(initialized_kb)
 
-    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "health", "--format", "json"])
+    result = cli_runner.invoke(
+        cli, ["--kb-path", str(initialized_kb), "health", "--format", "json"]
+    )
     assert result.exit_code == 0
     data = json.loads(result.output)
     assert "total_modules" in data
@@ -2580,6 +2955,7 @@ def test_cli_stats_empty(cli_runner, initialized_kb):
 def test_cli_stats_json_format(cli_runner, initialized_kb):
     """km stats --format json should output valid JSON."""
     import json
+
     result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "usage", "--format", "json"])
     assert result.exit_code == 0
     data = json.loads(result.output)
@@ -2629,7 +3005,9 @@ def test_cli_graph_export_mermaid(cli_runner, initialized_kb):
     save_module(mod2, initialized_kb)
     rebuild_index(initialized_kb)
 
-    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "graph", "--export", "mermaid"])
+    result = cli_runner.invoke(
+        cli, ["--kb-path", str(initialized_kb), "graph", "--export", "mermaid"]
+    )
     assert result.exit_code == 0
     assert "graph TD" in result.output
 
@@ -2675,7 +3053,9 @@ def test_cli_recommend_type_filter(cli_runner, initialized_kb):
     save_module(mod, initialized_kb)
     rebuild_index(initialized_kb)
 
-    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "recommend", "--type", "archive"])
+    result = cli_runner.invoke(
+        cli, ["--kb-path", str(initialized_kb), "recommend", "--type", "archive"]
+    )
     assert result.exit_code == 0
 
 
@@ -2685,7 +3065,9 @@ def test_cli_recommend_json_format(cli_runner, initialized_kb):
     save_module(mod, initialized_kb)
     rebuild_index(initialized_kb)
 
-    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "recommend", "--format", "json"])
+    result = cli_runner.invoke(
+        cli, ["--kb-path", str(initialized_kb), "recommend", "--format", "json"]
+    )
     assert result.exit_code == 0
     data = json.loads(result.output)
     assert "archive_candidates" in data
@@ -2713,12 +3095,10 @@ def test_cli_ops_overview(cli_runner, initialized_kb):
                         "api_key": "",
                         "model": "deepseek-v4-pro",
                         "base_url": "https://api.deepseek.com",
-                        "default": True
+                        "default": True,
                     }
                 },
-                "routing_policy": {
-                    "risk_level_allowed_statuses": {"high": ["published"]}
-                }
+                "routing_policy": {"risk_level_allowed_statuses": {"high": ["published"]}},
             }
         ),
         encoding="utf-8",
@@ -2750,12 +3130,20 @@ def test_cli_ops_apply_stale_source_deprecate_dry_run(cli_runner, initialized_kb
 
     result = cli_runner.invoke(
         cli,
-        ["--kb-path", str(initialized_kb), "ops-apply", "--action", "stale-source-deprecate", "--dry-run"],
+        [
+            "--kb-path",
+            str(initialized_kb),
+            "ops-apply",
+            "--action",
+            "stale-source-deprecate",
+            "--dry-run",
+        ],
     )
     assert result.exit_code == 0
     assert "[DRY RUN]" in result.output
 
     from knowledge_manager.storage import load_module
+
     loaded = load_module("stale-ops", "ops", initialized_kb)
     assert loaded is not None
     assert loaded.metadata.status == "published"
@@ -2775,6 +3163,7 @@ def test_cli_ops_apply_stale_source_deprecate_executes(cli_runner, initialized_k
     assert "Applied 1 action(s)." in result.output
 
     from knowledge_manager.storage import load_module
+
     loaded = load_module("stale-ops", "ops", initialized_kb)
     assert loaded is not None
     assert loaded.metadata.status == "deprecated"
@@ -2789,12 +3178,10 @@ def test_cli_ops_apply_archive_suppressed_dry_run(cli_runner, initialized_kb):
                         "api_key": "",
                         "model": "deepseek-v4-pro",
                         "base_url": "https://api.deepseek.com",
-                        "default": True
+                        "default": True,
                     }
                 },
-                "routing_policy": {
-                    "risk_level_allowed_statuses": {"high": ["published"]}
-                }
+                "routing_policy": {"risk_level_allowed_statuses": {"high": ["published"]}},
             }
         ),
         encoding="utf-8",
@@ -2806,7 +3193,14 @@ def test_cli_ops_apply_archive_suppressed_dry_run(cli_runner, initialized_kb):
 
     result = cli_runner.invoke(
         cli,
-        ["--kb-path", str(initialized_kb), "ops-apply", "--action", "archive-suppressed", "--dry-run"],
+        [
+            "--kb-path",
+            str(initialized_kb),
+            "ops-apply",
+            "--action",
+            "archive-suppressed",
+            "--dry-run",
+        ],
     )
     assert result.exit_code == 0
     assert "[DRY RUN] Archive ops/suppressed-ops" in result.output
@@ -2821,12 +3215,10 @@ def test_cli_ops_apply_archive_suppressed_executes(cli_runner, initialized_kb):
                         "api_key": "",
                         "model": "deepseek-v4-pro",
                         "base_url": "https://api.deepseek.com",
-                        "default": True
+                        "default": True,
                     }
                 },
-                "routing_policy": {
-                    "risk_level_allowed_statuses": {"high": ["published"]}
-                }
+                "routing_policy": {"risk_level_allowed_statuses": {"high": ["published"]}},
             }
         ),
         encoding="utf-8",
@@ -2844,6 +3236,7 @@ def test_cli_ops_apply_archive_suppressed_executes(cli_runner, initialized_kb):
     assert "Archived ops/suppressed-ops" in result.output
 
     from knowledge_manager.storage import load_module
+
     loaded = load_module("suppressed-ops", "ops", initialized_kb)
     assert loaded is not None
     assert loaded.metadata.status == "archived"
@@ -2855,7 +3248,9 @@ def test_cli_ops_export_review_backlog_writes_json(cli_runner, initialized_kb):
 
     staged = make_module("review-me", "ops")
     save_to_staging(staged, initialized_kb / ".staging")
-    save_staging_meta(StagingMeta(module_id="review-me", status="pending"), initialized_kb / ".staging")
+    save_staging_meta(
+        StagingMeta(module_id="review-me", status="pending"), initialized_kb / ".staging"
+    )
 
     output_path = initialized_kb / "review-backlog.json"
     result = cli_runner.invoke(
@@ -2954,7 +3349,9 @@ def test_cli_apply_dry_run(cli_runner, initialized_kb):
     save_module(mod, initialized_kb)
     rebuild_index(initialized_kb)
 
-    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "apply", "--type", "archive", "--dry-run"])
+    result = cli_runner.invoke(
+        cli, ["--kb-path", str(initialized_kb), "apply", "--type", "archive", "--dry-run"]
+    )
     assert result.exit_code == 0
 
 
@@ -2971,6 +3368,7 @@ def test_cli_apply_archive_actually_archives(cli_runner, initialized_kb):
     mod = make_module("a2", "auth")
     # Make it look old and unused to trigger archive recommendation
     from datetime import datetime, timezone, timedelta
+
     mod.updated_at = datetime.now(timezone.utc) - timedelta(days=200)
     mod.content.examples = ""
     mod.content.caveats = ""
@@ -2978,7 +3376,9 @@ def test_cli_apply_archive_actually_archives(cli_runner, initialized_kb):
     save_module(mod, initialized_kb)
     rebuild_index(initialized_kb)
 
-    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "apply", "--type", "archive"])
+    result = cli_runner.invoke(
+        cli, ["--kb-path", str(initialized_kb), "apply", "--type", "archive"]
+    )
     assert result.exit_code == 0
     # Module should now be archived
     m = load_module("a2", "auth", initialized_kb)
@@ -2999,7 +3399,9 @@ def test_connect_list_platforms(cli_runner, initialized_kb):
 
 def test_connect_print_outputs_json(cli_runner, initialized_kb):
     """km connect --print should output valid MCP JSON to stdout."""
-    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "connect", "--print", "claude-code"])
+    result = cli_runner.invoke(
+        cli, ["--kb-path", str(initialized_kb), "connect", "--print", "claude-code"]
+    )
     assert result.exit_code == 0
     data = json.loads(result.output)
     assert "mcpServers" in data
@@ -3030,9 +3432,16 @@ def test_connect_writes_config_file(cli_runner, initialized_kb):
     fake_home.mkdir()
 
     cfg_path = fake_home / ".claude" / "mcp.json"
-    result = cli_runner.invoke(cli, [
-        "--kb-path", str(kb), "connect", "claude-code",
-    ], env={"HOME": str(fake_home), "USERPROFILE": str(fake_home)})
+    result = cli_runner.invoke(
+        cli,
+        [
+            "--kb-path",
+            str(kb),
+            "connect",
+            "claude-code",
+        ],
+        env={"HOME": str(fake_home), "USERPROFILE": str(fake_home)},
+    )
     assert result.exit_code == 0
 
     # Check that the file was written
@@ -3056,9 +3465,16 @@ def test_disconnect_removes_entry(cli_runner, initialized_kb):
     assert has_entry(cfg_path)
 
     # Then disconnect
-    result = cli_runner.invoke(cli, [
-        "--kb-path", str(kb), "disconnect", "claude-code",
-    ], env={"HOME": str(fake_home), "USERPROFILE": str(fake_home)})
+    result = cli_runner.invoke(
+        cli,
+        [
+            "--kb-path",
+            str(kb),
+            "disconnect",
+            "claude-code",
+        ],
+        env={"HOME": str(fake_home), "USERPROFILE": str(fake_home)},
+    )
     assert result.exit_code == 0
     assert not has_entry(cfg_path)
 
@@ -3066,13 +3482,21 @@ def test_disconnect_removes_entry(cli_runner, initialized_kb):
 def test_disconnect_no_entry(cli_runner, initialized_kb):
     """km disconnect when no entry exists should report it."""
     import os
+
     kb = initialized_kb
     fake_home = kb / "fake-home"
     fake_home.mkdir()
 
-    result = cli_runner.invoke(cli, [
-        "--kb-path", str(kb), "disconnect", "claude-code",
-    ], env={"HOME": str(fake_home), "USERPROFILE": str(fake_home)})
+    result = cli_runner.invoke(
+        cli,
+        [
+            "--kb-path",
+            str(kb),
+            "disconnect",
+            "claude-code",
+        ],
+        env={"HOME": str(fake_home), "USERPROFILE": str(fake_home)},
+    )
     assert result.exit_code == 0
     assert "No knowledge-manager entry found" in result.output
 
@@ -3092,10 +3516,13 @@ def _make_marketplace_dir(tmp_path):
     idx = MarketplaceIndex(
         modules={
             "auth/oauth2": MarketplaceModule(
-                id="oauth2", category="auth",
+                id="oauth2",
+                category="auth",
                 title="OAuth 2.0 Best Practices",
                 summary="Security-focused OAuth 2.0 implementation guide",
-                tags=["auth", "security"], version="2.1.0", author="community",
+                tags=["auth", "security"],
+                version="2.1.0",
+                author="community",
                 confidence="high",
             ),
         }
@@ -3103,17 +3530,22 @@ def _make_marketplace_dir(tmp_path):
     (mp_dir / "index.json").write_text(idx.model_dump_json(indent=2))
 
     # Write a minimal module JSON file
-    mod_json = json.dumps({
-        "id": "oauth2", "category": "auth",
-        "title": "OAuth 2.0 Best Practices",
-        "summary": "Security-focused OAuth 2.0 implementation guide",
-        "content": {
-            "overview": "OAuth 2.0 is the industry standard for authorization.",
-            "details": "This guide covers all the common OAuth 2.0 grant types...",
-            "examples": "", "references": "", "caveats": ""
-        },
-        "metadata": {"tags": ["auth", "security"], "confidence": "high", "status": "published"}
-    })
+    mod_json = json.dumps(
+        {
+            "id": "oauth2",
+            "category": "auth",
+            "title": "OAuth 2.0 Best Practices",
+            "summary": "Security-focused OAuth 2.0 implementation guide",
+            "content": {
+                "overview": "OAuth 2.0 is the industry standard for authorization.",
+                "details": "This guide covers all the common OAuth 2.0 grant types...",
+                "examples": "",
+                "references": "",
+                "caveats": "",
+            },
+            "metadata": {"tags": ["auth", "security"], "confidence": "high", "status": "published"},
+        }
+    )
     (auth_dir / "oauth2.json").write_text(mod_json)
 
     return mp_dir
@@ -3156,7 +3588,9 @@ def test_marketplace_show_not_found(cli_runner, initialized_kb):
     cfg["marketplace"] = {"index_url": str(mp_dir), "sanitize_patterns": []}
     (kb / "config.json").write_text(json.dumps(cfg))
 
-    result = cli_runner.invoke(cli, ["--kb-path", str(kb), "marketplace", "show", "nonexistent/mod"])
+    result = cli_runner.invoke(
+        cli, ["--kb-path", str(kb), "marketplace", "show", "nonexistent/mod"]
+    )
     assert result.exit_code == 0
     assert "not found" in result.output.lower()
 
@@ -3196,7 +3630,9 @@ def test_publish_dry_run(cli_runner, initialized_kb):
     save_module(mod, initialized_kb)
     rebuild_index(initialized_kb)
 
-    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "publish", "auth/pub1", "--dry-run"])
+    result = cli_runner.invoke(
+        cli, ["--kb-path", str(initialized_kb), "publish", "auth/pub1", "--dry-run"]
+    )
     assert result.exit_code == 0
     assert "Sanitized module preview" in result.output
 
@@ -3209,11 +3645,15 @@ def test_publish_invalid_ref(cli_runner, initialized_kb):
 
 def test_publish_module_not_found(cli_runner, initialized_kb):
     """km publish with nonexistent module should error."""
-    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "publish", "auth/nonexistent"])
+    result = cli_runner.invoke(
+        cli, ["--kb-path", str(initialized_kb), "publish", "auth/nonexistent"]
+    )
     assert result.exit_code != 0
 
 
-def test_cli_verify_production_readiness_reports_combined_verdict(cli_runner, initialized_kb, tmp_path):
+def test_cli_verify_production_readiness_reports_combined_verdict(
+    cli_runner, initialized_kb, tmp_path
+):
     matrix_summary = tmp_path / "matrix-summary.json"
     matrix_summary.write_text(
         json.dumps(
@@ -3252,11 +3692,15 @@ def test_cli_worker_run_once_processes_queued_jobs(cli_runner, initialized_kb, m
     from knowledge_manager.audit import read_audit_log
 
     create_ingestion_job(initialized_kb, source_id="upload", trigger="http-upload")
-    monkeypatch.setattr("knowledge_manager.worker_service.run_single_job", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        "knowledge_manager.worker_service.run_single_job", lambda *_args, **_kwargs: None
+    )
 
     result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "worker", "run", "--once"])
 
     assert result.exit_code == 0
     assert "Processed 1 job(s)" in result.output
     events = read_audit_log(initialized_kb)
-    assert any(event["operation"] == "worker.run" and event["result"] == "success" for event in events)
+    assert any(
+        event["operation"] == "worker.run" and event["result"] == "success" for event in events
+    )

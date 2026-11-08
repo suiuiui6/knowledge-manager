@@ -98,7 +98,9 @@ def _ensure_maintenance_worker(kb_path: Path) -> None:
 
 
 @serialized_write
-def enqueue_local_maintenance(kb_path: Path, action: str, payload: dict[str, Any]) -> dict[str, Any]:
+def enqueue_local_maintenance(
+    kb_path: Path, action: str, payload: dict[str, Any]
+) -> dict[str, Any]:
     job_id = f"maint-{uuid4().hex[:12]}"
     queued_at = datetime.now(timezone.utc).isoformat()
     _prune_superseded_maintenance_jobs(kb_path, action, payload)
@@ -138,7 +140,9 @@ def run_pending_maintenance(kb_path: Path, limit: int = 20) -> int:
             continue
         # The KB lock excludes every live maintenance worker. A running file
         # observed here was abandoned when its owning process exited.
-        queued_path = abandoned_path.with_name(abandoned_path.name.replace(".running.json", ".queued.json"))
+        queued_path = abandoned_path.with_name(
+            abandoned_path.name.replace(".running.json", ".queued.json")
+        )
         payload["status"] = "queued"
         _write_json(queued_path, payload)
         abandoned_path.unlink(missing_ok=True)
@@ -146,7 +150,9 @@ def run_pending_maintenance(kb_path: Path, limit: int = 20) -> int:
     for queued_path in sorted(queue_dir.glob("*.queued.json")):
         if processed >= limit:
             break
-        running_path = queued_path.with_name(queued_path.name.replace(".queued.json", ".running.json"))
+        running_path = queued_path.with_name(
+            queued_path.name.replace(".queued.json", ".running.json")
+        )
         try:
             os.replace(queued_path, running_path)
         except FileNotFoundError:
@@ -183,7 +189,9 @@ def run_pending_maintenance(kb_path: Path, limit: int = 20) -> int:
             mark_derived_indexes_failed(kb_path, str(exc))
 
         final_suffix = ".done.json" if payload["status"] == "completed" else ".failed.json"
-        final_path = running_path.with_name(running_path.name.replace(".running.json", final_suffix))
+        final_path = running_path.with_name(
+            running_path.name.replace(".running.json", final_suffix)
+        )
         _write_json(running_path, payload)
         os.replace(running_path, final_path)
         processed += 1
@@ -254,7 +262,9 @@ def _extract_upload_modules(kb_path: Path, filename: str, payload: bytes, catego
             tmp_path = tmp_dir / filename
             tmp_path.write_bytes(payload)
             try:
-                return await extractor.extract_from_image(str(tmp_path), category, existing_categories)
+                return await extractor.extract_from_image(
+                    str(tmp_path), category, existing_categories
+                )
             finally:
                 tmp_path.unlink(missing_ok=True)
         text = payload.decode("utf-8", errors="replace")
@@ -267,7 +277,9 @@ def _run_upload_job(kb_path: Path, job: IngestionJob, payload: dict[str, Any]) -
     from knowledge_manager.schemas import StagingMeta
     from knowledge_manager.storage import save_staging_meta, save_to_staging
 
-    filename = payload.get("filename") or Path(payload.get("path", job.payload_path)).name or "upload"
+    filename = (
+        payload.get("filename") or Path(payload.get("path", job.payload_path)).name or "upload"
+    )
     category = payload.get("category", "general")
     mode = payload.get("mode", "auto")
     if "bytes_b64" in payload:
@@ -290,7 +302,10 @@ def _run_upload_job(kb_path: Path, job: IngestionJob, payload: dict[str, Any]) -
     store_job_result_modules(
         kb_path,
         job.job_id,
-        [{"id": module.id, "category": module.category, "title": module.title} for module in modules],
+        [
+            {"id": module.id, "category": module.category, "title": module.title}
+            for module in modules
+        ],
     )
 
     path_str = payload.get("path") or job.payload_path
@@ -329,7 +344,9 @@ def _start_job_heartbeat(kb_path: Path, job_id: str) -> tuple[Event, Thread]:
     return stop_event, thread
 
 
-def run_single_job(kb_path: Path, job_id: str, payload: dict[str, Any] | None = None) -> IngestionJob:
+def run_single_job(
+    kb_path: Path, job_id: str, payload: dict[str, Any] | None = None
+) -> IngestionJob:
     job = load_ingestion_job(kb_path, job_id)
     if job is None:
         raise FileNotFoundError(job_id)

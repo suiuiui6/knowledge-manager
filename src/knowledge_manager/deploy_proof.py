@@ -41,7 +41,8 @@ def validate_deploy_artifact_proofs(output_dir: Path) -> tuple[dict[str, str], l
         elif name == "knowledge-manager-worker.unit.txt":
             valid = (
                 "environmentfile=/opt/knowledge-manager/.env.production" in normalized
-                and "execstart=/opt/knowledge-manager/.venv/bin/km worker run --poll-interval 1.0" in normalized
+                and "execstart=/opt/knowledge-manager/.venv/bin/km worker run --poll-interval 1.0"
+                in normalized
             )
         elif name == "caddy-validate.txt":
             valid = (
@@ -52,7 +53,9 @@ def validate_deploy_artifact_proofs(output_dir: Path) -> tuple[dict[str, str], l
                 and "no automatic https" not in normalized
             )
         else:
-            valid = bool(normalized.strip()) and "error" not in normalized and "handling" in normalized
+            valid = (
+                bool(normalized.strip()) and "error" not in normalized and "handling" in normalized
+            )
 
         if not valid:
             invalid.append(f"deploy-artifact-proof:{name}")
