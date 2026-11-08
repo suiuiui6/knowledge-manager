@@ -127,7 +127,9 @@ def test_verify_release_artifacts_accepts_bundle_waiting_only_on_self_and_patche
     )
 
 
-def test_verify_release_artifacts_accepts_pipeline_bundle_waiting_on_verifier_and_collection_refresh(tmp_path):
+def test_verify_release_artifacts_accepts_pipeline_bundle_waiting_on_verifier_and_collection_refresh(
+    tmp_path,
+):
     root = Path(__file__).resolve().parents[1]
     release_dir = tmp_path / "release-artifacts"
     release_dir.mkdir()
@@ -283,8 +285,14 @@ def test_release_artifact_verifier_is_documented():
     assert "release-support-bundle.json" in script
     assert "host-deploy-proof.json" in script
     assert "verify-release-artifacts.json" in script
-    assert 'python3.11 /opt/knowledge-manager/scripts/verify_release_artifacts.py --release-dir "$RELEASE_DIR"' in readme
-    assert 'python3.11 /opt/knowledge-manager/scripts/verify_release_artifacts.py --release-dir "$RELEASE_DIR"' in runbook
+    assert (
+        'python3.11 /opt/knowledge-manager/scripts/verify_release_artifacts.py --release-dir "$RELEASE_DIR"'
+        in readme
+    )
+    assert (
+        'python3.11 /opt/knowledge-manager/scripts/verify_release_artifacts.py --release-dir "$RELEASE_DIR"'
+        in runbook
+    )
     assert "verify-release-artifacts.json" in readme
     assert "verify-release-artifacts.json" in runbook
     assert "verify_release_artifacts.py" in checklist

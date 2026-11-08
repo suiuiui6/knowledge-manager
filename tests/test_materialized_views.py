@@ -144,7 +144,9 @@ def test_ops_report_snapshot_invalidates_after_source_or_staging_change(tmp_path
         StagingMeta(
             module_id="pending-module",
             status="changes-requested",
-            reviews=[ReviewRecord(reviewer="alice", action="changes-requested", comment="Needs fixes")],
+            reviews=[
+                ReviewRecord(reviewer="alice", action="changes-requested", comment="Needs fixes")
+            ],
         ),
         kb / ".staging",
     )
@@ -230,7 +232,9 @@ def test_admin_dashboard_cached_snapshot_avoids_full_fingerprint_scan(tmp_path, 
     assert second["review_backlog"][0]["module_id"] == "review-me"
 
 
-def test_admin_dashboard_reuses_ops_report_and_staging_reads_within_single_build(tmp_path, monkeypatch):
+def test_admin_dashboard_reuses_ops_report_and_staging_reads_within_single_build(
+    tmp_path, monkeypatch
+):
     from knowledge_manager.schemas import (
         ConfluenceSourceConfig,
         Index,
@@ -285,15 +289,21 @@ def test_admin_dashboard_reuses_ops_report_and_staging_reads_within_single_build
     def fake_generate_ops_report(path, *args, **kwargs):
         assert path == kb
         ops_calls["count"] += 1
-        return OpsReport(source_backlog=[SourceBacklogEntry(source_id="team-docs", tracked_pages=1)])
+        return OpsReport(
+            source_backlog=[SourceBacklogEntry(source_id="team-docs", tracked_pages=1)]
+        )
 
     def counted_list_staging_meta(path):
         assert path == kb / ".staging"
         staging_calls["count"] += 1
         return [StagingMeta(module_id="review-me", status="pending")]
 
-    monkeypatch.setattr("knowledge_manager.admin_views.generate_ops_report", fake_generate_ops_report, raising=False)
-    monkeypatch.setattr("knowledge_manager.admin_views.list_staging_meta", counted_list_staging_meta, raising=False)
+    monkeypatch.setattr(
+        "knowledge_manager.admin_views.generate_ops_report", fake_generate_ops_report, raising=False
+    )
+    monkeypatch.setattr(
+        "knowledge_manager.admin_views.list_staging_meta", counted_list_staging_meta, raising=False
+    )
 
     payload = build_admin_dashboard(kb)
 

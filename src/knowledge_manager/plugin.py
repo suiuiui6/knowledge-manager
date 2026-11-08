@@ -75,7 +75,9 @@ class PluginManager:
         try:
             subprocess.run(
                 [sys.executable, "-m", "pip", "install", package_name],
-                check=True, capture_output=True, text=True,
+                check=True,
+                capture_output=True,
+                text=True,
             )
             return True
         except subprocess.CalledProcessError as e:
@@ -89,6 +91,7 @@ class PluginManager:
             logger.warning("Plugin %s already exists", plugin_dir.name)
             return None
         import shutil
+
         shutil.copytree(plugin_dir, target)
         return self._load_from_dir(target)
 
@@ -97,6 +100,7 @@ class PluginManager:
         if not plugin:
             return False
         import shutil
+
         shutil.rmtree(Path(plugin.source), ignore_errors=True)
         del self.plugins[name]
         logger.info("Uninstalled plugin: %s", name)
@@ -154,11 +158,20 @@ class PluginManager:
 
 def search_registry(query: str, registry_url: str = "") -> list[dict]:
     import httpx
+
     try:
         resp = httpx.get(f"{registry_url}/search?q={query}", timeout=10)
         return resp.json().get("plugins", [])
     except Exception:
         return [
-            {"name": "km-plugin-slack", "version": "0.1.0", "description": "Slack notification on review approve"},
-            {"name": "km-plugin-github", "version": "0.1.0", "description": "GitHub issue integration"},
+            {
+                "name": "km-plugin-slack",
+                "version": "0.1.0",
+                "description": "Slack notification on review approve",
+            },
+            {
+                "name": "km-plugin-github",
+                "version": "0.1.0",
+                "description": "GitHub issue integration",
+            },
         ]

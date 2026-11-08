@@ -101,15 +101,19 @@ class TreeNavigator:
 
             children_ids = [c.id for c in current_node.children]
             step = NavigationStep(
-                step=step_num, action=action, node_id=current_node.id,
-                node_title=current_node.title, reasoning=reasoning,
+                step=step_num,
+                action=action,
+                node_id=current_node.id,
+                node_title=current_node.title,
+                reasoning=reasoning,
                 candidates=children_ids,
             )
             steps.append(step)
 
             if action == "done":
                 return NavigationResult(
-                    query=query, path=steps,
+                    query=query,
+                    path=steps,
                     final_module_key=current_node.path or current_node.id,
                     final_title=current_node.title,
                     final_summary=current_node.summary,
@@ -120,7 +124,8 @@ class TreeNavigator:
             elif action == "load":
                 target_node = self._node_index.get(target_id, current_node)
                 return NavigationResult(
-                    query=query, path=steps,
+                    query=query,
+                    path=steps,
                     final_module_key=target_node.path or target_node.id,
                     final_title=target_node.title,
                     final_summary=target_node.summary,
@@ -148,7 +153,8 @@ class TreeNavigator:
         best = self._find_best_leaf(current_node, query)
         if best and best.type == TreeNodeType.MODULE:
             return NavigationResult(
-                query=query, path=steps,
+                query=query,
+                path=steps,
                 final_module_key=best.path or best.id,
                 final_title=best.title,
                 final_summary=best.summary,
@@ -162,9 +168,13 @@ class TreeNavigator:
         self._render_node(node, depth, 0, lines)
         return "\n".join(lines)
 
-    def _render_node(self, node: TreeNode, max_depth: int, current_depth: int, lines: list[str]) -> None:
+    def _render_node(
+        self, node: TreeNode, max_depth: int, current_depth: int, lines: list[str]
+    ) -> None:
         indent = "  " * current_depth
-        icon = {"root": "[root]", "category": "[cat]", "module": "[mod]", "section": "[sec]"}.get(node.type.value if hasattr(node.type, 'value') else str(node.type), "[?]")
+        icon = {"root": "[root]", "category": "[cat]", "module": "[mod]", "section": "[sec]"}.get(
+            node.type.value if hasattr(node.type, "value") else str(node.type), "[?]"
+        )
         lines.append(f"{indent}{icon} [{node.id}] {node.title}")
         if node.summary:
             lines.append(f"{indent}   {node.summary[:80]}")
@@ -172,7 +182,9 @@ class TreeNavigator:
             for child in node.children:
                 self._render_node(child, max_depth, current_depth + 1, lines)
 
-    async def navigate_beam(self, query: str, beam_width: int = 3, max_depth: int = 3) -> NavigationResult:
+    async def navigate_beam(
+        self, query: str, beam_width: int = 3, max_depth: int = 3
+    ) -> NavigationResult:
         """Beam search: explore multiple branches in parallel, keep top-k.
 
         Unlike greedy navigate(), this evaluates all children at each level,
@@ -185,7 +197,9 @@ class TreeNavigator:
 
         for depth in range(max_depth):
             # Gather all children of all current candidates
-            all_children: list[tuple[TreeNode, TreeNode, float]] = []  # (child, parent, parent_score)
+            all_children: list[tuple[TreeNode, TreeNode, float]] = (
+                []
+            )  # (child, parent, parent_score)
             for parent, parent_score in candidates:
                 for child in parent.children:
                     all_children.append((child, parent, parent_score))
@@ -211,17 +225,21 @@ class TreeNavigator:
             scored.sort(key=lambda x: x[1], reverse=True)
             candidates = [(node, score) for node, score, _ in scored[:beam_width]]
 
-            steps.append(NavigationStep(
-                step=depth + 1, action="beam_expand",
-                node_id=candidates[0][0].id if candidates else "none",
-                node_title=f"evaluated {len(all_children)} nodes, kept {len(candidates)}",
-                reasoning=f"top: {', '.join(f'{n.title}({s:.2f})' for n, s in candidates[:3])}",
-                candidates=[n.id for n, _ in candidates],
-            ))
+            steps.append(
+                NavigationStep(
+                    step=depth + 1,
+                    action="beam_expand",
+                    node_id=candidates[0][0].id if candidates else "none",
+                    node_title=f"evaluated {len(all_children)} nodes, kept {len(candidates)}",
+                    reasoning=f"top: {', '.join(f'{n.title}({s:.2f})' for n, s in candidates[:3])}",
+                    candidates=[n.id for n, _ in candidates],
+                )
+            )
 
         if best_module:
             return NavigationResult(
-                query=query, path=steps,
+                query=query,
+                path=steps,
                 final_module_key=best_module.path or best_module.id,
                 final_title=best_module.title,
                 final_summary=best_module.summary,
@@ -233,7 +251,8 @@ class TreeNavigator:
         best = self._find_best_leaf(self.tree_root, query)
         if best and best.type == TreeNodeType.MODULE:
             return NavigationResult(
-                query=query, path=steps,
+                query=query,
+                path=steps,
                 final_module_key=best.path or best.id,
                 final_title=best.title,
                 final_summary=best.summary,

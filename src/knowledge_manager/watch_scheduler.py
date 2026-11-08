@@ -60,6 +60,7 @@ class WatchScheduler:
 
     async def poll_source(self, source_id: str) -> WatchEvent:
         import time
+
         t0 = time.time()
 
         source = self.sources.get(source_id)
@@ -129,7 +130,11 @@ class WatchScheduler:
                 except Exception as e:
                     logger.warning("Auto-extract failed for %s: %s", f, e)
 
-        return {"items_found": items_found, "modules_generated": modules_generated, "cursor": str(datetime.now().timestamp())}
+        return {
+            "items_found": items_found,
+            "modules_generated": modules_generated,
+            "cursor": str(datetime.now().timestamp()),
+        }
 
     async def _poll_doc_dir(self, source: WatchSource) -> dict:
         watch_path = Path(source.config.get("path", ""))
@@ -137,7 +142,11 @@ class WatchScheduler:
             return {"items_found": 0, "modules_generated": 0}
 
         count = len(list(watch_path.rglob("*.md")))
-        return {"items_found": count, "modules_generated": 0, "cursor": str(datetime.now().timestamp())}
+        return {
+            "items_found": count,
+            "modules_generated": 0,
+            "cursor": str(datetime.now().timestamp()),
+        }
 
     async def poll_all(self) -> list[WatchEvent]:
         events = []
@@ -150,8 +159,7 @@ class WatchScheduler:
             "sources": len(self.sources),
             "events_logged": len(self.events),
             "sources_detail": {
-                sid: {"type": s.type, "cursor": s.cursor[:20]}
-                for sid, s in self.sources.items()
+                sid: {"type": s.type, "cursor": s.cursor[:20]} for sid, s in self.sources.items()
             },
         }
 

@@ -54,8 +54,14 @@ def test_collect_host_deploy_proof_script_and_docs_reference_release_dir_capture
     assert "systemctl cat knowledge-manager-api" in script
     assert "caddy validate --config /etc/caddy/Caddyfile" in script
     assert "logrotate -d /etc/logrotate.d/knowledge-manager" in script
-    assert 'python3.11 /opt/knowledge-manager/scripts/collect_host_deploy_proof.py --output-dir "$RELEASE_DIR"' in readme
-    assert 'python3.11 /opt/knowledge-manager/scripts/collect_host_deploy_proof.py --output-dir "$RELEASE_DIR"' in runbook
+    assert (
+        'python3.11 /opt/knowledge-manager/scripts/collect_host_deploy_proof.py --output-dir "$RELEASE_DIR"'
+        in readme
+    )
+    assert (
+        'python3.11 /opt/knowledge-manager/scripts/collect_host_deploy_proof.py --output-dir "$RELEASE_DIR"'
+        in runbook
+    )
 
 
 def test_collect_host_deploy_proof_rejects_http_only_caddy_config(tmp_path):
@@ -76,7 +82,7 @@ def test_collect_host_deploy_proof_rejects_http_only_caddy_config(tmp_path):
             "--caddy-validate-command",
             (
                 f"{sys.executable} -c \"print('Valid configuration\\n"
-                "{\"level\":\"warn\",\"msg\":\"server is listening only on the HTTP port, so no automatic HTTPS will be applied to this server\"}')\""
+                '{"level":"warn","msg":"server is listening only on the HTTP port, so no automatic HTTPS will be applied to this server"}\')"'
             ),
             "--logrotate-check-command",
             f"{sys.executable} -c \"print('Handling 2 logs')\"",

@@ -49,11 +49,15 @@ def test_backup_bundle_includes_attached_release_evidence():
 
     from scripts.backup_kb import create_backup_bundle, inspect_backup_bundle
 
-    bundle = create_backup_bundle(kb, make_test_dir("backup-output-attachments"), attachments=[attachment])
+    bundle = create_backup_bundle(
+        kb, make_test_dir("backup-output-attachments"), attachments=[attachment]
+    )
     summary = inspect_backup_bundle(bundle)
 
     assert "attachments/verify-production-readiness.json" in summary["files"]
-    assert summary["manifest"]["contents"]["attachments"] == ["attachments/verify-production-readiness.json"]
+    assert summary["manifest"]["contents"]["attachments"] == [
+        "attachments/verify-production-readiness.json"
+    ]
 
 
 def test_restore_bundle_refuses_nonempty_target():

@@ -31,6 +31,7 @@ def fetch_marketplace_index(url: str) -> Optional[MarketplaceIndex]:
     if url.startswith("http://") or url.startswith("https://"):
         try:
             import httpx
+
             resp = httpx.get(f"{url.rstrip('/')}/index.json", timeout=httpx.Timeout(15.0))
             if resp.status_code != 200:
                 return None
@@ -137,8 +138,11 @@ def install_from_marketplace(
 
     if mp_url is None:
         from knowledge_manager.storage import _load_config_safe
+
         cfg = _load_config_safe(kb_path)
-        mp_url = cfg.marketplace.index_url if cfg else "https://github.com/knowledge-manager/marketplace"
+        mp_url = (
+            cfg.marketplace.index_url if cfg else "https://github.com/knowledge-manager/marketplace"
+        )
 
     mp_index = fetch_marketplace_index(mp_url)
     if mp_index is None:
@@ -162,6 +166,7 @@ def install_from_marketplace(
         else:
             try:
                 import httpx
+
                 resp = httpx.get(f"{mp_path}/{module_path}", timeout=httpx.Timeout(15.0))
                 if resp.status_code != 200:
                     raise RuntimeError(f"Failed to download {module_path}: HTTP {resp.status_code}")
@@ -171,6 +176,7 @@ def install_from_marketplace(
 
         # Write to staging
         from knowledge_manager.schemas import Module
+
         mod = Module.model_validate_json(module_data)
         save_to_staging(mod, staging)
 
@@ -181,6 +187,7 @@ def install_from_marketplace(
         )
         # Store marketplace source info in metadata (packed as JSON in submitted_by for now)
         from knowledge_manager.storage import save_staging_meta
+
         save_staging_meta(meta, staging)
 
     return plan
@@ -199,6 +206,7 @@ def sanitize_module_text(text: str, patterns: List[str]) -> str:
 def check_publish_gate(module_json: str) -> List[str]:
     """Run pre-flight checks before publishing a module. Returns list of issues."""
     from knowledge_manager.schemas import Module
+
     issues = []
     try:
         mod = Module.model_validate_json(module_json)

@@ -9,8 +9,24 @@ def test_backup_restore_drill_rebuilds_and_searches_restored_kb(tmp_path):
     kb = tmp_path / "kb"
     kb.mkdir()
     save_index(Index(description="drill"), kb)
-    (kb / "config.json").write_text(json.dumps({"llm_providers": {"local": {"api_key": "x", "model": "x", "default": True}}}), encoding="utf-8")
-    save_module(Module(id="rollback", category="ops", title="Rollback runbook", summary="Rollback runbook summary text.", content=ModuleContent(overview="Rollback overview for recovery drill.", details="Rollback details long enough for the recovery drill.")), kb, defer_noncritical=False)
+    (kb / "config.json").write_text(
+        json.dumps({"llm_providers": {"local": {"api_key": "x", "model": "x", "default": True}}}),
+        encoding="utf-8",
+    )
+    save_module(
+        Module(
+            id="rollback",
+            category="ops",
+            title="Rollback runbook",
+            summary="Rollback runbook summary text.",
+            content=ModuleContent(
+                overview="Rollback overview for recovery drill.",
+                details="Rollback details long enough for the recovery drill.",
+            ),
+        ),
+        kb,
+        defer_noncritical=False,
+    )
     output = tmp_path / "evidence"
     import sys
 
@@ -34,8 +50,23 @@ def test_backup_restore_drill_uses_kb_content_instead_of_rollback_keyword(tmp_pa
     kb = tmp_path / "kb"
     kb.mkdir()
     save_index(Index(description="generic drill"), kb)
-    (kb / "config.json").write_text(json.dumps({"llm_providers": {"local": {"api_key": "x", "model": "x", "default": True}}}), encoding="utf-8")
-    save_module(Module(id="oauth", category="auth", title="OAuth authorization", summary="OAuth authorization summary.", content=ModuleContent(overview="OAuth authorization overview.", details="OAuth authorization details.")), kb, defer_noncritical=False)
+    (kb / "config.json").write_text(
+        json.dumps({"llm_providers": {"local": {"api_key": "x", "model": "x", "default": True}}}),
+        encoding="utf-8",
+    )
+    save_module(
+        Module(
+            id="oauth",
+            category="auth",
+            title="OAuth authorization",
+            summary="OAuth authorization summary.",
+            content=ModuleContent(
+                overview="OAuth authorization overview.", details="OAuth authorization details."
+            ),
+        ),
+        kb,
+        defer_noncritical=False,
+    )
     output = tmp_path / "evidence"
     monkeypatch.setattr(sys, "argv", ["drill", "--kb-path", str(kb), "--output-dir", str(output)])
     assert main() == 0

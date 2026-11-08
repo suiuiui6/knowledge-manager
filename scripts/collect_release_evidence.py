@@ -19,7 +19,9 @@ def _run(command: str) -> dict[str, object]:
     }
 
 
-def _write_summary(release_dir: Path, steps: list[dict[str, object]]) -> tuple[dict[str, object], Path]:
+def _write_summary(
+    release_dir: Path, steps: list[dict[str, object]]
+) -> tuple[dict[str, object], Path]:
     summary_path = release_dir / "release-evidence-collection.json"
     passed_step_names = [str(step["name"]) for step in steps if step["ok"]]
     failed_step_names = [str(step["name"]) for step in steps if not step["ok"]]
@@ -37,7 +39,9 @@ def _write_summary(release_dir: Path, steps: list[dict[str, object]]) -> tuple[d
         "steps": steps,
         "artifacts": {
             "verify_install_smoke_path": str(release_dir / "verify-install-smoke.json"),
-            "verify_production_readiness_path": str(release_dir / "verify-production-readiness.json"),
+            "verify_production_readiness_path": str(
+                release_dir / "verify-production-readiness.json"
+            ),
             "verify_deployment_path": str(release_dir / "verify-deployment.json"),
             "release_support_bundle_path": str(release_dir / "release-support-bundle.json"),
             "host_deploy_proof_path": str(release_dir / "host-deploy-proof.json"),
@@ -49,7 +53,9 @@ def _write_summary(release_dir: Path, steps: list[dict[str, object]]) -> tuple[d
     return payload, summary_path
 
 
-def _print_text_summary(payload: dict[str, object], steps: list[dict[str, object]], summary_path: Path) -> None:
+def _print_text_summary(
+    payload: dict[str, object], steps: list[dict[str, object]], summary_path: Path
+) -> None:
     for step in steps:
         status = "PASS" if step["ok"] else "FAIL"
         print(f"[{status}] {step['name']}: {step['command']}")
@@ -103,7 +109,11 @@ def main() -> int:
             f'--base-url "{args.base_url}" --matrix-summary "{args.matrix_summary}" --format json > "{release_dir / "verify-deployment.json"}"'
         )
     support_bundle_command = args.support_bundle_command
-    if support_bundle_command is None and args.kb_path is not None and args.matrix_summary is not None:
+    if (
+        support_bundle_command is None
+        and args.kb_path is not None
+        and args.matrix_summary is not None
+    ):
         support_bundle_command = (
             f'{args.km_command} --kb-path "{args.kb_path}" support bundle '
             f'--output-dir "{release_dir}" --matrix-summary "{args.matrix_summary}"'

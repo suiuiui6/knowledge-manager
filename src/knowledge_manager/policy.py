@@ -57,9 +57,17 @@ def evaluate_module_policy(
     risk_level: str | None = None,
 ) -> PolicyDecision:
     reasons: list[str] = []
-    if module is not None and allowed_statuses is not None and module.metadata.status not in allowed_statuses:
+    if (
+        module is not None
+        and allowed_statuses is not None
+        and module.metadata.status not in allowed_statuses
+    ):
         reasons.append(f"suppressed_by_policy:status:{module.metadata.status}")
-    if module is not None and policy.suppress_stale_sources and module.metadata.stale_due_to_source_change:
+    if (
+        module is not None
+        and policy.suppress_stale_sources
+        and module.metadata.stale_due_to_source_change
+    ):
         reasons.append("suppressed_by_policy:stale_source")
     if module is not None and policy.suppress_expired:
         now = datetime.now(timezone.utc)

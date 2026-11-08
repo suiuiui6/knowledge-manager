@@ -150,7 +150,12 @@ def test_benchmark_release_verdict_exposes_hotspot_blockers_and_sections(tmp_pat
     verdict = result["release_verdict"]
     assert "blockers" in verdict
     assert "hotspot_sections" in verdict
-    assert set(verdict["hotspot_sections"]) >= {"search", "module_crud", "recommendations", "admin_dashboard"}
+    assert set(verdict["hotspot_sections"]) >= {
+        "search",
+        "module_crud",
+        "recommendations",
+        "admin_dashboard",
+    }
 
     markdown = Path(result["artifacts"]["markdown"]).read_text(encoding="utf-8")
     assert "## Hotspots" in markdown
@@ -287,7 +292,13 @@ def test_run_enterprise_benchmark_disables_tracemalloc_before_timed_sections(tmp
         }
 
     monkeypatch.setattr(perf, "_measure", fake_measure)
-    monkeypatch.setattr(perf, "_measure_with_hotspot", lambda name, iterations, fn, hotspot_timer=None, hotspot_name=None: fake_measure(name, iterations, fn))
+    monkeypatch.setattr(
+        perf,
+        "_measure_with_hotspot",
+        lambda name, iterations, fn, hotspot_timer=None, hotspot_name=None: fake_measure(
+            name, iterations, fn
+        ),
+    )
 
     result = perf.run_enterprise_benchmark(
         BenchmarkConfig(

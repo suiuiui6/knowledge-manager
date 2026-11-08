@@ -92,7 +92,9 @@ def update_lexical_index_for_module(kb_path: Path, module) -> dict[str, dict[str
     return _write_index_payload(kb_path, payload)
 
 
-def delete_lexical_index_for_module(kb_path: Path, category: str, module_id: str) -> dict[str, dict[str, list[str]]] | None:
+def delete_lexical_index_for_module(
+    kb_path: Path, category: str, module_id: str
+) -> dict[str, dict[str, list[str]]] | None:
     payload = load_lexical_index(kb_path)
     if payload is None:
         return None

@@ -28,11 +28,23 @@ from knowledge_manager.schemas import (
     RoutingPolicyConfig,
     StagingMeta,
 )
-from knowledge_manager.tenancy import TenantContext, module_visible_to_tenant, scope_visible_to_tenant
+from knowledge_manager.tenancy import (
+    TenantContext,
+    module_visible_to_tenant,
+    scope_visible_to_tenant,
+)
 from knowledge_manager.json_io import atomic_write_text
 
 
-_FIELD_WEIGHTS = {"title": 5, "tag": 3, "summary": 2, "overview": 1, "details": 1, "examples": 0, "caveats": 0}
+_FIELD_WEIGHTS = {
+    "title": 5,
+    "tag": 3,
+    "summary": 2,
+    "overview": 1,
+    "details": 1,
+    "examples": 0,
+    "caveats": 0,
+}
 _WORD_RE = re.compile(r"\w+")
 _EN_STEMMER: Any = _snowball_stemmer("english")
 _EN_STEMMER_LOCK = Lock()
@@ -66,20 +78,47 @@ _INTENT_ADJUSTMENTS: Dict[str, Dict[str, float]] = {
 _INTENT_PATTERNS: Dict[str, List[str]] = {
     "how-to": [
         r"\bhow\s+(to|do|can|should|would|does|is|are)\b",
-        r"\bguide\b", r"\btutorial\b", r"\bexample\b", r"\bpattern\b",
-        r"\bimplement", r"\bset\s+up\b", r"\bconfigure\b", r"\bbuild\b",
-        r"\bcreate\b", r"\bdeploy\b", r"\bmigrate\b", r"\bdebug\b",
+        r"\bguide\b",
+        r"\btutorial\b",
+        r"\bexample\b",
+        r"\bpattern\b",
+        r"\bimplement",
+        r"\bset\s+up\b",
+        r"\bconfigure\b",
+        r"\bbuild\b",
+        r"\bcreate\b",
+        r"\bdeploy\b",
+        r"\bmigrate\b",
+        r"\bdebug\b",
     ],
     "decision-record": [
-        r"\bwhy\b", r"\bdecision\b", r"\btradeoff\b", r"\btrade.off\b",
-        r"\barchitecture\b", r"\bchose\b", r"\bchosen\b", r"\bADR\b",
-        r"\balternative\b", r"\bapproach\b", r"\brationale\b",
-        r"\bvs\b", r"\bversus\b", r"\bcompared to\b",
+        r"\bwhy\b",
+        r"\bdecision\b",
+        r"\btradeoff\b",
+        r"\btrade.off\b",
+        r"\barchitecture\b",
+        r"\bchose\b",
+        r"\bchosen\b",
+        r"\bADR\b",
+        r"\balternative\b",
+        r"\bapproach\b",
+        r"\brationale\b",
+        r"\bvs\b",
+        r"\bversus\b",
+        r"\bcompared to\b",
     ],
     "reference": [
-        r"\bwhat is\b", r"\bdefinition\b", r"\bdefine\b", r"\bapi\b",
-        r"\bconfig\b", r"\bparameter\b", r"\bendpoint\b", r"\bschema\b",
-        r"\bsyntax\b", r"\breference\b", r"\bdocumentation\b",
+        r"\bwhat is\b",
+        r"\bdefinition\b",
+        r"\bdefine\b",
+        r"\bapi\b",
+        r"\bconfig\b",
+        r"\bparameter\b",
+        r"\bendpoint\b",
+        r"\bschema\b",
+        r"\bsyntax\b",
+        r"\breference\b",
+        r"\bdocumentation\b",
     ],
 }
 
@@ -98,6 +137,7 @@ def _stem(word: str) -> str:
     if _CJK_RE.search(word):
         try:
             import jieba
+
             return " ".join(jieba.cut(word))
         except ImportError:
             return word.lower()
@@ -115,16 +155,18 @@ def _classify_intent(query: str) -> str:
 
 
 def _module_full_text(module: Module) -> str:
-    return " ".join([
-        module.title,
-        " ".join(module.metadata.tags),
-        module.summary,
-        module.content.overview,
-        module.content.details,
-        module.content.examples,
-        module.content.references,
-        module.content.caveats,
-    ])
+    return " ".join(
+        [
+            module.title,
+            " ".join(module.metadata.tags),
+            module.summary,
+            module.content.overview,
+            module.content.details,
+            module.content.examples,
+            module.content.references,
+            module.content.caveats,
+        ]
+    )
 
 
 def _field_stems(text: str) -> set[str]:
@@ -153,7 +195,9 @@ def _search_document_from_module(module: Module) -> dict[str, Any]:
         "tenant_id": module.metadata.tenant_id,
         "workspace_id": module.metadata.workspace_id,
         "stale_due_to_source_change": module.metadata.stale_due_to_source_change,
-        "expires_at": module.metadata.expires_at.isoformat() if module.metadata.expires_at else None,
+        "expires_at": (
+            module.metadata.expires_at.isoformat() if module.metadata.expires_at else None
+        ),
         "status": module.metadata.status,
         "created_at": module.created_at.isoformat(),
         "updated_at": module.updated_at.isoformat(),
@@ -214,7 +258,9 @@ def _module_from_search_document(document: Mapping[str, Any]) -> Module:
     )
 
 
-def _projection_doc_visible_to_tenant(document: Mapping[str, Any], tenant: TenantContext | None) -> bool:
+def _projection_doc_visible_to_tenant(
+    document: Mapping[str, Any], tenant: TenantContext | None
+) -> bool:
     return scope_visible_to_tenant(
         str(document.get("tenant_id", "")), str(document.get("workspace_id", "")), tenant
     )
@@ -262,7 +308,8 @@ def _module_set_fingerprint(kb_path: Path) -> tuple[int, int]:
     files = [
         path
         for path in kb_path.rglob("*.json")
-        if path.name != "index.json" and not any(part.startswith(".") for part in path.relative_to(kb_path).parts[:-1])
+        if path.name != "index.json"
+        and not any(part.startswith(".") for part in path.relative_to(kb_path).parts[:-1])
     ]
     total_mtime = sum(int(path.stat().st_mtime_ns) for path in files)
     return len(files), total_mtime
@@ -481,7 +528,9 @@ def delete_module(
     from knowledge_manager.file_locks import kb_write_lock
 
     with kb_write_lock(kb_path):
-        return _delete_module_locked(module_id, category, kb_path, defer_noncritical, defer_derived, maintenance_state)
+        return _delete_module_locked(
+            module_id, category, kb_path, defer_noncritical, defer_derived, maintenance_state
+        )
 
 
 def _delete_module_locked(
@@ -677,9 +726,7 @@ def _bm25_scores(query: str, modules: List[Module]) -> Dict[str, float]:
             if tf == 0:
                 continue
             score += (
-                idf
-                * (tf * (_BM25_K1 + 1))
-                / (tf + _BM25_K1 * (1 - _BM25_B + _BM25_B * dl / avgdl))
+                idf * (tf * (_BM25_K1 + 1)) / (tf + _BM25_K1 * (1 - _BM25_B + _BM25_B * dl / avgdl))
             )
         scores[doc_ids[i]] = score
 
@@ -742,9 +789,7 @@ def _bm25_scores_for_documents(query: str, documents: list[Mapping[str, Any]]) -
             if tf == 0:
                 continue
             score += (
-                idf
-                * (tf * (_BM25_K1 + 1))
-                / (tf + _BM25_K1 * (1 - _BM25_B + _BM25_B * dl / avgdl))
+                idf * (tf * (_BM25_K1 + 1)) / (tf + _BM25_K1 * (1 - _BM25_B + _BM25_B * dl / avgdl))
             )
         scores[doc_keys[i]] = score
     return scores
@@ -785,7 +830,8 @@ def search_modules(
                     projection_payload = build_search_projection(kb_path)
                 projection_documents = projection_payload.get("documents", {})
                 if any(
-                    (document := projection_documents.get(key)) is None or not projection_document_complete(document)
+                    (document := projection_documents.get(key)) is None
+                    or not projection_document_complete(document)
                     for key in candidate_set
                 ):
                     projection_payload = build_search_projection(kb_path)
@@ -814,7 +860,9 @@ def search_modules(
             if name in stored:
                 result[name] = set(stored[name])
             elif name == "tag":
-                result[name] = {s for tag in document.get("tags", []) for s in _stem(str(tag)).split()}
+                result[name] = {
+                    s for tag in document.get("tags", []) for s in _stem(str(tag)).split()
+                }
             else:
                 result[name] = _field_stems(str(document.get(name, "")))
         return result
@@ -836,7 +884,9 @@ def search_modules(
             ]
         for module in all_modules:
             document = _search_document_from_module(module)
-            candidate_items.append((_document_key(document), document, _document_field_stems(document)))
+            candidate_items.append(
+                (_document_key(document), document, _document_field_stems(document))
+            )
     cfg = _load_config_safe(kb_path)
     user_synonyms: Dict[str, List[str]] = cfg.synonyms if cfg else {}
     routing_policy: RoutingPolicyConfig = cfg.routing_policy if cfg else RoutingPolicyConfig()
@@ -853,7 +903,11 @@ def search_modules(
         risk_allowed = effective_policy.risk_level_allowed_statuses.get(risk_level, [])
         if risk_allowed:
             risk_allowed_set = set(risk_allowed)
-            allowed_statuses = risk_allowed_set if allowed_statuses is None else allowed_statuses & risk_allowed_set
+            allowed_statuses = (
+                risk_allowed_set
+                if allowed_statuses is None
+                else allowed_statuses & risk_allowed_set
+            )
 
     def _document_allowed_by_policy(document: Mapping[str, Any]) -> bool:
         status = str(document.get("status", "published"))
@@ -876,11 +930,7 @@ def search_modules(
                     pass
         return True
 
-    candidate_items = [
-        item
-        for item in candidate_items
-        if _document_allowed_by_policy(item[1])
-    ]
+    candidate_items = [item for item in candidate_items if _document_allowed_by_policy(item[1])]
     bm25 = _bm25_scores_for_documents(query, [item[1] for item in candidate_items])
 
     # Build tag synonym map from co-occurring tags across all modules
@@ -969,7 +1019,9 @@ def search_modules(
     scored: List[tuple[float, float, int, str, dict[str, Any], str, list[str]]] = []
     prioritized_categories = list(effective_policy.category_priorities.get(intent, []))
     if task_type:
-        for category_name in reversed(effective_policy.task_type_category_priorities.get(task_type, [])):
+        for category_name in reversed(
+            effective_policy.task_type_category_priorities.get(task_type, [])
+        ):
             if category_name in prioritized_categories:
                 prioritized_categories.remove(category_name)
             prioritized_categories.insert(0, category_name)
@@ -992,7 +1044,9 @@ def search_modules(
         reasons: list[str] = []
 
         for term, word_pattern, partial_pattern, weight in patterns:
-            term_score, quality = score_term(term, fields, field_stems, word_pattern, partial_pattern, effective_weights)
+            term_score, quality = score_term(
+                term, fields, field_stems, word_pattern, partial_pattern, effective_weights
+            )
             score += int(term_score * weight)
             best_quality = max(best_quality, quality)
 
@@ -1002,18 +1056,40 @@ def search_modules(
             reasons.append(f"category_priority:{category_name}")
         if score > 0:
             reasons.append(f"intent:{intent}")
-        if score > 0 and task_type and category_name in effective_policy.task_type_category_priorities.get(task_type, []):
+        if (
+            score > 0
+            and task_type
+            and category_name in effective_policy.task_type_category_priorities.get(task_type, [])
+        ):
             reasons.append(f"task_type:{task_type}")
         if score > 0 and agent_id:
             reasons.append(f"agent:{agent_id}")
 
         if score > 0:
-            scored.append((bm25.get(module_key, 0.0), score, best_quality, module_key, document, "direct", reasons))
+            scored.append(
+                (
+                    bm25.get(module_key, 0.0),
+                    score,
+                    best_quality,
+                    module_key,
+                    document,
+                    "direct",
+                    reasons,
+                )
+            )
 
     # 1-hop graph expansion: add related modules with discounted scores
     direct_matches = list(scored)
     direct_keys = {module_key for _, _, _, module_key, _, _, _ in direct_matches}
-    for _bm25_score, heur_score, _, module_key, trigger_document, _, trigger_reasons in direct_matches:
+    for (
+        _bm25_score,
+        heur_score,
+        _,
+        module_key,
+        trigger_document,
+        _,
+        trigger_reasons,
+    ) in direct_matches:
         for neighbor_ref in graph.get(module_key, []):
             # Parse optional edge weight: "category/id:0.8" → weight=0.8 (default 1.0)
             edge_weight = 1.0
@@ -1098,7 +1174,8 @@ def search_modules(
     # Secondary: match quality. Tertiary: Bayesian prior. Fourth: BM25.
     scored.sort(
         key=lambda item: (
-            _session_boost(item[3], str(item[4].get("module_id", "")), item[1]) * _effective_confidence(item[4]),
+            _session_boost(item[3], str(item[4].get("module_id", "")), item[1])
+            * _effective_confidence(item[4]),
             item[2],
             _bayesian_bonus(item[3]),
             item[0],
@@ -1145,10 +1222,16 @@ def search_modules(
             effective_policy,
             allowed_statuses=allowed_statuses,
         )
-        if not companion_decision.allowed and companion_key not in effective_policy.risk_level_companions.get(risk_level or "", []):
+        if (
+            not companion_decision.allowed
+            and companion_key
+            not in effective_policy.risk_level_companions.get(risk_level or "", [])
+        ):
             continue
         companion_reasons = [f"mandatory_companion:{companion_key}"]
-        if risk_level and companion_key in effective_policy.risk_level_companions.get(risk_level, []):
+        if risk_level and companion_key in effective_policy.risk_level_companions.get(
+            risk_level, []
+        ):
             companion_reasons.append(f"risk_level:{risk_level}")
         for primary_category in primary_categories:
             if companion_key in effective_policy.mandatory_companions.get(primary_category, []):
@@ -1158,7 +1241,9 @@ def search_modules(
         seen_keys.add(companion_key)
 
     results = [
-        SearchResult(module_for_tenant(result.module, kb_path, tenant), result.source, result.reasons)
+        SearchResult(
+            module_for_tenant(result.module, kb_path, tenant), result.source, result.reasons
+        )
         for result in results
         if module_visible_to_tenant(result.module, tenant)
     ]
@@ -1232,24 +1317,28 @@ def generate_changelog(kb_path: Path) -> dict | None:
             # Determine if added/modified/deleted by checking parent
             parent_result = subprocess.run(
                 ["git", "-C", str(kb_path), "cat-file", "-e", f"{commit_hash}~1:{f}"],
-                capture_output=True, check=False,
+                capture_output=True,
+                check=False,
             )
             if parent_result.returncode != 0:
                 changes["added"].append(f.replace(".json", ""))
             else:
                 changes["modified"].append(f.replace(".json", ""))
 
-        commits.append({
-            "hash": commit_hash[:7],
-            "author": author,
-            "message": message,
-            "changes": changes,
-        })
+        commits.append(
+            {
+                "hash": commit_hash[:7],
+                "author": author,
+                "message": message,
+                "changes": changes,
+            }
+        )
 
     if not commits:
         return None
 
     from datetime import date
+
     changelog = {
         "date": date.today().isoformat(),
         "commits": commits,
@@ -1257,6 +1346,7 @@ def generate_changelog(kb_path: Path) -> dict | None:
     # Save to .changelog/
     changelog_file = changelog_dir / f"{changelog['date']}.json"
     import json
+
     changelog_file.write_text(json.dumps(changelog, indent=2), encoding="utf-8")
     return changelog
 
@@ -1268,6 +1358,7 @@ def load_changelogs(kb_path: Path, days: int = 7) -> list[dict]:
         return []
 
     from datetime import date, timedelta
+
     cutoff = date.today() - timedelta(days=days)
     import json
 
@@ -1290,6 +1381,7 @@ def load_module_changelog(kb_path: Path, module_key: str) -> list[dict]:
         return []
 
     import json
+
     entries = []
     for f in sorted(changelog_dir.glob("*.json"), reverse=True):
         try:
@@ -1299,12 +1391,14 @@ def load_module_changelog(kb_path: Path, module_key: str) -> list[dict]:
                 for kind in ("added", "modified", "deleted"):
                     all_changes.extend(commit["changes"].get(kind, []))
                 if module_key in all_changes:
-                    entries.append({
-                        "date": data["date"],
-                        "hash": commit["hash"],
-                        "author": commit["author"],
-                        "message": commit["message"],
-                    })
+                    entries.append(
+                        {
+                            "date": data["date"],
+                            "hash": commit["hash"],
+                            "author": commit["author"],
+                            "message": commit["message"],
+                        }
+                    )
         except (json.JSONDecodeError, ValueError):
             pass
     return entries
@@ -1573,7 +1667,9 @@ def load_rank_model(
         if expected_load_event_count is not None:
             if model.get("load_event_count", model.get("event_count")) != expected_load_event_count:
                 return None
-            if (model.get("latest_load_timestamp", "") or "") != (expected_latest_load_timestamp or ""):
+            if (model.get("latest_load_timestamp", "") or "") != (
+                expected_latest_load_timestamp or ""
+            ):
                 return None
         else:
             if model.get("event_count") != expected_event_count:
@@ -1669,7 +1765,9 @@ def compute_bayesian_priors(kb_path: Path) -> Dict[str, Dict[str, float]]:
         positives = term_positive.get(term, {})
         for mk in all_module_keys:
             count = positives.get(mk, 0)
-            priors[term][mk] = (count + _BAYESIAN_SMOOTHING) / (total + _BAYESIAN_SMOOTHING * num_modules)
+            priors[term][mk] = (count + _BAYESIAN_SMOOTHING) / (
+                total + _BAYESIAN_SMOOTHING * num_modules
+            )
 
     # Persist to disk cache
     save_rank_model(priors, len(events), kb_path)
@@ -1838,7 +1936,9 @@ def compute_module_health(
     if usage == 0:
         issues.append("zombie")
     if freshness == 0:
-        if module.metadata.expires_at and module.metadata.expires_at.replace(tzinfo=timezone.utc) <= datetime.now(timezone.utc):
+        if module.metadata.expires_at and module.metadata.expires_at.replace(
+            tzinfo=timezone.utc
+        ) <= datetime.now(timezone.utc):
             issues.append("expired")
         else:
             issues.append("stale")
@@ -1856,7 +1956,9 @@ def compute_module_health(
         category=module.category,
         title=module.title,
         status=module.metadata.status,
-        score=HealthScore(freshness=freshness, usage=usage, completeness=completeness, overall=round(overall, 1)),
+        score=HealthScore(
+            freshness=freshness, usage=usage, completeness=completeness, overall=round(overall, 1)
+        ),
         issues=issues,
         last_load=_last_load_time(module.id, module.category, kb_path, load_stats=load_stats),
         load_count_30d=_load_count_30d(module.id, module.category, kb_path, load_stats=load_stats),
@@ -1891,7 +1993,11 @@ def _generate_health_report_uncached(kb_path: Path) -> Any:
 
     total_modules = len(all_health)
     total_categories = len(index.categories)
-    overall_score = round(sum(h.score.overall for h in all_health) / total_modules, 1) if total_modules > 0 else 0.0
+    overall_score = (
+        round(sum(h.score.overall for h in all_health) / total_modules, 1)
+        if total_modules > 0
+        else 0.0
+    )
 
     breakdown = {}
     for cat_name in index.categories:
@@ -1934,7 +2040,12 @@ def generate_health_report(kb_path: Path) -> Any:
 def aggregate_usage_stats(kb_path: Path, period_days: int = 30) -> Any:
     """Aggregate usage statistics from telemetry events."""
     from datetime import timedelta
-    from knowledge_manager.schemas import UsageStats, ModuleUsageEntry, UnmatchedQueryEntry, DailyActivityPoint
+    from knowledge_manager.schemas import (
+        UsageStats,
+        ModuleUsageEntry,
+        UnmatchedQueryEntry,
+        DailyActivityPoint,
+    )
 
     events = load_search_events(kb_path)
     now = datetime.now(timezone.utc)
@@ -1964,8 +2075,12 @@ def aggregate_usage_stats(kb_path: Path, period_days: int = 30) -> Any:
 
     conversions = 0
     for sid, evts in sessions.items():
-        search_times = [datetime.fromisoformat(e["timestamp"]) for e in evts if e.get("type") == "search"]
-        load_times = [datetime.fromisoformat(e["timestamp"]) for e in evts if e.get("type") == "load"]
+        search_times = [
+            datetime.fromisoformat(e["timestamp"]) for e in evts if e.get("type") == "search"
+        ]
+        load_times = [
+            datetime.fromisoformat(e["timestamp"]) for e in evts if e.get("type") == "load"
+        ]
         for st in search_times:
             for lt in load_times:
                 if timedelta(seconds=0) <= (lt - st) <= timedelta(seconds=30):
@@ -1997,7 +2112,11 @@ def aggregate_usage_stats(kb_path: Path, period_days: int = 30) -> Any:
                 if m.id == mid:
                     title = m.title
                     break
-        top_modules.append(ModuleUsageEntry(module_id=mid, category=cat, title=title, load_count=count, trend="stable"))
+        top_modules.append(
+            ModuleUsageEntry(
+                module_id=mid, category=cat, title=title, load_count=count, trend="stable"
+            )
+        )
 
     # Unmatched queries (searches with no results shown)
     unmatched: dict[str, tuple[list[str], int]] = {}
@@ -2032,8 +2151,7 @@ def aggregate_usage_stats(kb_path: Path, period_days: int = 30) -> Any:
             daily[day] = (s, l + 1)
 
     daily_activity = [
-        DailyActivityPoint(date=d, searches=s, loads=l)
-        for d, (s, l) in sorted(daily.items())
+        DailyActivityPoint(date=d, searches=s, loads=l) for d, (s, l) in sorted(daily.items())
     ]
 
     return UsageStats(
@@ -2082,13 +2200,17 @@ def analyze_graph(kb_path: Path) -> Any:
 
     # Hub modules (top 5 by in-degree)
     hubs = sorted(
-        [HubEntry(
-            module_id=k.split("/", 1)[1] if "/" in k else k,
-            category=k.split("/", 1)[0] if "/" in k else "",
-            title=titles.get(k, k),
-            in_degree=in_degree.get(k, 0),
-            out_degree=len(graph.get(k, [])),
-        ) for k in all_modules if in_degree.get(k, 0) > 0],
+        [
+            HubEntry(
+                module_id=k.split("/", 1)[1] if "/" in k else k,
+                category=k.split("/", 1)[0] if "/" in k else "",
+                title=titles.get(k, k),
+                in_degree=in_degree.get(k, 0),
+                out_degree=len(graph.get(k, [])),
+            )
+            for k in all_modules
+            if in_degree.get(k, 0) > 0
+        ],
         key=lambda h: -h.in_degree,
     )[:5]
 
@@ -2102,14 +2224,19 @@ def analyze_graph(kb_path: Path) -> Any:
             if t in all_modules:
                 ok_keys.add(t)  # has incoming edges
 
-    orphans = sorted([
-        OrphanEntry(
-            module_id=k.split("/", 1)[1] if "/" in k else k,
-            category=k.split("/", 1)[0] if "/" in k else "",
-            title=titles.get(k, ""),
-            status="published",
-        ) for k in all_modules if k not in ok_keys
-    ], key=lambda o: o.module_id)
+    orphans = sorted(
+        [
+            OrphanEntry(
+                module_id=k.split("/", 1)[1] if "/" in k else k,
+                category=k.split("/", 1)[0] if "/" in k else "",
+                title=titles.get(k, ""),
+                status="published",
+            )
+            for k in all_modules
+            if k not in ok_keys
+        ],
+        key=lambda o: o.module_id,
+    )
 
     # Broken links
     broken = []
@@ -2134,10 +2261,13 @@ def analyze_graph(kb_path: Path) -> Any:
                 if mod and mod.metadata.status in ("deprecated", "archived"):
                     for src, targets in graph.items():
                         if mk in targets and src in titles:
-                            broken.append(BrokenLinkEntry(
-                                source=src, target=mk,
-                                target_status=mod.metadata.status,
-                            ))
+                            broken.append(
+                                BrokenLinkEntry(
+                                    source=src,
+                                    target=mk,
+                                    target_status=mod.metadata.status,
+                                )
+                            )
 
     # Density
     n = total_nodes
@@ -2197,12 +2327,14 @@ def detect_clusters(kb_path: Path) -> list[Any]:
                 # Derive label from shared tags or dominant category
                 categories = [n.split("/", 1)[0] for n in comp]
                 dominant = max(set(categories), key=categories.count) if categories else "general"
-                clusters.append(ClusterEntry(
-                    id=f"cluster-{len(clusters) + 1}",
-                    label=dominant,
-                    module_count=len(comp),
-                    modules=sorted(comp),
-                ))
+                clusters.append(
+                    ClusterEntry(
+                        id=f"cluster-{len(clusters) + 1}",
+                        label=dominant,
+                        module_count=len(comp),
+                        modules=sorted(comp),
+                    )
+                )
 
     return sorted(clusters, key=lambda c: -c.module_count)
 
@@ -2213,7 +2345,9 @@ def detect_clusters(kb_path: Path) -> list[Any]:
 def _generate_recommendations_uncached(kb_path: Path) -> Any:
     """Generate actionable recommendations for knowledge base improvement."""
     from knowledge_manager.schemas import (
-        RecommendationReport, Recommendation, RecommendationType,
+        RecommendationReport,
+        Recommendation,
+        RecommendationType,
     )
 
     index = load_index(kb_path)
@@ -2276,13 +2410,17 @@ def _generate_recommendations_uncached(kb_path: Path) -> Any:
             archive_reasons.append("LOW_SCORE")
 
         if archive_score > 0.5 and status not in ("archived", "deprecated"):
-            archive_candidates.append(Recommendation(
-                type=RecommendationType.ARCHIVE,
-                module_id=mod.id, category=cat_name, title=mod.title,
-                score=archive_score,
-                reason=", ".join(archive_reasons),
-                detail={"health_score": h.score.overall, "issues": h.issues},
-            ))
+            archive_candidates.append(
+                Recommendation(
+                    type=RecommendationType.ARCHIVE,
+                    module_id=mod.id,
+                    category=cat_name,
+                    title=mod.title,
+                    score=archive_score,
+                    reason=", ".join(archive_reasons),
+                    detail={"health_score": h.score.overall, "issues": h.issues},
+                )
+            )
 
         if h.score.completeness < 80:
             missing = []
@@ -2293,22 +2431,35 @@ def _generate_recommendations_uncached(kb_path: Path) -> Any:
             if not mod.content.references:
                 missing.append("references")
             if missing:
-                enrichment_needed.append(Recommendation(
-                    type=RecommendationType.ENRICH,
-                    module_id=mod.id, category=cat_name, title=mod.title,
-                    score=round((80 - h.score.completeness) / 80, 2),
-                    reason=f"Missing: {', '.join(missing)}",
-                    detail={"missing_fields": missing},
-                ))
+                enrichment_needed.append(
+                    Recommendation(
+                        type=RecommendationType.ENRICH,
+                        module_id=mod.id,
+                        category=cat_name,
+                        title=mod.title,
+                        score=round((80 - h.score.completeness) / 80, 2),
+                        reason=f"Missing: {', '.join(missing)}",
+                        detail={"missing_fields": missing},
+                    )
+                )
 
-        if mod.metadata.review_interval_days and h.days_since_update > mod.metadata.review_interval_days:
-            review_reminders.append(Recommendation(
-                type=RecommendationType.REVIEW,
-                module_id=mod.id, category=cat_name, title=mod.title,
-                score=0.8,
-                reason=f"review_interval ({mod.metadata.review_interval_days}d) expired",
-                detail={"days_overdue": h.days_since_update - mod.metadata.review_interval_days},
-            ))
+        if (
+            mod.metadata.review_interval_days
+            and h.days_since_update > mod.metadata.review_interval_days
+        ):
+            review_reminders.append(
+                Recommendation(
+                    type=RecommendationType.REVIEW,
+                    module_id=mod.id,
+                    category=cat_name,
+                    title=mod.title,
+                    score=0.8,
+                    reason=f"review_interval ({mod.metadata.review_interval_days}d) expired",
+                    detail={
+                        "days_overdue": h.days_since_update - mod.metadata.review_interval_days
+                    },
+                )
+            )
 
     if recommendation_payload is not None:
         link_candidates = [
@@ -2340,13 +2491,17 @@ def _generate_recommendations_uncached(kb_path: Path) -> Any:
 
     for k1, k2, shared in link_candidates:
         if len(shared) >= 2:
-            suggested_links.append(Recommendation(
-                type=RecommendationType.LINK,
-                module_id=k1, category="", title=f"{k1} ↔ {k2}",
-                score=min(1.0, len(shared) / 5.0),
-                reason=f"Shared tags: {', '.join(shared[:3])}",
-                detail={"module_a": k1, "module_b": k2, "shared_tags": shared},
-            ))
+            suggested_links.append(
+                Recommendation(
+                    type=RecommendationType.LINK,
+                    module_id=k1,
+                    category="",
+                    title=f"{k1} ↔ {k2}",
+                    score=min(1.0, len(shared) / 5.0),
+                    reason=f"Shared tags: {', '.join(shared[:3])}",
+                    detail={"module_a": k1, "module_b": k2, "shared_tags": shared},
+                )
+            )
 
     suggested_links.sort(key=lambda r: -r.score)
 
@@ -2386,7 +2541,8 @@ def _generate_ops_report_uncached(
         staging_meta = list_staging_meta(kb_path / ".staging")
     if tenant is not None:
         visible_staging_ids = {
-            module.id for module in list_staging(kb_path / ".staging")
+            module.id
+            for module in list_staging(kb_path / ".staging")
             if module_visible_to_tenant(module, tenant)
         }
         staging_meta = [meta for meta in staging_meta if meta.module_id in visible_staging_ids]
@@ -2441,7 +2597,9 @@ def _generate_ops_report_uncached(
             )
 
     return OpsReport(
-        source_backlog=sorted(source_backlog, key=lambda item: (-item.stale_module_count, item.source_id)),
+        source_backlog=sorted(
+            source_backlog, key=lambda item: (-item.stale_module_count, item.source_id)
+        ),
         lifecycle_backlog=LifecycleBacklog(
             status_counts=status_counts,
             staging_status_counts=staging_status_counts,
@@ -2477,6 +2635,7 @@ def load_federation(kb_path: Path) -> dict:
     Returns empty dict if no federation namespaces are configured.
     """
     import logging
+
     _logger = logging.getLogger("knowledge_manager")
 
     cfg = _load_config_safe(kb_path)
@@ -2487,11 +2646,15 @@ def load_federation(kb_path: Path) -> dict:
     for ns_name, ns_cfg in cfg.federation.namespaces.items():
         ns_path = (kb_path / ns_cfg.kb_path).resolve()
         if not ns_path.exists():
-            _logger.warning("Federation namespace '%s': path %s does not exist, skipping", ns_name, ns_path)
+            _logger.warning(
+                "Federation namespace '%s': path %s does not exist, skipping", ns_name, ns_path
+            )
             continue
         ns_index = load_index(ns_path)
         if ns_index is None:
-            _logger.warning("Federation namespace '%s': no index.json at %s, skipping", ns_name, ns_path)
+            _logger.warning(
+                "Federation namespace '%s': no index.json at %s, skipping", ns_name, ns_path
+            )
             continue
         namespaces[ns_name] = {
             "index": ns_index,
@@ -2515,6 +2678,7 @@ def get_tree(kb_path: Path) -> "TreeNode":
     if tree_val is not None:
         if isinstance(tree_val, dict):
             from knowledge_manager.schemas import TreeNode as TN
+
             try:
                 return TN.model_validate(tree_val)
             except Exception:
@@ -2544,16 +2708,18 @@ def get_subtree(cat: str, mod_id: str, kb_path: Path) -> "TreeNode | None":
         if len(parts) == 2:
             related = load_module(parts[1], parts[0], kb_path)
             if related:
-                node.children.append(TreeNode(
-                    id=ref,
-                    type=TreeNodeType.MODULE,
-                    title=related.title,
-                    summary=related.summary,
-                    path=ref,
-                    confidence=related.metadata.confidence,
-                    status=related.metadata.status,
-                    tags=related.metadata.tags,
-                ))
+                node.children.append(
+                    TreeNode(
+                        id=ref,
+                        type=TreeNodeType.MODULE,
+                        title=related.title,
+                        summary=related.summary,
+                        path=ref,
+                        confidence=related.metadata.confidence,
+                        status=related.metadata.status,
+                        tags=related.metadata.tags,
+                    )
+                )
     return node
 
 
@@ -2578,14 +2744,16 @@ def _build_tree_from_categories(index: "Index") -> "TreeNode":
             word_count=sum(m.word_count for m in cat.modules),
         )
         for mod in cat.modules:
-            cat_node.children.append(TreeNode(
-                id=f"{cat_name}/{mod.id}",
-                type=TreeNodeType.MODULE,
-                title=mod.title,
-                summary=mod.summary,
-                path=f"{cat_name}/{mod.id}",
-                tags=mod.tags,
-            ))
+            cat_node.children.append(
+                TreeNode(
+                    id=f"{cat_name}/{mod.id}",
+                    type=TreeNodeType.MODULE,
+                    title=mod.title,
+                    summary=mod.summary,
+                    path=f"{cat_name}/{mod.id}",
+                    tags=mod.tags,
+                )
+            )
         root.children.append(cat_node)
     root.module_count = stats.total_modules
     root.word_count = stats.total_words
@@ -2619,4 +2787,5 @@ def find_modules_under(node: "TreeNode") -> list[str]:
 
 def _create_empty_index() -> "Index":
     from knowledge_manager.schemas import Index
+
     return Index(description="")

@@ -4,7 +4,9 @@ import sys
 from pathlib import Path
 
 
-def test_collect_release_evidence_fails_clearly_when_readiness_and_deployment_inputs_are_missing(tmp_path):
+def test_collect_release_evidence_fails_clearly_when_readiness_and_deployment_inputs_are_missing(
+    tmp_path,
+):
     root = Path(__file__).resolve().parents[1]
     release_dir = tmp_path / "release-artifacts"
     release_dir.mkdir()
@@ -39,7 +41,9 @@ def test_collect_release_evidence_fails_clearly_when_readiness_and_deployment_in
     assert "verify-deployment.json is missing" in payload["steps"][2]["stderr"]
 
 
-def test_collect_release_evidence_fails_clearly_when_install_smoke_is_skipped_without_artifact(tmp_path):
+def test_collect_release_evidence_fails_clearly_when_install_smoke_is_skipped_without_artifact(
+    tmp_path,
+):
     root = Path(__file__).resolve().parents[1]
     release_dir = tmp_path / "release-artifacts"
     release_dir.mkdir()
@@ -176,9 +180,9 @@ def test_collect_release_evidence_can_orchestrate_readiness_and_deployment_comma
             str(matrix_summary),
             "--skip-install-smoke",
             "--readiness-command",
-            f'{sys.executable} -c "import pathlib; pathlib.Path(r\'{release_dir / "verify-production-readiness.json"}\').write_text(\'{{\\\"ready_for_production\\\": true}}\', encoding=\'utf-8\')"',
+            f'{sys.executable} -c "import pathlib; pathlib.Path(r\'{release_dir / "verify-production-readiness.json"}\').write_text(\'{{\\"ready_for_production\\": true}}\', encoding=\'utf-8\')"',
             "--deployment-command",
-            f'{sys.executable} -c "import pathlib; pathlib.Path(r\'{release_dir / "verify-deployment.json"}\').write_text(\'{{\\\"ok\\\": true}}\', encoding=\'utf-8\')"',
+            f'{sys.executable} -c "import pathlib; pathlib.Path(r\'{release_dir / "verify-deployment.json"}\').write_text(\'{{\\"ok\\": true}}\', encoding=\'utf-8\')"',
             "--support-bundle-command",
             f'{sys.executable} -c "{support_bundle_writer}"',
             "--host-proof-command",
@@ -189,7 +193,7 @@ def test_collect_release_evidence_can_orchestrate_readiness_and_deployment_comma
                 f'--worker-unit-command "{sys.executable} -c \\"print(\'[Service]\\\\nEnvironmentFile=/opt/knowledge-manager/.env.production\\\\nExecStart=/opt/knowledge-manager/.venv/bin/km worker run --poll-interval 1.0\')\\"" '
                 f'--caddy-validate-command "{sys.executable} -c \\"print(\'Valid configuration\')\\"" '
                 f'--logrotate-check-command "{sys.executable} -c \\"print(\'Handling 2 logs\')\\"" '
-                '--format json'
+                "--format json"
             ),
             "--release-verifier-command",
             f'{sys.executable} "{root / "scripts" / "verify_release_artifacts.py"}" --release-dir "{release_dir}" --format json',
@@ -301,7 +305,7 @@ def test_collect_release_evidence_can_generate_and_refresh_support_bundle(tmp_pa
                 f'--worker-unit-command "{sys.executable} -c \\"print(\'[Service]\\\\nEnvironmentFile=/opt/knowledge-manager/.env.production\\\\nExecStart=/opt/knowledge-manager/.venv/bin/km worker run --poll-interval 1.0\')\\"" '
                 f'--caddy-validate-command "{sys.executable} -c \\"print(\'Valid configuration\')\\"" '
                 f'--logrotate-check-command "{sys.executable} -c \\"print(\'Handling 2 logs\')\\"" '
-                '--format json'
+                "--format json"
             ),
             "--release-verifier-command",
             f'{sys.executable} "{root / "scripts" / "verify_release_artifacts.py"}" --release-dir "{release_dir}" --format json',
@@ -316,10 +320,14 @@ def test_collect_release_evidence_can_generate_and_refresh_support_bundle(tmp_pa
     assert result.returncode == 0, result.stderr
     payload = json.loads(result.stdout)
     assert payload["ok"] is True
-    support_bundle = json.loads((release_dir / "release-support-bundle.json").read_text(encoding="utf-8"))
+    support_bundle = json.loads(
+        (release_dir / "release-support-bundle.json").read_text(encoding="utf-8")
+    )
     assert support_bundle["release_evidence"]["complete"] is True
     assert support_bundle["release_evidence"]["missing"] == []
-    assert support_bundle["release_evidence"]["host_deploy_proof_path"].endswith("host-deploy-proof.json")
+    assert support_bundle["release_evidence"]["host_deploy_proof_path"].endswith(
+        "host-deploy-proof.json"
+    )
     assert support_bundle["release_evidence"]["verify_release_artifacts_path"].endswith(
         "verify-release-artifacts.json"
     )
@@ -378,7 +386,7 @@ def test_collect_release_evidence_runs_pipeline_and_writes_summary(tmp_path):
                 f'--worker-unit-command "{sys.executable} -c \\"print(\'[Service]\\\\nEnvironmentFile=/opt/knowledge-manager/.env.production\\\\nExecStart=/opt/knowledge-manager/.venv/bin/km worker run --poll-interval 1.0\')\\"" '
                 f'--caddy-validate-command "{sys.executable} -c \\"print(\'Valid configuration\')\\"" '
                 f'--logrotate-check-command "{sys.executable} -c \\"print(\'Handling 2 logs\')\\"" '
-                '--format json'
+                "--format json"
             ),
             "--release-verifier-command",
             f'{sys.executable} "{root / "scripts" / "verify_release_artifacts.py"}" --release-dir "{release_dir}" --format json',
@@ -402,7 +410,9 @@ def test_collect_release_evidence_runs_pipeline_and_writes_summary(tmp_path):
     assert payload["artifacts"]["verify_deployment_path"] == str(
         release_dir / "verify-deployment.json"
     )
-    assert payload["artifacts"]["host_deploy_proof_path"] == str(release_dir / "host-deploy-proof.json")
+    assert payload["artifacts"]["host_deploy_proof_path"] == str(
+        release_dir / "host-deploy-proof.json"
+    )
     assert payload["artifacts"]["verify_release_artifacts_path"] == str(
         release_dir / "verify-release-artifacts.json"
     )
@@ -466,7 +476,7 @@ def test_collect_release_evidence_text_output_lists_artifact_paths(tmp_path):
                 f'--worker-unit-command "{sys.executable} -c \\"print(\'[Service]\\\\nEnvironmentFile=/opt/knowledge-manager/.env.production\\\\nExecStart=/opt/knowledge-manager/.venv/bin/km worker run --poll-interval 1.0\')\\"" '
                 f'--caddy-validate-command "{sys.executable} -c \\"print(\'Valid configuration\')\\"" '
                 f'--logrotate-check-command "{sys.executable} -c \\"print(\'Handling 2 logs\')\\"" '
-                '--format json'
+                "--format json"
             ),
             "--release-verifier-command",
             f'{sys.executable} "{root / "scripts" / "verify_release_artifacts.py"}" --release-dir "{release_dir}" --format json',
@@ -485,10 +495,19 @@ def test_collect_release_evidence_text_output_lists_artifact_paths(tmp_path):
         in result.stdout
     )
     assert f"verify_deployment_path={release_dir / 'verify-deployment.json'}" in result.stdout
-    assert f"release_support_bundle_path={release_dir / 'release-support-bundle.json'}" in result.stdout
+    assert (
+        f"release_support_bundle_path={release_dir / 'release-support-bundle.json'}"
+        in result.stdout
+    )
     assert f"host_deploy_proof_path={release_dir / 'host-deploy-proof.json'}" in result.stdout
-    assert f"verify_release_artifacts_path={release_dir / 'verify-release-artifacts.json'}" in result.stdout
-    assert f"release_evidence_collection_path={release_dir / 'release-evidence-collection.json'}" in result.stdout
+    assert (
+        f"verify_release_artifacts_path={release_dir / 'verify-release-artifacts.json'}"
+        in result.stdout
+    )
+    assert (
+        f"release_evidence_collection_path={release_dir / 'release-evidence-collection.json'}"
+        in result.stdout
+    )
 
 
 def test_collect_release_evidence_failure_text_output_lists_artifact_paths(tmp_path):
@@ -520,10 +539,19 @@ def test_collect_release_evidence_failure_text_output_lists_artifact_paths(tmp_p
         in result.stdout
     )
     assert f"verify_deployment_path={release_dir / 'verify-deployment.json'}" in result.stdout
-    assert f"release_support_bundle_path={release_dir / 'release-support-bundle.json'}" in result.stdout
+    assert (
+        f"release_support_bundle_path={release_dir / 'release-support-bundle.json'}"
+        in result.stdout
+    )
     assert f"host_deploy_proof_path={release_dir / 'host-deploy-proof.json'}" in result.stdout
-    assert f"verify_release_artifacts_path={release_dir / 'verify-release-artifacts.json'}" in result.stdout
-    assert f"release_evidence_collection_path={release_dir / 'release-evidence-collection.json'}" in result.stdout
+    assert (
+        f"verify_release_artifacts_path={release_dir / 'verify-release-artifacts.json'}"
+        in result.stdout
+    )
+    assert (
+        f"release_evidence_collection_path={release_dir / 'release-evidence-collection.json'}"
+        in result.stdout
+    )
 
 
 def test_collect_release_evidence_json_summary_lists_failed_step_names(tmp_path):
@@ -571,9 +599,9 @@ def test_collect_release_evidence_is_documented():
     assert "release-evidence-collection.json" in script
     assert (
         'python3.11 /opt/knowledge-manager/scripts/collect_release_evidence.py --release-dir "$RELEASE_DIR" '
-        '--kb-path /opt/knowledge-manager/kb --base-url http://127.0.0.1:8420 --matrix-summary <fresh-matrix-summary.json>'
+        "--kb-path /opt/knowledge-manager/kb --base-url http://127.0.0.1:8420 --matrix-summary <fresh-matrix-summary.json>"
     ) in readme
     assert (
         'python3.11 /opt/knowledge-manager/scripts/collect_release_evidence.py --release-dir "$RELEASE_DIR" '
-        '--kb-path /opt/knowledge-manager/kb --base-url http://127.0.0.1:8420 --matrix-summary <fresh-matrix-summary.json>'
+        "--kb-path /opt/knowledge-manager/kb --base-url http://127.0.0.1:8420 --matrix-summary <fresh-matrix-summary.json>"
     ) in runbook

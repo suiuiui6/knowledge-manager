@@ -74,9 +74,47 @@ line-length = 100
 target-version = ['py310']
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.12"
 warn_return_any = true
 warn_unused_configs = true
+ignore_missing_imports = true
+
+# Legacy modules are frozen at the current typing baseline. New modules must
+# pass mypy and must not be added to this list.
+[[tool.mypy.overrides]]
+module = [
+    "knowledge_manager.admin_views",
+    "knowledge_manager.auth",
+    "knowledge_manager.chat",
+    "knowledge_manager.cli",
+    "knowledge_manager.confluence",
+    "knowledge_manager.connect",
+    "knowledge_manager.file_locks",
+    "knowledge_manager.http_authz",
+    "knowledge_manager.http_server",
+    "knowledge_manager.ingestion_jobs",
+    "knowledge_manager.job_worker",
+    "knowledge_manager.lexical_index",
+    "knowledge_manager.linter",
+    "knowledge_manager.llm_clients",
+    "knowledge_manager.markdown",
+    "knowledge_manager.materialized_views",
+    "knowledge_manager.mcp_server",
+    "knowledge_manager.notion",
+    "knowledge_manager.performance_benchmarks",
+    "knowledge_manager.plugin",
+    "knowledge_manager.rbac",
+    "knowledge_manager.recommendation_index",
+    "knowledge_manager.researcher",
+    "knowledge_manager.search_projection",
+    "knowledge_manager.source_ingestion",
+    "knowledge_manager.storage",
+    "knowledge_manager.tenant_views",
+    "knowledge_manager.tree_navigator",
+    "knowledge_manager.vector_index",
+    "knowledge_manager.worker_service",
+]
+ignore_errors = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

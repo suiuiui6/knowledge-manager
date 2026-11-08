@@ -91,7 +91,12 @@ class TestParseMarkdown:
 
 class TestValidateFrontmatter:
     def test_valid(self):
-        fm = {"id": "test", "title": "Test Module Title", "confidence": "high", "status": "published"}
+        fm = {
+            "id": "test",
+            "title": "Test Module Title",
+            "confidence": "high",
+            "status": "published",
+        }
         assert validate_frontmatter(fm) == []
 
     def test_missing_id(self):

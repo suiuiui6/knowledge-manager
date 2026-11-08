@@ -59,7 +59,9 @@ def main() -> int:
     project_root = args.project_root.resolve()
     work_dir = args.work_dir.resolve() if args.work_dir is not None else None
 
-    tmp_ctx = tempfile.TemporaryDirectory(prefix="km-install-smoke-", dir=str(work_dir) if work_dir else None)
+    tmp_ctx = tempfile.TemporaryDirectory(
+        prefix="km-install-smoke-", dir=str(work_dir) if work_dir else None
+    )
     report: dict[str, object] = {
         "project_root": str(project_root),
         "python": args.python_executable,

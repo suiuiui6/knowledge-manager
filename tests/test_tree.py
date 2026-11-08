@@ -75,17 +75,27 @@ class TestStorageTree:
         save_index(idx, kb)
 
         mod = Module(
-            id="jwt", category="auth", title="JWT Config",
+            id="jwt",
+            category="auth",
+            title="JWT Config",
             summary="JWT configuration details for token management",
-            content=ModuleContent(overview="jwt overview text here", details="jwt details text here with enough length for validation"),
+            content=ModuleContent(
+                overview="jwt overview text here",
+                details="jwt details text here with enough length for validation",
+            ),
             metadata=ModuleMetadata(tags=["jwt", "auth"], related_modules=["auth/oauth"]),
         )
         save_module(mod, kb)
 
         mod2 = Module(
-            id="oauth", category="auth", title="OAuth Flow",
+            id="oauth",
+            category="auth",
+            title="OAuth Flow",
             summary="OAuth flow details for authorization",
-            content=ModuleContent(overview="oauth overview text here", details="oauth details text here with enough length for validation"),
+            content=ModuleContent(
+                overview="oauth overview text here",
+                details="oauth details text here with enough length for validation",
+            ),
             metadata=ModuleMetadata(tags=["oauth", "auth"], related_modules=["auth/jwt"]),
         )
         save_module(mod2, kb)
@@ -110,20 +120,34 @@ class TestStorageTree:
         assert node is None
 
     def test_save_tree(self, kb_with_tree):
-        custom = TreeNode(id="root", type=TreeNodeType.ROOT, title="Custom",
-                          children=[TreeNode(id="g1", type=TreeNodeType.CATEGORY, title="Group1")])
+        custom = TreeNode(
+            id="root",
+            type=TreeNodeType.ROOT,
+            title="Custom",
+            children=[TreeNode(id="g1", type=TreeNodeType.CATEGORY, title="Group1")],
+        )
         save_tree(custom, kb_with_tree)
         loaded = get_tree(kb_with_tree)
         assert loaded.title == "Custom"
         assert len(loaded.children) == 1
 
     def test_find_modules_under(self):
-        root = TreeNode(id="root", type=TreeNodeType.ROOT, title="R",
+        root = TreeNode(
+            id="root",
+            type=TreeNodeType.ROOT,
+            title="R",
             children=[
-                TreeNode(id="cat1", type=TreeNodeType.CATEGORY, title="C1",
-                    children=[TreeNode(id="m1", type=TreeNodeType.MODULE, title="M1"),
-                              TreeNode(id="m2", type=TreeNodeType.MODULE, title="M2")])
-            ])
+                TreeNode(
+                    id="cat1",
+                    type=TreeNodeType.CATEGORY,
+                    title="C1",
+                    children=[
+                        TreeNode(id="m1", type=TreeNodeType.MODULE, title="M1"),
+                        TreeNode(id="m2", type=TreeNodeType.MODULE, title="M2"),
+                    ],
+                )
+            ],
+        )
         keys = find_modules_under(root)
         assert len(keys) == 2
 
@@ -134,6 +158,7 @@ class TestRebuildFromFiles:
         kb.mkdir()
         from knowledge_manager.schemas import Index
         from knowledge_manager.storage import save_index
+
         save_index(Index(description="empty"), kb)
         result = rebuild_tree_from_files(kb)
         assert result is None
@@ -142,31 +167,68 @@ class TestRebuildFromFiles:
 class TestTreeNavigator:
     @pytest.fixture
     def sample_tree(self):
-        return TreeNode(id="root", type=TreeNodeType.ROOT, title="KB",
+        return TreeNode(
+            id="root",
+            type=TreeNodeType.ROOT,
+            title="KB",
             children=[
-                TreeNode(id="auth", type=TreeNodeType.CATEGORY, title="Authentication",
+                TreeNode(
+                    id="auth",
+                    type=TreeNodeType.CATEGORY,
+                    title="Authentication",
                     summary="All about auth",
                     children=[
-                        TreeNode(id="auth/jwt", type=TreeNodeType.MODULE, title="JWT Config",
-                                  summary="JWT token configuration details", path="auth/jwt",
-                                  tags=["jwt", "token"]),
-                        TreeNode(id="auth/oauth", type=TreeNodeType.MODULE, title="OAuth Flow",
-                                  summary="OAuth 2.0 authorization code flow", path="auth/oauth",
-                                  tags=["oauth", "authorization"]),
-                    ]),
-                TreeNode(id="deploy", type=TreeNodeType.CATEGORY, title="Deployment",
+                        TreeNode(
+                            id="auth/jwt",
+                            type=TreeNodeType.MODULE,
+                            title="JWT Config",
+                            summary="JWT token configuration details",
+                            path="auth/jwt",
+                            tags=["jwt", "token"],
+                        ),
+                        TreeNode(
+                            id="auth/oauth",
+                            type=TreeNodeType.MODULE,
+                            title="OAuth Flow",
+                            summary="OAuth 2.0 authorization code flow",
+                            path="auth/oauth",
+                            tags=["oauth", "authorization"],
+                        ),
+                    ],
+                ),
+                TreeNode(
+                    id="deploy",
+                    type=TreeNodeType.CATEGORY,
+                    title="Deployment",
                     children=[
-                        TreeNode(id="deploy/k8s", type=TreeNodeType.MODULE, title="K8s Config",
-                                  summary="Kubernetes cluster configuration", path="deploy/k8s",
-                                  tags=["kubernetes", "deploy"]),
-                    ]),
-            ])
+                        TreeNode(
+                            id="deploy/k8s",
+                            type=TreeNodeType.MODULE,
+                            title="K8s Config",
+                            summary="Kubernetes cluster configuration",
+                            path="deploy/k8s",
+                            tags=["kubernetes", "deploy"],
+                        ),
+                    ],
+                ),
+            ],
+        )
 
     class FakeNavLLM:
         def __init__(self, responses=None):
             self.responses = responses or []
             self.idx = 0
-            self.config = type("C", (), {"api_key": "", "model": "", "base_url": "", "temperature": 0.3, "max_tokens": 1024})()
+            self.config = type(
+                "C",
+                (),
+                {
+                    "api_key": "",
+                    "model": "",
+                    "base_url": "",
+                    "temperature": 0.3,
+                    "max_tokens": 1024,
+                },
+            )()
 
         async def complete(self, prompt):
             if self.idx < len(self.responses):
@@ -184,12 +246,36 @@ class TestTreeNavigator:
     @pytest.mark.asyncio
     async def test_navigate_drill_to_module(self, sample_tree):
         import json
+
         # drill to auth, then load jwt
-        llm = self.FakeNavLLM([
-            json.dumps({"action": "drill", "target_node": "auth", "reasoning": "User asked about auth", "confidence": 0.9}),
-            json.dumps({"action": "drill", "target_node": "auth/jwt", "reasoning": "JWT is about auth", "confidence": 0.95}),
-            json.dumps({"action": "done", "target_node": "auth/jwt", "reasoning": "Found JWT module", "confidence": 0.95}),
-        ])
+        llm = self.FakeNavLLM(
+            [
+                json.dumps(
+                    {
+                        "action": "drill",
+                        "target_node": "auth",
+                        "reasoning": "User asked about auth",
+                        "confidence": 0.9,
+                    }
+                ),
+                json.dumps(
+                    {
+                        "action": "drill",
+                        "target_node": "auth/jwt",
+                        "reasoning": "JWT is about auth",
+                        "confidence": 0.95,
+                    }
+                ),
+                json.dumps(
+                    {
+                        "action": "done",
+                        "target_node": "auth/jwt",
+                        "reasoning": "Found JWT module",
+                        "confidence": 0.95,
+                    }
+                ),
+            ]
+        )
         nav = TreeNavigator(sample_tree, llm, max_steps=3)
         result = await nav.navigate("JWT token config")
         assert result.final_module_key == "auth/jwt"
@@ -199,10 +285,27 @@ class TestTreeNavigator:
     @pytest.mark.asyncio
     async def test_navigate_load(self, sample_tree):
         import json
-        llm = self.FakeNavLLM([
-            json.dumps({"action": "drill", "target_node": "deploy", "reasoning": "deployment question", "confidence": 0.9}),
-            json.dumps({"action": "load", "target_node": "deploy/k8s", "reasoning": "K8s is what user needs", "confidence": 0.92}),
-        ])
+
+        llm = self.FakeNavLLM(
+            [
+                json.dumps(
+                    {
+                        "action": "drill",
+                        "target_node": "deploy",
+                        "reasoning": "deployment question",
+                        "confidence": 0.9,
+                    }
+                ),
+                json.dumps(
+                    {
+                        "action": "load",
+                        "target_node": "deploy/k8s",
+                        "reasoning": "K8s is what user needs",
+                        "confidence": 0.92,
+                    }
+                ),
+            ]
+        )
         nav = TreeNavigator(sample_tree, llm, max_steps=3)
         result = await nav.navigate("kubernetes config")
         assert result.final_module_key == "deploy/k8s"
@@ -210,11 +313,28 @@ class TestTreeNavigator:
     @pytest.mark.asyncio
     async def test_navigate_no_match(self, sample_tree):
         import json
-        llm = self.FakeNavLLM([
-            json.dumps({"action": "drill", "target_node": "auth", "reasoning": "trying auth", "confidence": 0.3}),
-            json.dumps({"action": "backtrack", "target_node": "root", "reasoning": "not in auth", "confidence": 0.1}),
-            json.dumps({"action": "done", "reasoning": "not found", "confidence": 0.0}),
-        ])
+
+        llm = self.FakeNavLLM(
+            [
+                json.dumps(
+                    {
+                        "action": "drill",
+                        "target_node": "auth",
+                        "reasoning": "trying auth",
+                        "confidence": 0.3,
+                    }
+                ),
+                json.dumps(
+                    {
+                        "action": "backtrack",
+                        "target_node": "root",
+                        "reasoning": "not in auth",
+                        "confidence": 0.1,
+                    }
+                ),
+                json.dumps({"action": "done", "reasoning": "not found", "confidence": 0.0}),
+            ]
+        )
         nav = TreeNavigator(sample_tree, llm, max_steps=3)
         result = await nav.navigate("machine learning")
         assert result.confidence <= 0.3

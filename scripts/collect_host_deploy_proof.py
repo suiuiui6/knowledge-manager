@@ -32,8 +32,12 @@ def main() -> int:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--api-unit-command", default="systemctl cat knowledge-manager-api")
     parser.add_argument("--worker-unit-command", default="systemctl cat knowledge-manager-worker")
-    parser.add_argument("--caddy-validate-command", default="caddy validate --config /etc/caddy/Caddyfile")
-    parser.add_argument("--logrotate-check-command", default="logrotate -d /etc/logrotate.d/knowledge-manager")
+    parser.add_argument(
+        "--caddy-validate-command", default="caddy validate --config /etc/caddy/Caddyfile"
+    )
+    parser.add_argument(
+        "--logrotate-check-command", default="logrotate -d /etc/logrotate.d/knowledge-manager"
+    )
     parser.add_argument("--format", choices=["json", "text"], default="json")
     args = parser.parse_args()
 

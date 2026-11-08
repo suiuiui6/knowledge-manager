@@ -61,7 +61,10 @@ def make_marketplace_index() -> MarketplaceIndex:
 def test_marketplace_module_schema():
     """MarketplaceModule should validate."""
     mod = MarketplaceModule(
-        id="test", category="auth", title="Test", summary="A test module",
+        id="test",
+        category="auth",
+        title="Test",
+        summary="A test module",
     )
     assert mod.version == "1.0.0"
     assert mod.author == "community"
@@ -163,7 +166,9 @@ def test_sanitize_module_text_empty_patterns():
 def test_check_publish_gate_valid():
     """check_publish_gate should return empty list for valid publishable module."""
     mod = Module(
-        id="test", category="auth", title="Test Module Title",
+        id="test",
+        category="auth",
+        title="Test Module Title",
         summary="A summary for the test module",
         content=ModuleContent(
             overview="Overview that is long enough",
@@ -178,7 +183,9 @@ def test_check_publish_gate_valid():
 def test_check_publish_gate_low_confidence():
     """check_publish_gate should flag low confidence."""
     mod = Module(
-        id="test", category="auth", title="Test Module Title",
+        id="test",
+        category="auth",
+        title="Test Module Title",
         summary="A summary for the test module",
         content=ModuleContent(
             overview="Overview that is long enough",
@@ -193,7 +200,9 @@ def test_check_publish_gate_low_confidence():
 def test_check_publish_gate_draft_status():
     """check_publish_gate should flag non-published status."""
     mod = Module(
-        id="test", category="auth", title="Test Module Title",
+        id="test",
+        category="auth",
+        title="Test Module Title",
         summary="A summary for the test module",
         content=ModuleContent(
             overview="Overview that is long enough",

@@ -34,6 +34,7 @@ def load_auth_config(kb_path: Path) -> Optional[AuthConfig]:
     if not cfg_path.exists():
         return None
     import json
+
     data = json.loads(cfg_path.read_text(encoding="utf-8"))
     return AuthConfig(
         provider=data.get("provider", ""),
@@ -51,7 +52,14 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if self.auth_config is None or not self.auth_config.provider:
             return await call_next(request)
 
-        public_paths = {"/api/health", "/api/ready", "/api/metrics", "/ui/fallback", "/docs", "/openapi.json"}
+        public_paths = {
+            "/api/health",
+            "/api/ready",
+            "/api/metrics",
+            "/ui/fallback",
+            "/docs",
+            "/openapi.json",
+        }
         if request.url.path in public_paths:
             return await call_next(request)
 
@@ -62,7 +70,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
         else:
             return JSONResponse(
                 status_code=503,
-                content={"detail": f"Unsupported authentication provider: {self.auth_config.provider}"},
+                content={
+                    "detail": f"Unsupported authentication provider: {self.auth_config.provider}"
+                },
             )
 
         if subject is None:
@@ -83,7 +93,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 token,
                 issuer=cfg.get("issuer", ""),
                 audience=cfg.get("audience"),
-                secret=cfg.get("shared_secret") or os.environ.get(cfg.get("shared_secret_env", ""), ""),
+                secret=cfg.get("shared_secret")
+                or os.environ.get(cfg.get("shared_secret_env", ""), ""),
                 jwks=cfg.get("jwks"),
             )
             return AuthSubject(
@@ -119,6 +130,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
     @staticmethod
     def _decode_jwt_unsigned(token: str) -> dict:
         import base64, json
+
         parts = token.split(".")
         if len(parts) < 2:
             return {}

@@ -196,7 +196,9 @@ def run_eval_suite(
     total = len(suite.cases)
     hit_rate = round((passed / total) * 100, 1) if total else 0.0
     failed_cases = total - passed
-    suppression_failure_rate = round((suppressed_failures / failed_cases) * 100, 1) if failed_cases else 0.0
+    suppression_failure_rate = (
+        round((suppressed_failures / failed_cases) * 100, 1) if failed_cases else 0.0
+    )
     baseline_case_count = len(baseline_results or {})
     return EvalRunResult(
         name=suite.name,
@@ -205,16 +207,24 @@ def run_eval_suite(
         top_k=top_k,
         hit_rate=hit_rate,
         suppression_failure_rate=suppression_failure_rate,
-        baseline_win_rate=round((baseline_wins / baseline_case_count) * 100, 1) if baseline_case_count else 0.0,
+        baseline_win_rate=(
+            round((baseline_wins / baseline_case_count) * 100, 1) if baseline_case_count else 0.0
+        ),
         false_positive_rate=round((false_positives / total) * 100, 1) if total else 0.0,
         false_negative_rate=round((false_negatives / total) * 100, 1) if total else 0.0,
         avg_context_tokens=round(total_context_tokens / total) if total else 0,
-        avg_first_hit_rank=round(total_first_hit_rank / cases_with_first_hit, 2) if cases_with_first_hit else 0.0,
+        avg_first_hit_rank=(
+            round(total_first_hit_rank / cases_with_first_hit, 2) if cases_with_first_hit else 0.0
+        ),
         avg_mrr=round(total_mrr / total, 4) if total else 0.0,
         avg_ndcg_at_k=round(total_ndcg_at_k / total, 4) if total else 0.0,
         avg_recall_at_k=round(total_recall_at_k / total, 4) if total else 0.0,
-        policy_failure_rate=round((policy_failures / failed_cases) * 100, 1) if failed_cases else 0.0,
-        retrieval_failure_rate=round((retrieval_failures / failed_cases) * 100, 1) if failed_cases else 0.0,
+        policy_failure_rate=(
+            round((policy_failures / failed_cases) * 100, 1) if failed_cases else 0.0
+        ),
+        retrieval_failure_rate=(
+            round((retrieval_failures / failed_cases) * 100, 1) if failed_cases else 0.0
+        ),
         risk_level_summary=risk_level_summary,
         task_type_summary=task_type_summary,
         results=results,

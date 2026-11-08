@@ -2,43 +2,81 @@
 Phase 0-4 Golden Path Integration Verification.
 Run as: python tests/verify_phase0_to_4.py
 """
+
 import json, os, subprocess, sys, tempfile
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
 
 from knowledge_manager.schemas import (
-    Module, ModuleContent, ModuleMetadata, Index,
-    Config, ReviewRecord, StagingMeta,
-    WebhookEndpoint, WebhookConfig as WHConfig,
-    MarketplaceIndex as MPIndex, MarketplaceModule as MPMod,
+    Module,
+    ModuleContent,
+    ModuleMetadata,
+    Index,
+    Config,
+    ReviewRecord,
+    StagingMeta,
+    WebhookEndpoint,
+    WebhookConfig as WHConfig,
+    MarketplaceIndex as MPIndex,
+    MarketplaceModule as MPMod,
 )
 from knowledge_manager.storage import (
-    save_module, load_module, delete_module,
-    list_modules, load_index, save_index, rebuild_index, search_modules,
-    save_to_staging, load_from_staging, list_staging, approve_from_staging,
-    save_staging_meta, load_staging_meta, list_staging_meta,
-    record_search_event, record_load_event, compute_bayesian_priors,
-    generate_changelog, sanitize_config,
-    compute_module_health, generate_health_report,
-    aggregate_usage_stats, analyze_graph, detect_clusters,
-    generate_recommendations, load_federation,
+    save_module,
+    load_module,
+    delete_module,
+    list_modules,
+    load_index,
+    save_index,
+    rebuild_index,
+    search_modules,
+    save_to_staging,
+    load_from_staging,
+    list_staging,
+    approve_from_staging,
+    save_staging_meta,
+    load_staging_meta,
+    list_staging_meta,
+    record_search_event,
+    record_load_event,
+    compute_bayesian_priors,
+    generate_changelog,
+    sanitize_config,
+    compute_module_health,
+    generate_health_report,
+    aggregate_usage_stats,
+    analyze_graph,
+    detect_clusters,
+    generate_recommendations,
+    load_federation,
 )
 from knowledge_manager.cache import ModuleCache
 from knowledge_manager.connect import (
-    PLATFORMS, build_mcp_entry, resolve_config_path,
-    read_mcp_config, write_mcp_config, remove_mcp_entry, has_entry,
+    PLATFORMS,
+    build_mcp_entry,
+    resolve_config_path,
+    read_mcp_config,
+    write_mcp_config,
+    remove_mcp_entry,
+    has_entry,
 )
 from knowledge_manager.webhooks import (
-    emit_event, _event_matches, _sign_payload,
-    load_webhook_failures, retry_webhooks,
+    emit_event,
+    _event_matches,
+    _sign_payload,
+    load_webhook_failures,
+    retry_webhooks,
 )
 from knowledge_manager.marketplace import (
-    fetch_marketplace_index, search_marketplace,
-    resolve_install_plan, sanitize_module_text, check_publish_gate,
+    fetch_marketplace_index,
+    search_marketplace,
+    resolve_install_plan,
+    sanitize_module_text,
+    check_publish_gate,
 )
 
 pass_count = 0
 fail_count = 0
+
 
 def check(name, condition, detail=""):
     global pass_count, fail_count
@@ -52,7 +90,9 @@ def check(name, condition, detail=""):
 
 def make_mod(id, cat="general"):
     return Module(
-        id=id, category=cat, title=f"{id} Title Here",
+        id=id,
+        category=cat,
+        title=f"{id} Title Here",
         summary=f"Summary for {id} module testing",
         content=ModuleContent(
             overview="Overview text long enough for validation",
@@ -137,8 +177,11 @@ rebuild_index(kb)
 results_ordered = search_modules("conf-test", kb)
 high_idx = next((i for i, r in enumerate(results_ordered) if r.module.id == "p1a-core"), 99)
 low_idx = next((i for i, r in enumerate(results_ordered) if r.module.id == "p1a-neighbor"), 99)
-check("confidence weighting: high before low", high_idx < low_idx,
-      f"(high at {high_idx}, low at {low_idx})")
+check(
+    "confidence weighting: high before low",
+    high_idx < low_idx,
+    f"(high at {high_idx}, low at {low_idx})",
+)
 
 
 # ═══════════════ Phase 1B: Telemetry + Bayesian ═══════════════
@@ -164,7 +207,9 @@ subprocess.run(["git", "-C", str(kb), "commit", "-m", "init"], capture_output=Tr
 remote_path = Path(tempfile.mkdtemp()) / "remote.git"
 remote_path.mkdir()
 subprocess.run(["git", "-C", str(remote_path), "init", "--bare"], capture_output=True)
-subprocess.run(["git", "-C", str(kb), "remote", "add", "origin", str(remote_path)], capture_output=True)
+subprocess.run(
+    ["git", "-C", str(kb), "remote", "add", "origin", str(remote_path)], capture_output=True
+)
 
 from knowledge_manager.schemas import LLMProviderConfig
 
@@ -172,8 +217,10 @@ cfg = Config(
     llm_providers={"test": LLMProviderConfig(api_key="secret123", model="gpt", default=True)}
 )
 sanitized = sanitize_config(cfg)
-check("sanitize_config replaces api_key",
-      sanitized.model_dump()["llm_providers"]["test"]["api_key"] == "<LOCAL>")
+check(
+    "sanitize_config replaces api_key",
+    sanitized.model_dump()["llm_providers"]["test"]["api_key"] == "<LOCAL>",
+)
 
 changelog = generate_changelog(kb)
 check("generate_changelog produces data", changelog is not None)
@@ -206,15 +253,23 @@ mod_dep = make_mod("dep-mod", "auth")
 save_module(mod_dep, kb)
 mod_dep.metadata.status = "deprecated"
 save_module(mod_dep, kb)
-check("deprecated status persisted", load_module("dep-mod", "auth", kb).metadata.status == "deprecated")
+check(
+    "deprecated status persisted",
+    load_module("dep-mod", "auth", kb).metadata.status == "deprecated",
+)
 
 mod_arch = make_mod("arch-mod", "auth")
 mod_arch.metadata.status = "archived"
 save_module(mod_arch, kb)
 results_no_arch = search_modules("arch-mod", kb)
 results_with_arch = search_modules("arch-mod", kb, include_archived=True)
-check("search excludes archived by default", all(r.module.id != "arch-mod" for r in results_no_arch))
-check("search includes archived when requested", any(r.module.id == "arch-mod" for r in results_with_arch))
+check(
+    "search excludes archived by default", all(r.module.id != "arch-mod" for r in results_no_arch)
+)
+check(
+    "search includes archived when requested",
+    any(r.module.id == "arch-mod" for r in results_with_arch),
+)
 
 
 # ═══════════════ Phase 3A: Health Dashboard ═══════════════
@@ -288,8 +343,7 @@ check("has_entry true after write", has_entry(cfg_path))
 entry2 = {"command": "other-server", "args": []}
 write_mcp_config(cfg_path, entry2)
 data_after = read_mcp_config(cfg_path)
-check("write preserves existing entries",
-      "knowledge-manager" in data_after.get("mcpServers", {}))
+check("write preserves existing entries", "knowledge-manager" in data_after.get("mcpServers", {}))
 
 check("remove_mcp_entry returns True", remove_mcp_entry(cfg_path))
 check("has_entry false after remove", not has_entry(cfg_path))
@@ -345,8 +399,10 @@ check("webhook retry defaults: max_attempts=3", ep.retry.max_attempts == 3)
 check("webhook retry defaults: backoff=30", ep.retry.backoff_seconds == 30)
 check("event_matches positive", _event_matches("module.created", ep))
 check("event_matches negative", not _event_matches("module.archived", ep))
-check("event_matches all when empty filter",
-     _event_matches("any.event", WebhookEndpoint(url="x", events=[])))
+check(
+    "event_matches all when empty filter",
+    _event_matches("any.event", WebhookEndpoint(url="x", events=[])),
+)
 
 sig = _sign_payload("test payload", "secret-key")
 check("HMAC-SHA256 produces 64-char hex", len(sig) == 64)
@@ -371,16 +427,25 @@ mp_dir.mkdir()
 mp_idx = MPIndex(
     modules={
         "auth/best-practices": MPMod(
-            id="best-practices", category="auth",
-            title="Auth Best Practices", summary="Security guidelines for auth",
-            tags=["auth", "security"], version="1.0.0",
-            author="community", confidence="high", dependencies=[],
+            id="best-practices",
+            category="auth",
+            title="Auth Best Practices",
+            summary="Security guidelines for auth",
+            tags=["auth", "security"],
+            version="1.0.0",
+            author="community",
+            confidence="high",
+            dependencies=[],
         ),
         "security/secret-rotation": MPMod(
-            id="secret-rotation", category="security",
-            title="Secret Rotation Guide", summary="How to rotate secrets safely",
-            tags=["security"], version="1.0.0",
-            author="community", confidence="high",
+            id="secret-rotation",
+            category="security",
+            title="Secret Rotation Guide",
+            summary="How to rotate secrets safely",
+            tags=["security"],
+            version="1.0.0",
+            author="community",
+            confidence="high",
             dependencies=["auth/best-practices"],
         ),
     }
@@ -396,8 +461,10 @@ sec_dir.joinpath("secret-rotation.json").write_text(
 fetched = fetch_marketplace_index(str(mp_dir))
 check("fetch_marketplace_index local", fetched is not None)
 check("marketplace index has module", "auth/best-practices" in fetched.modules)
-check("fetch_marketplace_index missing returns None",
-      fetch_marketplace_index(str(Path(tempfile.mkdtemp()) / "nope")) is None)
+check(
+    "fetch_marketplace_index missing returns None",
+    fetch_marketplace_index(str(Path(tempfile.mkdtemp()) / "nope")) is None,
+)
 
 results = search_marketplace("security", mp_idx)
 check("search_marketplace finds by tag", len(results) == 2)

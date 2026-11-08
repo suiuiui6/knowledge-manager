@@ -7,19 +7,38 @@ import yaml
 from knowledge_manager.schemas import Module, ModuleContent, ModuleMetadata
 
 FRONTMATTER_TO_SCHEMA = {
-    "id":                ("id", str),
-    "category":          ("category", str),
-    "title":             ("title", str),
-    "summary":           ("summary", str),
-    "tags":              ("metadata.tags", list),
-    "confidence":        ("metadata.confidence", str),
-    "status":            ("metadata.status", str),
-    "source":            ("metadata.source", str),
-    "expires_at":        ("metadata.expires_at", _datetime_or_none := lambda v: datetime.fromisoformat(v).replace(tzinfo=timezone.utc) if v else None),
+    "id": ("id", str),
+    "category": ("category", str),
+    "title": ("title", str),
+    "summary": ("summary", str),
+    "tags": ("metadata.tags", list),
+    "confidence": ("metadata.confidence", str),
+    "status": ("metadata.status", str),
+    "source": ("metadata.source", str),
+    "expires_at": (
+        "metadata.expires_at",
+        _datetime_or_none := lambda v: (
+            datetime.fromisoformat(v).replace(tzinfo=timezone.utc) if v else None
+        ),
+    ),
     "review_interval_days": ("metadata.review_interval_days", lambda v: int(v) if v else None),
-    "related_modules":   ("metadata.related_modules", list),
-    "created_at":        ("created_at", lambda v: datetime.fromisoformat(v).replace(tzinfo=timezone.utc) if v else datetime.now(timezone.utc)),
-    "updated_at":        ("updated_at", lambda v: datetime.fromisoformat(v).replace(tzinfo=timezone.utc) if v else datetime.now(timezone.utc)),
+    "related_modules": ("metadata.related_modules", list),
+    "created_at": (
+        "created_at",
+        lambda v: (
+            datetime.fromisoformat(v).replace(tzinfo=timezone.utc)
+            if v
+            else datetime.now(timezone.utc)
+        ),
+    ),
+    "updated_at": (
+        "updated_at",
+        lambda v: (
+            datetime.fromisoformat(v).replace(tzinfo=timezone.utc)
+            if v
+            else datetime.now(timezone.utc)
+        ),
+    ),
 }
 
 MD_SECTION_TO_CONTENT = {
@@ -44,7 +63,7 @@ def parse_markdown_module(md_text: str) -> Module:
         raise ValueError("No YAML frontmatter found")
 
     frontmatter = yaml.safe_load(fm_match.group(1))
-    body = md_text[fm_match.end():]
+    body = md_text[fm_match.end() :]
 
     module_data: dict[str, Any] = {"content": {}, "metadata": {}}
     for fm_key, (schema_path, converter) in FRONTMATTER_TO_SCHEMA.items():
@@ -56,7 +75,13 @@ def parse_markdown_module(md_text: str) -> Module:
                 continue
             _set_nested(module_data, schema_path, converted)
 
-    content_fields = {"overview": "", "details": "", "examples": "", "references": "", "caveats": ""}
+    content_fields = {
+        "overview": "",
+        "details": "",
+        "examples": "",
+        "references": "",
+        "caveats": "",
+    }
     current_section = "overview"
     current_lines: list[str] = []
 
@@ -104,7 +129,9 @@ def render_markdown_module(module: Module) -> str:
         "confidence": module.metadata.confidence,
         "status": module.metadata.status,
         "source": module.metadata.source or None,
-        "expires_at": module.metadata.expires_at.isoformat() if module.metadata.expires_at else None,
+        "expires_at": (
+            module.metadata.expires_at.isoformat() if module.metadata.expires_at else None
+        ),
         "review_interval_days": module.metadata.review_interval_days,
         "related_modules": module.metadata.related_modules or None,
         "created_at": module.created_at.isoformat(),
@@ -115,7 +142,13 @@ def render_markdown_module(module: Module) -> str:
     fm_yaml = yaml.dump(fm, allow_unicode=True, default_flow_style=False, sort_keys=False).strip()
 
     sections = []
-    for heading_en, field in [("概述", "overview"), ("细节", "details"), ("示例", "examples"), ("参考", "references"), ("注意事项", "caveats")]:
+    for heading_en, field in [
+        ("概述", "overview"),
+        ("细节", "details"),
+        ("示例", "examples"),
+        ("参考", "references"),
+        ("注意事项", "caveats"),
+    ]:
         text = getattr(module.content, field, "")
         if text and text.strip():
             sections.append(f"# {heading_en}\n\n{text.strip()}\n")

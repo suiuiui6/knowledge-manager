@@ -10,6 +10,7 @@ For each scenario, the simulator does what a smart LLM should do:
 Run:
     poetry run python scripts/mcp_retrieval_eval.py
 """
+
 import asyncio
 import json
 import re
@@ -64,11 +65,48 @@ def _pick_query(question: str, index: dict) -> str:
     """Mimic what a small LLM would do: pull salient nouns from the question
     and pick terms that look like they'd be in titles/tags. Strip stopwords."""
     stop = {
-        "how", "do", "we", "the", "a", "an", "what", "is", "are", "i", "should",
-        "for", "to", "and", "or", "of", "in", "on", "at", "with", "our", "my",
-        "help", "me", "set", "up", "use", "uses", "size", "sizing", "big",
-        "controller", "handling", "url", "side", "web", "apps", "app", "not",
-        "why", "validate", "callback",
+        "how",
+        "do",
+        "we",
+        "the",
+        "a",
+        "an",
+        "what",
+        "is",
+        "are",
+        "i",
+        "should",
+        "for",
+        "to",
+        "and",
+        "or",
+        "of",
+        "in",
+        "on",
+        "at",
+        "with",
+        "our",
+        "my",
+        "help",
+        "me",
+        "set",
+        "up",
+        "use",
+        "uses",
+        "size",
+        "sizing",
+        "big",
+        "controller",
+        "handling",
+        "url",
+        "side",
+        "web",
+        "apps",
+        "app",
+        "not",
+        "why",
+        "validate",
+        "callback",
     }
     words = re.findall(r"[a-zA-Z][a-zA-Z0-9-]+", question.lower())
     keep = [w for w in words if w not in stop and len(w) > 2]
@@ -105,7 +143,12 @@ def _tool_result(rpc_response: dict):
 
 async def main() -> int:
     proc = await asyncio.create_subprocess_exec(
-        "poetry", "run", "km", "--kb-path", str(KB), "serve",
+        "poetry",
+        "run",
+        "km",
+        "--kb-path",
+        str(KB),
+        "serve",
         stdin=asyncio.subprocess.PIPE,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
@@ -118,11 +161,16 @@ async def main() -> int:
         return mid
 
     try:
-        await _call(proc, next_id(), "initialize", {
-            "protocolVersion": "2024-11-05",
-            "capabilities": {},
-            "clientInfo": {"name": "retrieval-eval", "version": "0.1"},
-        })
+        await _call(
+            proc,
+            next_id(),
+            "initialize",
+            {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {},
+                "clientInfo": {"name": "retrieval-eval", "version": "0.1"},
+            },
+        )
         await _notify(proc, "notifications/initialized")
 
         idx_resp = await _call(proc, next_id(), "resources/read", {"uri": "knowledge://index"})
@@ -135,10 +183,15 @@ async def main() -> int:
             s.chosen_query = _pick_query(s.user_question, index)
             print(f"    query: {s.chosen_query!r}")
 
-            search_resp = await _call(proc, next_id(), "tools/call", {
-                "name": "search_modules",
-                "arguments": {"query": s.chosen_query},
-            })
+            search_resp = await _call(
+                proc,
+                next_id(),
+                "tools/call",
+                {
+                    "name": "search_modules",
+                    "arguments": {"query": s.chosen_query},
+                },
+            )
             hits = _tool_result(search_resp)
             s.search_hits = [f"{h['category']}/{h['id']}" for h in hits]
             print(f"    hits:  {s.search_hits if s.search_hits else '[]'}")
@@ -159,10 +212,15 @@ async def main() -> int:
 
             top = hits[0]
             s.loaded = f"{top['category']}/{top['id']}"
-            load_resp = await _call(proc, next_id(), "tools/call", {
-                "name": "load_module",
-                "arguments": {"module_id": top["id"], "category": top["category"]},
-            })
+            load_resp = await _call(
+                proc,
+                next_id(),
+                "tools/call",
+                {
+                    "name": "load_module",
+                    "arguments": {"module_id": top["id"], "category": top["category"]},
+                },
+            )
             loaded_text = load_resp["result"]["structuredContent"]["result"]
             if "Module not found" in loaded_text:
                 s.grade = "fail"
@@ -185,7 +243,9 @@ async def main() -> int:
             counts[s.grade] += 1
             print(f"  [{s.grade.upper():7}] {s.user_question}")
         n = len(SCENARIOS)
-        print(f"\n  {counts['pass']}/{n} pass, {counts['partial']}/{n} partial, {counts['fail']}/{n} fail")
+        print(
+            f"\n  {counts['pass']}/{n} pass, {counts['partial']}/{n} partial, {counts['fail']}/{n} fail"
+        )
         return 0 if counts["fail"] == 0 else 1
     finally:
         try:

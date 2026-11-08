@@ -8,8 +8,14 @@ logger = logging.getLogger("knowledge_manager.vector")
 
 
 class VectorIndex:
-    def __init__(self, kb_path: Path, provider: str = "ollama", model: str = "bge-m3",
-                 dimensions: int = 1024, ollama_base_url: str = "http://localhost:11434"):
+    def __init__(
+        self,
+        kb_path: Path,
+        provider: str = "ollama",
+        model: str = "bge-m3",
+        dimensions: int = 1024,
+        ollama_base_url: str = "http://localhost:11434",
+    ):
         self.kb_path = kb_path
         self.provider = provider
         self.model = model
@@ -65,7 +71,9 @@ class VectorIndex:
             self.module_keys = keys
 
         self._cache_path.parent.mkdir(parents=True, exist_ok=True)
-        np.savez_compressed(self._cache_path, embeddings=embeddings, module_keys=np.array(keys, dtype=object))
+        np.savez_compressed(
+            self._cache_path, embeddings=embeddings, module_keys=np.array(keys, dtype=object)
+        )
 
     def search(self, query: str, top_k: int = 20) -> list[tuple[str, float]]:
         try:
@@ -103,6 +111,7 @@ class VectorIndex:
 
         if self.provider == "ollama":
             import httpx
+
             async with httpx.AsyncClient() as client:
                 response = await client.post(
                     f"{self.ollama_base_url}/api/embed",
@@ -118,6 +127,7 @@ class VectorIndex:
         if not self._cache_path.exists():
             return
         import numpy as np
+
         data = np.load(self._cache_path, allow_pickle=True)
         with self._lock:
             self.embeddings = data["embeddings"]

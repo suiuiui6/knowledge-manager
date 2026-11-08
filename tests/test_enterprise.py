@@ -5,14 +5,28 @@ from fastapi import FastAPI
 from starlette.testclient import TestClient
 
 from knowledge_manager.auth import (
-    AuthConfig, AuthError, AuthMiddleware, load_auth_config, inject_auth_middleware, validate_oidc_token,
+    AuthConfig,
+    AuthError,
+    AuthMiddleware,
+    load_auth_config,
+    inject_auth_middleware,
+    validate_oidc_token,
 )
 from knowledge_manager.audit import (
-    AuditEvent, log_audit_event, read_audit_log, generate_compliance_report,
+    AuditEvent,
+    log_audit_event,
+    read_audit_log,
+    generate_compliance_report,
 )
 from knowledge_manager.rbac import (
-    PermissionChecker, RBACConfig, get_user_role, set_user_role, check_permission,
-    list_users, remove_user, load_rbac_config,
+    PermissionChecker,
+    RBACConfig,
+    get_user_role,
+    set_user_role,
+    check_permission,
+    list_users,
+    remove_user,
+    load_rbac_config,
 )
 from knowledge_manager.schemas import Module, ModuleContent
 from knowledge_manager.tenancy import TenantContext, module_visible_to_tenant
@@ -41,10 +55,14 @@ class TestAuthConfig:
         assert load_auth_config(tmp_path) is None
 
     def test_load_auth_config(self, tmp_path):
-        (tmp_path / "auth.json").write_text(json.dumps({
-            "provider": "token",
-            "oidc_config": {"static_token": "test-token-123"},
-        }))
+        (tmp_path / "auth.json").write_text(
+            json.dumps(
+                {
+                    "provider": "token",
+                    "oidc_config": {"static_token": "test-token-123"},
+                }
+            )
+        )
         cfg = load_auth_config(tmp_path)
         assert cfg is not None
         assert cfg.provider == "token"
@@ -56,19 +74,22 @@ class TestAuthConfig:
 
 
 def test_tenant_context_allows_global_module_reads():
-    assert module_visible_to_tenant(
-        Module(
-            id="shared-guide",
-            category="ops",
-            title="Shared Guide",
-            summary="Shared operational guidance for all tenants.",
-            content=ModuleContent(
-                overview="Shared guide overview.",
-                details="Shared guide details with enough length for validation.",
+    assert (
+        module_visible_to_tenant(
+            Module(
+                id="shared-guide",
+                category="ops",
+                title="Shared Guide",
+                summary="Shared operational guidance for all tenants.",
+                content=ModuleContent(
+                    overview="Shared guide overview.",
+                    details="Shared guide details with enough length for validation.",
+                ),
             ),
-        ),
-        TenantContext(tenant_id="team-a"),
-    ) is True
+            TenantContext(tenant_id="team-a"),
+        )
+        is True
+    )
 
 
 def test_permission_checker_reports_effective_reason():
@@ -77,7 +98,9 @@ def test_permission_checker_reports_effective_reason():
         group_mapping={"grp-reviewers": ["reviewer"]},
     )
 
-    decision = checker.explain_module_access(["grp-reviewers"], {"category": "finance", "id": "fin-1"})
+    decision = checker.explain_module_access(
+        ["grp-reviewers"], {"category": "finance", "id": "fin-1"}
+    )
 
     assert decision.allowed is False
     assert "scope_mismatch" in decision.reasons
@@ -101,10 +124,14 @@ class TestAuthMiddleware:
     def test_public_paths_allowed(self, tmp_path):
         kb = tmp_path / "kb"
         kb.mkdir()
-        (kb / "auth.json").write_text(json.dumps({
-            "provider": "token",
-            "oidc_config": {"static_token": "secret"},
-        }))
+        (kb / "auth.json").write_text(
+            json.dumps(
+                {
+                    "provider": "token",
+                    "oidc_config": {"static_token": "secret"},
+                }
+            )
+        )
         app = FastAPI()
 
         @app.get("/api/health")
@@ -119,10 +146,14 @@ class TestAuthMiddleware:
     def test_token_auth_rejected(self, tmp_path):
         kb = tmp_path / "kb"
         kb.mkdir()
-        (kb / "auth.json").write_text(json.dumps({
-            "provider": "token",
-            "oidc_config": {"static_token": "secret"},
-        }))
+        (kb / "auth.json").write_text(
+            json.dumps(
+                {
+                    "provider": "token",
+                    "oidc_config": {"static_token": "secret"},
+                }
+            )
+        )
         app = FastAPI()
 
         @app.get("/api/protected")
@@ -137,10 +168,14 @@ class TestAuthMiddleware:
     def test_token_auth_accepted(self, tmp_path):
         kb = tmp_path / "kb"
         kb.mkdir()
-        (kb / "auth.json").write_text(json.dumps({
-            "provider": "token",
-            "oidc_config": {"static_token": "secret"},
-        }))
+        (kb / "auth.json").write_text(
+            json.dumps(
+                {
+                    "provider": "token",
+                    "oidc_config": {"static_token": "secret"},
+                }
+            )
+        )
         app = FastAPI()
 
         @app.get("/api/protected")
@@ -161,7 +196,9 @@ class TestAuthMiddleware:
 
     def test_validate_oidc_token_rejects_unsigned_payload(self):
         with pytest.raises(AuthError):
-            validate_oidc_token("header.payload.", issuer="https://issuer.example.com", jwks={"keys": []})
+            validate_oidc_token(
+                "header.payload.", issuer="https://issuer.example.com", jwks={"keys": []}
+            )
 
 
 class TestAudit:
@@ -169,8 +206,10 @@ class TestAudit:
         kb = tmp_path / "kb"
         kb.mkdir()
         event = AuditEvent(
-            user="alice", operation="module.create",
-            module_id="test/mod", category="test",
+            user="alice",
+            operation="module.create",
+            module_id="test/mod",
+            category="test",
             details="Created test module",
         )
         log_audit_event(kb, event)
@@ -273,9 +312,7 @@ class TestRBAC:
     def test_load_rbac_config(self, tmp_path):
         kb = tmp_path / "kb"
         kb.mkdir()
-        (kb / "rbac.json").write_text(json.dumps({
-            "users": {"alice": "admin", "bob": "reviewer"}
-        }))
+        (kb / "rbac.json").write_text(json.dumps({"users": {"alice": "admin", "bob": "reviewer"}}))
         cfg = load_rbac_config(kb)
         assert cfg.users["alice"] == "admin"
 
@@ -285,8 +322,13 @@ class TestRBAC:
             group_mapping={"grp-reviewers": ["reviewer"]},
         )
 
-        assert checker.can_read_module(["grp-reviewers"], {"category": "policy", "id": "jwt"}) is True
-        assert checker.can_read_module(["grp-reviewers"], {"category": "finance", "id": "budget"}) is False
+        assert (
+            checker.can_read_module(["grp-reviewers"], {"category": "policy", "id": "jwt"}) is True
+        )
+        assert (
+            checker.can_read_module(["grp-reviewers"], {"category": "finance", "id": "budget"})
+            is False
+        )
 
 
 class TestAuditEvent:
@@ -296,8 +338,13 @@ class TestAuditEvent:
         assert e.timestamp is not None
 
     def test_event_to_dict(self):
-        e = AuditEvent(user="test", operation="module.update",
-                       module_id="mod/1", category="cat", details="Updated")
+        e = AuditEvent(
+            user="test",
+            operation="module.update",
+            module_id="mod/1",
+            category="cat",
+            details="Updated",
+        )
         d = e.to_dict()
         assert d["user"] == "test"
         assert d["module_id"] == "mod/1"

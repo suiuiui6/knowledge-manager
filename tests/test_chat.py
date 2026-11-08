@@ -8,13 +8,17 @@ class FakeLLMClient:
     def __init__(self, responses=None):
         self.responses = responses or []
         self.call_count = 0
-        self.config = type("Config", (), {
-            "api_key": "test",
-            "model": "test-model",
-            "base_url": "",
-            "temperature": 0.3,
-            "max_tokens": 1024,
-        })()
+        self.config = type(
+            "Config",
+            (),
+            {
+                "api_key": "test",
+                "model": "test-model",
+                "base_url": "",
+                "temperature": 0.3,
+                "max_tokens": 1024,
+            },
+        )()
 
     async def complete(self, prompt: str) -> str:
         if self.call_count < len(self.responses):
@@ -128,9 +132,16 @@ class TestSSEEndpoint:
         idx = Index(description="Test KB")
         save_index(idx, kb)
 
-        cfg = Config(llm_providers={"test": LLMProviderConfig(
-            api_key="test-key", model="test-model", base_url="https://test.example.com", default=True,
-        )})
+        cfg = Config(
+            llm_providers={
+                "test": LLMProviderConfig(
+                    api_key="test-key",
+                    model="test-model",
+                    base_url="https://test.example.com",
+                    default=True,
+                )
+            }
+        )
         (kb / "config.json").write_text(cfg.model_dump_json(), encoding="utf-8")
 
         from knowledge_manager.http_server import create_app

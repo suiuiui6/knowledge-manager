@@ -59,7 +59,9 @@ def kb_write_lock(kb_path: Path, *, timeout: float = 60.0) -> Iterator[None]:
                     if exc.errno not in {errno.EACCES, errno.EAGAIN, errno.EDEADLK}:
                         raise
                     if time.monotonic() >= deadline:
-                        raise TimeoutError(f"knowledge-base write lock timed out: {kb_path}") from exc
+                        raise TimeoutError(
+                            f"knowledge-base write lock timed out: {kb_path}"
+                        ) from exc
                     time.sleep(0.01)
             held.add(key)
             try:

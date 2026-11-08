@@ -16,9 +16,17 @@ class FakeLLM:
     def __init__(self, responses=None):
         self.responses = responses or []
         self.idx = 0
-        self.config = type("C", (), {
-            "api_key": "", "model": "", "base_url": "", "temperature": 0.3, "max_tokens": 1024,
-        })()
+        self.config = type(
+            "C",
+            (),
+            {
+                "api_key": "",
+                "model": "",
+                "base_url": "",
+                "temperature": 0.3,
+                "max_tokens": 1024,
+            },
+        )()
 
     async def complete(self, prompt):
         if self.idx < len(self.responses):
@@ -54,14 +62,17 @@ class TestResearcher:
         kb.mkdir()
         from knowledge_manager.schemas import Index
         from knowledge_manager.storage import save_index
+
         save_index(Index(description="Test KB"), kb)
 
         cfg = ResearchConfig(enabled=True, default_depth="shallow")
-        llm = FakeLLM([
-            '["gRPC service communication", "message queue selection"]',  # decompose
-            '["grpc", "protobuf", "stub", "channel"]',                     # code keywords
-            "Synthesis: gRPC is recommended for service communication.",    # synthesize
-        ])
+        llm = FakeLLM(
+            [
+                '["gRPC service communication", "message queue selection"]',  # decompose
+                '["grpc", "protobuf", "stub", "channel"]',  # code keywords
+                "Synthesis: gRPC is recommended for service communication.",  # synthesize
+            ]
+        )
         return Researcher(kb, cfg, llm)
 
     @pytest.mark.asyncio
@@ -86,6 +97,7 @@ class TestResearcher:
 
     def test_validate_source_allows_safe_paths(self, researcher):
         import tempfile
+
         with tempfile.TemporaryDirectory() as td:
             src = ResearchSource(type="doc_dir", path=td)
             researcher._validate_source(src)
@@ -148,6 +160,7 @@ class TestResearchConfig:
 
     def test_config_in_config(self):
         from knowledge_manager.schemas import Config
+
         cfg = Config()
         assert cfg.research.enabled is False
         assert cfg.research.sources == []

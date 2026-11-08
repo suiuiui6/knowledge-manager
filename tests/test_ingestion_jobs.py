@@ -132,7 +132,9 @@ def test_job_worker_executes_upload_job_and_marks_completed(tmp_path, monkeypatc
     kb = tmp_path / "kb"
     kb.mkdir()
     job = create_ingestion_job(kb, source_id="upload", trigger="http-upload")
-    update_job_payload(kb, job.job_id, payload_kind="upload", payload_path=str(kb / ".tmp" / "demo.md"))
+    update_job_payload(
+        kb, job.job_id, payload_kind="upload", payload_path=str(kb / ".tmp" / "demo.md")
+    )
 
     def fake_extract(_kb_path, _filename, _payload, _category, _mode):
         return [
@@ -152,7 +154,13 @@ def test_job_worker_executes_upload_job_and_marks_completed(tmp_path, monkeypatc
     finished = run_single_job(
         kb,
         job.job_id,
-        payload={"kind": "upload", "filename": "demo.md", "bytes_b64": "IyB0aXRsZQ==", "category": "ops", "mode": "text"},
+        payload={
+            "kind": "upload",
+            "filename": "demo.md",
+            "bytes_b64": "IyB0aXRsZQ==",
+            "category": "ops",
+            "mode": "text",
+        },
     )
 
     assert finished.status == "completed"
@@ -169,9 +177,13 @@ def test_job_worker_executes_source_sync_job_and_marks_completed(tmp_path, monke
     update_job_payload(kb, job.job_id, payload_kind="source-sync")
 
     async def fake_run_source_sync(_kb_path, source_id):
-        return IngestionSummary(source_id=source_id, pages_seen=4, modules_staged=3, modules_marked_stale=1)
+        return IngestionSummary(
+            source_id=source_id, pages_seen=4, modules_staged=3, modules_marked_stale=1
+        )
 
-    monkeypatch.setattr("knowledge_manager.source_ingestion.run_source_sync_once", fake_run_source_sync)
+    monkeypatch.setattr(
+        "knowledge_manager.source_ingestion.run_source_sync_once", fake_run_source_sync
+    )
     finished = run_single_job(
         kb,
         job.job_id,
@@ -231,7 +243,9 @@ def test_job_worker_runs_queued_maintenance_actions(tmp_path, monkeypatch):
         lambda path, action, payload: dispatched.append((path, action, payload)),
     )
 
-    state = enqueue_local_maintenance(kb, action="module_saved", payload={"module_id": "perf-write"})
+    state = enqueue_local_maintenance(
+        kb, action="module_saved", payload={"module_id": "perf-write"}
+    )
     processed = run_pending_maintenance(kb, limit=5)
 
     assert state["deferred"] is True
@@ -248,8 +262,12 @@ def test_requeue_stale_running_jobs(tmp_path):
     kb.mkdir()
     job = create_ingestion_job(kb, source_id="upload", trigger="http-upload")
     claimed = claim_ingestion_job(kb, job.job_id, worker_id="worker-1", lease_seconds=1)
-    stale = claimed.model_copy(update={"lease_expires_at": datetime.now(timezone.utc) - timedelta(seconds=5)})
-    (kb / ".jobs" / "ingestion" / f"{job.job_id}.json").write_text(stale.model_dump_json(indent=2), encoding="utf-8")
+    stale = claimed.model_copy(
+        update={"lease_expires_at": datetime.now(timezone.utc) - timedelta(seconds=5)}
+    )
+    (kb / ".jobs" / "ingestion" / f"{job.job_id}.json").write_text(
+        stale.model_dump_json(indent=2), encoding="utf-8"
+    )
 
     assert requeue_stale_jobs(kb) == [job.job_id]
     assert load_ingestion_job(kb, job.job_id).status == "queued"

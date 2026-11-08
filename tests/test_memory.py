@@ -2,8 +2,13 @@ import pytest
 from datetime import datetime, timedelta, timezone
 
 from knowledge_manager.memory import (
-    FSRSScheduler, CardGenerator, MemoryCard, ReviewGrade,
-    load_cards, save_cards, CARD_GENERATION_PROMPT,
+    FSRSScheduler,
+    CardGenerator,
+    MemoryCard,
+    ReviewGrade,
+    load_cards,
+    save_cards,
+    CARD_GENERATION_PROMPT,
 )
 
 
@@ -15,8 +20,12 @@ class TestFSRSScheduler:
     @pytest.fixture
     def new_card(self):
         return MemoryCard(
-            id="test/card-0", module_key="test/mod", module_title="Test",
-            category="test", front="Q?", back="A.",
+            id="test/card-0",
+            module_key="test/mod",
+            module_title="Test",
+            category="test",
+            front="Q?",
+            back="A.",
         )
 
     def test_first_review_good(self, scheduler, new_card):
@@ -45,10 +54,24 @@ class TestFSRSScheduler:
     def test_get_due_cards(self, scheduler):
         now = datetime.now(timezone.utc)
         cards = [
-            MemoryCard(id="c1", module_key="m1", module_title="M1", category="t",
-                       front="q1", back="a1", next_review_at=now - timedelta(days=1)),
-            MemoryCard(id="c2", module_key="m2", module_title="M2", category="t",
-                       front="q2", back="a2", next_review_at=now + timedelta(days=7)),
+            MemoryCard(
+                id="c1",
+                module_key="m1",
+                module_title="M1",
+                category="t",
+                front="q1",
+                back="a1",
+                next_review_at=now - timedelta(days=1),
+            ),
+            MemoryCard(
+                id="c2",
+                module_key="m2",
+                module_title="M2",
+                category="t",
+                front="q2",
+                back="a2",
+                next_review_at=now + timedelta(days=7),
+            ),
         ]
         due = scheduler.get_due_cards(cards)
         assert len(due) == 1
@@ -60,8 +83,14 @@ class TestCardPersistence:
         kb = tmp_path / "test_kb"
         kb.mkdir()
         cards = [
-            MemoryCard(id="test/card-0", module_key="test/mod", module_title="T",
-                       category="test", front="Q", back="A"),
+            MemoryCard(
+                id="test/card-0",
+                module_key="test/mod",
+                module_title="T",
+                category="test",
+                front="Q",
+                back="A",
+            ),
         ]
         save_cards(cards, kb)
         loaded = load_cards(kb)

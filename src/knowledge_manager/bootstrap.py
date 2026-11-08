@@ -53,7 +53,5 @@ def initialize_knowledge_base(path: Path) -> Index:
         },
         extraction=ExtractionConfig(provider="deepseek", auto_categorize=True),
     )
-    (kb / "config.json").write_text(
-        default_config.model_dump_json(indent=2), encoding="utf-8"
-    )
+    (kb / "config.json").write_text(default_config.model_dump_json(indent=2), encoding="utf-8")
     return index

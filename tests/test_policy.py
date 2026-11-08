@@ -1,5 +1,10 @@
 from knowledge_manager.policy import evaluate_module_policy, merge_agent_routing_policy
-from knowledge_manager.schemas import AgentRoutingPolicyConfig, Module, ModuleContent, RoutingPolicyConfig
+from knowledge_manager.schemas import (
+    AgentRoutingPolicyConfig,
+    Module,
+    ModuleContent,
+    RoutingPolicyConfig,
+)
 
 
 def _make_module() -> Module:

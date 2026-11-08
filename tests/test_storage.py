@@ -4,13 +4,28 @@ from pathlib import Path
 from datetime import datetime, timedelta, timezone
 from knowledge_manager.schemas import Module, ModuleContent, ModuleMetadata, Index
 from knowledge_manager.storage import (
-    save_module, load_module, delete_module, list_modules,
-    save_index, load_index, rebuild_index,
-    save_to_staging, list_staging, load_from_staging, approve_from_staging,
-    _merge_hybrid_results, _stem, search_modules,
-    record_search_event, record_load_event, load_search_events,
-    compute_bayesian_priors, save_rank_model, load_rank_model,
-    get_supersession_chain, mark_source_documents_changed,
+    save_module,
+    load_module,
+    delete_module,
+    list_modules,
+    save_index,
+    load_index,
+    rebuild_index,
+    save_to_staging,
+    list_staging,
+    load_from_staging,
+    approve_from_staging,
+    _merge_hybrid_results,
+    _stem,
+    search_modules,
+    record_search_event,
+    record_load_event,
+    load_search_events,
+    compute_bayesian_priors,
+    save_rank_model,
+    load_rank_model,
+    get_supersession_chain,
+    mark_source_documents_changed,
 )
 
 
@@ -81,11 +96,14 @@ def test_save_module_can_schedule_noncritical_side_effects(kb_path, monkeypatch)
 
     monkeypatch.setattr(
         "knowledge_manager.storage.schedule_maintenance_job",
-        lambda path, action, payload: scheduled.append((path, action, payload)) or {"deferred": True, "action": action},
+        lambda path, action, payload: scheduled.append((path, action, payload))
+        or {"deferred": True, "action": action},
     )
     monkeypatch.setattr(
         "knowledge_manager.storage._run_noncritical_save_side_effects",
-        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("noncritical save work should be deferred")),
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("noncritical save work should be deferred")
+        ),
     )
 
     save_module(make_module("deferred-module", "ops"), kb_path)
@@ -151,7 +169,9 @@ def test_save_module_refreshes_updated_at_when_content_changes(kb_path):
     before = loaded.updated_at
 
     updated = loaded.model_copy(deep=True)
-    updated.content.details = "These are updated detailed notes about the module content with a meaningful change."
+    updated.content.details = (
+        "These are updated detailed notes about the module content with a meaningful change."
+    )
     save_module(updated, kb_path, defer_noncritical=False)
 
     reloaded = load_module("freshness-module", "ops", kb_path)
@@ -204,11 +224,14 @@ def test_delete_module_can_schedule_noncritical_side_effects(kb_path, monkeypatc
 
     monkeypatch.setattr(
         "knowledge_manager.storage.schedule_maintenance_job",
-        lambda path, action, payload: scheduled.append((path, action, payload)) or {"deferred": True, "action": action},
+        lambda path, action, payload: scheduled.append((path, action, payload))
+        or {"deferred": True, "action": action},
     )
     monkeypatch.setattr(
         "knowledge_manager.storage._run_noncritical_delete_side_effects",
-        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("noncritical delete work should be deferred")),
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("noncritical delete work should be deferred")
+        ),
     )
 
     assert delete_module("delete-me", "ops", kb_path) is True
@@ -242,10 +265,12 @@ def test_deferred_delete_does_not_remove_derived_indexes_twice(kb_path, monkeypa
 def test_save_is_atomic(kb_path, monkeypatch):
     # Verify no partial file left if replace fails
     import os
+
     module = make_module()
     original_replace = os.replace
 
     call_count = [0]
+
     def fail_replace(src, dst):
         call_count[0] += 1
         if call_count[0] == 1:
@@ -354,7 +379,9 @@ def test_search_modules_projection_path_avoids_loading_direct_matches(kb_path, m
     assert [item.module.id for item in results] == ["rollback-guide"]
 
 
-def test_search_modules_projection_path_preserves_policy_filtering_without_hydration(kb_path, monkeypatch):
+def test_search_modules_projection_path_preserves_policy_filtering_without_hydration(
+    kb_path, monkeypatch
+):
     kb_path.mkdir(parents=True, exist_ok=True)
     (kb_path / "config.json").write_text(
         json.dumps(
@@ -396,7 +423,9 @@ def test_search_modules_projection_path_preserves_policy_filtering_without_hydra
     )
 
     def explode(*_args, **_kwargs):
-        raise AssertionError("policy filtering should run from projection data without hydrating modules")
+        raise AssertionError(
+            "policy filtering should run from projection data without hydrating modules"
+        )
 
     monkeypatch.setattr("knowledge_manager.storage.load_module", explode)
 
@@ -405,7 +434,9 @@ def test_search_modules_projection_path_preserves_policy_filtering_without_hydra
     assert [item.module.id for item in results] == ["active-guidance"]
 
 
-def test_search_modules_projection_path_preserves_graph_expansion_without_hydration(kb_path, monkeypatch):
+def test_search_modules_projection_path_preserves_graph_expansion_without_hydration(
+    kb_path, monkeypatch
+):
     save_module(
         Module(
             id="incident-runbook",
@@ -435,7 +466,9 @@ def test_search_modules_projection_path_preserves_graph_expansion_without_hydrat
     )
 
     def explode(*_args, **_kwargs):
-        raise AssertionError("graph expansion should use projection payload instead of hydrating neighbors")
+        raise AssertionError(
+            "graph expansion should use projection payload instead of hydrating neighbors"
+        )
 
     monkeypatch.setattr("knowledge_manager.storage.load_module", explode)
 
@@ -494,27 +527,48 @@ def test_merge_hybrid_results_adds_vector_support_reason(kb_path):
 
 
 def test_rebuild_index_auto_generates_category_descriptions(kb_path):
-    save_module(Module(
-        id="jwt", category="auth",
-        title="JWT signing and validation",
-        summary="Issuing and validating JSON Web Tokens with RS256",
-        content=ModuleContent(overview="JWT auth overview text", details="JWT auth details for testing auto descriptions"),
-        metadata=ModuleMetadata(tags=["jwt", "authentication", "rs256"]),
-    ), kb_path)
-    save_module(Module(
-        id="oauth", category="auth",
-        title="OAuth 2.0 flow",
-        summary="OAuth 2.0 authorization flow setup",
-        content=ModuleContent(overview="OAuth overview for desc testing", details="OAuth details for testing auto description generation in rebuild."),
-        metadata=ModuleMetadata(tags=["oauth", "authentication"]),
-    ), kb_path)
-    save_module(Module(
-        id="conn-pool", category="database",
-        title="Database connection pooling",
-        summary="Sizing and lifecycle of database connection pools",
-        content=ModuleContent(overview="Pool overview for desc test", details="Pool details for testing auto category descriptions on rebuild index."),
-        metadata=ModuleMetadata(tags=["postgres", "performance"]),
-    ), kb_path)
+    save_module(
+        Module(
+            id="jwt",
+            category="auth",
+            title="JWT signing and validation",
+            summary="Issuing and validating JSON Web Tokens with RS256",
+            content=ModuleContent(
+                overview="JWT auth overview text",
+                details="JWT auth details for testing auto descriptions",
+            ),
+            metadata=ModuleMetadata(tags=["jwt", "authentication", "rs256"]),
+        ),
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="oauth",
+            category="auth",
+            title="OAuth 2.0 flow",
+            summary="OAuth 2.0 authorization flow setup",
+            content=ModuleContent(
+                overview="OAuth overview for desc testing",
+                details="OAuth details for testing auto description generation in rebuild.",
+            ),
+            metadata=ModuleMetadata(tags=["oauth", "authentication"]),
+        ),
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="conn-pool",
+            category="database",
+            title="Database connection pooling",
+            summary="Sizing and lifecycle of database connection pools",
+            content=ModuleContent(
+                overview="Pool overview for desc test",
+                details="Pool details for testing auto category descriptions on rebuild index.",
+            ),
+            metadata=ModuleMetadata(tags=["postgres", "performance"]),
+        ),
+        kb_path,
+    )
 
     index = rebuild_index(kb_path)
     assert index.categories["auth"].description != ""
@@ -567,26 +621,34 @@ def test_approve_from_staging(staging_path, kb_path):
 
 
 def _kb_with_signals(kb_path: Path) -> None:
-    save_module(Module(
-        id="jwt", category="auth",
-        title="JWT signing and validation",
-        summary="Issuing and validating JSON Web Tokens with RS256",
-        content=ModuleContent(
-            overview="A JWT is a compact token signed with RS256.",
-            details="Signing uses an RSA private key; gateways validate via JWKS.",
+    save_module(
+        Module(
+            id="jwt",
+            category="auth",
+            title="JWT signing and validation",
+            summary="Issuing and validating JSON Web Tokens with RS256",
+            content=ModuleContent(
+                overview="A JWT is a compact token signed with RS256.",
+                details="Signing uses an RSA private key; gateways validate via JWKS.",
+            ),
+            metadata=ModuleMetadata(tags=["jwt", "authentication", "rs256"]),
         ),
-        metadata=ModuleMetadata(tags=["jwt", "authentication", "rs256"]),
-    ), kb_path)
-    save_module(Module(
-        id="conn-pool", category="database",
-        title="Database connection pooling",
-        summary="Sizing and lifecycle of database connection pools for Postgres",
-        content=ModuleContent(
-            overview="Pool keeps connections so requests skip the TCP+TLS+auth handshake.",
-            details="Right-size the pool; Postgres prefers a small number of busy connections.",
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="conn-pool",
+            category="database",
+            title="Database connection pooling",
+            summary="Sizing and lifecycle of database connection pools for Postgres",
+            content=ModuleContent(
+                overview="Pool keeps connections so requests skip the TCP+TLS+auth handshake.",
+                details="Right-size the pool; Postgres prefers a small number of busy connections.",
+            ),
+            metadata=ModuleMetadata(tags=["database", "postgres", "performance"]),
         ),
-        metadata=ModuleMetadata(tags=["database", "postgres", "performance"]),
-    ), kb_path)
+        kb_path,
+    )
 
 
 def test_search_modules_empty_query_returns_empty(kb_path):
@@ -614,7 +676,9 @@ def test_search_modules_uses_word_boundaries(kb_path):
     assert "jwt" in ids, "Should find jwt via partial match on 'authentication' tag"
 
     # conn-pool should rank higher (word boundary match > partial match)
-    assert ids.index("conn-pool") < ids.index("jwt"), "Word boundary match should rank higher than partial match"
+    assert ids.index("conn-pool") < ids.index(
+        "jwt"
+    ), "Word boundary match should rank higher than partial match"
 
 
 def test_search_modules_ranks_title_above_overview(kb_path):
@@ -664,10 +728,9 @@ def test_search_modules_short_term_lower_score(kb_path):
         title="Auth System",
         summary="Authentication and authorization system",
         content=ModuleContent(
-            overview="Auth system overview",
-            details="Auth system handles authentication"
+            overview="Auth system overview", details="Auth system handles authentication"
         ),
-        metadata=ModuleMetadata(tags=["auth", "security"])
+        metadata=ModuleMetadata(tags=["auth", "security"]),
     )
     save_module(exact_match, kb_path)
 
@@ -677,7 +740,6 @@ def test_search_modules_short_term_lower_score(kb_path):
     assert results[0].module.id == "auth-exact", "Exact word boundary match should rank first"
 
 
-
 def test_stem_reduces_morphological_variants():
     assert _stem("validation") == "valid"
     assert _stem("validating") == "valid"
@@ -685,7 +747,6 @@ def test_stem_reduces_morphological_variants():
     assert _stem("running") == "run"
     assert _stem("connections") == "connect"
     assert _stem("SIGNING") == "sign"
-
 
 
 def test_search_modules_with_category_filter(kb_path):
@@ -717,7 +778,6 @@ def test_search_modules_stem_matches_long_term(kb_path):
     ids = [r.module.id for r in results]
 
     assert "jwt" in ids
-
 
 
 def test_search_modules_stem_matches_pooling_query(kb_path):
@@ -922,7 +982,9 @@ def test_search_modules_appends_mandatory_companion_modules(kb_path):
     assert "policy/security-baseline" in ids
     companion = next(r for r in results if r.module.id == "security-baseline")
     assert companion.source == "policy"
-    assert any("mandatory_companion:policy/security-baseline" in reason for reason in companion.reasons)
+    assert any(
+        "mandatory_companion:policy/security-baseline" in reason for reason in companion.reasons
+    )
 
 
 def test_search_modules_applies_agent_specific_policy_override(kb_path):
@@ -933,9 +995,7 @@ def test_search_modules_applies_agent_specific_policy_override(kb_path):
                 "routing_policy": {
                     "category_priorities": {"how-to": ["reference"]},
                     "agent_overrides": {
-                        "incident-agent": {
-                            "category_priorities": {"how-to": ["runbook"]}
-                        }
+                        "incident-agent": {"category_priorities": {"how-to": ["runbook"]}}
                     },
                 }
             }
@@ -974,9 +1034,7 @@ def test_search_modules_applies_agent_specific_policy_override(kb_path):
 
     assert default_results[0].module.id == "token-reference"
     assert incident_results[0].module.id == "token-runbook"
-    assert any(
-        "agent:incident-agent" in reason for reason in incident_results[0].reasons
-    )
+    assert any("agent:incident-agent" in reason for reason in incident_results[0].reasons)
 
 
 def test_search_modules_applies_task_type_category_priority(kb_path):
@@ -1028,11 +1086,7 @@ def test_search_modules_appends_risk_level_companions(kb_path):
     kb_path.mkdir(parents=True, exist_ok=True)
     (kb_path / "config.json").write_text(
         json.dumps(
-            {
-                "routing_policy": {
-                    "risk_level_companions": {"high": ["policy/change-approval"]}
-                }
-            }
+            {"routing_policy": {"risk_level_companions": {"high": ["policy/change-approval"]}}}
         ),
         encoding="utf-8",
     )
@@ -1074,11 +1128,7 @@ def test_search_modules_filters_disallowed_statuses_for_risk_level(kb_path):
     kb_path.mkdir(parents=True, exist_ok=True)
     (kb_path / "config.json").write_text(
         json.dumps(
-            {
-                "routing_policy": {
-                    "risk_level_allowed_statuses": {"high": ["reviewed", "published"]}
-                }
-            }
+            {"routing_policy": {"risk_level_allowed_statuses": {"high": ["reviewed", "published"]}}}
         ),
         encoding="utf-8",
     )
@@ -1122,11 +1172,7 @@ def test_search_modules_filters_disallowed_statuses_for_task_type(kb_path):
     kb_path.mkdir(parents=True, exist_ok=True)
     (kb_path / "config.json").write_text(
         json.dumps(
-            {
-                "routing_policy": {
-                    "task_type_allowed_statuses": {"production-change": ["published"]}
-                }
-            }
+            {"routing_policy": {"task_type_allowed_statuses": {"production-change": ["published"]}}}
         ),
         encoding="utf-8",
     )
@@ -1228,19 +1274,22 @@ def test_search_modules_mixed_chinese_english(kb_path):
     assert len(search_modules("认证", kb_path)) == 1
 
 
-
 def test_search_modules_exact_ranks_above_stem(kb_path):
     _kb_with_signals(kb_path)
-    save_module(Module(
-        id="validate-guide", category="auth",
-        title="Validate requests correctly",
-        summary="Guidance for outbound request authentication",
-        content=ModuleContent(
-            overview="Clients must sign each gateway request.",
-            details="Use the shared secret to sign each outbound request body.",
+    save_module(
+        Module(
+            id="validate-guide",
+            category="auth",
+            title="Validate requests correctly",
+            summary="Guidance for outbound request authentication",
+            content=ModuleContent(
+                overview="Clients must sign each gateway request.",
+                details="Use the shared secret to sign each outbound request body.",
+            ),
+            metadata=ModuleMetadata(tags=["gateway"]),
         ),
-        metadata=ModuleMetadata(tags=["gateway"]),
-    ), kb_path)
+        kb_path,
+    )
 
     results = search_modules("validate", kb_path)
     ids = [r.module.id for r in results]
@@ -1253,26 +1302,34 @@ def test_search_modules_exact_ranks_above_stem(kb_path):
 def test_search_modules_bm25_breaks_heuristic_ties(kb_path):
     """When two modules have same heuristic score and quality, BM25 differentiates."""
     # Two modules that both match "cache" exactly in title — same heuristic, same quality
-    save_module(Module(
-        id="cache-basic", category="performance",
-        title="Cache strategies",
-        summary="Basic caching patterns",
-        content=ModuleContent(
-            overview="Cache is a simple key-value store.",
-            details="Cache frequently accessed data. Cache invalidation is hard. Cache everything you can. Cache makes things fast.",
+    save_module(
+        Module(
+            id="cache-basic",
+            category="performance",
+            title="Cache strategies",
+            summary="Basic caching patterns",
+            content=ModuleContent(
+                overview="Cache is a simple key-value store.",
+                details="Cache frequently accessed data. Cache invalidation is hard. Cache everything you can. Cache makes things fast.",
+            ),
+            metadata=ModuleMetadata(tags=["cache", "performance"]),
         ),
-        metadata=ModuleMetadata(tags=["cache", "performance"]),
-    ), kb_path)
-    save_module(Module(
-        id="cache-advanced", category="performance",
-        title="Cache strategies advanced",
-        summary="Advanced caching patterns",
-        content=ModuleContent(
-            overview="A brief overview of cache strategies.",
-            details="Short description of the module content for testing.",
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="cache-advanced",
+            category="performance",
+            title="Cache strategies advanced",
+            summary="Advanced caching patterns",
+            content=ModuleContent(
+                overview="A brief overview of cache strategies.",
+                details="Short description of the module content for testing.",
+            ),
+            metadata=ModuleMetadata(tags=["cache"]),
         ),
-        metadata=ModuleMetadata(tags=["cache"]),
-    ), kb_path)
+        kb_path,
+    )
 
     results = search_modules("cache", kb_path)
     ids = [r.module.id for r in results]
@@ -1285,26 +1342,34 @@ def test_search_modules_bm25_breaks_heuristic_ties(kb_path):
 
 def test_search_modules_graph_expansion_returns_neighbors(kb_path):
     """Graph expansion: modules referenced via related_modules appear in results."""
-    save_module(Module(
-        id="jwt", category="auth",
-        title="JWT signing and validation",
-        summary="Issuing and validating JSON Web Tokens with RS256",
-        content=ModuleContent(
-            overview="A JWT is a compact token signed with RS256.",
-            details="Signing uses an RSA private key; gateways validate via JWKS.",
+    save_module(
+        Module(
+            id="jwt",
+            category="auth",
+            title="JWT signing and validation",
+            summary="Issuing and validating JSON Web Tokens with RS256",
+            content=ModuleContent(
+                overview="A JWT is a compact token signed with RS256.",
+                details="Signing uses an RSA private key; gateways validate via JWKS.",
+            ),
+            metadata=ModuleMetadata(tags=["jwt"], related_modules=["auth/oauth-flow"]),
         ),
-        metadata=ModuleMetadata(tags=["jwt"], related_modules=["auth/oauth-flow"]),
-    ), kb_path)
-    save_module(Module(
-        id="oauth-flow", category="auth",
-        title="OAuth 2.0 authorization code flow",
-        summary="OAuth 2.0 authorization flow setup and configuration",
-        content=ModuleContent(
-            overview="OAuth 2.0 is an authorization framework that enables apps to obtain limited access.",
-            details="The authorization code flow involves exchanging an authorization code for an access token.",
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="oauth-flow",
+            category="auth",
+            title="OAuth 2.0 authorization code flow",
+            summary="OAuth 2.0 authorization flow setup and configuration",
+            content=ModuleContent(
+                overview="OAuth 2.0 is an authorization framework that enables apps to obtain limited access.",
+                details="The authorization code flow involves exchanging an authorization code for an access token.",
+            ),
+            metadata=ModuleMetadata(tags=["oauth"]),
         ),
-        metadata=ModuleMetadata(tags=["oauth"]),
-    ), kb_path)
+        kb_path,
+    )
 
     results = search_modules("JWT", kb_path)
     ids = [r.module.id for r in results]
@@ -1316,26 +1381,34 @@ def test_search_modules_graph_expansion_returns_neighbors(kb_path):
 
 def test_search_modules_graph_expansion_scores_lower_than_direct(kb_path):
     """Direct matches should always rank above graph-expanded neighbors."""
-    save_module(Module(
-        id="jwt", category="auth",
-        title="JWT signing and validation",
-        summary="Issuing and validating JSON Web Tokens with RS256",
-        content=ModuleContent(
-            overview="A JWT is a compact token signed with RS256.",
-            details="Signing uses an RSA private key; gateways validate via JWKS.",
+    save_module(
+        Module(
+            id="jwt",
+            category="auth",
+            title="JWT signing and validation",
+            summary="Issuing and validating JSON Web Tokens with RS256",
+            content=ModuleContent(
+                overview="A JWT is a compact token signed with RS256.",
+                details="Signing uses an RSA private key; gateways validate via JWKS.",
+            ),
+            metadata=ModuleMetadata(tags=["jwt"], related_modules=["auth/oauth-flow"]),
         ),
-        metadata=ModuleMetadata(tags=["jwt"], related_modules=["auth/oauth-flow"]),
-    ), kb_path)
-    save_module(Module(
-        id="oauth-flow", category="auth",
-        title="OAuth 2.0 authorization code flow",
-        summary="JWT is used in OAuth for access tokens",
-        content=ModuleContent(
-            overview="OAuth uses JWT tokens for access and refresh token exchange.",
-            details="This module covers implementation patterns for JWT-based access tokens in OAuth flows.",
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="oauth-flow",
+            category="auth",
+            title="OAuth 2.0 authorization code flow",
+            summary="JWT is used in OAuth for access tokens",
+            content=ModuleContent(
+                overview="OAuth uses JWT tokens for access and refresh token exchange.",
+                details="This module covers implementation patterns for JWT-based access tokens in OAuth flows.",
+            ),
+            metadata=ModuleMetadata(tags=["oauth", "jwt"]),
         ),
-        metadata=ModuleMetadata(tags=["oauth", "jwt"]),
-    ), kb_path)
+        kb_path,
+    )
 
     # Both modules match "JWT" — oauth-flow has JWT in summary (stem match)
     # jwt has "JWT" in title (exact match). jwt should also have oauth-flow as neighbor.
@@ -1348,36 +1421,50 @@ def test_search_modules_graph_expansion_scores_lower_than_direct(kb_path):
 def test_search_modules_graph_expansion_is_one_hop_only(kb_path):
     """Graph expansion should only be 1-hop — 2-hop neighbors should not appear."""
     # A → B → C chain; query matches only A; B should appear (1-hop), C should not (2-hop)
-    save_module(Module(
-        id="mod-a", category="general",
-        title="Xylophone framework architecture",
-        summary="The xylophone framework is for testing hop limits",
-        content=ModuleContent(
-            overview="Xylophone is the only entry point for this test.",
-            details="Xylophone provides unique capabilities for testing graph expansion limits.",
+    save_module(
+        Module(
+            id="mod-a",
+            category="general",
+            title="Xylophone framework architecture",
+            summary="The xylophone framework is for testing hop limits",
+            content=ModuleContent(
+                overview="Xylophone is the only entry point for this test.",
+                details="Xylophone provides unique capabilities for testing graph expansion limits.",
+            ),
+            metadata=ModuleMetadata(
+                tags=["xylophone", "hop-source"], related_modules=["general/mod-b"]
+            ),
         ),
-        metadata=ModuleMetadata(tags=["xylophone", "hop-source"], related_modules=["general/mod-b"]),
-    ), kb_path)
-    save_module(Module(
-        id="mod-b", category="general",
-        title="Bridge module between layers",
-        summary="Intermediate linking module for hop testing",
-        content=ModuleContent(
-            overview="This bridge module connects different parts of the system.",
-            details="The bridge module should only appear through graph expansion, not direct matching.",
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="mod-b",
+            category="general",
+            title="Bridge module between layers",
+            summary="Intermediate linking module for hop testing",
+            content=ModuleContent(
+                overview="This bridge module connects different parts of the system.",
+                details="The bridge module should only appear through graph expansion, not direct matching.",
+            ),
+            metadata=ModuleMetadata(tags=["hop-mid"], related_modules=["general/mod-c"]),
         ),
-        metadata=ModuleMetadata(tags=["hop-mid"], related_modules=["general/mod-c"]),
-    ), kb_path)
-    save_module(Module(
-        id="mod-c", category="general",
-        title="Terminal module at end of path",
-        summary="Final destination that should be unreachable",
-        content=ModuleContent(
-            overview="This terminal module should never appear in search results.",
-            details="Two hops away from the entry point, this module must be excluded.",
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="mod-c",
+            category="general",
+            title="Terminal module at end of path",
+            summary="Final destination that should be unreachable",
+            content=ModuleContent(
+                overview="This terminal module should never appear in search results.",
+                details="Two hops away from the entry point, this module must be excluded.",
+            ),
+            metadata=ModuleMetadata(tags=["hop-end"]),
         ),
-        metadata=ModuleMetadata(tags=["hop-end"]),
-    ), kb_path)
+        kb_path,
+    )
 
     results = search_modules("xylophone", kb_path)
     ids = [r.module.id for r in results]
@@ -1389,36 +1476,48 @@ def test_search_modules_graph_expansion_is_one_hop_only(kb_path):
 
 def test_search_modules_confidence_weights_high_above_low(kb_path):
     """High confidence modules should rank above low confidence when heuristic equal."""
-    save_module(Module(
-        id="conf-high", category="general",
-        title="Confidence testing module",
-        summary="Testing confidence weighting",
-        content=ModuleContent(
-            overview="This module tests high confidence ranking.",
-            details="High confidence modules should appear before low confidence ones with the same score.",
+    save_module(
+        Module(
+            id="conf-high",
+            category="general",
+            title="Confidence testing module",
+            summary="Testing confidence weighting",
+            content=ModuleContent(
+                overview="This module tests high confidence ranking.",
+                details="High confidence modules should appear before low confidence ones with the same score.",
+            ),
+            metadata=ModuleMetadata(tags=["test"], confidence="high"),
         ),
-        metadata=ModuleMetadata(tags=["test"], confidence="high"),
-    ), kb_path)
-    save_module(Module(
-        id="conf-medium", category="general",
-        title="Confidence testing module medium",
-        summary="Testing confidence weighting",
-        content=ModuleContent(
-            overview="This module tests medium confidence ranking.",
-            details="Medium confidence module for testing confidence weighting in search results.",
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="conf-medium",
+            category="general",
+            title="Confidence testing module medium",
+            summary="Testing confidence weighting",
+            content=ModuleContent(
+                overview="This module tests medium confidence ranking.",
+                details="Medium confidence module for testing confidence weighting in search results.",
+            ),
+            metadata=ModuleMetadata(tags=["test"], confidence="medium"),
         ),
-        metadata=ModuleMetadata(tags=["test"], confidence="medium"),
-    ), kb_path)
-    save_module(Module(
-        id="conf-low", category="general",
-        title="Confidence testing module low",
-        summary="Testing confidence weighting",
-        content=ModuleContent(
-            overview="This module tests low confidence ranking.",
-            details="Low confidence module for testing confidence weighting in search results.",
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="conf-low",
+            category="general",
+            title="Confidence testing module low",
+            summary="Testing confidence weighting",
+            content=ModuleContent(
+                overview="This module tests low confidence ranking.",
+                details="Low confidence module for testing confidence weighting in search results.",
+            ),
+            metadata=ModuleMetadata(tags=["test"], confidence="low"),
         ),
-        metadata=ModuleMetadata(tags=["test"], confidence="low"),
-    ), kb_path)
+        kb_path,
+    )
 
     results = search_modules("confidence", kb_path)
     ids = [r.module.id for r in results]
@@ -1431,15 +1530,19 @@ def test_search_modules_confidence_weights_high_above_low(kb_path):
 
 def test_search_modules_matches_in_details_field(kb_path):
     """Query terms in details (but not title/tags/summary/overview) should still match."""
-    save_module(Module(
-        id="surface-mod", category="general",
-        title="Generic module title",
-        summary="A very generic summary with nothing specific",
-        content=ModuleContent(
-            overview="This overview is also extremely generic and says nothing interesting.",
-            details="The real content is here. We use xylophone-pattern for all distributed coordination tasks.",
+    save_module(
+        Module(
+            id="surface-mod",
+            category="general",
+            title="Generic module title",
+            summary="A very generic summary with nothing specific",
+            content=ModuleContent(
+                overview="This overview is also extremely generic and says nothing interesting.",
+                details="The real content is here. We use xylophone-pattern for all distributed coordination tasks.",
+            ),
         ),
-    ), kb_path)
+        kb_path,
+    )
 
     results = search_modules("xylophone", kb_path)
     assert len(results) == 1, "Should find module via details field match"
@@ -1453,15 +1556,19 @@ def test_search_modules_user_synonym_expansion(kb_path):
     """User-configured synonyms should expand query terms for matching."""
     from knowledge_manager.schemas import Config
 
-    save_module(Module(
-        id="jwt", category="auth",
-        title="JWT signing and validation",
-        summary="Issuing and validating JSON Web Tokens with RS256",
-        content=ModuleContent(
-            overview="JWT is used for stateless authentication in our system.",
-            details="Tokens are signed with RS256 and expire after 24 hours.",
+    save_module(
+        Module(
+            id="jwt",
+            category="auth",
+            title="JWT signing and validation",
+            summary="Issuing and validating JSON Web Tokens with RS256",
+            content=ModuleContent(
+                overview="JWT is used for stateless authentication in our system.",
+                details="Tokens are signed with RS256 and expire after 24 hours.",
+            ),
         ),
-    ), kb_path)
+        kb_path,
+    )
 
     # Query "bearer" — module has no "bearer" in any field, so no match without synonym
     results_no_syn = search_modules("bearer", kb_path)
@@ -1479,34 +1586,48 @@ def test_search_modules_user_synonym_expansion(kb_path):
 def test_search_modules_weighted_graph_edges(kb_path):
     """Graph edges with weight annotations should rank higher-weight neighbors first."""
     # Module A matches the query; B and C are neighbors with different weights
-    save_module(Module(
-        id="mod-a", category="general",
-        title="Xylophone query module",
-        summary="This is the entry module for weighted graph edge testing",
-        content=ModuleContent(
-            overview="Xylophone is the primary entry point for this weighted edge test.",
-            details="Xylophone testing details for weighted graph expansion edge testing.",
+    save_module(
+        Module(
+            id="mod-a",
+            category="general",
+            title="Xylophone query module",
+            summary="This is the entry module for weighted graph edge testing",
+            content=ModuleContent(
+                overview="Xylophone is the primary entry point for this weighted edge test.",
+                details="Xylophone testing details for weighted graph expansion edge testing.",
+            ),
+            metadata=ModuleMetadata(
+                tags=["xylophone"], related_modules=["general/mod-b:0.9", "general/mod-c:0.1"]
+            ),
         ),
-        metadata=ModuleMetadata(tags=["xylophone"], related_modules=["general/mod-b:0.9", "general/mod-c:0.1"]),
-    ), kb_path)
-    save_module(Module(
-        id="mod-b", category="general",
-        title="High weight neighbor module",
-        summary="This module has a high edge weight from mod-a",
-        content=ModuleContent(
-            overview="High weight module should rank above low weight module.",
-            details="Testing weighted graph edges — this module should appear before mod-c.",
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="mod-b",
+            category="general",
+            title="High weight neighbor module",
+            summary="This module has a high edge weight from mod-a",
+            content=ModuleContent(
+                overview="High weight module should rank above low weight module.",
+                details="Testing weighted graph edges — this module should appear before mod-c.",
+            ),
         ),
-    ), kb_path)
-    save_module(Module(
-        id="mod-c", category="general",
-        title="Low weight neighbor module",
-        summary="This module has a low edge weight from mod-a",
-        content=ModuleContent(
-            overview="Low weight module should rank below high weight module.",
-            details="Testing weighted graph edges — this module should appear after mod-b.",
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="mod-c",
+            category="general",
+            title="Low weight neighbor module",
+            summary="This module has a low edge weight from mod-a",
+            content=ModuleContent(
+                overview="Low weight module should rank below high weight module.",
+                details="Testing weighted graph edges — this module should appear after mod-b.",
+            ),
         ),
-    ), kb_path)
+        kb_path,
+    )
 
     results = search_modules("xylophone", kb_path)
     ids = [r.module.id for r in results]
@@ -1515,8 +1636,9 @@ def test_search_modules_weighted_graph_edges(kb_path):
     assert "mod-b" in ids, "High-weight neighbor should appear"
     assert "mod-c" in ids, "Low-weight neighbor should appear"
     # High-weight neighbor should rank before low-weight neighbor
-    assert ids.index("mod-b") < ids.index("mod-c"), \
-        f"High-weight neighbor mod-b should rank before low-weight mod-c, got {ids}"
+    assert ids.index("mod-b") < ids.index(
+        "mod-c"
+    ), f"High-weight neighbor mod-b should rank before low-weight mod-c, got {ids}"
 
 
 # --- Intent classification tests ---
@@ -1524,6 +1646,7 @@ def test_search_modules_weighted_graph_edges(kb_path):
 
 def test_classify_intent_detects_how_to():
     from knowledge_manager.storage import _classify_intent
+
     assert _classify_intent("how to configure JWT signing") == "how-to"
     assert _classify_intent("how do I set up OAuth flow") == "how-to"
     assert _classify_intent("guide for database migration") == "how-to"
@@ -1532,6 +1655,7 @@ def test_classify_intent_detects_how_to():
 
 def test_classify_intent_detects_decision_record():
     from knowledge_manager.storage import _classify_intent
+
     assert _classify_intent("why did we choose RS256") == "decision-record"
     assert _classify_intent("tradeoff between Postgres and MySQL") == "decision-record"
     assert _classify_intent("architecture decision for microservices") == "decision-record"
@@ -1540,6 +1664,7 @@ def test_classify_intent_detects_decision_record():
 
 def test_classify_intent_detects_reference():
     from knowledge_manager.storage import _classify_intent
+
     assert _classify_intent("what is the JWT signing algorithm") == "reference"
     assert _classify_intent("API endpoint configuration") == "reference"
     assert _classify_intent("database schema definition") == "reference"
@@ -1547,6 +1672,7 @@ def test_classify_intent_detects_reference():
 
 def test_classify_intent_defaults_to_general():
     from knowledge_manager.storage import _classify_intent
+
     assert _classify_intent("JWT authentication") == "general"
     assert _classify_intent("Postgres connection pool") == "general"
     assert _classify_intent("rate limiting") == "general"
@@ -1554,26 +1680,34 @@ def test_classify_intent_defaults_to_general():
 
 def test_search_modules_how_to_intent_boosts_examples(kb_path):
     """How-to intent should boost modules with rich examples content."""
-    save_module(Module(
-        id="with-examples", category="general",
-        title="Xylophone configuration",
-        summary="Configuring the xylophone module",
-        content=ModuleContent(
-            overview="Configuration overview for the xylophone module.",
-            details="Step-by-step xylophone configuration details for testing.",
-            examples="Real xylophone configuration examples. Here is configure xylophone in practice.",
+    save_module(
+        Module(
+            id="with-examples",
+            category="general",
+            title="Xylophone configuration",
+            summary="Configuring the xylophone module",
+            content=ModuleContent(
+                overview="Configuration overview for the xylophone module.",
+                details="Step-by-step xylophone configuration details for testing.",
+                examples="Real xylophone configuration examples. Here is configure xylophone in practice.",
+            ),
         ),
-    ), kb_path)
-    save_module(Module(
-        id="no-examples", category="general",
-        title="Xylophone configuration reference",
-        summary="Reference for xylophone configuration",
-        content=ModuleContent(
-            overview="Xylophone is configured via environment variables.",
-            details="This module describes xylophone configuration at a high reference level.",
-            examples="",
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="no-examples",
+            category="general",
+            title="Xylophone configuration reference",
+            summary="Reference for xylophone configuration",
+            content=ModuleContent(
+                overview="Xylophone is configured via environment variables.",
+                details="This module describes xylophone configuration at a high reference level.",
+                examples="",
+            ),
         ),
-    ), kb_path)
+        kb_path,
+    )
 
     results = search_modules("how to configure xylophone", kb_path)
     ids = [r.module.id for r in results]
@@ -1582,26 +1716,34 @@ def test_search_modules_how_to_intent_boosts_examples(kb_path):
 
 def test_search_modules_decision_intent_boosts_details(kb_path):
     """Decision-record intent should boost modules with rich details and caveats."""
-    save_module(Module(
-        id="deep-details", category="general",
-        title="Xylophone architecture decision",
-        summary="Why we chose xylophone for our architecture",
-        content=ModuleContent(
-            overview="Architecture decision overview for xylophone.",
-            details="Comprehensive analysis of xylophone architecture. We evaluated three options. The tradeoff between latency and throughput was key. PostgreSQL was chosen because it offers the best balance.",
-            caveats="This xylophone decision assumes single-region deployment. Multi-region adds significant complexity.",
+    save_module(
+        Module(
+            id="deep-details",
+            category="general",
+            title="Xylophone architecture decision",
+            summary="Why we chose xylophone for our architecture",
+            content=ModuleContent(
+                overview="Architecture decision overview for xylophone.",
+                details="Comprehensive analysis of xylophone architecture. We evaluated three options. The tradeoff between latency and throughput was key. PostgreSQL was chosen because it offers the best balance.",
+                caveats="This xylophone decision assumes single-region deployment. Multi-region adds significant complexity.",
+            ),
         ),
-    ), kb_path)
-    save_module(Module(
-        id="shallow-details", category="general",
-        title="Xylophone architecture reference",
-        summary="Architecture reference overview for xylophone",
-        content=ModuleContent(
-            overview="Reference material for xylophone architecture details.",
-            details="Xylophone is a reference architecture pattern for distributed systems.",
-            caveats="",
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="shallow-details",
+            category="general",
+            title="Xylophone architecture reference",
+            summary="Architecture reference overview for xylophone",
+            content=ModuleContent(
+                overview="Reference material for xylophone architecture details.",
+                details="Xylophone is a reference architecture pattern for distributed systems.",
+                caveats="",
+            ),
         ),
-    ), kb_path)
+        kb_path,
+    )
 
     results = search_modules("why xylophone architecture decision tradeoff", kb_path)
     ids = [r.module.id for r in results]
@@ -1610,24 +1752,32 @@ def test_search_modules_decision_intent_boosts_details(kb_path):
 
 def test_search_modules_boost_ids_promotes_recently_loaded(kb_path):
     """Modules in boost_ids should rank higher than similarly-scored modules."""
-    save_module(Module(
-        id="mod-a", category="general",
-        title="Database connection troubleshooting",
-        summary="How to troubleshoot database connections",
-        content=ModuleContent(
-            overview="Troubleshooting database connections is important.",
-            details="Database connection troubleshooting details for testing boost parameter.",
+    save_module(
+        Module(
+            id="mod-a",
+            category="general",
+            title="Database connection troubleshooting",
+            summary="How to troubleshoot database connections",
+            content=ModuleContent(
+                overview="Troubleshooting database connections is important.",
+                details="Database connection troubleshooting details for testing boost parameter.",
+            ),
         ),
-    ), kb_path)
-    save_module(Module(
-        id="mod-b", category="general",
-        title="Database connection pooling",
-        summary="Database connection pool configuration",
-        content=ModuleContent(
-            overview="Connection pooling for databases is essential.",
-            details="Database connection pooling configuration for testing boost parameter.",
+        kb_path,
+    )
+    save_module(
+        Module(
+            id="mod-b",
+            category="general",
+            title="Database connection pooling",
+            summary="Database connection pool configuration",
+            content=ModuleContent(
+                overview="Connection pooling for databases is essential.",
+                details="Database connection pooling configuration for testing boost parameter.",
+            ),
         ),
-    ), kb_path)
+        kb_path,
+    )
 
     # Without boost, both match "database connection" equally in title
     results = search_modules("database connection", kb_path)
@@ -1684,6 +1834,7 @@ def test_sanitize_config_handles_empty_keys():
 def test_sanitize_config_handles_no_providers():
     from knowledge_manager.storage import sanitize_config
     from knowledge_manager.schemas import Config
+
     cfg = Config()
     sanitized = sanitize_config(cfg)
     assert sanitized.llm_providers == {}
@@ -1759,6 +1910,7 @@ def test_load_search_events_empty_dir_returns_empty(kb_path):
 
 def test_record_search_event_skips_when_disabled(kb_path):
     from knowledge_manager.schemas import Config
+
     kb_path.mkdir(parents=True, exist_ok=True)
     cfg = Config(telemetry={"enabled": False})
     cfg_path = kb_path / "config.json"
@@ -1975,10 +2127,19 @@ def test_notifications_config_defaults():
 
 
 def test_approve_from_staging_moves_to_kb(kb_path):
-    from knowledge_manager.schemas import StagingMeta, ReviewRecord, Module, ModuleContent, ModuleMetadata
+    from knowledge_manager.schemas import (
+        StagingMeta,
+        ReviewRecord,
+        Module,
+        ModuleContent,
+        ModuleMetadata,
+    )
     from knowledge_manager.storage import (
-        save_to_staging, save_staging_meta, approve_from_staging,
-        load_from_staging, load_module,
+        save_to_staging,
+        save_staging_meta,
+        approve_from_staging,
+        load_from_staging,
+        load_module,
     )
 
     kb_path.mkdir(parents=True, exist_ok=True)
@@ -1986,9 +2147,13 @@ def test_approve_from_staging_moves_to_kb(kb_path):
     staging.mkdir(exist_ok=True)
 
     mod = Module(
-        id="mod-x", category="test", title="Test Module X",
+        id="mod-x",
+        category="test",
+        title="Test Module X",
         summary="A test module for approval testing.",
-        content=ModuleContent(overview="Overview text here", details="Details text long enough for validation"),
+        content=ModuleContent(
+            overview="Overview text here", details="Details text long enough for validation"
+        ),
         metadata=ModuleMetadata(tags=["test"]),
     )
     save_to_staging(mod, staging)
@@ -2009,19 +2174,31 @@ def test_approve_from_staging_moves_to_kb(kb_path):
 def _init_git_for_kb(kb: Path):
     """Init git in a kb path and configure identity."""
     import subprocess
+
     if not (kb / ".git").exists():
         subprocess.run(["git", "-C", str(kb), "init"], capture_output=True, check=True)
-    subprocess.run(["git", "-C", str(kb), "config", "user.email", "test@test.com"], capture_output=True, check=True)
-    subprocess.run(["git", "-C", str(kb), "config", "user.name", "Test"], capture_output=True, check=True)
+    subprocess.run(
+        ["git", "-C", str(kb), "config", "user.email", "test@test.com"],
+        capture_output=True,
+        check=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(kb), "config", "user.name", "Test"], capture_output=True, check=True
+    )
     # Ensure branch is "main" for test consistency
-    branch = subprocess.run(["git", "-C", str(kb), "rev-parse", "--abbrev-ref", "HEAD"], capture_output=True, text=True)
+    branch = subprocess.run(
+        ["git", "-C", str(kb), "rev-parse", "--abbrev-ref", "HEAD"], capture_output=True, text=True
+    )
     if branch.stdout.strip() != "main":
-        subprocess.run(["git", "-C", str(kb), "branch", "-m", "main"], capture_output=True, check=True)
+        subprocess.run(
+            ["git", "-C", str(kb), "branch", "-m", "main"], capture_output=True, check=True
+        )
 
 
 def test_generate_changelog_empty_no_commits(kb_path):
     """No commits → changelog is None."""
     from knowledge_manager.storage import generate_changelog
+
     kb_path.mkdir(parents=True, exist_ok=True)
     _init_git_for_kb(kb_path)
 
@@ -2043,7 +2220,11 @@ def test_generate_changelog_with_module_commit(kb_path):
     mod_file.write_text(json.dumps({"id": "sample", "title": "Sample Module"}))
 
     subprocess.run(["git", "-C", str(kb_path), "add", "-A"], capture_output=True, check=True)
-    subprocess.run(["git", "-C", str(kb_path), "commit", "-m", "add sample module"], capture_output=True, check=True)
+    subprocess.run(
+        ["git", "-C", str(kb_path), "commit", "-m", "add sample module"],
+        capture_output=True,
+        check=True,
+    )
 
     result = generate_changelog(kb_path)
     assert result is not None
@@ -2067,7 +2248,9 @@ def test_generate_changelog_root_commit_classified_as_added(kb_path):
     (mod_dir / "root.json").write_text(json.dumps({"id": "root", "title": "Root Module"}))
 
     subprocess.run(["git", "-C", str(kb_path), "add", "-A"], capture_output=True, check=True)
-    subprocess.run(["git", "-C", str(kb_path), "commit", "-m", "root commit"], capture_output=True, check=True)
+    subprocess.run(
+        ["git", "-C", str(kb_path), "commit", "-m", "root commit"], capture_output=True, check=True
+    )
 
     result = generate_changelog(kb_path)
     assert result is not None
@@ -2089,9 +2272,12 @@ def test_load_changelogs_returns_recent(kb_path):
     mod_dir.mkdir(exist_ok=True)
     (mod_dir / "m.json").write_text(json.dumps({"id": "m"}))
     subprocess.run(["git", "-C", str(kb_path), "add", "-A"], capture_output=True, check=True)
-    subprocess.run(["git", "-C", str(kb_path), "commit", "-m", "add module"], capture_output=True, check=True)
+    subprocess.run(
+        ["git", "-C", str(kb_path), "commit", "-m", "add module"], capture_output=True, check=True
+    )
 
     from knowledge_manager.storage import generate_changelog, load_changelogs
+
     generate_changelog(kb_path)
 
     changelogs = load_changelogs(kb_path, days=7)
@@ -2109,9 +2295,14 @@ def test_load_module_changelog_filters_by_key(kb_path):
     mod_dir.mkdir(exist_ok=True)
     (mod_dir / "target.json").write_text(json.dumps({"id": "target", "title": "Target"}))
     subprocess.run(["git", "-C", str(kb_path), "add", "-A"], capture_output=True, check=True)
-    subprocess.run(["git", "-C", str(kb_path), "commit", "-m", "add target module"], capture_output=True, check=True)
+    subprocess.run(
+        ["git", "-C", str(kb_path), "commit", "-m", "add target module"],
+        capture_output=True,
+        check=True,
+    )
 
     from knowledge_manager.storage import generate_changelog, load_module_changelog
+
     generate_changelog(kb_path)
 
     entries = load_module_changelog(kb_path, "test/target")
@@ -2121,6 +2312,7 @@ def test_load_module_changelog_filters_by_key(kb_path):
 def test_load_changelogs_handles_missing_dir(tmp_path):
     """load_changelogs returns empty list if directory missing."""
     from knowledge_manager.storage import load_changelogs
+
     result = load_changelogs(tmp_path / "nonexistent_kb", days=7)
     assert result == []
 
@@ -2128,6 +2320,7 @@ def test_load_changelogs_handles_missing_dir(tmp_path):
 def test_load_module_changelog_handles_missing_dir(tmp_path):
     """load_module_changelog returns empty list if directory missing."""
     from knowledge_manager.storage import load_module_changelog
+
     result = load_module_changelog(tmp_path / "nonexistent_kb", "test/mod")
     assert result == []
 
@@ -2154,20 +2347,31 @@ def test_search_excludes_archived_by_default(kb_path):
 
     kb_path.mkdir(parents=True, exist_ok=True)
     published = Module(
-        id="pub", category="test", title="Published Module",
+        id="pub",
+        category="test",
+        title="Published Module",
         summary="A published module for search testing.",
-        content=ModuleContent(overview="Published overview here.", details="Published details long enough for validation check."),
+        content=ModuleContent(
+            overview="Published overview here.",
+            details="Published details long enough for validation check.",
+        ),
         metadata=ModuleMetadata(status="published"),
     )
     archived = Module(
-        id="arch", category="test", title="Archived Module",
+        id="arch",
+        category="test",
+        title="Archived Module",
         summary="An archived module for search testing.",
-        content=ModuleContent(overview="Archived overview here.", details="Archived details long enough for validation check."),
+        content=ModuleContent(
+            overview="Archived overview here.",
+            details="Archived details long enough for validation check.",
+        ),
         metadata=ModuleMetadata(status="archived"),
     )
     save_module(published, kb_path)
     save_module(archived, kb_path)
     from knowledge_manager.storage import rebuild_index
+
     rebuild_index(kb_path)
 
     results = search_modules("module", kb_path)
@@ -2183,20 +2387,31 @@ def test_search_includes_archived_when_requested(kb_path):
 
     kb_path.mkdir(parents=True, exist_ok=True)
     published = Module(
-        id="pub2", category="test", title="Published Module 2",
+        id="pub2",
+        category="test",
+        title="Published Module 2",
         summary="A published module for search testing.",
-        content=ModuleContent(overview="Published 2 overview here.", details="Published 2 details long enough for validation check."),
+        content=ModuleContent(
+            overview="Published 2 overview here.",
+            details="Published 2 details long enough for validation check.",
+        ),
         metadata=ModuleMetadata(status="published"),
     )
     archived = Module(
-        id="arch2", category="test", title="Archived Module 2",
+        id="arch2",
+        category="test",
+        title="Archived Module 2",
         summary="An archived module for search testing.",
-        content=ModuleContent(overview="Archived 2 overview here.", details="Archived 2 details long enough for validation check."),
+        content=ModuleContent(
+            overview="Archived 2 overview here.",
+            details="Archived 2 details long enough for validation check.",
+        ),
         metadata=ModuleMetadata(status="archived"),
     )
     save_module(published, kb_path)
     save_module(archived, kb_path)
     from knowledge_manager.storage import rebuild_index
+
     rebuild_index(kb_path)
 
     results = search_modules("module", kb_path, include_archived=True)
@@ -2212,13 +2427,18 @@ def test_search_deprecated_gets_lower_confidence(kb_path):
 
     kb_path.mkdir(parents=True, exist_ok=True)
     deprecated = Module(
-        id="old", category="test", title="Deprecated Module",
+        id="old",
+        category="test",
+        title="Deprecated Module",
         summary="A deprecated module for search.",
-        content=ModuleContent(overview="Old overview here.", details="Old details long enough for validation check."),
+        content=ModuleContent(
+            overview="Old overview here.", details="Old details long enough for validation check."
+        ),
         metadata=ModuleMetadata(status="deprecated", confidence="high"),
     )
     save_module(deprecated, kb_path)
     from knowledge_manager.storage import rebuild_index
+
     rebuild_index(kb_path)
 
     results = search_modules("deprecated module", kb_path)
@@ -2233,6 +2453,7 @@ def test_search_deprecated_gets_lower_confidence(kb_path):
 def test_module_status_default_is_published():
     """New modules should default to 'published' status."""
     from knowledge_manager.schemas import ModuleMetadata
+
     meta = ModuleMetadata()
     assert meta.status == "published"
 
@@ -2240,6 +2461,7 @@ def test_module_status_default_is_published():
 def test_module_status_validates_literal():
     """ModuleMetadata.status should only accept valid literal values."""
     from knowledge_manager.schemas import ModuleMetadata
+
     meta = ModuleMetadata(status="draft")
     assert meta.status == "draft"
     meta = ModuleMetadata(status="reviewed")
@@ -2251,6 +2473,7 @@ def test_module_status_validates_literal():
 
 def test_health_score_defaults():
     from knowledge_manager.schemas import HealthScore
+
     hs = HealthScore()
     assert hs.freshness == 0.0
     assert hs.usage == 0.0
@@ -2260,8 +2483,11 @@ def test_health_score_defaults():
 
 def test_module_health_schema():
     from knowledge_manager.schemas import ModuleHealth, HealthScore
+
     mh = ModuleHealth(
-        module_id="mod1", category="auth", title="Test",
+        module_id="mod1",
+        category="auth",
+        title="Test",
         status="published",
         score=HealthScore(freshness=80, usage=60, completeness=70, overall=70.5),
     )
@@ -2272,6 +2498,7 @@ def test_module_health_schema():
 
 def test_kb_health_report_schema():
     from knowledge_manager.schemas import KBHealthReport
+
     report = KBHealthReport(total_modules=10, total_categories=3, overall_score=75.0)
     assert report.total_modules == 10
     assert report.at_risk_modules == []
@@ -2285,9 +2512,13 @@ def test_compute_module_health_freshness_recent(kb_path):
 
     kb_path.mkdir(parents=True, exist_ok=True)
     mod = Module(
-        id="fresh", category="test", title="Fresh Module",
+        id="fresh",
+        category="test",
+        title="Fresh Module",
         summary="Recently updated module.",
-        content=ModuleContent(overview="Overview text.", details="Details long enough for validation check."),
+        content=ModuleContent(
+            overview="Overview text.", details="Details long enough for validation check."
+        ),
         metadata=ModuleMetadata(confidence="high"),
     )
     save_module(mod, kb_path)
@@ -2302,7 +2533,9 @@ def test_compute_module_health_completeness_full(kb_path):
 
     kb_path.mkdir(parents=True, exist_ok=True)
     mod = Module(
-        id="full", category="test", title="Full Module",
+        id="full",
+        category="test",
+        title="Full Module",
         summary="Module with all fields completed.",
         content=ModuleContent(
             overview="Overview text here.",
@@ -2325,7 +2558,9 @@ def test_compute_module_health_partial_completeness(kb_path):
 
     kb_path.mkdir(parents=True, exist_ok=True)
     mod = Module(
-        id="partial", category="test", title="Partial Module",
+        id="partial",
+        category="test",
+        title="Partial Module",
         summary="Module missing some fields.",
         content=ModuleContent(
             overview="Overview only.",
@@ -2347,9 +2582,13 @@ def test_compute_module_health_detects_zombie(kb_path):
 
     kb_path.mkdir(parents=True, exist_ok=True)
     mod = Module(
-        id="zombie", category="test", title="Zombie Module",
+        id="zombie",
+        category="test",
+        title="Zombie Module",
         summary="Never loaded module.",
-        content=ModuleContent(overview="Overview text here.", details="Details long enough for validation check."),
+        content=ModuleContent(
+            overview="Overview text here.", details="Details long enough for validation check."
+        ),
         metadata=ModuleMetadata(confidence="low"),
     )
     save_module(mod, kb_path)
@@ -2364,7 +2603,9 @@ def test_compute_module_health_detects_incomplete(kb_path):
 
     kb_path.mkdir(parents=True, exist_ok=True)
     mod = Module(
-        id="bare", category="test", title="Bare Module",
+        id="bare",
+        category="test",
+        title="Bare Module",
         summary="Minimal module.",
         content=ModuleContent(
             overview="Just overview",
@@ -2385,13 +2626,17 @@ def test_generate_health_report_with_modules(kb_path):
 
     kb_path.mkdir(parents=True, exist_ok=True)
     mod_a = Module(
-        id="a", category="auth", title="Auth A",
+        id="a",
+        category="auth",
+        title="Auth A",
         summary="Auth module A for health report.",
         content=ModuleContent(overview="Overview A.", details="Details for module A long enough."),
         metadata=ModuleMetadata(tags=["auth"]),
     )
     mod_b = Module(
-        id="b", category="db", title="Database Module B",
+        id="b",
+        category="db",
+        title="Database Module B",
         summary="DB module B for health report.",
         content=ModuleContent(overview="Overview B.", details="Details for module B long enough."),
         metadata=ModuleMetadata(tags=["db"]),
@@ -2421,6 +2666,7 @@ def test_generate_health_report_empty(kb_path):
 
 def test_usage_stats_schema():
     from knowledge_manager.schemas import UsageStats
+
     s = UsageStats(period_days=30)
     assert s.total_searches == 0
     assert s.top_modules == []
@@ -2442,7 +2688,11 @@ def test_aggregate_usage_stats_empty(kb_path):
 
 def test_aggregate_usage_stats_with_events(kb_path):
     """Stats should aggregate search and load events correctly."""
-    from knowledge_manager.storage import aggregate_usage_stats, record_search_event, record_load_event
+    from knowledge_manager.storage import (
+        aggregate_usage_stats,
+        record_search_event,
+        record_load_event,
+    )
 
     kb_path.mkdir(parents=True, exist_ok=True)
 
@@ -2456,6 +2706,7 @@ def test_aggregate_usage_stats_with_events(kb_path):
 
 def test_daily_activity_point_schema():
     from knowledge_manager.schemas import DailyActivityPoint
+
     d = DailyActivityPoint(date="2026-06-09", searches=10, loads=5)
     assert d.searches == 10
     assert d.loads == 5
@@ -2463,6 +2714,7 @@ def test_daily_activity_point_schema():
 
 def test_module_usage_entry_schema():
     from knowledge_manager.schemas import ModuleUsageEntry
+
     m = ModuleUsageEntry(module_id="m", category="c", title="T", load_count=5, trend="up")
     assert m.load_count == 5
     assert m.trend == "up"
@@ -2470,6 +2722,7 @@ def test_module_usage_entry_schema():
 
 def test_unmatched_query_entry_schema():
     from knowledge_manager.schemas import UnmatchedQueryEntry
+
     u = UnmatchedQueryEntry(query_hash="abc", query_terms=["test", "query"], count=3)
     assert u.query_hash == "abc"
     assert u.count == 3
@@ -2480,9 +2733,14 @@ def test_unmatched_query_entry_schema():
 
 def test_graph_stats_schema():
     from knowledge_manager.schemas import GraphStats, HubEntry
+
     gs = GraphStats(
-        total_nodes=10, total_edges=15, density=0.15,
-        hub_modules=[HubEntry(module_id="h1", category="auth", title="Hub", in_degree=5, out_degree=2)],
+        total_nodes=10,
+        total_edges=15,
+        density=0.15,
+        hub_modules=[
+            HubEntry(module_id="h1", category="auth", title="Hub", in_degree=5, out_degree=2)
+        ],
     )
     assert gs.total_nodes == 10
     assert len(gs.hub_modules) == 1
@@ -2493,6 +2751,7 @@ def test_graph_stats_schema():
 
 def test_analyze_graph_empty(kb_path):
     from knowledge_manager.storage import analyze_graph
+
     kb_path.mkdir(parents=True, exist_ok=True)
     gs = analyze_graph(kb_path)
     assert gs.total_nodes == 0
@@ -2504,15 +2763,23 @@ def test_analyze_graph_with_modules(kb_path):
 
     kb_path.mkdir(parents=True, exist_ok=True)
     mod_a = Module(
-        id="a", category="auth", title="Auth Module A",
+        id="a",
+        category="auth",
+        title="Auth Module A",
         summary="Module A for graph testing.",
-        content=ModuleContent(overview="Overview A.", details="Details for A long enough for validation."),
+        content=ModuleContent(
+            overview="Overview A.", details="Details for A long enough for validation."
+        ),
         metadata=ModuleMetadata(tags=["auth"], related_modules=["db/b"]),
     )
     mod_b = Module(
-        id="b", category="db", title="DB Module B",
+        id="b",
+        category="db",
+        title="DB Module B",
         summary="Module B for graph testing.",
-        content=ModuleContent(overview="Overview B.", details="Details for B long enough for validation check."),
+        content=ModuleContent(
+            overview="Overview B.", details="Details for B long enough for validation check."
+        ),
         metadata=ModuleMetadata(tags=["db"]),
     )
     save_module(mod_a, kb_path)
@@ -2531,15 +2798,23 @@ def test_detect_clusters_finds_components(kb_path):
 
     kb_path.mkdir(parents=True, exist_ok=True)
     mod_a = Module(
-        id="a", category="auth", title="Auth A",
+        id="a",
+        category="auth",
+        title="Auth A",
         summary="Auth module A cluster test.",
-        content=ModuleContent(overview="Overview A.", details="Details for A long enough for validation."),
+        content=ModuleContent(
+            overview="Overview A.", details="Details for A long enough for validation."
+        ),
         metadata=ModuleMetadata(related_modules=["db/b"]),
     )
     mod_b = Module(
-        id="b", category="db", title="Database Module B",
+        id="b",
+        category="db",
+        title="Database Module B",
         summary="DB module B cluster test.",
-        content=ModuleContent(overview="Overview B.", details="Details for B long enough for validation check."),
+        content=ModuleContent(
+            overview="Overview B.", details="Details for B long enough for validation check."
+        ),
         metadata=ModuleMetadata(related_modules=["auth/a"]),
     )
     save_module(mod_a, kb_path)
@@ -2556,10 +2831,14 @@ def test_detect_clusters_finds_components(kb_path):
 
 def test_recommendation_schema():
     from knowledge_manager.schemas import Recommendation, RecommendationType
+
     r = Recommendation(
         type=RecommendationType.ARCHIVE,
-        module_id="m", category="test", title="Test",
-        score=0.8, reason="ZOMBIE, STALE",
+        module_id="m",
+        category="test",
+        title="Test",
+        score=0.8,
+        reason="ZOMBIE, STALE",
     )
     assert r.type == RecommendationType.ARCHIVE
     assert r.score == 0.8
@@ -2567,6 +2846,7 @@ def test_recommendation_schema():
 
 def test_recommendation_report_schema():
     from knowledge_manager.schemas import RecommendationReport
+
     report = RecommendationReport()
     assert report.archive_candidates == []
     assert report.enrichment_needed == []
@@ -2588,7 +2868,9 @@ def test_generate_recommendations_suggests_enrichment(kb_path):
 
     kb_path.mkdir(parents=True, exist_ok=True)
     mod = Module(
-        id="bare", category="test", title="Bare Module",
+        id="bare",
+        category="test",
+        title="Bare Module",
         summary="Minimal content module.",
         content=ModuleContent(
             overview="Just overview text.",
@@ -2611,15 +2893,23 @@ def test_generate_recommendations_link_suggestion(kb_path):
 
     kb_path.mkdir(parents=True, exist_ok=True)
     mod_a = Module(
-        id="a", category="auth", title="Auth Module A",
+        id="a",
+        category="auth",
+        title="Auth Module A",
         summary="Module A for link suggestion.",
-        content=ModuleContent(overview="Overview A.", details="Details for A long enough for validation."),
+        content=ModuleContent(
+            overview="Overview A.", details="Details for A long enough for validation."
+        ),
         metadata=ModuleMetadata(tags=["security", "api"]),
     )
     mod_b = Module(
-        id="b", category="api", title="API Module B",
+        id="b",
+        category="api",
+        title="API Module B",
         summary="Module B for link suggestion.",
-        content=ModuleContent(overview="Overview B.", details="Details for B long enough for validation check."),
+        content=ModuleContent(
+            overview="Overview B.", details="Details for B long enough for validation check."
+        ),
         metadata=ModuleMetadata(tags=["security", "api"]),
     )
     save_module(mod_a, kb_path)
@@ -2734,7 +3024,9 @@ def test_generate_ops_report_surfaces_source_lifecycle_and_policy_backlogs(kb_pa
         StagingMeta(
             module_id="pending-module",
             status="changes-requested",
-            reviews=[ReviewRecord(reviewer="alice", action="changes-requested", comment="Needs fixes")],
+            reviews=[
+                ReviewRecord(reviewer="alice", action="changes-requested", comment="Needs fixes")
+            ],
         ),
         kb_path / ".staging",
     )
@@ -2758,6 +3050,7 @@ def test_generate_ops_report_surfaces_source_lifecycle_and_policy_backlogs(kb_pa
 def test_load_federation_empty(kb_path):
     """load_federation should return empty dict when no config or no namespaces."""
     from knowledge_manager.storage import load_federation, load_index, save_index
+
     kb_path.mkdir(parents=True, exist_ok=True)
     save_index(Index(), kb_path)
 
@@ -2780,14 +3073,23 @@ def test_load_federation_with_namespaces(kb_path, tmp_path):
 
     # Write federation config
     import json
+
     config_path = kb_path / "config.json"
-    config_path.write_text(json.dumps({
-        "federation": {
-            "namespaces": {
-                "auth": {"kb_path": str(ns_path), "description": "Auth team KB", "search_default": True}
+    config_path.write_text(
+        json.dumps(
+            {
+                "federation": {
+                    "namespaces": {
+                        "auth": {
+                            "kb_path": str(ns_path),
+                            "description": "Auth team KB",
+                            "search_default": True,
+                        }
+                    }
+                }
             }
-        }
-    }))
+        )
+    )
 
     result = load_federation(kb_path)
     assert "auth" in result
@@ -2805,13 +3107,21 @@ def test_load_federation_missing_path(kb_path, tmp_path):
     save_index(Index(), kb_path)
 
     config_path = kb_path / "config.json"
-    config_path.write_text(json.dumps({
-        "federation": {
-            "namespaces": {
-                "missing": {"kb_path": "/nonexistent/path", "description": "Missing", "search_default": True}
+    config_path.write_text(
+        json.dumps(
+            {
+                "federation": {
+                    "namespaces": {
+                        "missing": {
+                            "kb_path": "/nonexistent/path",
+                            "description": "Missing",
+                            "search_default": True,
+                        }
+                    }
+                }
             }
-        }
-    }))
+        )
+    )
 
     result = load_federation(kb_path)
     assert result == {}

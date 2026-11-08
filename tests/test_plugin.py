@@ -3,7 +3,10 @@ import pytest
 from pathlib import Path
 
 from knowledge_manager.plugin import (
-    PluginManifest, Plugin, PluginManager, search_registry,
+    PluginManifest,
+    Plugin,
+    PluginManager,
+    search_registry,
 )
 
 
@@ -17,9 +20,11 @@ class TestPluginManifest:
 
     def test_full(self):
         m = PluginManifest(
-            name="slack", version="1.2.0",
+            name="slack",
+            version="1.2.0",
             description="Slack integration",
-            author="dev", hooks=["after_approve"],
+            author="dev",
+            hooks=["after_approve"],
         )
         assert m.hooks == ["after_approve"]
 
@@ -45,15 +50,18 @@ class TestPluginManager:
     def test_load_from_dir(self, pm):
         plugin_dir = pm.plugins_dir / "test-plugin"
         plugin_dir.mkdir()
-        (plugin_dir / "plugin.json").write_text(json.dumps({
-            "name": "test-plugin",
-            "version": "0.1.0",
-            "description": "A test plugin",
-            "author": "tester",
-        }))
+        (plugin_dir / "plugin.json").write_text(
+            json.dumps(
+                {
+                    "name": "test-plugin",
+                    "version": "0.1.0",
+                    "description": "A test plugin",
+                    "author": "tester",
+                }
+            )
+        )
         (plugin_dir / "__init__.py").write_text(
-            "def after_approve(module, ctx):\n"
-            "    return module\n"
+            "def after_approve(module, ctx):\n" "    return module\n"
         )
 
         p = pm._load_from_dir(plugin_dir)
@@ -66,9 +74,14 @@ class TestPluginManager:
         for name in ["a-plugin", "b-plugin"]:
             d = pm.plugins_dir / name
             d.mkdir()
-            (d / "plugin.json").write_text(json.dumps({
-                "name": name, "version": "0.1.0",
-            }))
+            (d / "plugin.json").write_text(
+                json.dumps(
+                    {
+                        "name": name,
+                        "version": "0.1.0",
+                    }
+                )
+            )
             (d / "__init__.py").write_text("")
 
         pm.load_all()
@@ -78,9 +91,14 @@ class TestPluginManager:
     def test_register_local(self, pm):
         src = pm.kb_path / "src-plugin"
         src.mkdir()
-        (src / "plugin.json").write_text(json.dumps({
-            "name": "src-plugin", "version": "1.0.0",
-        }))
+        (src / "plugin.json").write_text(
+            json.dumps(
+                {
+                    "name": "src-plugin",
+                    "version": "1.0.0",
+                }
+            )
+        )
         (src / "__init__.py").write_text("")
 
         p = pm.register_local(src)
@@ -90,9 +108,14 @@ class TestPluginManager:
     def test_register_duplicate(self, pm):
         src = pm.kb_path / "dup-plugin"
         src.mkdir()
-        (src / "plugin.json").write_text(json.dumps({
-            "name": "dup-plugin", "version": "1.0.0",
-        }))
+        (src / "plugin.json").write_text(
+            json.dumps(
+                {
+                    "name": "dup-plugin",
+                    "version": "1.0.0",
+                }
+            )
+        )
         (src / "__init__.py").write_text("")
         pm.register_local(src)
         result = pm.register_local(src)
@@ -101,9 +124,14 @@ class TestPluginManager:
     def test_enable_disable(self, pm):
         plugin_dir = pm.plugins_dir / "toggle-plugin"
         plugin_dir.mkdir()
-        (plugin_dir / "plugin.json").write_text(json.dumps({
-            "name": "toggle-plugin", "version": "0.1.0",
-        }))
+        (plugin_dir / "plugin.json").write_text(
+            json.dumps(
+                {
+                    "name": "toggle-plugin",
+                    "version": "0.1.0",
+                }
+            )
+        )
         (plugin_dir / "__init__.py").write_text("")
         pm._load_from_dir(plugin_dir)
 
@@ -115,9 +143,14 @@ class TestPluginManager:
     def test_uninstall(self, pm):
         plugin_dir = pm.plugins_dir / "rm-plugin"
         plugin_dir.mkdir()
-        (plugin_dir / "plugin.json").write_text(json.dumps({
-            "name": "rm-plugin", "version": "0.1.0",
-        }))
+        (plugin_dir / "plugin.json").write_text(
+            json.dumps(
+                {
+                    "name": "rm-plugin",
+                    "version": "0.1.0",
+                }
+            )
+        )
         (plugin_dir / "__init__.py").write_text("")
         pm._load_from_dir(plugin_dir)
 
@@ -128,12 +161,16 @@ class TestPluginManager:
     def test_get_enabled(self, pm):
         plugin_dir = pm.plugins_dir / "hook-plugin"
         plugin_dir.mkdir()
-        (plugin_dir / "plugin.json").write_text(json.dumps({
-            "name": "hook-plugin", "version": "0.1.0",
-        }))
+        (plugin_dir / "plugin.json").write_text(
+            json.dumps(
+                {
+                    "name": "hook-plugin",
+                    "version": "0.1.0",
+                }
+            )
+        )
         (plugin_dir / "__init__.py").write_text(
-            "def before_search(query, ctx):\n"
-            "    return query + ' enhanced'\n"
+            "def before_search(query, ctx):\n" "    return query + ' enhanced'\n"
         )
         pm._load_from_dir(plugin_dir)
 
@@ -143,12 +180,16 @@ class TestPluginManager:
     def test_get_enabled_skips_disabled(self, pm):
         plugin_dir = pm.plugins_dir / "off-plugin"
         plugin_dir.mkdir()
-        (plugin_dir / "plugin.json").write_text(json.dumps({
-            "name": "off-plugin", "version": "0.1.0",
-        }))
+        (plugin_dir / "plugin.json").write_text(
+            json.dumps(
+                {
+                    "name": "off-plugin",
+                    "version": "0.1.0",
+                }
+            )
+        )
         (plugin_dir / "__init__.py").write_text(
-            "def after_search(query, results, ctx):\n"
-            "    return results\n"
+            "def after_search(query, results, ctx):\n" "    return results\n"
         )
         pm._load_from_dir(plugin_dir)
         pm.disable("off-plugin")

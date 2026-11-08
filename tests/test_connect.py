@@ -18,7 +18,9 @@ from knowledge_manager.schemas import PlatformConfig
 
 def test_platform_config_schema():
     """PlatformConfig should validate name, config_path, description."""
-    cfg = PlatformConfig(name="test-platform", config_path="~/.test/mcp.json", description="Test platform")
+    cfg = PlatformConfig(
+        name="test-platform", config_path="~/.test/mcp.json", description="Test platform"
+    )
     assert cfg.name == "test-platform"
     assert cfg.config_path == "~/.test/mcp.json"
     assert cfg.description == "Test platform"
@@ -154,7 +156,9 @@ def test_remove_mcp_entry_not_present(tmp_path):
 def test_remove_mcp_entry_preserves_other_keys(tmp_path):
     """remove_mcp_entry should not remove other top-level keys."""
     path = tmp_path / "mcp.json"
-    path.write_text('{"version": 2, "mcpServers": {"knowledge-manager": {"command": "km"}, "other": {}}}')
+    path.write_text(
+        '{"version": 2, "mcpServers": {"knowledge-manager": {"command": "km"}, "other": {}}}'
+    )
     assert remove_mcp_entry(path)
 
     data = json.loads(path.read_text())

@@ -19,7 +19,9 @@ def _timestamp() -> str:
 
 
 @serialized_write
-def create_backup_bundle(kb_path: Path, output_dir: Path, attachments: list[Path] | None = None) -> Path:
+def create_backup_bundle(
+    kb_path: Path, output_dir: Path, attachments: list[Path] | None = None
+) -> Path:
     if not kb_path.exists():
         raise FileNotFoundError(f"Knowledge base not found: {kb_path}")
 
@@ -36,10 +38,18 @@ def create_backup_bundle(kb_path: Path, output_dir: Path, attachments: list[Path
 
     file_hashes: dict[str, str] = {}
     for path in sorted(kb_path.rglob("*")):
-        if path.is_file() and ".locks" not in path.relative_to(kb_path).parts and path.suffix != ".tmp":
-            file_hashes[f"kb/{path.relative_to(kb_path).as_posix()}"] = hashlib.sha256(path.read_bytes()).hexdigest()
+        if (
+            path.is_file()
+            and ".locks" not in path.relative_to(kb_path).parts
+            and path.suffix != ".tmp"
+        ):
+            file_hashes[f"kb/{path.relative_to(kb_path).as_posix()}"] = hashlib.sha256(
+                path.read_bytes()
+            ).hexdigest()
     for attachment in attachments or []:
-        file_hashes[f"attachments/{attachment.name}"] = hashlib.sha256(attachment.read_bytes()).hexdigest()
+        file_hashes[f"attachments/{attachment.name}"] = hashlib.sha256(
+            attachment.read_bytes()
+        ).hexdigest()
 
     manifest = {
         "created_at": ts,
@@ -80,7 +90,11 @@ def create_backup_bundle(kb_path: Path, output_dir: Path, attachments: list[Path
     bundle_path = output_dir / f"knowledge-manager-backup-{ts}.zip"
     with zipfile.ZipFile(bundle_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         for path in sorted(kb_path.rglob("*")):
-            if path.is_file() and ".locks" not in path.relative_to(kb_path).parts and path.suffix != ".tmp":
+            if (
+                path.is_file()
+                and ".locks" not in path.relative_to(kb_path).parts
+                and path.suffix != ".tmp"
+            ):
                 zf.write(path, arcname=f"kb/{path.relative_to(kb_path).as_posix()}")
         for attachment in attachments or []:
             zf.write(attachment, arcname=f"attachments/{attachment.name}")
@@ -107,7 +121,9 @@ def restore_backup_bundle(bundle_path: Path, target_kb: Path) -> Path:
         manifest = json.loads(zf.read("manifest.json").decode("utf-8"))
         if manifest.get("restore_policy") != "empty-target-only":
             raise ValueError("Backup bundle restore policy is not supported")
-        kb_entries = sorted(name for name in names if name.startswith("kb/") and not name.endswith("/"))
+        kb_entries = sorted(
+            name for name in names if name.startswith("kb/") and not name.endswith("/")
+        )
         if not kb_entries:
             raise ValueError("Backup bundle is missing kb/ content")
         hashes = manifest.get("sha256", {})

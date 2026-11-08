@@ -32,7 +32,11 @@ def test_evaluate_readiness_fails_on_failed_ingestion_jobs(tmp_path):
 
     failed_job = create_ingestion_job(kb, source_id="upload", trigger="http-upload")
     job_path = kb / ".jobs" / "ingestion" / f"{failed_job.job_id}.json"
-    payload = job_path.read_text(encoding="utf-8").replace('"status": "queued"', '"status": "failed"').replace('"stage": "queued"', '"stage": "failed"')
+    payload = (
+        job_path.read_text(encoding="utf-8")
+        .replace('"status": "queued"', '"status": "failed"')
+        .replace('"stage": "queued"', '"stage": "failed"')
+    )
     job_path.write_text(payload, encoding="utf-8")
 
     state = evaluate_readiness(kb)
@@ -56,7 +60,9 @@ def test_evaluate_readiness_fails_on_stale_running_ingestion_jobs(tmp_path):
     running_job = create_ingestion_job(kb, source_id="upload", trigger="http-upload")
     claimed = claim_ingestion_job(kb, running_job.job_id, worker_id="worker-1", lease_seconds=60)
     job_path = kb / ".jobs" / "ingestion" / f"{claimed.job_id}.json"
-    stale = claimed.model_copy(update={"lease_expires_at": datetime.now(timezone.utc) - timedelta(seconds=5)})
+    stale = claimed.model_copy(
+        update={"lease_expires_at": datetime.now(timezone.utc) - timedelta(seconds=5)}
+    )
     job_path.write_text(stale.model_dump_json(indent=2), encoding="utf-8")
 
     state = evaluate_readiness(kb)

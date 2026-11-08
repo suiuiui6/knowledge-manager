@@ -111,7 +111,9 @@ class TestVectorIndex:
         assert results[0].source == "vector_fallback"
         assert results[0].module.id == "legacy-acronym"
 
-    def test_hybrid_search_promotes_supported_vector_hit_without_losing_policy_controls(self, tmp_path, monkeypatch):
+    def test_hybrid_search_promotes_supported_vector_hit_without_losing_policy_controls(
+        self, tmp_path, monkeypatch
+    ):
         kb = tmp_path / "kb"
         kb.mkdir()
         save_module(

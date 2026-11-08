@@ -339,16 +339,20 @@ def _seed_modules(config: BenchmarkConfig) -> None:
                 tenant_id=tenant_id,
                 related_modules=related,
                 confidence="high" if i % 3 == 0 else "medium",
-                source_documents=[
-                    SourceDocumentRef(
-                        source_type="confluence",
-                        source_id="team-docs",
-                        external_id=f"page-{i:05d}",
-                        title=f"Source page {i}",
-                        url=f"https://example.atlassian.net/wiki/page-{i}",
-                        version=f"v{i % 9}",
-                    )
-                ] if category == "ops" and i % 6 == 0 else [],
+                source_documents=(
+                    [
+                        SourceDocumentRef(
+                            source_type="confluence",
+                            source_id="team-docs",
+                            external_id=f"page-{i:05d}",
+                            title=f"Source page {i}",
+                            url=f"https://example.atlassian.net/wiki/page-{i}",
+                            version=f"v{i % 9}",
+                        )
+                    ]
+                    if category == "ops" and i % 6 == 0
+                    else []
+                ),
             ),
         )
         # Fixture loading is outside measured operations. Populate validated
@@ -377,7 +381,9 @@ def _seed_jobs(config: BenchmarkConfig) -> None:
         job = create_ingestion_job(config.kb_path, source_id=f"source-{i % 8}", trigger="benchmark")
         if i % 3 == 0:
             claim_ingestion_job(config.kb_path, job.job_id, worker_id="seed-worker")
-            update_ingestion_checkpoint(config.kb_path, job.job_id, cursor=f"cursor-{i}", pages_seen=i + 1)
+            update_ingestion_checkpoint(
+                config.kb_path, job.job_id, cursor=f"cursor-{i}", pages_seen=i + 1
+            )
         if i % 5 == 0:
             complete_ingestion_job(
                 config.kb_path,
@@ -486,7 +492,9 @@ def build_production_readiness_verdict(
     from knowledge_manager.storage import _load_config_safe
 
     cfg = _load_config_safe(kb_path)
-    resolved_scales = required_scales or (cfg.security.required_perf_scales if cfg else ["xs", "s", "m"])
+    resolved_scales = required_scales or (
+        cfg.security.required_perf_scales if cfg else ["xs", "s", "m"]
+    )
     matrix_verdict = evaluate_matrix_summary(matrix_summary_path, resolved_scales)
     readiness = evaluate_readiness(kb_path)
     integrity = run_integrity_check(kb_path)
@@ -522,7 +530,9 @@ def _render_markdown(report: dict[str, Any]) -> str:
         lines.append("")
         for gate_name, gate in gate_summary.items():
             if gate.get("status") == "missing":
-                lines.append(f"- `{gate_name}`: missing metric `{gate['section']}/{gate['metric']}`")
+                lines.append(
+                    f"- `{gate_name}`: missing metric `{gate['section']}/{gate['metric']}`"
+                )
                 continue
             lines.append(
                 f"- `{gate_name}`: `{gate['status']}` "
@@ -534,7 +544,9 @@ def _render_markdown(report: dict[str, Any]) -> str:
     if release_verdict:
         lines.append("## Release Verdict")
         lines.append("")
-        lines.append(f"- Ready for production: `{release_verdict.get('ready_for_production', False)}`")
+        lines.append(
+            f"- Ready for production: `{release_verdict.get('ready_for_production', False)}`"
+        )
         failed_gates = release_verdict.get("failed_gates", [])
         if failed_gates:
             lines.append(f"- Failed gates: `{', '.join(failed_gates)}`")
@@ -556,7 +568,9 @@ def _render_markdown(report: dict[str, Any]) -> str:
         lines.append(f"### {section}")
         lines.append("")
         if isinstance(metrics, dict) and metrics.get("enabled") is False:
-            lines.append("- provider-backed external benchmarks were skipped because no compatible API key was available")
+            lines.append(
+                "- provider-backed external benchmarks were skipped because no compatible API key was available"
+            )
             lines.append("")
             continue
         for metric_name, metric in metrics.items():
@@ -851,7 +865,9 @@ def run_enterprise_benchmark(config: BenchmarkConfig) -> dict[str, Any]:
     def _job_round_trip() -> dict[str, Any]:
         job = create_ingestion_job(config.kb_path, source_id="perf-source", trigger="benchmark")
         claim_ingestion_job(config.kb_path, job.job_id, worker_id="perf-worker")
-        update_ingestion_checkpoint(config.kb_path, job.job_id, cursor="cursor-final", pages_seen=11)
+        update_ingestion_checkpoint(
+            config.kb_path, job.job_id, cursor="cursor-final", pages_seen=11
+        )
         finished = complete_ingestion_job(
             config.kb_path,
             job.job_id,
@@ -905,9 +921,15 @@ def run_enterprise_benchmark(config: BenchmarkConfig) -> dict[str, Any]:
             "create_status": create_response.status_code,
             "update_status": update_response.status_code,
             "delete_status": delete_response.status_code,
-            "create_maintenance_deferred": bool(create_payload.get("maintenance", {}).get("deferred")),
-            "update_maintenance_deferred": bool(update_payload.get("maintenance", {}).get("deferred")),
-            "delete_maintenance_deferred": bool(delete_payload.get("maintenance", {}).get("deferred")),
+            "create_maintenance_deferred": bool(
+                create_payload.get("maintenance", {}).get("deferred")
+            ),
+            "update_maintenance_deferred": bool(
+                update_payload.get("maintenance", {}).get("deferred")
+            ),
+            "delete_maintenance_deferred": bool(
+                delete_payload.get("maintenance", {}).get("deferred")
+            ),
         }
 
     stage_counter = {"value": 0}
@@ -968,7 +990,9 @@ def run_enterprise_benchmark(config: BenchmarkConfig) -> dict[str, Any]:
                 "/api/chat",
                 json={
                     "query": "How should we handle rollback during an incident?",
-                    "history": [{"role": "user", "content": "We are discussing production rollout safety."}],
+                    "history": [
+                        {"role": "user", "content": "We are discussing production rollout safety."}
+                    ],
                     "mode": "precise",
                 },
                 timeout=180,

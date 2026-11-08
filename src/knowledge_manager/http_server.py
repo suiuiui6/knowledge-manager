@@ -6,7 +6,13 @@ import json
 from typing import AsyncIterator
 
 from fastapi import FastAPI, File, Form, HTTPException, Query, Request, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse, StreamingResponse
+from fastapi.responses import (
+    HTMLResponse,
+    JSONResponse,
+    PlainTextResponse,
+    RedirectResponse,
+    StreamingResponse,
+)
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -224,7 +230,9 @@ def create_app(kb_path: Path) -> FastAPI:
             }
             for m in page_items
         ]
-        return PaginatedResponse(items=items, total=total, page=page, limit=limit, pages=pages).model_dump()
+        return PaginatedResponse(
+            items=items, total=total, page=page, limit=limit, pages=pages
+        ).model_dump()
 
     @app.get("/api/modules/{cat}/{mod_id}")
     def api_module_detail(
@@ -245,9 +253,12 @@ def create_app(kb_path: Path) -> FastAPI:
             if tenant is not None and not module_visible_to_tenant(module, tenant):
                 raise HTTPException(404, f"Module not found: {cat}/{real_id}")
             if md_path.exists() and tenant is None:
-                return PlainTextResponse(md_path.read_text(encoding="utf-8"), media_type="text/markdown")
+                return PlainTextResponse(
+                    md_path.read_text(encoding="utf-8"), media_type="text/markdown"
+                )
             # Scoped responses render canonical data with filtered references.
             from knowledge_manager.markdown import render_markdown_module
+
             return PlainTextResponse(
                 render_markdown_module(module_for_tenant(module, kb_path, tenant)),
                 media_type="text/markdown",
@@ -362,9 +373,15 @@ def create_app(kb_path: Path) -> FastAPI:
             staging.mkdir(exist_ok=True)
             save_to_staging(module, staging)
             save_staging_meta(StagingMeta(module_id=module.id, submitted_by="web-ui"), staging)
-            return {"id": module.id, "category": module.category, "status": "staged", "review_required": True}
+            return {
+                "id": module.id,
+                "category": module.category,
+                "status": "staged",
+                "review_required": True,
+            }
 
         from knowledge_manager.storage import save_module
+
         maintenance_state: list[dict] = []
         save_module(module, kb_path, defer_derived=True, maintenance_state=maintenance_state)
         log_audit_event(
@@ -416,6 +433,7 @@ def create_app(kb_path: Path) -> FastAPI:
             module.updated_at = datetime.now(timezone.utc)
 
         from knowledge_manager.storage import save_module
+
         maintenance_state: list[dict] = []
         save_module(module, kb_path, defer_derived=True, maintenance_state=maintenance_state)
         log_audit_event(
@@ -447,7 +465,9 @@ def create_app(kb_path: Path) -> FastAPI:
             raise HTTPException(404, f"Module not found: {cat}/{mod_id}")
         enforce_subject_module_access(subject, module, kb_path, request)
         maintenance_state: list[dict] = []
-        if not delete_module(mod_id, cat, kb_path, defer_derived=True, maintenance_state=maintenance_state):
+        if not delete_module(
+            mod_id, cat, kb_path, defer_derived=True, maintenance_state=maintenance_state
+        ):
             raise HTTPException(404, f"Module not found: {cat}/{mod_id}")
         log_audit_event(
             kb_path,
@@ -470,7 +490,9 @@ def create_app(kb_path: Path) -> FastAPI:
     # ── Staging API (M6) ──
 
     @app.get("/api/staging")
-    def api_staging_list(request: Request, tenant_id: str = Query(""), workspace_id: str = Query("")):
+    def api_staging_list(
+        request: Request, tenant_id: str = Query(""), workspace_id: str = Query("")
+    ):
         from knowledge_manager.storage import list_staging, load_staging_meta
 
         require_identity(request, kb_path, "module.review")
@@ -488,22 +510,29 @@ def create_app(kb_path: Path) -> FastAPI:
             meta = load_staging_meta(m.id, staging)
             cfg = _load_config()
             required = cfg.review.required_approvals if cfg else 1
-            items.append({
-                "module_id": m.id,
-                "status": meta.status if meta else "pending",
-                "submitted_by": meta.submitted_by if meta else "",
-                "submitted_at": meta.submitted_at.isoformat() if meta and meta.submitted_at else "",
-                "approvals": meta.approval_count() if meta else 0,
-                "required_approvals": required,
-                "module_summary": m.summary,
-                "preview": {"title": m.title, "category": m.category, "tags": m.metadata.tags},
-            })
+            items.append(
+                {
+                    "module_id": m.id,
+                    "status": meta.status if meta else "pending",
+                    "submitted_by": meta.submitted_by if meta else "",
+                    "submitted_at": (
+                        meta.submitted_at.isoformat() if meta and meta.submitted_at else ""
+                    ),
+                    "approvals": meta.approval_count() if meta else 0,
+                    "required_approvals": required,
+                    "module_summary": m.summary,
+                    "preview": {"title": m.title, "category": m.category, "tags": m.metadata.tags},
+                }
+            )
         return {"items": items}
 
     @app.post("/api/staging/{module_id}/approve")
     def api_staging_approve(module_id: str, request: Request, body: dict | None = None):
         from knowledge_manager.storage import (
-            approve_from_staging, load_from_staging, load_staging_meta, list_staging,
+            approve_from_staging,
+            load_from_staging,
+            load_staging_meta,
+            list_staging,
             save_staging_meta,
         )
         from knowledge_manager.schemas import ReviewRecord, StagingMeta
@@ -559,7 +588,11 @@ def create_app(kb_path: Path) -> FastAPI:
 
     @app.post("/api/staging/{module_id}/reject")
     def api_staging_reject(module_id: str, request: Request, body: dict | None = None):
-        from knowledge_manager.storage import load_from_staging, load_staging_meta, save_staging_meta
+        from knowledge_manager.storage import (
+            load_from_staging,
+            load_staging_meta,
+            save_staging_meta,
+        )
         from knowledge_manager.schemas import ReviewRecord, StagingMeta
 
         subject = require_identity(request, kb_path, "module.review")
@@ -575,7 +608,9 @@ def create_app(kb_path: Path) -> FastAPI:
         if body and "reviewer" in body and body["reviewer"] != subject.user:
             raise HTTPException(status_code=422, detail="reviewer is server-assigned")
         comment = (body or {}).get("comment", "No reason given")
-        meta.reviews.append(ReviewRecord(reviewer=subject.user, action="changes-requested", comment=comment))
+        meta.reviews.append(
+            ReviewRecord(reviewer=subject.user, action="changes-requested", comment=comment)
+        )
         meta.status = "changes-requested"
         save_staging_meta(meta, staging)
         log_audit_event(
@@ -607,7 +642,9 @@ def create_app(kb_path: Path) -> FastAPI:
 
         index = load_index(kb_path)
         if index is None or index.tree is None:
-            raise HTTPException(404, "No tree structure found. Build it with km tree build --llm first.")
+            raise HTTPException(
+                404, "No tree structure found. Build it with km tree build --llm first."
+            )
 
         tree = index.tree
         if action == "move" and node_id and new_parent:
@@ -630,6 +667,7 @@ def create_app(kb_path: Path) -> FastAPI:
                 if found:
                     return found, p
             return None, None
+
         return _search(root, None)
 
     def _find_node_by_id(root, target_id: str):
@@ -706,7 +744,9 @@ def create_app(kb_path: Path) -> FastAPI:
         return report.model_dump()
 
     @app.get("/api/ops/backlog")
-    def api_ops_backlog(request: Request, tenant_id: str = Query(""), workspace_id: str = Query("")):
+    def api_ops_backlog(
+        request: Request, tenant_id: str = Query(""), workspace_id: str = Query("")
+    ):
         from knowledge_manager.ops_export import generate_review_backlog_export
 
         require_identity(request, kb_path, "audit.read")
@@ -720,7 +760,9 @@ def create_app(kb_path: Path) -> FastAPI:
         return filter_review_backlog_export(kb_path, tenant, export)
 
     @app.get("/api/ops/backlog/review")
-    def api_ops_backlog_review(request: Request, tenant_id: str = Query(""), workspace_id: str = Query("")):
+    def api_ops_backlog_review(
+        request: Request, tenant_id: str = Query(""), workspace_id: str = Query("")
+    ):
         from knowledge_manager.ops_export import generate_review_backlog_export
 
         require_identity(request, kb_path, "audit.read")
@@ -741,7 +783,9 @@ def create_app(kb_path: Path) -> FastAPI:
         return generate_risky_miss_export(kb_path)
 
     @app.get("/api/ops/backlog/source")
-    def api_ops_backlog_source(request: Request, tenant_id: str = Query(""), workspace_id: str = Query("")):
+    def api_ops_backlog_source(
+        request: Request, tenant_id: str = Query(""), workspace_id: str = Query("")
+    ):
         from knowledge_manager.ops_export import generate_source_backlog_export
 
         require_identity(request, kb_path, "audit.read")
@@ -769,7 +813,9 @@ def create_app(kb_path: Path) -> FastAPI:
         return build_dual_view(kb_path, tenant=tenant)
 
     @app.get("/api/source/jobs")
-    def api_source_jobs(request: Request, tenant_id: str = Query(""), workspace_id: str = Query("")):
+    def api_source_jobs(
+        request: Request, tenant_id: str = Query(""), workspace_id: str = Query("")
+    ):
         from knowledge_manager.ingestion_jobs import list_ingestion_jobs
 
         subject = require_identity(request, kb_path, "audit.read")
@@ -782,11 +828,13 @@ def create_app(kb_path: Path) -> FastAPI:
         jobs = list_ingestion_jobs(kb_path)
         if tenant is not None:
             jobs = [
-                job for job in jobs
+                job
+                for job in jobs
                 if (
                     (not job.tenant_id and tenant.allow_global_reads)
                     or job.tenant_id == tenant.tenant_id
-                ) and (
+                )
+                and (
                     (not tenant.workspace_id)
                     or not job.workspace_id
                     or job.workspace_id == tenant.workspace_id
@@ -819,7 +867,9 @@ def create_app(kb_path: Path) -> FastAPI:
         return summary.model_dump()
 
     @app.get("/api/admin/dashboard")
-    def api_admin_dashboard(request: Request, tenant_id: str = Query(""), workspace_id: str = Query("")):
+    def api_admin_dashboard(
+        request: Request, tenant_id: str = Query(""), workspace_id: str = Query("")
+    ):
         from knowledge_manager.admin_views import build_admin_dashboard
 
         subject = require_identity(request, kb_path, "config.manage")
@@ -908,13 +958,17 @@ def create_app(kb_path: Path) -> FastAPI:
     @app.get("/ui/fallback", response_class=HTMLResponse)
     def ui_fallback():
         from knowledge_manager.ui_fallback import FALLBACK_HTML
-        return HTMLResponse(FALLBACK_HTML, headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
+
+        return HTMLResponse(
+            FALLBACK_HTML, headers={"Cache-Control": "no-cache, no-store, must-revalidate"}
+        )
 
     # Serve static files if dist exists
     if ui_dist.exists():
         app.mount("/assets", StaticFiles(directory=str(ui_dist / "assets")), name="assets")
 
     from knowledge_manager.auth import inject_auth_middleware
+
     inject_auth_middleware(app, kb_path)
 
     return app

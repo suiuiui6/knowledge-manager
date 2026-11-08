@@ -100,7 +100,9 @@ def build_tenant_tree(kb_path, tenant: TenantContext | None) -> TreeNode:
     return root
 
 
-def build_tenant_subtree(cat: str, mod_id: str, kb_path, tenant: TenantContext | None) -> TreeNode | None:
+def build_tenant_subtree(
+    cat: str, mod_id: str, kb_path, tenant: TenantContext | None
+) -> TreeNode | None:
     module = load_module(mod_id, cat, kb_path)
     if module is None or not module_visible_to_tenant(module, tenant):
         return None
@@ -141,7 +143,9 @@ def build_tenant_graph(kb_path, tenant: TenantContext | None) -> GraphData:
     nodes: list[GraphNode] = []
     edges: list[GraphEdge] = []
     reverse_degree: dict[str, int] = {key: 0 for key in index.graph}
-    for key in [f"{cat.name}/{module.id}" for cat in index.categories.values() for module in cat.modules]:
+    for key in [
+        f"{cat.name}/{module.id}" for cat in index.categories.values() for module in cat.modules
+    ]:
         reverse_degree.setdefault(key, 0)
     for src, targets in index.graph.items():
         for target in targets:
@@ -171,7 +175,9 @@ def build_tenant_graph(kb_path, tenant: TenantContext | None) -> GraphData:
     )
 
 
-def build_tenant_subgraph(cat: str, mod_id: str, kb_path, tenant: TenantContext | None) -> GraphData | None:
+def build_tenant_subgraph(
+    cat: str, mod_id: str, kb_path, tenant: TenantContext | None
+) -> GraphData | None:
     module = load_module(mod_id, cat, kb_path)
     if module is None or not module_visible_to_tenant(module, tenant):
         return None
@@ -235,7 +241,9 @@ def filter_review_backlog_export(kb_path, tenant: TenantContext | None, export: 
         for module in list_staging(kb_path / ".staging")
         if module_visible_to_tenant(module, tenant)
     }
-    items = [item for item in export.get("items", []) if item.get("module_id", "") in visible_staging_ids]
+    items = [
+        item for item in export.get("items", []) if item.get("module_id", "") in visible_staging_ids
+    ]
     stale_sources = filter_source_backlog_items(kb_path, tenant, export.get("stale_sources", []))
     return {
         **export,
@@ -245,7 +253,9 @@ def filter_review_backlog_export(kb_path, tenant: TenantContext | None, export: 
     }
 
 
-def filter_source_backlog_items(kb_path, tenant: TenantContext | None, items: list[dict]) -> list[dict]:
+def filter_source_backlog_items(
+    kb_path, tenant: TenantContext | None, items: list[dict]
+) -> list[dict]:
     if tenant is None:
         return items
     registry = load_source_registry(kb_path)
@@ -255,8 +265,11 @@ def filter_source_backlog_items(kb_path, tenant: TenantContext | None, items: li
         if (
             (not source.tenant_id and tenant.allow_global_reads)
             or source.tenant_id == tenant.tenant_id
-        ) and (
-            not tenant.workspace_id or not source.workspace_id or source.workspace_id == tenant.workspace_id
+        )
+        and (
+            not tenant.workspace_id
+            or not source.workspace_id
+            or source.workspace_id == tenant.workspace_id
         )
     }
     return [item for item in items if item.get("source_id", "") in visible_source_ids]

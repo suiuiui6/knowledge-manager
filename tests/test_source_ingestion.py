@@ -19,7 +19,11 @@ from knowledge_manager.source_ingestion import (
     upsert_source,
     update_source_sync,
 )
-from knowledge_manager.ingestion_jobs import create_ingestion_job, resume_ingestion_job, update_ingestion_checkpoint
+from knowledge_manager.ingestion_jobs import (
+    create_ingestion_job,
+    resume_ingestion_job,
+    update_ingestion_checkpoint,
+)
 from knowledge_manager.storage import load_from_staging, load_staging_meta, save_module
 
 
@@ -64,7 +68,9 @@ def _make_notion_source(source_id: str = "ops-notes") -> SourceDefinition:
 
 
 class FakeExtractor:
-    async def extract(self, text: str, category: str, existing_categories: str = "") -> list[Module]:
+    async def extract(
+        self, text: str, category: str, existing_categories: str = ""
+    ) -> list[Module]:
         return [
             Module(
                 id="jwt-playbook",
@@ -149,7 +155,9 @@ async def test_ingest_confluence_pages_stamps_provenance_and_marks_stale(tmp_pat
     )
     save_module(existing, kb_path)
 
-    summary = await ingest_confluence_pages(_make_source(), [_make_page("7")], kb_path, FakeExtractor())
+    summary = await ingest_confluence_pages(
+        _make_source(), [_make_page("7")], kb_path, FakeExtractor()
+    )
     staged = load_from_staging("jwt-playbook", kb_path / ".staging")
 
     assert summary.pages_seen == 1

@@ -123,7 +123,7 @@ def test_run_eval_suite_reports_policy_suppressed_modules_and_missing_companions
                         "query": "sensitive rollout",
                         "required_modules": ["ops/published-runbook", "policy/change-approval"],
                         "risk_level": "high",
-                        "top_k": 5
+                        "top_k": 5,
                     }
                 ],
             }
@@ -229,7 +229,7 @@ def test_run_eval_suite_computes_summary_and_suppression_failure_rate(tmp_path):
                         "required_modules": ["ops/published-runbook", "ops/draft-runbook"],
                         "risk_level": "high",
                         "task_type": "production-change",
-                        "top_k": 5
+                        "top_k": 5,
                     },
                     {
                         "id": "low-risk-pass",
@@ -237,8 +237,8 @@ def test_run_eval_suite_computes_summary_and_suppression_failure_rate(tmp_path):
                         "required_modules": ["ops/safe-guide"],
                         "risk_level": "low",
                         "task_type": "documentation",
-                        "top_k": 5
-                    }
+                        "top_k": 5,
+                    },
                 ],
             }
         ),

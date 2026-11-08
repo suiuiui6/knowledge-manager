@@ -32,11 +32,11 @@ def main() -> int:
         existing_missing = list(release_evidence.get("missing") or [])
         existing_invalid = list(release_evidence.get("invalid") or [])
         transitional_missing = sorted(
-            item for item in existing_missing
-            if item in {"verify-release-artifacts.json"}
+            item for item in existing_missing if item in {"verify-release-artifacts.json"}
         )
         transitional_invalid = sorted(
-            item for item in existing_invalid
+            item
+            for item in existing_invalid
             if item in {"verify-release-artifacts.json", "release-evidence-collection.json"}
         )
         waiting_only_on_verifier = (
@@ -47,7 +47,9 @@ def main() -> int:
         )
         if not bool(release_evidence.get("complete")) and not waiting_only_on_verifier:
             invalid.append("release-support-bundle.json")
-        non_verifier_missing = [item for item in existing_missing if item != "verify-release-artifacts.json"]
+        non_verifier_missing = [
+            item for item in existing_missing if item != "verify-release-artifacts.json"
+        ]
         if non_verifier_missing:
             invalid.append("release-support-bundle.json")
         if existing_invalid and not waiting_only_on_verifier:
@@ -57,7 +59,11 @@ def main() -> int:
         if not bool(release_evidence.get("deploy_artifact_proof_complete")):
             invalid.append("release-support-bundle.json")
 
-    host_deploy_proof_path = Path(release_evidence.get("host_deploy_proof_path", "")) if release_evidence.get("host_deploy_proof_path") else None
+    host_deploy_proof_path = (
+        Path(release_evidence.get("host_deploy_proof_path", ""))
+        if release_evidence.get("host_deploy_proof_path")
+        else None
+    )
     if host_deploy_proof_path is None:
         missing.append("host-deploy-proof.json")
         host_deploy_proof = None
@@ -76,30 +82,38 @@ def main() -> int:
         "ok": not missing and not invalid,
         "release_dir": str(release_dir),
         "release_support_bundle_path": str(support_bundle_path),
-        "host_deploy_proof_path": str(host_deploy_proof_path) if host_deploy_proof_path is not None else "",
+        "host_deploy_proof_path": (
+            str(host_deploy_proof_path) if host_deploy_proof_path is not None else ""
+        ),
         "missing": missing,
         "invalid": sorted(set(invalid)),
     }
     verifier_output_path = release_dir / "verify-release-artifacts.json"
-    verifier_output_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    verifier_output_path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
 
     if isinstance(support_bundle, dict):
         release_evidence = dict(support_bundle.get("release_evidence", {}))
         release_evidence["verify_release_artifacts_path"] = str(verifier_output_path)
         if payload["ok"]:
             filtered_missing = [
-                item for item in list(release_evidence.get("missing") or [])
+                item
+                for item in list(release_evidence.get("missing") or [])
                 if item != "verify-release-artifacts.json"
             ]
             filtered_invalid = [
-                item for item in list(release_evidence.get("invalid") or [])
+                item
+                for item in list(release_evidence.get("invalid") or [])
                 if item not in {"verify-release-artifacts.json", "release-evidence-collection.json"}
             ]
             release_evidence["missing"] = filtered_missing
             release_evidence["invalid"] = filtered_invalid
             release_evidence["complete"] = not filtered_missing and not filtered_invalid
         support_bundle["release_evidence"] = release_evidence
-        support_bundle_path.write_text(json.dumps(support_bundle, ensure_ascii=False, indent=2), encoding="utf-8")
+        support_bundle_path.write_text(
+            json.dumps(support_bundle, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
 
     if args.format == "json":
         print(json.dumps(payload, ensure_ascii=False, indent=2))

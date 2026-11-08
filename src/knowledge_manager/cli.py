@@ -251,7 +251,9 @@ def rebuild(ctx: click.Context) -> None:
     kb = ctx.obj["kb_path"]
     _require_kb(kb)
     index = rebuild_index(kb)
-    click.echo(f"Rebuilt index: {index.stats.total_modules} modules across {index.stats.categories} categories")
+    click.echo(
+        f"Rebuilt index: {index.stats.total_modules} modules across {index.stats.categories} categories"
+    )
 
 
 @cli.command()
@@ -322,6 +324,7 @@ def deprecate(ctx: click.Context, module_ref: str, reason: str) -> None:
     save_module(module, kb)
     rebuild_index(kb)
     from knowledge_manager.webhooks import emit_event
+
     emit_event(kb, "module.deprecated", module_id, category, {"reason": reason})
     click.echo(f"Deprecated: {module_ref}" + (f" — {reason}" if reason else ""))
 
@@ -349,6 +352,7 @@ def archive(ctx: click.Context, module_ref: str) -> None:
     save_module(module, kb)
     rebuild_index(kb)
     from knowledge_manager.webhooks import emit_event
+
     emit_event(kb, "module.archived", module_id, category)
     click.echo(f"Archived: {module_ref}")
 
@@ -393,6 +397,7 @@ def stale(ctx: click.Context) -> None:
 
 
 # --- config subcommands ---
+
 
 @cli.group()
 def config() -> None:
@@ -462,12 +467,23 @@ def config_list(ctx: click.Context) -> None:
 
 
 @cli.command()
-@click.option("--module", "-m", default=None, help="Show health for a specific module (category/id)")
+@click.option(
+    "--module", "-m", default=None, help="Show health for a specific module (category/id)"
+)
 @click.option("--category", "-c", default=None, help="Filter by category")
 @click.option("--at-risk", is_flag=True, help="Only show modules needing attention")
-@click.option("--format", "-f", "fmt", type=click.Choice(["table", "json"]), default="table", help="Output format")
+@click.option(
+    "--format",
+    "-f",
+    "fmt",
+    type=click.Choice(["table", "json"]),
+    default="table",
+    help="Output format",
+)
 @click.pass_context
-def health(ctx: click.Context, module: str | None, category: str | None, at_risk: bool, fmt: str) -> None:
+def health(
+    ctx: click.Context, module: str | None, category: str | None, at_risk: bool, fmt: str
+) -> None:
     """Show knowledge base health report."""
     from knowledge_manager.storage import compute_module_health, generate_health_report, load_module
 
@@ -495,12 +511,21 @@ def health(ctx: click.Context, module: str | None, category: str | None, at_risk
         table.add_column("Dimension", style="cyan")
         table.add_column("Score", style="yellow")
         table.add_column("Detail", style="dim")
-        table.add_row("Freshness", f"{h.score.freshness:.0f}", f"Updated {h.days_since_update}d ago")
-        table.add_row("Usage", f"{h.score.usage:.0f}",
-                      f"Loaded {h.load_count_30d}x (last: {h.last_load.strftime('%Y-%m-%d') if h.last_load else 'never'})")
+        table.add_row(
+            "Freshness", f"{h.score.freshness:.0f}", f"Updated {h.days_since_update}d ago"
+        )
+        table.add_row(
+            "Usage",
+            f"{h.score.usage:.0f}",
+            f"Loaded {h.load_count_30d}x (last: {h.last_load.strftime('%Y-%m-%d') if h.last_load else 'never'})",
+        )
         table.add_row("Completeness", f"{h.score.completeness:.0f}", "")
         issues_str = ", ".join(h.issues) if h.issues else "none"
-        status_icon = "✅ Healthy" if h.score.overall >= 60 else ("⚠️ At Risk" if h.score.overall >= 30 else "❌ Critical")
+        status_icon = (
+            "✅ Healthy"
+            if h.score.overall >= 60
+            else ("⚠️ At Risk" if h.score.overall >= 30 else "❌ Critical")
+        )
         console.print(table)
         console.print(f"\n[bold]Overall: {h.score.overall:.1f}/100  {status_icon}[/bold]")
         if h.issues:
@@ -547,7 +572,9 @@ def health(ctx: click.Context, module: str | None, category: str | None, at_risk
         return
 
     console.print(f"\n[bold]Knowledge Base Health Report[/bold]")
-    console.print(f"{report.generated_at.strftime('%Y-%m-%d')} | {report.total_modules} modules | {report.total_categories} categories\n")
+    console.print(
+        f"{report.generated_at.strftime('%Y-%m-%d')} | {report.total_modules} modules | {report.total_categories} categories\n"
+    )
 
     # Category breakdown
     cat_table = Table(title="")
@@ -563,15 +590,30 @@ def health(ctx: click.Context, module: str | None, category: str | None, at_risk
     console.print(f"\n[bold]Overall Health Score: {report.overall_score:.1f}/100[/bold]")
 
     if report.at_risk_modules:
-        console.print(f"\n[dim]{len(report.at_risk_modules)} module(s) at risk. Run [bold]km health --at-risk[/bold] for details.[/dim]")
+        console.print(
+            f"\n[dim]{len(report.at_risk_modules)} module(s) at risk. Run [bold]km health --at-risk[/bold] for details.[/dim]"
+        )
 
 
 # --- usage ---
 
 
 @cli.command()
-@click.option("--period", "-p", type=click.Choice(["7d", "30d", "90d"]), default="30d", help="Time period for stats")
-@click.option("--format", "-f", "fmt", type=click.Choice(["table", "json"]), default="table", help="Output format")
+@click.option(
+    "--period",
+    "-p",
+    type=click.Choice(["7d", "30d", "90d"]),
+    default="30d",
+    help="Time period for stats",
+)
+@click.option(
+    "--format",
+    "-f",
+    "fmt",
+    type=click.Choice(["table", "json"]),
+    default="table",
+    help="Output format",
+)
 @click.pass_context
 def usage(ctx: click.Context, period: str, fmt: str) -> None:
     """Show knowledge base usage analytics."""
@@ -592,8 +634,12 @@ def usage(ctx: click.Context, period: str, fmt: str) -> None:
         return
 
     console.print(f"\n[bold]KB Usage Analytics[/bold] (last {period})")
-    console.print(f"\n Searches: {data.total_searches}   Loads: {data.total_loads}   Conversion: {data.conversion_rate}%")
-    console.print(f" Sessions: {data.total_sessions}   Avg searches/session: {data.avg_searches_per_session}")
+    console.print(
+        f"\n Searches: {data.total_searches}   Loads: {data.total_loads}   Conversion: {data.conversion_rate}%"
+    )
+    console.print(
+        f" Sessions: {data.total_sessions}   Avg searches/session: {data.avg_searches_per_session}"
+    )
 
     if data.top_modules:
         console.print(f"\n[bold] Top Modules[/bold] (by loads)")
@@ -620,7 +666,14 @@ def usage(ctx: click.Context, period: str, fmt: str) -> None:
 
 
 @cli.command()
-@click.option("--format", "-f", "fmt", type=click.Choice(["table", "json"]), default="table", help="Output format")
+@click.option(
+    "--format",
+    "-f",
+    "fmt",
+    type=click.Choice(["table", "json"]),
+    default="table",
+    help="Output format",
+)
 @click.pass_context
 def ops(ctx: click.Context, fmt: str) -> None:
     """Show operator-focused source, lifecycle, and policy backlog report."""
@@ -704,7 +757,8 @@ def ops_apply(ctx: click.Context, action: str, dry_run: bool) -> None:
         candidates = [
             module
             for module in list_modules(kb)
-            if f"{module.category}/{module.id}" in candidate_keys and module.metadata.status != "archived"
+            if f"{module.category}/{module.id}" in candidate_keys
+            and module.metadata.status != "archived"
         ]
 
     if not candidates:
@@ -715,12 +769,18 @@ def ops_apply(ctx: click.Context, action: str, dry_run: bool) -> None:
         mod_ref = f"{module.category}/{module.id}"
         if dry_run:
             verb = "Deprecate" if action == "stale-source-deprecate" else "Archive"
-            reason = "stale source detected" if action == "stale-source-deprecate" else "policy-suppressed"
+            reason = (
+                "stale source detected"
+                if action == "stale-source-deprecate"
+                else "policy-suppressed"
+            )
             click.echo(f"[DRY RUN] {verb} {mod_ref}: {reason}")
             continue
         module.metadata.status = "deprecated" if action == "stale-source-deprecate" else "archived"
         save_module(module, kb)
-        click.echo(f"{'Deprecated' if action == 'stale-source-deprecate' else 'Archived'} {mod_ref}")
+        click.echo(
+            f"{'Deprecated' if action == 'stale-source-deprecate' else 'Archived'} {mod_ref}"
+        )
 
     if dry_run:
         click.echo(f"\n{len(candidates)} action(s) previewed.")
@@ -773,7 +833,9 @@ def ops_export_source_backlog(ctx: click.Context, output_path: Path) -> None:
 
 @cli.command()
 @click.option("--format", "-f", "fmt", type=click.Choice(["text", "json"]), default="text")
-@click.option("--repair", is_flag=True, help="Rebuild runtime artifacts before reporting integrity.")
+@click.option(
+    "--repair", is_flag=True, help="Rebuild runtime artifacts before reporting integrity."
+)
 @click.pass_context
 def integrity(ctx: click.Context, fmt: str, repair: bool) -> None:
     """Run production integrity checks for index and runtime caches."""
@@ -852,8 +914,22 @@ def worker_run(ctx: click.Context, once: bool, poll_interval: float) -> None:
 
 
 @cli.command()
-@click.option("--export", "-e", "export_fmt", type=click.Choice(["mermaid", "dot", "json"]), default=None, help="Export format")
-@click.option("--format", "-f", "fmt", type=click.Choice(["table", "json"]), default="table", help="Output format")
+@click.option(
+    "--export",
+    "-e",
+    "export_fmt",
+    type=click.Choice(["mermaid", "dot", "json"]),
+    default=None,
+    help="Export format",
+)
+@click.option(
+    "--format",
+    "-f",
+    "fmt",
+    type=click.Choice(["table", "json"]),
+    default="table",
+    help="Output format",
+)
 @click.pass_context
 def graph(ctx: click.Context, export_fmt: str | None, fmt: str) -> None:
     """Analyze and visualize the knowledge graph."""
@@ -867,6 +943,7 @@ def graph(ctx: click.Context, export_fmt: str | None, fmt: str) -> None:
 
     if export_fmt == "json" or fmt == "json":
         import json as _json
+
         output = {
             "stats": gs.model_dump(),
             "clusters": [c.model_dump() for c in clusters],
@@ -882,9 +959,9 @@ def graph(ctx: click.Context, export_fmt: str | None, fmt: str) -> None:
                 src_label = src.replace("/", "_").replace("-", "_")
                 for t in targets:
                     t_label = t.replace("/", "_").replace("-", "_")
-                    lines.append(f"  {src_label}[\"{src}\"] --> {t_label}[\"{t}\"]")
+                    lines.append(f'  {src_label}["{src}"] --> {t_label}["{t}"]')
         if len(lines) == 1:
-            lines.append("  empty[\"No connections\"]")
+            lines.append('  empty["No connections"]')
         click.echo("\n".join(lines))
         return
 
@@ -940,8 +1017,22 @@ def graph(ctx: click.Context, export_fmt: str | None, fmt: str) -> None:
 
 
 @cli.command()
-@click.option("--type", "-t", "rec_type", type=click.Choice(["archive", "enrich", "links", "review"]), default=None, help="Filter by recommendation type")
-@click.option("--format", "-f", "fmt", type=click.Choice(["table", "json"]), default="table", help="Output format")
+@click.option(
+    "--type",
+    "-t",
+    "rec_type",
+    type=click.Choice(["archive", "enrich", "links", "review"]),
+    default=None,
+    help="Filter by recommendation type",
+)
+@click.option(
+    "--format",
+    "-f",
+    "fmt",
+    type=click.Choice(["table", "json"]),
+    default="table",
+    help="Output format",
+)
 @click.pass_context
 def recommend(ctx: click.Context, rec_type: str | None, fmt: str) -> None:
     """Generate recommendations for KB improvement."""
@@ -993,12 +1084,23 @@ def recommend(ctx: click.Context, rec_type: str | None, fmt: str) -> None:
 
 
 @cli.command()
-@click.option("--type", "-t", "apply_type", type=click.Choice(["archive", "enrich", "links", "review"]), required=True, help="Type of recommendation to apply")
-@click.option("--module", "-m", "module_ref", default=None, help="Apply to a specific module (category/id)")
+@click.option(
+    "--type",
+    "-t",
+    "apply_type",
+    type=click.Choice(["archive", "enrich", "links", "review"]),
+    required=True,
+    help="Type of recommendation to apply",
+)
+@click.option(
+    "--module", "-m", "module_ref", default=None, help="Apply to a specific module (category/id)"
+)
 @click.option("--dry-run", is_flag=True, help="Preview actions without executing")
 @click.option("--confirm", "-y", is_flag=True, help="Confirm each action interactively")
 @click.pass_context
-def apply(ctx: click.Context, apply_type: str, module_ref: str | None, dry_run: bool, confirm: bool) -> None:
+def apply(
+    ctx: click.Context, apply_type: str, module_ref: str | None, dry_run: bool, confirm: bool
+) -> None:
     """Apply recommendations in batch."""
     from knowledge_manager.storage import generate_recommendations, load_module
 
@@ -1016,7 +1118,11 @@ def apply(ctx: click.Context, apply_type: str, module_ref: str | None, dry_run: 
     candidates = type_map.get(apply_type, [])
 
     if module_ref:
-        candidates = [r for r in candidates if f"{r.category}/{r.module_id}" == module_ref or r.module_id == module_ref]
+        candidates = [
+            r
+            for r in candidates
+            if f"{r.category}/{r.module_id}" == module_ref or r.module_id == module_ref
+        ]
 
     if not candidates:
         click.echo(f"No {apply_type} recommendations to apply.")
@@ -1036,7 +1142,8 @@ def apply(ctx: click.Context, apply_type: str, module_ref: str | None, dry_run: 
                     elif ans == "n":
                         continue
                 result = click.get_current_context().invoke(
-                    archive, module_ref=mod_ref,
+                    archive,
+                    module_ref=mod_ref,
                 )
         elif apply_type == "enrich":
             if dry_run:
@@ -1047,7 +1154,9 @@ def apply(ctx: click.Context, apply_type: str, module_ref: str | None, dry_run: 
                 click.echo("  (manual — edit the module file to add missing fields)")
 
     if dry_run:
-        click.echo(f"\n[dim]{len(candidates)} action(s) previewed. Run without --dry-run to execute.[/dim]")
+        click.echo(
+            f"\n[dim]{len(candidates)} action(s) previewed. Run without --dry-run to execute.[/dim]"
+        )
     else:
         rebuild_index(kb)
         click.echo(f"Applied {len(candidates)} {apply_type} action(s).")
@@ -1055,14 +1164,34 @@ def apply(ctx: click.Context, apply_type: str, module_ref: str | None, dry_run: 
 
 # --- add (extract to staging) ---
 
+
 @cli.command()
 @click.argument("file", type=click.Path(exists=True, path_type=Path))
 @click.option("-c", "--category", default="general", help="Category for the new modules")
-@click.option("--image", "mode_image", is_flag=True, help="Treat FILE as an image for vision-based extraction")
-@click.option("--repo", "mode_repo", is_flag=True, help="Treat FILE as a code repository directory for analysis")
-@click.option("--meeting", "mode_meeting", is_flag=True, help="Treat FILE as meeting notes for decision/action extraction")
+@click.option(
+    "--image", "mode_image", is_flag=True, help="Treat FILE as an image for vision-based extraction"
+)
+@click.option(
+    "--repo",
+    "mode_repo",
+    is_flag=True,
+    help="Treat FILE as a code repository directory for analysis",
+)
+@click.option(
+    "--meeting",
+    "mode_meeting",
+    is_flag=True,
+    help="Treat FILE as meeting notes for decision/action extraction",
+)
 @click.pass_context
-def add(ctx: click.Context, file: Path, category: str, mode_image: bool, mode_repo: bool, mode_meeting: bool) -> None:
+def add(
+    ctx: click.Context,
+    file: Path,
+    category: str,
+    mode_image: bool,
+    mode_repo: bool,
+    mode_meeting: bool,
+) -> None:
     """Extract knowledge modules from FILE into staging.
 
     Supports multiple input modes:
@@ -1098,7 +1227,9 @@ def add(ctx: click.Context, file: Path, category: str, mode_image: bool, mode_re
     if mode_image:
         logger.info(f"Extracting from image: {file}")
         console.print(f"[dim]Analyzing image with vision model...[/dim]")
-        modules = asyncio.run(extractor.extract_from_image(str(file), category, existing_categories))
+        modules = asyncio.run(
+            extractor.extract_from_image(str(file), category, existing_categories)
+        )
     elif mode_repo:
         logger.info(f"Extracting from repository: {file}")
         console.print(f"[dim]Analyzing repository structure...[/dim]")
@@ -1111,7 +1242,9 @@ def add(ctx: click.Context, file: Path, category: str, mode_image: bool, mode_re
         logger.info("Reading input file")
         text = file.read_text(encoding="utf-8")
         logger.debug("Input file size: %s characters", len(text))
-        logger.info(f"Extracting modules (category: {category}, max: {cfg.extraction.max_modules_per_extraction})")
+        logger.info(
+            f"Extracting modules (category: {category}, max: {cfg.extraction.max_modules_per_extraction})"
+        )
         modules = asyncio.run(extractor.extract(text, category, existing_categories))
 
     logger.debug(f"Extraction returned {len(modules)} modules")
@@ -1120,6 +1253,7 @@ def add(ctx: click.Context, file: Path, category: str, mode_image: bool, mode_re
     staging.mkdir(exist_ok=True)
     logger.info("Saving %s module(s) to staging", len(modules))
     from knowledge_manager.schemas import StagingMeta
+
     for m in modules:
         save_to_staging(m, staging)
         meta = StagingMeta(module_id=m.id, submitted_by=_git_user_name(kb))
@@ -1129,6 +1263,7 @@ def add(ctx: click.Context, file: Path, category: str, mode_image: bool, mode_re
 
 
 # --- review (interactive + subcommands) ---
+
 
 @cli.group(invoke_without_command=True)
 @click.pass_context
@@ -1236,7 +1371,9 @@ def review_show(ctx: click.Context, module_id: str) -> None:
             console.print(f"\n[bold]Reviews ({len(meta.reviews)}):[/bold]")
             for r in meta.reviews:
                 action_color = "green" if r.action == "approved" else "red"
-                console.print(f"  [{action_color}]{r.action}[/{action_color}] by {r.reviewer} at {r.timestamp}")
+                console.print(
+                    f"  [{action_color}]{r.action}[/{action_color}] by {r.reviewer} at {r.timestamp}"
+                )
                 if r.comment:
                     console.print(f"    {r.comment}")
     console.print(f"\n[bold]Content:[/bold]")
@@ -1263,7 +1400,9 @@ def review_approve(ctx: click.Context, module_id: str, comment: str) -> None:
     if meta is None:
         meta = StagingMeta(module_id=module_id)
 
-    meta.reviews.append(ReviewRecord(reviewer=_git_user_name(kb), action="approved", comment=comment))
+    meta.reviews.append(
+        ReviewRecord(reviewer=_git_user_name(kb), action="approved", comment=comment)
+    )
     meta.status = "approved" if meta.approval_count() >= 1 else meta.status
 
     cfg = _load_config(kb)
@@ -1273,7 +1412,17 @@ def review_approve(ctx: click.Context, module_id: str, comment: str) -> None:
         delete_staging_meta(module_id, staging)
         rebuild_index(kb)
         from knowledge_manager.webhooks import emit_event
-        emit_event(kb, "review.approved", module_id, module.category, {"reviewer": meta.reviews[-1].reviewer if meta.reviews else "", "approvals_count": meta.approval_count()})
+
+        emit_event(
+            kb,
+            "review.approved",
+            module_id,
+            module.category,
+            {
+                "reviewer": meta.reviews[-1].reviewer if meta.reviews else "",
+                "approvals_count": meta.approval_count(),
+            },
+        )
         click.echo(f"Approved and merged: {module_id} ({meta.approval_count()} approval(s))")
     else:
         save_staging_meta(meta, staging)
@@ -1300,7 +1449,9 @@ def review_request_changes(ctx: click.Context, module_id: str, comment: str) -> 
     if meta is None:
         meta = StagingMeta(module_id=module_id)
 
-    meta.reviews.append(ReviewRecord(reviewer=_git_user_name(kb), action="changes-requested", comment=comment))
+    meta.reviews.append(
+        ReviewRecord(reviewer=_git_user_name(kb), action="changes-requested", comment=comment)
+    )
     meta.status = "changes-requested"
     save_staging_meta(meta, staging)
     click.echo(f"Changes requested for {module_id}: {comment}")
@@ -1338,7 +1489,9 @@ def review_my_submissions(ctx: click.Context) -> None:
 
 
 @cli.command()
-@click.option("--mode", type=click.Choice(["precise", "creative"]), default="precise", help="Chat mode")
+@click.option(
+    "--mode", type=click.Choice(["precise", "creative"]), default="precise", help="Chat mode"
+)
 @click.pass_context
 def chat(ctx: click.Context, mode: str) -> None:
     """Start interactive chat with the knowledge base."""
@@ -1352,7 +1505,9 @@ def chat(ctx: click.Context, mode: str) -> None:
     try:
         provider_name, provider_cfg = cfg.get_default_provider()
     except ValueError:
-        console.print("[red]No LLM provider configured. Run 'km config set llm_providers...' first.[/red]")
+        console.print(
+            "[red]No LLM provider configured. Run 'km config set llm_providers...' first.[/red]"
+        )
         return
 
     llm_client = create_client(provider_name, provider_cfg)
@@ -1458,14 +1613,16 @@ def tree_show(ctx: click.Context, path: str) -> None:
 
     def _print_node(n, indent: int = 0) -> None:
         prefix = "  " * indent
-        icon = {"root": "", "category": "+", "module": "*", "section": "-"}.get(n.type.value if hasattr(n.type, 'value') else str(n.type), "?")
+        icon = {"root": "", "category": "+", "module": "*", "section": "-"}.get(
+            n.type.value if hasattr(n.type, "value") else str(n.type), "?"
+        )
         name = n.path or n.id
         extra = ""
         if n.module_count:
             extra = f" ({n.module_count} modules, {n.word_count} words)"
-        if hasattr(n, 'confidence') and n.confidence:
+        if hasattr(n, "confidence") and n.confidence:
             extra += f" [{n.confidence}]"
-        if hasattr(n, 'status') and n.status and n.status != "published":
+        if hasattr(n, "status") and n.status and n.status != "published":
             extra += f" [{n.status}]"
         click.echo(f"{prefix}{icon} {n.title}  {extra}")
         for child in n.children:
@@ -1557,11 +1714,19 @@ def tree_navigate(ctx: click.Context, query: str) -> None:
         result = await navigator.navigate(query)
         console.print(f"[bold]Path taken:[/bold]")
         for s in result.path:
-            action_icon = {"drill": "↓", "explore": "→", "load": "✓", "backtrack": "←", "done": "★"}.get(s.action, s.action)
+            action_icon = {
+                "drill": "↓",
+                "explore": "→",
+                "load": "✓",
+                "backtrack": "←",
+                "done": "★",
+            }.get(s.action, s.action)
             console.print(f"  {action_icon} [{s.node_title}] — {s.reasoning[:80]}")
 
         if result.final_module_key:
-            console.print(f"\n[bold green]Best match:[/bold green] {result.final_module_key} ({result.final_title})")
+            console.print(
+                f"\n[bold green]Best match:[/bold green] {result.final_module_key} ({result.final_title})"
+            )
             console.print(f"  Confidence: {result.confidence:.2f}")
             # Load the module
             parts = result.final_module_key.split("/", 1)
@@ -1581,7 +1746,9 @@ def tree_navigate(ctx: click.Context, query: str) -> None:
 @cli.command()
 @click.argument("query")
 @click.option("--depth", type=click.Choice(["shallow", "deep"]), default="shallow")
-@click.option("--source", "-s", "sources", multiple=True, help="Path to research source (repeatable)")
+@click.option(
+    "--source", "-s", "sources", multiple=True, help="Path to research source (repeatable)"
+)
 @click.pass_context
 def research(ctx: click.Context, query: str, depth: str, sources: tuple) -> None:
     """Research a topic and generate draft knowledge modules."""
@@ -1603,16 +1770,20 @@ def research(ctx: click.Context, query: str, depth: str, sources: tuple) -> None
 
     if sources:
         from knowledge_manager.schemas import ResearchSource as RS
-        rcfg.sources = [
-            RS(type="doc_dir", path=s)
-            for s in sources
-        ]
+
+        rcfg.sources = [RS(type="doc_dir", path=s) for s in sources]
 
     researcher = Researcher(kb, rcfg, llm_client)
 
     def progress(p):
-        icon = {"decompose": "Analyzing", "select": "Selecting", "search": "Searching",
-                "synthesize": "Synthesizing", "extract": "Extracting", "stage": "Staging"}
+        icon = {
+            "decompose": "Analyzing",
+            "select": "Selecting",
+            "search": "Searching",
+            "synthesize": "Synthesizing",
+            "extract": "Extracting",
+            "stage": "Staging",
+        }
         console.print(f"  [{icon.get(p.stage, p.stage)}] {p.message}")
 
     console.print(f"[bold]Researching:[/bold] {query}\n")
@@ -1735,14 +1906,21 @@ def lint(ctx: click.Context, deep: bool, fix: bool, module: str | None, fmt: str
         return
 
     sev_colors = {"error": "red", "warning": "yellow", "info": "dim"}
-    type_labels = {"fact": "Fact", "decision": "Decision", "timeline": "Timeline",
-                   "terminology": "Terminology", "stale_ref": "Stale Ref"}
+    type_labels = {
+        "fact": "Fact",
+        "decision": "Decision",
+        "timeline": "Timeline",
+        "terminology": "Terminology",
+        "stale_ref": "Stale Ref",
+    }
 
     for i, issue in enumerate(issues, 1):
-        sev = issue.severity.value if hasattr(issue.severity, 'value') else str(issue.severity)
+        sev = issue.severity.value if hasattr(issue.severity, "value") else str(issue.severity)
         color = sev_colors.get(sev, "white")
         icon = {"error": "E", "warning": "W", "info": "I"}.get(sev, "?")
-        tlabel = type_labels.get(issue.type.value if hasattr(issue.type, 'value') else str(issue.type), issue.type)
+        tlabel = type_labels.get(
+            issue.type.value if hasattr(issue.type, "value") else str(issue.type), issue.type
+        )
 
         console.print(f"\n[{color}][{icon}{i}] {tlabel} — {issue.description}[/{color}]")
         console.print(f"  Modules: {', '.join(issue.modules[:3])}")
@@ -1751,6 +1929,7 @@ def lint(ctx: click.Context, deep: bool, fix: bool, module: str | None, fmt: str
 
         if fix and issue.auto_fixable:
             from knowledge_manager.schemas import ContradictionType as CT
+
             _apply_auto_fix(issue, kb, CT)
 
     console.print(f"\n[bold]{len(issues)} issue(s) found.[/bold]")
@@ -1850,7 +2029,9 @@ def memory_today(ctx: click.Context) -> None:
         grade_map = {"1": "Again", "2": "Hard", "3": "Good", "4": "Easy"}
         grade = ReviewGrade(int(grade_str))
         scheduler.schedule(card, grade)
-        console.print(f"  → {grade_map[grade_str]}, next review: {card.next_review_at.strftime('%Y-%m-%d') if card.next_review_at else 'unknown'}\n")
+        console.print(
+            f"  → {grade_map[grade_str]}, next review: {card.next_review_at.strftime('%Y-%m-%d') if card.next_review_at else 'unknown'}\n"
+        )
 
     save_cards(cards, kb)
 
@@ -1867,13 +2048,17 @@ def memory_stats(ctx: click.Context) -> None:
     cards = load_cards(kb)
     now = datetime.now(timezone.utc)
     due_today = sum(1 for c in cards if c.next_review_at and c.next_review_at <= now)
-    due_week = sum(1 for c in cards if c.next_review_at and c.next_review_at <= now + timedelta(days=7))
+    due_week = sum(
+        1 for c in cards if c.next_review_at and c.next_review_at <= now + timedelta(days=7)
+    )
 
     console.print(f"Total cards: {len(cards)}")
     console.print(f"Due today: {due_today}")
     console.print(f"Due this week: {due_week}")
     if cards:
-        avg_grade = sum(c.total_grade_sum / max(c.review_count, 1) for c in cards if c.review_count > 0) / max(len([c for c in cards if c.review_count > 0]), 1)
+        avg_grade = sum(
+            c.total_grade_sum / max(c.review_count, 1) for c in cards if c.review_count > 0
+        ) / max(len([c for c in cards if c.review_count > 0]), 1)
         console.print(f"Average grade: {avg_grade:.1f}/4")
 
 
@@ -1891,7 +2076,9 @@ def watch() -> None:
 @click.option("--category", "-c", default="", help="Target category for extracted modules")
 @click.option("--auto-extract", is_flag=True, help="Automatically extract modules from new files")
 @click.pass_context
-def watch_add(ctx: click.Context, source_type: str, path: str, category: str, auto_extract: bool) -> None:
+def watch_add(
+    ctx: click.Context, source_type: str, path: str, category: str, auto_extract: bool
+) -> None:
     """Add a watch source."""
     from knowledge_manager.watch_scheduler import WatchScheduler
 
@@ -1899,11 +2086,15 @@ def watch_add(ctx: click.Context, source_type: str, path: str, category: str, au
     _require_kb(kb)
 
     scheduler = WatchScheduler(kb)
-    scheduler.add_source(source_type, {
-        "path": path,
-        "patterns": ["*.md", "*.txt"],
-        "auto_extract": auto_extract,
-    }, category)
+    scheduler.add_source(
+        source_type,
+        {
+            "path": path,
+            "patterns": ["*.md", "*.txt"],
+            "auto_extract": auto_extract,
+        },
+        category,
+    )
     flag = " (auto-extract)" if auto_extract else ""
     console.print(f"[green]Added {source_type} watch source: {path}{flag}[/green]")
 
@@ -1946,7 +2137,9 @@ def watch_run(ctx: click.Context, now: bool) -> None:
     if scheduler.sources:
         events = asyncio.run(scheduler.poll_all())
         for e in events:
-            console.print(f"  {e.source_id}: found {e.items_found}, generated {e.modules_generated} modules")
+            console.print(
+                f"  {e.source_id}: found {e.items_found}, generated {e.modules_generated} modules"
+            )
     else:
         console.print("No sources configured.")
 
@@ -1999,6 +2192,7 @@ def vector_status(ctx: click.Context) -> None:
 
 
 # --- serve (MCP) ---
+
 
 @cli.command()
 @click.option("--ui", is_flag=True, help="Start MCP + Web UI (FastAPI on localhost:8420)")
@@ -2054,7 +2248,9 @@ def backup() -> None:
 
 @backup.command("create")
 @click.option("--output-dir", type=click.Path(path_type=Path), required=True)
-@click.option("--attach", "attachments", type=click.Path(path_type=Path, exists=True), multiple=True)
+@click.option(
+    "--attach", "attachments", type=click.Path(path_type=Path, exists=True), multiple=True
+)
 @click.pass_context
 def backup_create(ctx: click.Context, output_dir: Path, attachments: tuple[Path, ...]) -> None:
     """Create a complete KB backup bundle."""
@@ -2160,32 +2356,42 @@ def support_bundle(ctx: click.Context, output_dir: Path, matrix_summary: Path) -
         except (OSError, ValueError, TypeError):
             return None
 
-    readiness_payload = _load_json_artifact(readiness_artifact) if readiness_artifact.exists() else None
+    readiness_payload = (
+        _load_json_artifact(readiness_artifact) if readiness_artifact.exists() else None
+    )
     if readiness_payload is None and readiness_artifact.exists():
         release_evidence_invalid.append("verify-production-readiness.json")
     elif readiness_payload is not None and not bool(readiness_payload.get("ready_for_production")):
         release_evidence_invalid.append("verify-production-readiness.json")
 
-    deployment_payload = _load_json_artifact(deployment_artifact) if deployment_artifact.exists() else None
+    deployment_payload = (
+        _load_json_artifact(deployment_artifact) if deployment_artifact.exists() else None
+    )
     if deployment_payload is None and deployment_artifact.exists():
         release_evidence_invalid.append("verify-deployment.json")
     elif deployment_payload is not None and not bool(deployment_payload.get("ok")):
         release_evidence_invalid.append("verify-deployment.json")
 
-    install_smoke_payload = _load_json_artifact(install_smoke_artifact) if install_smoke_artifact.exists() else None
+    install_smoke_payload = (
+        _load_json_artifact(install_smoke_artifact) if install_smoke_artifact.exists() else None
+    )
     if install_smoke_payload is None and install_smoke_artifact.exists():
         release_evidence_invalid.append("verify-install-smoke.json")
     elif install_smoke_payload is not None and not bool(install_smoke_payload.get("ok")):
         release_evidence_invalid.append("verify-install-smoke.json")
 
-    restore_verify_payload = _load_json_artifact(restore_verify_artifact) if restore_verify_artifact.exists() else None
+    restore_verify_payload = (
+        _load_json_artifact(restore_verify_artifact) if restore_verify_artifact.exists() else None
+    )
     if restore_verify_payload is None and restore_verify_artifact.exists():
         release_evidence_invalid.append("restore-verify-deployment.json")
     elif restore_verify_payload is not None and not bool(restore_verify_payload.get("ok")):
         release_evidence_invalid.append("restore-verify-deployment.json")
 
     host_deploy_proof_payload = (
-        _load_json_artifact(host_deploy_proof_artifact) if host_deploy_proof_artifact.exists() else None
+        _load_json_artifact(host_deploy_proof_artifact)
+        if host_deploy_proof_artifact.exists()
+        else None
     )
     if host_deploy_proof_payload is None and host_deploy_proof_artifact.exists():
         release_evidence_invalid.append("host-deploy-proof.json")
@@ -2197,7 +2403,9 @@ def support_bundle(ctx: click.Context, output_dir: Path, matrix_summary: Path) -
         release_evidence_invalid.append("host-deploy-proof.json")
 
     release_verifier_payload = (
-        _load_json_artifact(release_verifier_artifact) if release_verifier_artifact.exists() else None
+        _load_json_artifact(release_verifier_artifact)
+        if release_verifier_artifact.exists()
+        else None
     )
     if release_verifier_payload is None and release_verifier_artifact.exists():
         release_evidence_invalid.append("verify-release-artifacts.json")
@@ -2213,7 +2421,10 @@ def support_bundle(ctx: click.Context, output_dir: Path, matrix_summary: Path) -
         if release_evidence_collection_artifact.exists()
         else None
     )
-    if release_evidence_collection_payload is None and release_evidence_collection_artifact.exists():
+    if (
+        release_evidence_collection_payload is None
+        and release_evidence_collection_artifact.exists()
+    ):
         release_evidence_invalid.append("release-evidence-collection.json")
     elif release_evidence_collection_payload is not None and not bool(
         release_evidence_collection_payload.get("ok")
@@ -2348,7 +2559,9 @@ def verify_deployment(ctx: click.Context, base_url: str, matrix_summary: Path, f
     if fmt == "json":
         click.echo(json.dumps(payload, ensure_ascii=False, indent=2))
         raise click.exceptions.Exit(0 if payload["ok"] else 1)
-    click.echo(f"ready={payload['http']['ready_status']} metrics={payload['http']['metrics_status']}")
+    click.echo(
+        f"ready={payload['http']['ready_status']} metrics={payload['http']['metrics_status']}"
+    )
     raise click.exceptions.Exit(0 if payload["ok"] else 1)
 
 
@@ -2357,14 +2570,26 @@ def verify_deployment(ctx: click.Context, base_url: str, matrix_summary: Path, f
 
 @cli.command()
 @click.option("--list", "-l", "list_platforms", is_flag=True, help="List available platforms")
-@click.option("--print", "-p", "print_config", is_flag=True, help="Print MCP config to stdout instead of writing")
+@click.option(
+    "--print",
+    "-p",
+    "print_config",
+    is_flag=True,
+    help="Print MCP config to stdout instead of writing",
+)
 @click.option("--force", "-f", is_flag=True, help="Skip overwrite confirmation")
 @click.argument("platform", required=False)
 @click.pass_context
-def connect(ctx: click.Context, list_platforms: bool, print_config: bool, force: bool, platform: str | None) -> None:
+def connect(
+    ctx: click.Context, list_platforms: bool, print_config: bool, force: bool, platform: str | None
+) -> None:
     """Generate MCP configuration for an Agent platform."""
     from knowledge_manager.connect import (
-        PLATFORMS, build_mcp_entry, has_entry, resolve_config_path, write_mcp_config,
+        PLATFORMS,
+        build_mcp_entry,
+        has_entry,
+        resolve_config_path,
+        write_mcp_config,
     )
 
     kb = ctx.obj["kb_path"]
@@ -2375,7 +2600,9 @@ def connect(ctx: click.Context, list_platforms: bool, print_config: bool, force:
         return
 
     if platform is None:
-        click.echo("Error: specify a platform (e.g. 'claude-code') or use --list to see options.", err=True)
+        click.echo(
+            "Error: specify a platform (e.g. 'claude-code') or use --list to see options.", err=True
+        )
         raise click.Abort()
 
     try:
@@ -2451,12 +2678,20 @@ def _run_git(kb_path: Path, *args: str, capture: bool = True) -> subprocess.Comp
             check=False,
         )
     except FileNotFoundError:
-        raise click.ClickException("Git is not installed or not on PATH. Install git to use remote KB features.")
+        raise click.ClickException(
+            "Git is not installed or not on PATH. Install git to use remote KB features."
+        )
 
 
 @cli.command()
 @click.argument("url")
-@click.option("--path", "-p", type=click.Path(path_type=Path), default=None, help="Local path for the cloned KB")
+@click.option(
+    "--path",
+    "-p",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Local path for the cloned KB",
+)
 def clone(url: str, path: Path | None) -> None:
     """Clone a remote knowledge base from a Git URL."""
     local_path = path or Path(url.rsplit("/", 1)[-1].replace(".git", ""))
@@ -2478,7 +2713,10 @@ def clone(url: str, path: Path | None) -> None:
         raise click.Abort()
 
     if not (local_path / "index.json").exists():
-        click.echo(f"Warning: Cloned repository does not contain index.json. It may not be a valid KM knowledge base.", err=True)
+        click.echo(
+            f"Warning: Cloned repository does not contain index.json. It may not be a valid KM knowledge base.",
+            err=True,
+        )
 
     click.echo(f"Cloned knowledge base to {local_path.absolute()}")
 
@@ -2492,7 +2730,10 @@ def pull(ctx: click.Context) -> None:
 
     staging = _staging_path(kb)
     if staging.exists() and list(staging.glob("*.json")):
-        click.echo("Warning: You have uncommitted staged modules. Review them before pulling to avoid conflicts.", err=True)
+        click.echo(
+            "Warning: You have uncommitted staged modules. Review them before pulling to avoid conflicts.",
+            err=True,
+        )
 
     click.echo("Pulling latest changes...")
     result = _run_git(kb, "pull", "--rebase", "origin")
@@ -2503,6 +2744,7 @@ def pull(ctx: click.Context) -> None:
     click.echo(result.stdout.strip() or "Already up to date.")
     rebuild_index(kb)
     from knowledge_manager.storage import generate_changelog
+
     generate_changelog(kb)
     click.echo("Index rebuilt.")
 
@@ -2523,7 +2765,10 @@ def push(ctx: click.Context) -> None:
     if behind_check.returncode == 0:
         behind_count = behind_check.stdout.strip()
         if behind_count and behind_count != "0":
-            click.echo(f"Error: Local is {behind_count} commit(s) behind remote. Run 'km pull' first.", err=True)
+            click.echo(
+                f"Error: Local is {behind_count} commit(s) behind remote. Run 'km pull' first.",
+                err=True,
+            )
             raise click.Abort()
 
     # Sanitize config before commit
@@ -2567,6 +2812,7 @@ def push(ctx: click.Context) -> None:
 
     click.echo(result.stdout.strip() or "Push complete.")
     from knowledge_manager.storage import generate_changelog
+
     generate_changelog(kb)
 
     # Send webhook notification if configured
@@ -2574,6 +2820,7 @@ def push(ctx: click.Context) -> None:
     if notif_cfg.webhook_url and notif_cfg.on_push:
         try:
             import httpx
+
             payload = {
                 "text": f"KB updated by {_git_user_name(kb)}: {commit_msg}.",
             }
@@ -2602,7 +2849,11 @@ def status(ctx: click.Context) -> None:
             parts = line.split("\t", 1)
             status_code = parts[0]
             filepath = parts[1] if len(parts) > 1 else ""
-            if filepath.endswith(".json") and filepath != "index.json" and filepath != "config.json":
+            if (
+                filepath.endswith(".json")
+                and filepath != "index.json"
+                and filepath != "config.json"
+            ):
                 if status_code.startswith("A"):
                     modules["added"].append(filepath)
                 elif status_code.startswith("M"):
@@ -2657,7 +2908,12 @@ def _json_diff_sections(remote_data: dict, local_data: dict) -> list[str]:
                         section_diffs.append(f"    - {key}: <removed>")
                     else:
                         section_diffs.append(f"    ~ {key}")
-                        if isinstance(rv, str) and isinstance(lv, str) and len(rv) < 200 and len(lv) < 200:
+                        if (
+                            isinstance(rv, str)
+                            and isinstance(lv, str)
+                            and len(rv) < 200
+                            and len(lv) < 200
+                        ):
                             section_diffs.append(f"      - {rv[:100]}")
                             section_diffs.append(f"      + {lv[:100]}")
             if section_diffs:
@@ -2843,7 +3099,9 @@ def rank_status(ctx: click.Context) -> None:
     events = load_search_events(kb)
     search_count = sum(1 for e in events if e.get("type") == "search")
     load_count = sum(1 for e in events if e.get("type") == "load")
-    click.echo(f"Model: {'bayesian' if search_count >= 100 else 'rule_only' if search_count == 0 else 'bayesian (warming up)'}")
+    click.echo(
+        f"Model: {'bayesian' if search_count >= 100 else 'rule_only' if search_count == 0 else 'bayesian (warming up)'}"
+    )
     click.echo(f"Search events: {search_count}")
     click.echo(f"Load events: {load_count}")
     click.echo("Features (in order):")
@@ -2860,6 +3118,7 @@ def rank_retrain(ctx: click.Context) -> None:
     kb = ctx.obj["kb_path"]
     _require_kb(kb)
     import os as _os
+
     cache_file = kb / ".telemetry" / "rank_model.json"
     if cache_file.exists():
         cache_file.unlink()
@@ -2980,6 +3239,7 @@ def install(ctx: click.Context, module_ref: str, yes: bool, category: str | None
             return
 
     from knowledge_manager.storage import rebuild_index
+
     rebuild_index(kb)
     click.echo(f"\nInstalled {len(plan.modules)} module(s) into staging. Review with 'km review'.")
 
@@ -3002,6 +3262,7 @@ def publish(ctx: click.Context, module_ref: str, dry_run: bool) -> None:
     category, module_id = parts
 
     from knowledge_manager.storage import load_module
+
     mod = load_module(module_id, category, kb)
     if mod is None:
         click.echo(f"Module not found: {module_ref}", err=True)
@@ -3071,7 +3332,9 @@ def webhook_status(ctx: click.Context) -> None:
 
 
 @webhook.command("test")
-@click.option("--endpoint", "-e", "endpoint_idx", type=int, default=0, help="Index of the endpoint to test")
+@click.option(
+    "--endpoint", "-e", "endpoint_idx", type=int, default=0, help="Index of the endpoint to test"
+)
 @click.pass_context
 def webhook_test(ctx: click.Context, endpoint_idx: int) -> None:
     """Send a test payload to a webhook endpoint."""
@@ -3086,25 +3349,35 @@ def webhook_test(ctx: click.Context, endpoint_idx: int) -> None:
         return
 
     if endpoint_idx >= len(wc.endpoints):
-        click.echo(f"Error: endpoint index {endpoint_idx} out of range (0-{len(wc.endpoints) - 1})", err=True)
+        click.echo(
+            f"Error: endpoint index {endpoint_idx} out of range (0-{len(wc.endpoints) - 1})",
+            err=True,
+        )
         raise click.Abort()
 
     ep = wc.endpoints[endpoint_idx]
     import json
-    test_payload = json.dumps({
-        "event": "test",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "kb_path": str(kb),
-        "message": "KM webhook test",
-    })
+
+    test_payload = json.dumps(
+        {
+            "event": "test",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "kb_path": str(kb),
+            "message": "KM webhook test",
+        }
+    )
 
     try:
         import httpx
+
         headers = dict(ep.headers)
         if ep.secret:
             from knowledge_manager.webhooks import _sign_payload
+
             headers["X-KM-Signature"] = f"sha256={_sign_payload(test_payload, ep.secret)}"
-        resp = httpx.post(ep.url, content=test_payload, headers=headers, timeout=httpx.Timeout(10.0))
+        resp = httpx.post(
+            ep.url, content=test_payload, headers=headers, timeout=httpx.Timeout(10.0)
+        )
         click.echo(f"Status: {resp.status_code}")
         if resp.status_code < 400:
             click.echo("Webhook test successful.")
@@ -3174,7 +3447,9 @@ def plugin_install(ctx: click.Context, package_name: str) -> None:
 
     for name in pm.plugins:
         p = pm.plugins[name]
-        if p.manifest.name == package_name or package_name.startswith(f"km-plugin-{p.manifest.name}"):
+        if p.manifest.name == package_name or package_name.startswith(
+            f"km-plugin-{p.manifest.name}"
+        ):
             console.print(f"[yellow]Plugin '{package_name}' is already installed.[/yellow]")
             return
 
@@ -3272,7 +3547,9 @@ def audit() -> None:
 @click.option("--user", "-u", default=None, help="Filter by user")
 @click.option("--operation", "-o", default=None, help="Filter by operation type")
 @click.pass_context
-def audit_log(ctx: click.Context, since: str | None, user: str | None, operation: str | None) -> None:
+def audit_log(
+    ctx: click.Context, since: str | None, user: str | None, operation: str | None
+) -> None:
     """Show audit log entries."""
     from knowledge_manager.audit import read_audit_log
 
@@ -3300,7 +3577,14 @@ def audit_log(ctx: click.Context, since: str | None, user: str | None, operation
 
 @cli.command()
 @click.option("--period", "-p", default="", help="Period prefix (e.g. 2026-Q1)")
-@click.option("--format", "-f", "fmt", type=click.Choice(["json", "text"]), default="text", help="Output format")
+@click.option(
+    "--format",
+    "-f",
+    "fmt",
+    type=click.Choice(["json", "text"]),
+    default="text",
+    help="Output format",
+)
 @click.pass_context
 def compliance(ctx: click.Context, period: str, fmt: str) -> None:
     """Generate a compliance report from audit logs."""
@@ -3500,7 +3784,9 @@ def source_status(ctx: click.Context) -> None:
         elif definition.notion is not None:
             category = definition.notion.category
         synced_at = (
-            definition.sync.last_synced_at.isoformat() if definition.sync.last_synced_at else "never"
+            definition.sync.last_synced_at.isoformat()
+            if definition.sync.last_synced_at
+            else "never"
         )
         click.echo(
             f"{source_id} [{definition.type}] category={category} "
@@ -3593,7 +3879,9 @@ def source_pull(ctx: click.Context, source_id: str) -> None:
             assert last_error is not None
             raise last_error
 
-        summary = await ingest_confluence_pages(source_def, pages, kb, extractor, next_cursor=next_cursor)
+        summary = await ingest_confluence_pages(
+            source_def, pages, kb, extractor, next_cursor=next_cursor
+        )
         return summary.pages_seen, summary.modules_staged, summary.modules_marked_stale
 
     try:
