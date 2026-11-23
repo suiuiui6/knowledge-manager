@@ -379,15 +379,21 @@ def _seed_modules(config: BenchmarkConfig) -> None:
 def _seed_jobs(config: BenchmarkConfig) -> None:
     for i in range(config.job_count):
         job = create_ingestion_job(config.kb_path, source_id=f"source-{i % 8}", trigger="benchmark")
+        if i % 3 == 0 or i % 5 == 0:
+            job = claim_ingestion_job(config.kb_path, job.job_id, worker_id="seed-worker")
         if i % 3 == 0:
-            claim_ingestion_job(config.kb_path, job.job_id, worker_id="seed-worker")
             update_ingestion_checkpoint(
-                config.kb_path, job.job_id, cursor=f"cursor-{i}", pages_seen=i + 1
+                config.kb_path,
+                job.job_id,
+                cursor=f"cursor-{i}",
+                pages_seen=i + 1,
+                attempt_count=job.attempt_count,
             )
         if i % 5 == 0:
             complete_ingestion_job(
                 config.kb_path,
                 job.job_id,
+                attempt_count=job.attempt_count,
                 pages_seen=i + 5,
                 modules_staged=(i % 11) + 1,
                 modules_marked_stale=i % 4,
@@ -864,13 +870,18 @@ def run_enterprise_benchmark(config: BenchmarkConfig) -> dict[str, Any]:
 
     def _job_round_trip() -> dict[str, Any]:
         job = create_ingestion_job(config.kb_path, source_id="perf-source", trigger="benchmark")
-        claim_ingestion_job(config.kb_path, job.job_id, worker_id="perf-worker")
+        job = claim_ingestion_job(config.kb_path, job.job_id, worker_id="perf-worker")
         update_ingestion_checkpoint(
-            config.kb_path, job.job_id, cursor="cursor-final", pages_seen=11
+            config.kb_path,
+            job.job_id,
+            cursor="cursor-final",
+            pages_seen=11,
+            attempt_count=job.attempt_count,
         )
         finished = complete_ingestion_job(
             config.kb_path,
             job.job_id,
+            attempt_count=job.attempt_count,
             pages_seen=15,
             modules_staged=5,
             modules_marked_stale=1,

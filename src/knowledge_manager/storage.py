@@ -26,7 +26,9 @@ from knowledge_manager.schemas import (
     Index,
     Module,
     RoutingPolicyConfig,
+    ReviewRecord,
     StagingMeta,
+    TreeNode,
 )
 from knowledge_manager.tenancy import (
     TenantContext,
@@ -150,7 +152,7 @@ def _classify_intent(query: str) -> str:
     scores: Dict[str, int] = {}
     for intent, patterns in _INTENT_PATTERNS.items():
         scores[intent] = sum(1 for p in patterns if re.search(p, q, re.IGNORECASE))
-    best = max(scores, key=scores.get)
+    best = max(scores, key=lambda intent: scores[intent])
     return best if scores[best] > 0 else "general"
 
 
@@ -317,7 +319,6 @@ def _module_set_fingerprint(kb_path: Path) -> tuple[int, int]:
 
 def _upsert_index_entry(module: Module, kb_path: Path) -> None:
     index = load_index(kb_path) or Index()
-    index.remove_module(module.id, module.category)
     index.add_module(module)
     save_index(index, kb_path)
 
@@ -451,7 +452,7 @@ def run_deferred_maintenance_action(
 def schedule_maintenance_job(kb_path: Path, action: str, payload: dict[str, Any]) -> dict[str, Any]:
     from knowledge_manager.job_worker import enqueue_local_maintenance
 
-    return enqueue_local_maintenance(kb_path, action=action, payload=payload)
+    return cast(dict[str, Any], enqueue_local_maintenance(kb_path, action=action, payload=payload))
 
 
 def save_module(
@@ -474,6 +475,8 @@ def _save_module_locked(
     defer_derived: bool,
     maintenance_state: list[dict[str, Any]] | None,
 ) -> None:
+    # 持久化边界重新校验字典，避免已被修改的模型实例绕过验证。
+    module = Module.model_validate(module.model_dump(mode="python"))
     path = module.to_file_path(kb_path)
     existed = path.exists()
     if existed:
@@ -722,11 +725,13 @@ def _bm25_scores(query: str, modules: List[Module]) -> Dict[str, float]:
             if df_t == 0:
                 continue
             idf = math.log((N - df_t + 0.5) / (df_t + 0.5) + 1)
-            tf = tf_map.get(term, 0)
-            if tf == 0:
+            term_frequency = tf_map.get(term, 0)
+            if term_frequency == 0:
                 continue
             score += (
-                idf * (tf * (_BM25_K1 + 1)) / (tf + _BM25_K1 * (1 - _BM25_B + _BM25_B * dl / avgdl))
+                idf
+                * (term_frequency * (_BM25_K1 + 1))
+                / (term_frequency + _BM25_K1 * (1 - _BM25_B + _BM25_B * dl / avgdl))
             )
         scores[doc_ids[i]] = score
 
@@ -785,11 +790,13 @@ def _bm25_scores_for_documents(query: str, documents: list[Mapping[str, Any]]) -
             if df_t == 0:
                 continue
             idf = math.log((len(documents) - df_t + 0.5) / (df_t + 0.5) + 1)
-            tf = tf_map.get(term, 0)
-            if tf == 0:
+            term_frequency = tf_map.get(term, 0)
+            if term_frequency == 0:
                 continue
             score += (
-                idf * (tf * (_BM25_K1 + 1)) / (tf + _BM25_K1 * (1 - _BM25_B + _BM25_B * dl / avgdl))
+                idf
+                * (term_frequency * (_BM25_K1 + 1))
+                / (term_frequency + _BM25_K1 * (1 - _BM25_B + _BM25_B * dl / avgdl))
             )
         scores[doc_keys[i]] = score
     return scores
@@ -1002,7 +1009,9 @@ def search_modules(
     # Classify query intent and compute adjusted field weights
     intent = _classify_intent(query)
     intent_adjustments = _INTENT_ADJUSTMENTS.get(intent, {})
-    effective_weights = dict(_FIELD_WEIGHTS)
+    effective_weights: dict[str, float] = {
+        key: float(value) for key, value in _FIELD_WEIGHTS.items()
+    }
     for field, adj in intent_adjustments.items():
         effective_weights[field] = effective_weights.get(field, 0) + adj
 
@@ -1211,6 +1220,7 @@ def search_modules(
             continue
         comp_category, comp_id = parts
         companion_document = projection_documents.get(companion_key) if use_projection else None
+        companion: Module | None
         if companion_document is not None:
             companion = _module_from_search_document(companion_document)
         else:
@@ -1312,7 +1322,7 @@ def generate_changelog(kb_path: Path) -> dict | None:
         if not changed_files:
             continue
 
-        changes = {"added": [], "modified": [], "deleted": []}
+        changes: dict[str, list[str]] = {"added": [], "modified": [], "deleted": []}
         for f in changed_files:
             # Determine if added/modified/deleted by checking parent
             parent_result = subprocess.run(
@@ -1431,6 +1441,7 @@ def rebuild_index(kb_path: Path) -> Index:
     _invalidate_module_cache(kb_path)
     index = load_index(kb_path) or Index()
     index.categories.clear()
+    index.graph.clear()
     for module in list_modules(kb_path):
         index.add_module(module)
     # Auto-generate descriptions for categories that lack one
@@ -1458,8 +1469,21 @@ def rebuild_index(kb_path: Path) -> Index:
 
 
 def save_to_staging(module: Module, staging_path: Path) -> None:
-    _atomic_write(staging_path / f"{module.id}.json", module.model_dump_json(indent=2))
-    invalidate_materialized_views(staging_path.parent)
+    """验证暂存写入；发布后的显式新提交开启新审核轮次并保留历史。"""
+    from knowledge_manager.file_locks import kb_write_lock
+
+    module = Module.model_validate(module.model_dump(mode="python"))
+    with kb_write_lock(staging_path.parent):
+        meta = load_staging_meta(module.id, staging_path)
+        if meta is not None and meta.published_version:
+            meta.review_round += 1
+            meta.published_version = ""
+            meta.published_category = ""
+            meta.status = "pending"
+            meta.content_version = ""
+            save_staging_meta(meta, staging_path)
+        _atomic_write(staging_path / f"{module.id}.json", module.model_dump_json(indent=2))
+        invalidate_materialized_views(staging_path.parent)
 
 
 def load_from_staging(module_id: str, staging_path: Path) -> Optional[Module]:
@@ -1510,6 +1534,163 @@ def list_staging_meta(staging_path: Path) -> List[StagingMeta]:
         except Exception:
             pass
     return metas
+
+
+def discard_staged_module(
+    module_id: str,
+    staging_path: Path,
+    kb_path: Path,
+    *,
+    expected_content_version: str | None = None,
+    expected_review_round: int | None = None,
+) -> bool:
+    """锁内丢弃仍存在的草稿；过时交互不得删除已发布结果的回执。"""
+    from knowledge_manager.file_locks import kb_write_lock
+
+    with kb_write_lock(kb_path):
+        path = staging_path / f"{module_id}.json"
+        if not path.exists():
+            return False
+        module = load_from_staging(module_id, staging_path)
+        assert module is not None
+        meta = load_staging_meta(module_id, staging_path) or StagingMeta(module_id=module_id)
+        _check_review_snapshot(module, meta, expected_content_version, expected_review_round)
+        path.unlink()
+        delete_staging_meta(module_id, staging_path)
+        invalidate_materialized_views(kb_path)
+        return True
+
+
+def module_content_version(module: Module) -> str:
+    """为审核内容生成稳定摘要，操作时间和审核标签不影响内容版本。"""
+    data = module.model_dump(mode="json")
+    data.pop("created_at", None)
+    data.pop("updated_at", None)
+    for field in ("reviewed_by", "reviewed_at", "status"):
+        data["metadata"].pop(field, None)
+    payload = json.dumps(data, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def load_review_target(module_id: str, staging_path: Path, kb_path: Path) -> Module | None:
+    """读取当前草稿，或通过持久化回执定位并核实已发布内容。"""
+    module = load_from_staging(module_id, staging_path)
+    if module is not None:
+        return module
+    meta = load_staging_meta(module_id, staging_path)
+    if meta is None or not meta.published_version or not meta.published_category:
+        return None
+    published = load_module(module_id, meta.published_category, kb_path)
+    if published is None or module_content_version(published) != meta.published_version:
+        raise ValueError("Published review receipt no longer matches the module")
+    return published
+
+
+def _check_review_snapshot(
+    module: Module,
+    meta: StagingMeta,
+    expected_content_version: str | None,
+    expected_review_round: int | None,
+) -> None:
+    """在写锁内核对交互展示快照，拒绝操作等待期间替换的草稿。"""
+    if (
+        expected_content_version is not None
+        and module_content_version(module) != expected_content_version
+    ) or (expected_review_round is not None and meta.review_round != expected_review_round):
+        raise ValueError("Draft changed; review again before approving or discarding")
+
+
+def review_staged_module(
+    module_id: str,
+    staging_path: Path,
+    kb_path: Path,
+    *,
+    reviewer: str,
+    action: str,
+    comment: str = "",
+    required_approvals: int = 1,
+    expected_content_version: str | None = None,
+    expected_review_round: int | None = None,
+) -> dict[str, Any]:
+    """串行记录当前版本的独立意见并发布；重试复用已核实的发布回执。"""
+    from knowledge_manager.file_locks import kb_write_lock
+
+    if action not in {"approved", "changes-requested"}:
+        raise ValueError(f"Unsupported review action: {action}")
+    if not reviewer or required_approvals < 1:
+        raise ValueError("Reviewer and a positive approval threshold are required")
+    with kb_write_lock(kb_path):
+        module = load_review_target(module_id, staging_path, kb_path)
+        if module is None:
+            raise FileNotFoundError(f"Staging module not found: {module_id}")
+        version = module_content_version(module)
+        meta = load_staging_meta(module_id, staging_path) or StagingMeta(module_id=module_id)
+        _check_review_snapshot(module, meta, expected_content_version, expected_review_round)
+        if meta.published_version == version and meta.published_category == module.category:
+            published = load_module(module_id, module.category, kb_path)
+            if published is not None and module_content_version(published) == version:
+                # 发布后中断可能遗留草稿；仅在回执与实际产物一致时清理。
+                draft_path = staging_path / f"{module_id}.json"
+                if draft_path.exists():
+                    draft_path.unlink()
+                    invalidate_materialized_views(kb_path)
+                return {
+                    "status": "merged" if action == "approved" else "already-processed",
+                    "approvals": meta.approval_count(version),
+                    "required": required_approvals,
+                    "category": module.category,
+                }
+        meta.content_version = version
+        latest = next(
+            (
+                r
+                for r in reversed(meta.reviews)
+                if r.reviewer == reviewer
+                and r.content_version == version
+                and r.review_round == meta.review_round
+            ),
+            None,
+        )
+        if latest is None or latest.action != action or latest.comment != comment:
+            meta.reviews.append(
+                ReviewRecord(
+                    reviewer=reviewer,
+                    action=cast(Any, action),
+                    comment=comment,
+                    content_version=version,
+                    review_round=meta.review_round,
+                )
+            )
+        approvals = meta.approval_count(version)
+        meta.status = "changes-requested" if action == "changes-requested" else "pending"
+        save_staging_meta(meta, staging_path)
+        if action == "approved" and approvals >= required_approvals:
+            # 先保存产物，之后才写发布回执；任何失败都保留草稿供重试。
+            save_module(module, kb_path)
+            meta.status = "approved"
+            meta.published_version = version
+            meta.published_category = module.category
+            save_staging_meta(meta, staging_path)
+            (staging_path / f"{module_id}.json").unlink()
+            invalidate_materialized_views(kb_path)
+            status = "merged"
+            from knowledge_manager.webhooks import emit_event
+
+            emit_event(
+                kb_path,
+                "review.approved",
+                module_id,
+                module.category,
+                {"reviewer": reviewer, "approvals_count": approvals},
+            )
+        else:
+            status = meta.status
+        return {
+            "status": status,
+            "approvals": approvals,
+            "required": required_approvals,
+            "category": module.category,
+        }
 
 
 def approve_from_staging(module_id: str, staging_path: Path, kb_path: Path) -> None:
@@ -1674,7 +1855,7 @@ def load_rank_model(
         else:
             if model.get("event_count") != expected_event_count:
                 return None
-        return model.get("priors", {})
+        return cast(Dict[str, Dict[str, float]], model.get("priors", {}))
     except (json.JSONDecodeError, KeyError):
         return None
 
@@ -1702,15 +1883,15 @@ def compute_bayesian_priors(kb_path: Path) -> Dict[str, Dict[str, float]]:
         if cached_load_fingerprint == load_fingerprint:
             return cached_priors
 
-    cached = load_rank_model(
+    persisted_priors = load_rank_model(
         kb_path,
         len(events),
         expected_load_event_count=load_fingerprint[0],
         expected_latest_load_timestamp=load_fingerprint[1],
     )
-    if cached is not None:
-        _PRIORS_CACHE[cache_key] = (load_fingerprint, cached)
-        return cached
+    if persisted_priors is not None:
+        _PRIORS_CACHE[cache_key] = (load_fingerprint, persisted_priors)
+        return persisted_priors
 
     searches: List[dict] = []
     loads: List[dict] = []
@@ -2310,7 +2491,7 @@ def detect_clusters(kb_path: Path) -> list[Any]:
                 adj[t].add(src)
 
     visited: set[str] = set()
-    clusters = []
+    clusters: list[ClusterEntry] = []
 
     def dfs(node: str, comp: list[str]):
         visited.add(node)
@@ -2683,7 +2864,8 @@ def get_tree(kb_path: Path) -> "TreeNode":
                 return TN.model_validate(tree_val)
             except Exception:
                 pass
-        return tree_val
+        if isinstance(tree_val, TreeNode):
+            return tree_val
     return _build_tree_from_categories(index)
 
 

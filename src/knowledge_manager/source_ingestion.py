@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import asyncio
 import os
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Iterable, Protocol
+from threading import Event
+from typing import Iterable, Iterator, Protocol
 from uuid import uuid4
 
 from knowledge_manager.confluence import ConfluenceClient, ConfluencePage
@@ -30,6 +32,7 @@ from knowledge_manager.storage import (
     save_to_staging,
 )
 from knowledge_manager.schemas import StagingMeta
+from knowledge_manager.ingestion_jobs import ingestion_attempt, JobClaimConflict
 
 
 class IngestionPage(Protocol):
@@ -48,6 +51,23 @@ class IngestionSummary:
     pages_seen: int = 0
     modules_staged: int = 0
     modules_marked_stale: int = 0
+
+
+@contextmanager
+def _source_commit(
+    kb_path: Path, job_id: str | None, attempt_count: int | None, lease_lost: Event | None
+) -> Iterator[None]:
+    """任务执行核对尝试归属；独立同步入口仍串行提交本地状态。"""
+    from knowledge_manager.file_locks import kb_write_lock
+
+    if (job_id is None) != (attempt_count is None):
+        raise ValueError("job_id and attempt_count must be supplied together")
+    if job_id is not None and attempt_count is not None:
+        with ingestion_attempt(kb_path, job_id, attempt_count, lease_lost=lease_lost):
+            yield
+    else:
+        with kb_write_lock(kb_path):
+            yield
 
 
 def _load_runtime_config(kb_path: Path) -> Config:
@@ -179,7 +199,12 @@ async def ingest_confluence_pages(
     kb_path: Path,
     extractor,
     next_cursor: str = "",
+    *,
+    job_id: str | None = None,
+    attempt_count: int | None = None,
+    lease_lost: Event | None = None,
 ) -> IngestionSummary:
+    """外部提取不持写锁，每次本地提交核对当前任务尝试。"""
     run_id = f"{source.id}-{uuid4().hex[:12]}"
     staging_path = kb_path / ".staging"
     summary = IngestionSummary(source_id=source.id)
@@ -189,30 +214,40 @@ async def ingest_confluence_pages(
         summary.pages_seen += 1
         modules = await extractor.extract(page.body_text, _source_category(source))
         page_versions[page.page_id] = page.version
-        for module in modules:
-            stamped = _stamp_module(module, source, page, run_id)
-            save_to_staging(stamped, staging_path)
-            save_staging_meta(
-                StagingMeta(module_id=stamped.id, submitted_by=f"source:{source.id}"),
-                staging_path,
-            )
-            summary.modules_staged += 1
+        with _source_commit(kb_path, job_id, attempt_count, lease_lost):
+            for module in modules:
+                stamped = _stamp_module(module, source, page, run_id)
+                save_to_staging(stamped, staging_path)
+                save_staging_meta(
+                    StagingMeta(module_id=stamped.id, submitted_by=f"source:{source.id}"),
+                    staging_path,
+                )
+                summary.modules_staged += 1
 
-    summary.modules_marked_stale = mark_modules_stale(source.id, page_versions, kb_path)
-    update_source_sync(
-        source.id,
-        SourceSyncState(
-            last_cursor=next_cursor,
-            last_synced_at=datetime.now(timezone.utc),
-            last_error="",
-            page_versions=page_versions,
-        ),
-        kb_path,
-    )
+    with _source_commit(kb_path, job_id, attempt_count, lease_lost):
+        summary.modules_marked_stale = mark_modules_stale(source.id, page_versions, kb_path)
+        update_source_sync(
+            source.id,
+            SourceSyncState(
+                last_cursor=next_cursor,
+                last_synced_at=datetime.now(timezone.utc),
+                last_error="",
+                page_versions=page_versions,
+            ),
+            kb_path,
+        )
     return summary
 
 
-async def run_source_sync_once(kb_path: Path, source_id: str) -> IngestionSummary:
+async def run_source_sync_once(
+    kb_path: Path,
+    source_id: str,
+    *,
+    job_id: str | None = None,
+    attempt_count: int | None = None,
+    lease_lost: Event | None = None,
+) -> IngestionSummary:
+    """拉取和提取保持可重试，失去任务尝试时停止所有本地状态提交。"""
     registry = load_source_registry(kb_path)
     if source_id not in registry.sources:
         raise RuntimeError(f"Unknown source: {source_id}")
@@ -256,15 +291,26 @@ async def run_source_sync_once(kb_path: Path, source_id: str) -> IngestionSummar
                     cursor=source_def.sync.last_cursor,
                 )
             return await ingest_confluence_pages(
-                source_def, pages, kb_path, extractor, next_cursor=next_cursor
+                source_def,
+                pages,
+                kb_path,
+                extractor,
+                next_cursor=next_cursor,
+                job_id=job_id,
+                attempt_count=attempt_count,
+                lease_lost=lease_lost,
             )
+        except JobClaimConflict:
+            raise
         except Exception as exc:
             last_error = exc
             if not _is_transient_source_pull_error(exc) or attempt == 2:
-                record_source_sync_error(source_id, str(exc), kb_path)
+                with _source_commit(kb_path, job_id, attempt_count, lease_lost):
+                    record_source_sync_error(source_id, str(exc), kb_path)
                 raise
             await asyncio.sleep(0.5 * (attempt + 1))
 
     assert last_error is not None
-    record_source_sync_error(source_id, str(last_error), kb_path)
+    with _source_commit(kb_path, job_id, attempt_count, lease_lost):
+        record_source_sync_error(source_id, str(last_error), kb_path)
     raise last_error

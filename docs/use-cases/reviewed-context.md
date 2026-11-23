@@ -50,3 +50,25 @@ The freshly approved module is now discoverable. This is the intended
 - The corpus is tens of millions of words and needs semantic recall.
 - The team needs hosted multi-tenant search with a managed SLA.
 - No human is available to review extracted drafts.
+
+## Review retries and existing staging metadata
+
+CLI `review approve` / `review request-changes` and HTTP review actions use the
+same review service. Approvals count each reviewer's latest opinion on the
+current content version. Repeating an approval does not increase the count;
+requesting changes withdraws that reviewer's previous approval. Changing the
+content requires fresh approvals. Operation timestamps and review labels do
+not change the content version.
+
+Older `.meta.json` files remain readable. Opinions without a content version
+are retained as history and require a fresh review before they count. The
+service retains the publication receipt in `.staging/<id>.meta.json`: retries
+verify the actual published module and return the previous result. A receipt
+that no longer matches the published file returns an explicit conflict.
+Submitting a new draft after publication starts another review round, even
+when its content is identical. Publication is retryable after a failed local
+write; external webhook delivery does not carry an exactly-once guarantee.
+
+Interactive review also binds approve/discard to the displayed content and
+review round. If another writer replaces or edits the draft while the prompt
+waits, the operation stops and asks the reviewer to review it again.

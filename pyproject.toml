@@ -91,9 +91,6 @@ module = [
     "knowledge_manager.connect",
     "knowledge_manager.file_locks",
     "knowledge_manager.http_authz",
-    "knowledge_manager.http_server",
-    "knowledge_manager.ingestion_jobs",
-    "knowledge_manager.job_worker",
     "knowledge_manager.lexical_index",
     "knowledge_manager.linter",
     "knowledge_manager.llm_clients",
@@ -108,11 +105,9 @@ module = [
     "knowledge_manager.researcher",
     "knowledge_manager.search_projection",
     "knowledge_manager.source_ingestion",
-    "knowledge_manager.storage",
     "knowledge_manager.tenant_views",
     "knowledge_manager.tree_navigator",
     "knowledge_manager.vector_index",
-    "knowledge_manager.worker_service",
 ]
 ignore_errors = true
 
@@ -120,5 +115,6 @@ ignore_errors = true
 asyncio_mode = "auto"
 testpaths = ["tests"]
 filterwarnings = [
+    "error::pytest.PytestUnhandledThreadExceptionWarning",
     "ignore:pkg_resources is deprecated as an API:UserWarning",
 ]

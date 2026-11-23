@@ -114,12 +114,14 @@ customer testimonials or production benchmarks.
 
 ## Validation and CI
 
-The repository uses Ubuntu GitHub Actions. CI installs the project from
-`pyproject.toml`, runs the full pytest suite, builds and installs the wheel, and
-exercises `km demo`. Black and Mypy run as separate quality reports while the
-repository's existing formatting and typing debt is being reduced. The Poetry
-lock remains the local developer lockfile; CI uses the official PyPI index
-instead of a regional mirror. Windows checks are currently `audit-only-windows`
+The checked-in Ubuntu GitHub Actions configuration uses Poetry 2.4.1 and
+`poetry.lock` for regression tests on Python 3.10 and 3.12. It also builds and
+installs the wheel in a clean environment and exercises `km demo`. Black and
+Mypy are separate blocking quality jobs. Remaining legacy typing exclusions
+are explicit in `pyproject.toml`; the module, HTTP, and ingestion contracts
+changed in the quality remediation are included in type checking.
+Workflow configuration alone does not establish that remote jobs have run or
+that branch protection requires them. Windows checks are `audit-only-windows`
 because the local sandbox can prevent pytest from creating temporary
 directories; they are not represented as a passing production gate.
 

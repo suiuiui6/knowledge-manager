@@ -65,3 +65,5 @@ config.json
 /pytesttmp*/
 /.tmp_pytest/
 /.mypy_cache/
+/.cache-poetry/
+node_modules/

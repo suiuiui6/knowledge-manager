@@ -184,6 +184,33 @@ class Module(BaseModel):
         return base_path / self.category / f"{self.id}.json"
 
 
+class ModuleUpdate(BaseModel):
+    """区分未提供字段和显式清空，完整候选仍须经过 Module 校验。"""
+
+    title: str | None = None
+    summary: str | None = None
+    content: dict[str, Any] | None = None
+    metadata: dict[str, Any] | None = None
+
+    @field_validator("title", "summary", "content", "metadata", mode="before")
+    @classmethod
+    def reject_explicit_null(cls, value: Any) -> Any:
+        """可省略更新字段，但这些字段不接受显式 null。"""
+        if value is None:
+            raise ValueError("update fields cannot be null")
+        return value
+
+    def apply_to(self, module: Module) -> Module:
+        """在独立数据副本合并部分字段，失败时不污染原对象。"""
+        candidate = module.model_dump(mode="python")
+        for key, value in self.model_dump(exclude_unset=True).items():
+            if key in {"content", "metadata"}:
+                candidate[key].update(value)
+            else:
+                candidate[key] = value
+        return Module.model_validate(candidate)
+
+
 class IndexModuleSummary(BaseModel):
     id: str
     category: str
@@ -228,7 +255,9 @@ class Index(BaseModel):
         )
         cat = self.categories[module.category]
         existing_ids = [m.id for m in cat.modules]
-        if summary.id not in existing_ids:
+        if summary.id in existing_ids:
+            cat.modules[existing_ids.index(summary.id)] = summary
+        else:
             cat.modules.append(summary)
         module_key = f"{module.category}/{module.id}"
         if module.metadata.related_modules:
@@ -307,6 +336,8 @@ class ReviewRecord(BaseModel):
     action: Literal["approved", "changes-requested"]
     comment: str = ""
     timestamp: datetime = Field(default_factory=utc_now)
+    content_version: str = ""
+    review_round: int = 0
 
 
 class StagingMeta(BaseModel):
@@ -315,9 +346,22 @@ class StagingMeta(BaseModel):
     submitted_by: str = ""
     submitted_at: datetime = Field(default_factory=utc_now)
     reviews: List[ReviewRecord] = Field(default_factory=list)
+    content_version: str = ""
+    published_version: str = ""
+    published_category: str = ""
+    review_round: int = 0
 
-    def approval_count(self) -> int:
-        return sum(1 for r in self.reviews if r.action == "approved")
+    def approval_count(self, content_version: str | None = None) -> int:
+        """仅统计当前内容版本上每位审核者最后一条有效意见。"""
+        version = self.content_version if content_version is None else content_version
+        if not version:
+            return 0
+        latest = {
+            r.reviewer: r
+            for r in self.reviews
+            if r.content_version == version and r.review_round == self.review_round
+        }
+        return sum(r.action == "approved" for r in latest.values())
 
 
 class ReviewConfig(BaseModel):

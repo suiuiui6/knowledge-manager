@@ -14,12 +14,16 @@ def _run(
     cwd: Path | None = None,
     env: dict[str, str] | None = None,
 ) -> dict[str, object]:
+    """以 UTF-8 协议运行 Python 工具，完整保留输出与真实退出状态。"""
+    child_env = dict(os.environ if env is None else env)
+    child_env["PYTHONIOENCODING"] = "utf-8"
     result = subprocess.run(
         command,
         cwd=str(cwd) if cwd is not None else None,
-        env=env,
+        env=child_env,
         capture_output=True,
         text=True,
+        encoding="utf-8",
     )
     return {
         "command": command,

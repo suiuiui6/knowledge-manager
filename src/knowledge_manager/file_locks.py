@@ -8,12 +8,14 @@ from contextlib import contextmanager
 from functools import wraps
 from inspect import signature
 from pathlib import Path
-from typing import Iterator
+from typing import Callable, Iterator, ParamSpec, TypeVar
 
 
 _REGISTRY_GUARD = threading.Lock()
 _LOCKS: dict[str, threading.RLock] = {}
 _LOCAL = threading.local()
+_Parameters = ParamSpec("_Parameters")
+_Result = TypeVar("_Result")
 
 
 @contextmanager
@@ -77,12 +79,12 @@ def kb_write_lock(kb_path: Path, *, timeout: float = 60.0) -> Iterator[None]:
         local_lock.release()
 
 
-def serialized_write(function):
+def serialized_write(function: Callable[_Parameters, _Result]) -> Callable[_Parameters, _Result]:
     """Protect the full read/modify/write operation, including nested writes."""
     sig = signature(function)
 
     @wraps(function)
-    def wrapped(*args, **kwargs):
+    def wrapped(*args: _Parameters.args, **kwargs: _Parameters.kwargs) -> _Result:
         kb = sig.bind(*args, **kwargs).arguments["kb_path"]
         with kb_write_lock(kb):
             return function(*args, **kwargs)

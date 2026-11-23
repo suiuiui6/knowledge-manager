@@ -2095,17 +2095,21 @@ def test_staging_meta_list(kb_path):
 def test_staging_meta_approval_count():
     from knowledge_manager.schemas import StagingMeta, ReviewRecord
 
-    meta = StagingMeta(module_id="mod")
+    meta = StagingMeta(module_id="mod", content_version="current")
     assert meta.approval_count() == 0
-
-    meta.reviews.append(ReviewRecord(reviewer="alice", action="approved"))
+    for reviewer, action, expected in [
+        ("alice", "approved", 1),
+        ("alice", "approved", 1),
+        ("bob", "changes-requested", 1),
+        ("carol", "approved", 2),
+        ("alice", "changes-requested", 1),
+    ]:
+        meta.reviews.append(
+            ReviewRecord(reviewer=reviewer, action=action, content_version="current")
+        )
+        assert meta.approval_count() == expected
+    meta.reviews.append(ReviewRecord(reviewer="legacy", action="approved"))
     assert meta.approval_count() == 1
-
-    meta.reviews.append(ReviewRecord(reviewer="bob", action="changes-requested"))
-    assert meta.approval_count() == 1  # only approved counts
-
-    meta.reviews.append(ReviewRecord(reviewer="carol", action="approved"))
-    assert meta.approval_count() == 2
 
 
 def test_review_config_defaults():
@@ -3125,3 +3129,218 @@ def test_load_federation_missing_path(kb_path, tmp_path):
 
     result = load_federation(kb_path)
     assert result == {}
+
+
+def test_invalid_mutated_module_cannot_be_saved(kb_path):
+    from pydantic import ValidationError
+
+    module = make_module()
+    save_module(module, kb_path)
+    path = module.to_file_path(kb_path)
+    before = path.read_bytes()
+    before_index = (kb_path / "index.json").read_bytes()
+    module.content.overview = "x"
+    with pytest.raises(ValidationError):
+        save_module(module, kb_path)
+    assert path.read_bytes() == before
+    assert (kb_path / "index.json").read_bytes() == before_index
+
+
+def test_target_update_preserves_incoming_edges_and_rebuild_equivalence(kb_path):
+    target = make_module(id="target")
+    sources = [make_module(id="source-one"), make_module(id="source-two")]
+    for source in sources:
+        source.metadata.related_modules = ["general/target"]
+        save_module(source, kb_path)
+    target.metadata.related_modules = ["general/source-one"]
+    save_module(target, kb_path)
+    target.summary = "Updated target summary for the graph regression"
+    save_module(target, kb_path)
+    incremental = load_index(kb_path)
+    assert incremental.graph["general/source-one"] == ["general/target"]
+    assert incremental.graph["general/source-two"] == ["general/target"]
+    rebuilt = rebuild_index(kb_path)
+    assert incremental.graph == rebuilt.graph
+    assert {
+        name: sorted(cat.modules, key=lambda m: m.id)
+        for name, cat in incremental.categories.items()
+    } == {name: sorted(cat.modules, key=lambda m: m.id) for name, cat in rebuilt.categories.items()}
+    assert incremental.stats.total_words == rebuilt.stats.total_words
+
+
+def test_review_is_version_bound_idempotent_and_retractable(kb_path, staging_path):
+    from knowledge_manager.storage import review_staged_module
+
+    module = make_module()
+    save_to_staging(module, staging_path)
+
+    def review(who, action="approved"):
+        return review_staged_module(
+            module.id, staging_path, kb_path, reviewer=who, action=action, required_approvals=2
+        )
+
+    assert review("alice")["approvals"] == 1
+    assert review("alice")["approvals"] == 1
+    assert review("alice", "changes-requested")["approvals"] == 0
+    assert review("alice")["approvals"] == 1
+    module.summary = "Changed content requires another independent review"
+    save_to_staging(module, staging_path)
+    assert review("bob")["approvals"] == 1
+    assert review("alice")["status"] == "merged"
+    assert review("alice")["status"] == "merged"
+    assert load_from_staging(module.id, staging_path) is None
+    assert load_module(module.id, module.category, kb_path) is not None
+
+
+def test_legacy_reviews_are_readable_but_require_rereview(kb_path, staging_path):
+    from knowledge_manager.schemas import ReviewRecord, StagingMeta
+    from knowledge_manager.storage import review_staged_module, save_staging_meta
+
+    module = make_module()
+    save_to_staging(module, staging_path)
+    save_staging_meta(
+        StagingMeta(
+            module_id=module.id, reviews=[ReviewRecord(reviewer="legacy", action="approved")]
+        ),
+        staging_path,
+    )
+    result = review_staged_module(
+        module.id, staging_path, kb_path, reviewer="new", action="approved", required_approvals=2
+    )
+    assert result["approvals"] == 1
+    assert result["status"] == "pending"
+
+
+def test_concurrent_review_retries_count_one_reviewer(kb_path, staging_path):
+    from concurrent.futures import ThreadPoolExecutor
+    from knowledge_manager.storage import review_staged_module, load_staging_meta
+
+    module = make_module()
+    save_to_staging(module, staging_path)
+
+    def approve(_):
+        return review_staged_module(
+            module.id,
+            staging_path,
+            kb_path,
+            reviewer="alice",
+            action="approved",
+            required_approvals=2,
+        )
+
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        results = list(executor.map(approve, range(4)))
+    assert all(result["approvals"] == 1 for result in results)
+    assert len(load_staging_meta(module.id, staging_path).reviews) == 1
+    assert load_from_staging(module.id, staging_path) is not None
+
+
+def test_review_publish_failure_keeps_draft_and_retry_does_not_duplicate(
+    kb_path, staging_path, monkeypatch
+):
+    import knowledge_manager.storage as storage
+
+    module = make_module()
+    save_to_staging(module, staging_path)
+    real_save = storage.save_module
+
+    def fail_save(*args, **kwargs):
+        raise OSError("simulated publish failure")
+
+    monkeypatch.setattr(storage, "save_module", fail_save)
+    with pytest.raises(OSError, match="simulated"):
+        storage.review_staged_module(
+            module.id, staging_path, kb_path, reviewer="alice", action="approved"
+        )
+    assert load_from_staging(module.id, staging_path) is not None
+    monkeypatch.setattr(storage, "save_module", real_save)
+    assert (
+        storage.review_staged_module(
+            module.id, staging_path, kb_path, reviewer="alice", action="approved"
+        )["status"]
+        == "merged"
+    )
+    assert len(storage.load_staging_meta(module.id, staging_path).reviews) == 1
+
+
+def test_new_staging_submission_does_not_reuse_published_receipt(kb_path, staging_path):
+    from knowledge_manager.storage import review_staged_module
+
+    module = make_module()
+    save_to_staging(module, staging_path)
+    review_staged_module(module.id, staging_path, kb_path, reviewer="alice", action="approved")
+    save_to_staging(module, staging_path)
+    result = review_staged_module(
+        module.id, staging_path, kb_path, reviewer="bob", action="approved", required_approvals=2
+    )
+    assert result["status"] == "pending"
+    assert result["approvals"] == 1
+    assert load_from_staging(module.id, staging_path) is not None
+
+
+def test_review_published_receipt_must_match_real_module(kb_path, staging_path):
+    from knowledge_manager.storage import review_staged_module
+
+    module = make_module()
+    save_to_staging(module, staging_path)
+    review_staged_module(module.id, staging_path, kb_path, reviewer="alice", action="approved")
+    module.summary = "A changed published document invalidates the receipt"
+    save_module(module, kb_path)
+    with pytest.raises(ValueError, match="receipt"):
+        review_staged_module(module.id, staging_path, kb_path, reviewer="alice", action="approved")
+
+
+def test_review_webhook_emitted_only_on_first_publish(kb_path, staging_path, monkeypatch):
+    from knowledge_manager.storage import review_staged_module
+
+    events = []
+    monkeypatch.setattr("knowledge_manager.webhooks.emit_event", lambda *args: events.append(args))
+    module = make_module()
+    save_to_staging(module, staging_path)
+    for _ in range(2):
+        review_staged_module(module.id, staging_path, kb_path, reviewer="alice", action="approved")
+    assert sum(event[1] == "review.approved" for event in events) == 1
+
+
+def test_rebuild_removes_stale_graph_entries(kb_path):
+    save_module(make_module(), kb_path)
+    index = load_index(kb_path)
+    index.graph["general/deleted-source"] = ["general/test-module"]
+    save_index(index, kb_path)
+    rebuilt = rebuild_index(kb_path)
+    assert "general/deleted-source" not in rebuilt.graph
+    assert rebuild_index(kb_path).graph == rebuilt.graph
+
+
+def test_discard_serializes_with_review_and_preserves_published_receipt(kb_path, staging_path):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Event
+    from knowledge_manager.file_locks import kb_write_lock
+    from knowledge_manager.storage import (
+        discard_staged_module,
+        review_staged_module,
+        load_staging_meta,
+    )
+
+    module = make_module()
+    save_to_staging(module, staging_path)
+    started = Event()
+
+    def approve():
+        started.set()
+        return review_staged_module(
+            module.id, staging_path, kb_path, reviewer="alice", action="approved"
+        )
+
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        with kb_write_lock(kb_path):
+            future = executor.submit(approve)
+            assert started.wait(5)
+            assert discard_staged_module(module.id, staging_path, kb_path)
+        with pytest.raises(FileNotFoundError):
+            future.result(timeout=10)
+    assert load_module(module.id, module.category, kb_path) is None
+    save_to_staging(module, staging_path)
+    review_staged_module(module.id, staging_path, kb_path, reviewer="alice", action="approved")
+    assert not discard_staged_module(module.id, staging_path, kb_path)
+    assert load_staging_meta(module.id, staging_path).published_version

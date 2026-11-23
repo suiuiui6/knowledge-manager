@@ -108,7 +108,7 @@ def _start_upload_job(
         payload_path=str(payload_path),
         payload_meta={"filename": filename, "category": category, "mode": mode},
     )
-    return job.job_id
+    return str(job.job_id)
 
 
 def create_app(kb_path: Path) -> FastAPI:
@@ -411,26 +411,23 @@ def create_app(kb_path: Path) -> FastAPI:
             raise HTTPException(404, f"Module not found: {cat}/{mod_id}")
         enforce_subject_module_access(subject, module, kb_path, request)
 
-        for field in ("title", "summary"):
-            if field in body:
-                setattr(module, field, body[field])
-        if "content" in body:
-            for k, v in body["content"].items():
-                if hasattr(module.content, k) and v:
-                    setattr(module.content, k, v)
-        if "metadata" in body:
-            metadata_updates = body["metadata"]
+        from knowledge_manager.schemas import ModuleUpdate
+        from pydantic import ValidationError
+
+        try:
+            patch = ModuleUpdate.model_validate(body)
+            candidate = patch.apply_to(module)
+        except ValidationError as exc:
+            raise HTTPException(422, detail=str(exc)) from exc
+        if "metadata" in patch.model_fields_set:
             enforce_subject_metadata_override(
                 request,
                 subject,
                 kb_path,
-                tenant_id=metadata_updates.get("tenant_id", module.metadata.tenant_id),
-                workspace_id=metadata_updates.get("workspace_id", module.metadata.workspace_id),
+                tenant_id=candidate.metadata.tenant_id,
+                workspace_id=candidate.metadata.workspace_id,
             )
-            for k, v in body["metadata"].items():
-                if hasattr(module.metadata, k):
-                    setattr(module.metadata, k, v)
-            module.updated_at = datetime.now(timezone.utc)
+        module = candidate
 
         from knowledge_manager.storage import save_module
 
@@ -493,7 +490,11 @@ def create_app(kb_path: Path) -> FastAPI:
     def api_staging_list(
         request: Request, tenant_id: str = Query(""), workspace_id: str = Query("")
     ):
-        from knowledge_manager.storage import list_staging, load_staging_meta
+        from knowledge_manager.storage import (
+            list_staging,
+            load_staging_meta,
+            module_content_version,
+        )
 
         require_identity(request, kb_path, "module.review")
         tenant = resolve_tenant_context(
@@ -518,7 +519,7 @@ def create_app(kb_path: Path) -> FastAPI:
                     "submitted_at": (
                         meta.submitted_at.isoformat() if meta and meta.submitted_at else ""
                     ),
-                    "approvals": meta.approval_count() if meta else 0,
+                    "approvals": meta.approval_count(module_content_version(m)) if meta else 0,
                     "required_approvals": required,
                     "module_summary": m.summary,
                     "preview": {"title": m.title, "category": m.category, "tags": m.metadata.tags},
@@ -528,105 +529,62 @@ def create_app(kb_path: Path) -> FastAPI:
 
     @app.post("/api/staging/{module_id}/approve")
     def api_staging_approve(module_id: str, request: Request, body: dict | None = None):
-        from knowledge_manager.storage import (
-            approve_from_staging,
-            load_from_staging,
-            load_staging_meta,
-            list_staging,
-            save_staging_meta,
-        )
-        from knowledge_manager.schemas import ReviewRecord, StagingMeta
-
-        subject = require_identity(request, kb_path, "module.review")
-        staging = kb_path / ".staging"
-        staged_module = load_from_staging(module_id, staging)
-        if staged_module is None:
-            raise HTTPException(404, f"Module not found: {module_id}")
-        enforce_subject_module_access(subject, staged_module, kb_path, request)
-        meta = load_staging_meta(module_id, staging)
-        if meta is None:
-            meta = StagingMeta(module_id=module_id)
-
-        if body and "reviewer" in body and body["reviewer"] != subject.user:
-            raise HTTPException(status_code=422, detail="reviewer is server-assigned")
-        comment = (body or {}).get("comment", "")
-        meta.reviews.append(ReviewRecord(reviewer=subject.user, action="approved", comment=comment))
-
-        cfg = _load_config()
-        required = cfg.review.required_approvals if cfg else 1
-        if meta.approval_count() >= required:
-            approve_from_staging(module_id, staging, kb_path)
-            log_audit_event(
-                kb_path,
-                AuditEvent(
-                    user=subject.user,
-                    operation="staging.approve",
-                    module_id=module_id,
-                    category=staged_module.category,
-                    tenant_id=subject.tenant_id,
-                    resource=f"/api/staging/{module_id}/approve",
-                    result="success",
-                    request_id=getattr(request.state, "request_id", ""),
-                ),
-            )
-            return {"status": "merged", "approvals": meta.approval_count()}
-        save_staging_meta(meta, staging)
-        log_audit_event(
-            kb_path,
-            AuditEvent(
-                user=subject.user,
-                operation="staging.approve",
-                module_id=module_id,
-                category=staged_module.category,
-                tenant_id=subject.tenant_id,
-                resource=f"/api/staging/{module_id}/approve",
-                result="pending",
-                request_id=getattr(request.state, "request_id", ""),
-            ),
-        )
-        return {"status": "pending", "approvals": meta.approval_count(), "required": required}
+        return _review_staged(module_id, request, body, action="approved")
 
     @app.post("/api/staging/{module_id}/reject")
     def api_staging_reject(module_id: str, request: Request, body: dict | None = None):
-        from knowledge_manager.storage import (
-            load_from_staging,
-            load_staging_meta,
-            save_staging_meta,
-        )
-        from knowledge_manager.schemas import ReviewRecord, StagingMeta
+        return _review_staged(module_id, request, body, action="changes-requested")
+
+    def _review_staged(module_id: str, request: Request, body: dict | None, *, action: str):
+        """HTTP 仅负责请求边界和响应，审核及发布合同由共同服务执行。"""
+        from knowledge_manager.storage import load_review_target, review_staged_module
 
         subject = require_identity(request, kb_path, "module.review")
         staging = kb_path / ".staging"
-        staged_module = load_from_staging(module_id, staging)
-        if staged_module is None:
+        try:
+            module = load_review_target(module_id, staging, kb_path)
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+        if module is None:
             raise HTTPException(404, f"Module not found: {module_id}")
-        enforce_subject_module_access(subject, staged_module, kb_path, request)
-        meta = load_staging_meta(module_id, staging)
-        if meta is None:
-            meta = StagingMeta(module_id=module_id)
-
+        enforce_subject_module_access(subject, module, kb_path, request)
         if body and "reviewer" in body and body["reviewer"] != subject.user:
-            raise HTTPException(status_code=422, detail="reviewer is server-assigned")
-        comment = (body or {}).get("comment", "No reason given")
-        meta.reviews.append(
-            ReviewRecord(reviewer=subject.user, action="changes-requested", comment=comment)
-        )
-        meta.status = "changes-requested"
-        save_staging_meta(meta, staging)
+            raise HTTPException(422, "reviewer is server-assigned")
+        comment = (body or {}).get("comment", "" if action == "approved" else "No reason given")
+        if not isinstance(comment, str):
+            raise HTTPException(422, "comment must be a string")
+        cfg = _load_config()
+        required = cfg.review.required_approvals if cfg else 1
+        try:
+            result = review_staged_module(
+                module_id,
+                staging,
+                kb_path,
+                reviewer=subject.user,
+                action=action,
+                comment=comment,
+                required_approvals=required,
+            )
+        except FileNotFoundError as exc:
+            raise HTTPException(404, str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+        operation = "staging.approve" if action == "approved" else "staging.reject"
+        endpoint = "approve" if action == "approved" else "reject"
         log_audit_event(
             kb_path,
             AuditEvent(
                 user=subject.user,
-                operation="staging.reject",
+                operation=operation,
                 module_id=module_id,
-                category=staged_module.category,
+                category=module.category,
                 tenant_id=subject.tenant_id,
-                resource=f"/api/staging/{module_id}/reject",
-                result="success",
+                resource=f"/api/staging/{module_id}/{endpoint}",
+                result="pending" if result["status"] == "pending" else "success",
                 request_id=getattr(request.state, "request_id", ""),
             ),
         )
-        return {"status": "changes-requested", "module_id": module_id}
+        return {**result, "module_id": module_id}
 
     # ── Tree mutation (M6) ──
 
