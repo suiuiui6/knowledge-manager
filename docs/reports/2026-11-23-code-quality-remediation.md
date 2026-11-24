@@ -1,6 +1,6 @@
 # 代码质量与工程可靠性修复记录
 
-创建：2026-11-23；更新：2026-11-24。状态：产品修复已提交到 PR #4；日期兼容补丁已通过本地原失败运行时，等待最终版本矩阵和远端检查后合并 main。不作为上线验收。
+创建：2026-11-23；更新：2026-11-24。状态：产品修复及日期兼容补丁已通过本地和远端全部适用检查；通过PR #4按正常保护流程交付main。不作为上线验收。
 
 范围仅为代码质量、业务一致性和工程验证，不涉及网安。基准为 `86144a18405160bc176ee4dfe2c3fc62ededce63`，修改位于独立克隆 `tmp/github-quality-review-20261123`，未改动其他工作副本。用户授权使用子 Agent 实施，并在本地验证后授权提交到 GitHub；下述未提交记录描述验证时状态，实际提交以包含本报告的 Git 提交为准。没有部署。
 
@@ -21,7 +21,9 @@
 | --- | --- |
 | 原失败 Python 3.12.8 全套 | 931 passed，10 warnings，真实退出 0；`review-timezone-full-py3128.log`、`test-results/tz-full-py3128.exit.txt`。其后新增18项日期用例另由下行覆盖 |
 | 最终 schema 合同及子进程退出 | 65 passed，退出 0；`review-timezone-schema-final.log`、`test-results/tz-final-schema.exit.txt` |
-| 最终 Python 3.10 全套 | 运行中，结果待补，不引用历史通过数代替 |
+| 最终 Python 3.10.20 全套 | 949 passed，10 warnings，真实退出 0；`review-timezone-full-py310.log`、`test-results/tz-full-py310.exit.txt` |
+| Ubuntu Python 3.10.22 / 3.12.16 | 产品补丁 `54c3f26812f30e4a3e645211378cb377acf1a654` 的 PR CI `45364403495`：两个版本各949 passed、3 warnings，正常退出；`tmp/pr4-timezone-ci.log` |
+| 远端安装与质量门禁 | 同轮wheel/CLI、Black、mypy和Ubuntu tests汇总全部success；公开目录`45364403527`、可靠性`45364403394`均success；PR CLEAN/MERGEABLE，保护规则未更改 |
 | Black / mypy / 公开目录 / diff | 134 文件格式、61 源文件类型、公开目录及 diff 检查均退出 0 |
 | 锁文件 | `poetry check --lock` 退出 0；`review-timezone-lock.log`。SHA256 未变化，见下文 |
 | 真实 CLI / 图关系 / 任务恢复 | 退出 0、ok=true；`test-results/timezone-engineering-behavior/report.json`；恢复记录 failed→completed、attempt=2、输入保留及 staging 校验通过 |
@@ -35,7 +37,7 @@ tmp/py310-env/Scripts/python.exe -X faulthandler -m pytest -q --basetemp=tmp/tz-
 .venv/Scripts/python.exe scripts/verify_engineering_behavior.py --output-dir test-results/timezone-engineering-behavior
 ```
 
-适用验证技能已核对三份 feature map 并补充日期兼容范围；真实行为及完整回归覆盖其消费者。没有改变任务并发合同，既有TLC证据范围仍适用。Windows 仍仅 audit-only-windows。未部署；完整容量矩阵和上线人工复核未执行。下文是 11-23 初始提交前的历史验证记录，历史失败与未提交状态保留，不代表当前 PR 状态。
+日期补丁提交为 `54c3f26`；本次后续仅同步文档证据，提交后仍等待该HEAD的保护检查通过才合并。适用验证技能已核对三份 feature map 并补充日期兼容范围；真实行为及完整回归覆盖其消费者。没有改变任务并发合同，既有TLC证据范围仍适用。Windows 仍仅 audit-only-windows。未部署；完整容量矩阵和上线人工复核未执行。下文是 11-23 初始提交前的历史验证记录，历史失败与未提交状态保留，不代表当前 PR 状态。
 
 ## 已实施
 
