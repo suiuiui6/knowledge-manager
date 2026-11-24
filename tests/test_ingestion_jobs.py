@@ -14,6 +14,170 @@ from datetime import datetime, timedelta, timezone
 from time import sleep
 
 
+def test_expired_attempt_cannot_mutate_reclaimed_job(tmp_path):
+    """接管后的每一种执行写入都必须拒绝旧尝试。"""
+    import pytest
+    from knowledge_manager.ingestion_jobs import (
+        JobClaimConflict,
+        load_ingestion_job,
+        store_job_result_modules,
+    )
+
+    job = create_ingestion_job(tmp_path, "upload", "manual")
+    old = claim_ingestion_job(tmp_path, job.job_id, "old", lease_seconds=-1)
+    current = claim_ingestion_job(tmp_path, job.job_id, "current")
+    operations = [
+        lambda: complete_ingestion_job(
+            tmp_path, job.job_id, attempt_count=old.attempt_count, pages_seen=99, modules_staged=99
+        ),
+        lambda: fail_ingestion_job(
+            tmp_path, job.job_id, "late error", attempt_count=old.attempt_count
+        ),
+        lambda: update_job_stage(tmp_path, job.job_id, "late", attempt_count=old.attempt_count),
+        lambda: update_ingestion_checkpoint(
+            tmp_path, job.job_id, "late", 99, attempt_count=old.attempt_count
+        ),
+        lambda: renew_ingestion_job_lease(tmp_path, job.job_id, attempt_count=old.attempt_count),
+        lambda: store_job_result_modules(
+            tmp_path, job.job_id, [{"id": "old"}], attempt_count=old.attempt_count
+        ),
+    ]
+    for operation in operations:
+        with pytest.raises(JobClaimConflict):
+            operation()
+        assert load_ingestion_job(tmp_path, job.job_id) == current
+
+
+def test_legacy_running_job_requires_recovery_before_execution(tmp_path):
+    """旧文件可读取，但缺少租约的running任务必须先恢复再领取。"""
+    import json
+    import pytest
+    from knowledge_manager.ingestion_jobs import load_ingestion_job, JobClaimConflict
+    from knowledge_manager.worker_service import requeue_stale_jobs
+
+    job = create_ingestion_job(tmp_path, "legacy", "manual")
+    path = tmp_path / ".jobs" / "ingestion" / f"{job.job_id}.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    for field in ("attempt_count", "lease_expires_at", "heartbeat_at", "worker_id"):
+        data.pop(field)
+    data["status"] = "running"
+    path.write_text(json.dumps(data), encoding="utf-8")
+    assert load_ingestion_job(tmp_path, job.job_id).attempt_count == 0
+    with pytest.raises(JobClaimConflict):
+        claim_ingestion_job(tmp_path, job.job_id, "must-recover-first")
+    with pytest.raises(JobClaimConflict):
+        complete_ingestion_job(
+            tmp_path, job.job_id, attempt_count=0, pages_seen=1, modules_staged=1
+        )
+    assert requeue_stale_jobs(tmp_path) == [job.job_id]
+    claimed = claim_ingestion_job(tmp_path, job.job_id, "recovered")
+    assert claimed.attempt_count == 1
+
+
+def test_upload_losing_attempt_during_extraction_cannot_commit(tmp_path, monkeypatch):
+    """LLM返回前发生接管时，旧执行不得写staging或删除输入。"""
+    from knowledge_manager.job_worker import run_single_job
+    from knowledge_manager.schemas import Module, ModuleContent
+    from knowledge_manager.ingestion_jobs import load_ingestion_job
+
+    payload = tmp_path / "input.txt"
+    payload.write_text("input", encoding="utf-8")
+    job = create_ingestion_job(tmp_path, "upload", "manual")
+    replacement = []
+
+    def extract(*_args):
+        resume_ingestion_job(tmp_path, job.job_id)
+        replacement.append(claim_ingestion_job(tmp_path, job.job_id, "new"))
+        return [
+            Module(
+                id="late",
+                category="ops",
+                title="Late module",
+                summary="Late result must not persist.",
+                content=ModuleContent(
+                    overview="Late overview", details="Late details long enough for validation."
+                ),
+            )
+        ]
+
+    monkeypatch.setattr("knowledge_manager.job_worker._extract_upload_modules", extract)
+    result = run_single_job(tmp_path, job.job_id, {"kind": "upload", "path": str(payload)})
+    assert result == replacement[0]
+    assert load_ingestion_job(tmp_path, job.job_id) == replacement[0]
+    assert payload.exists()
+    assert not list((tmp_path / ".staging").glob("**/*.json"))
+
+
+def test_job_heartbeat_failure_stops_local_commit(tmp_path, monkeypatch):
+    """心跳故障须使当前执行停止提交，等待租约到期恢复。"""
+    from threading import Event
+    from knowledge_manager.job_worker import run_single_job
+    from knowledge_manager.schemas import Module, ModuleContent
+
+    failed = Event()
+    job = create_ingestion_job(tmp_path, "upload", "manual")
+    payload = tmp_path / "input.txt"
+    payload.write_text("input", encoding="utf-8")
+
+    def renewal_fails(*_args, **_kwargs):
+        failed.set()
+        raise OSError("heartbeat write failed")
+
+    def extract(*_args):
+        assert failed.wait(10)
+        return [
+            Module(
+                id="late",
+                category="ops",
+                title="Late module",
+                summary="No commit after heartbeat failure.",
+                content=ModuleContent(
+                    overview="Late overview", details="Late details long enough for validation."
+                ),
+            )
+        ]
+
+    monkeypatch.setattr("knowledge_manager.job_worker.JOB_HEARTBEAT_INTERVAL_SECONDS", 0.001)
+    monkeypatch.setattr("knowledge_manager.job_worker.renew_ingestion_job_lease", renewal_fails)
+    monkeypatch.setattr("knowledge_manager.job_worker._extract_upload_modules", extract)
+    result = run_single_job(tmp_path, job.job_id, {"kind": "upload", "path": str(payload)})
+    assert result.status == "running"
+    assert payload.exists()
+    assert not list((tmp_path / ".staging").glob("**/*.json"))
+
+
+def test_worker_uses_payload_from_atomic_claim_snapshot(tmp_path, monkeypatch):
+    """领取前被更新的排队payload应以领取返回快照为准。"""
+    import knowledge_manager.job_worker as worker
+
+    job = create_ingestion_job(tmp_path, "upload", "manual")
+    update_job_payload(tmp_path, job.job_id, payload_kind="old")
+    real_claim = claim_ingestion_job
+    seen = []
+
+    def claim_after_update(*args, **kwargs):
+        update_job_payload(
+            tmp_path, job.job_id, payload_kind="upload", payload_meta={"filename": "current.txt"}
+        )
+        return real_claim(*args, **kwargs)
+
+    def upload(kb_path, claimed, payload, _lost):
+        seen.append(payload)
+        return complete_ingestion_job(
+            kb_path,
+            claimed.job_id,
+            attempt_count=claimed.attempt_count,
+            pages_seen=1,
+            modules_staged=0,
+        )
+
+    monkeypatch.setattr(worker, "claim_ingestion_job", claim_after_update)
+    monkeypatch.setattr(worker, "_run_upload_job", upload)
+    result = worker.run_single_job(tmp_path, job.job_id)
+    assert result.status == "completed"
+    assert seen == [{"kind": "upload", "path": "", "filename": "current.txt"}]
+
+
 def test_ingestion_job_state_is_replaced_atomically(tmp_path, monkeypatch):
     import knowledge_manager.ingestion_jobs as ingestion_jobs
     from pathlib import Path
@@ -43,7 +207,9 @@ def test_ingestion_job_claim_complete_round_trip(tmp_path):
 
     job = create_ingestion_job(kb, source_id="team-docs", trigger="manual")
     claimed = claim_ingestion_job(kb, job.job_id, worker_id="worker-1")
-    finished = complete_ingestion_job(kb, job.job_id, pages_seen=12, modules_staged=7)
+    finished = complete_ingestion_job(
+        kb, job.job_id, attempt_count=claimed.attempt_count, pages_seen=12, modules_staged=7
+    )
 
     assert claimed.status == "running"
     assert finished.status == "completed"
@@ -93,7 +259,10 @@ def test_ingestion_job_claim_rejects_terminal_job(tmp_path):
     kb = tmp_path / "kb"
     kb.mkdir()
     job = create_ingestion_job(kb, source_id="team-docs", trigger="manual")
-    complete_ingestion_job(kb, job.job_id, pages_seen=1, modules_staged=1)
+    claimed = claim_ingestion_job(kb, job.job_id, "worker-1")
+    complete_ingestion_job(
+        kb, job.job_id, attempt_count=claimed.attempt_count, pages_seen=1, modules_staged=1
+    )
 
     with pytest.raises(RuntimeError, match="terminal"):
         claim_ingestion_job(kb, job.job_id, worker_id="worker-2")
@@ -104,7 +273,8 @@ def test_ingestion_job_failure_is_listed(tmp_path):
     kb.mkdir()
 
     job = create_ingestion_job(kb, source_id="team-docs", trigger="manual")
-    fail_ingestion_job(kb, job.job_id, "temporary failure")
+    claimed = claim_ingestion_job(kb, job.job_id, "worker-1")
+    fail_ingestion_job(kb, job.job_id, "temporary failure", attempt_count=claimed.attempt_count)
 
     jobs = list_ingestion_jobs(kb)
     assert len(jobs) == 1
@@ -116,7 +286,10 @@ def test_ingestion_job_resume_preserves_checkpoint(tmp_path):
     kb = tmp_path / "kb"
     kb.mkdir()
     job = create_ingestion_job(kb, source_id="team-docs", trigger="manual")
-    update_ingestion_checkpoint(kb, job.job_id, cursor="cursor-9", pages_seen=25)
+    claimed = claim_ingestion_job(kb, job.job_id, "worker-1")
+    update_ingestion_checkpoint(
+        kb, job.job_id, cursor="cursor-9", pages_seen=25, attempt_count=claimed.attempt_count
+    )
 
     resumed = resume_ingestion_job(kb, job.job_id)
 
@@ -176,7 +349,8 @@ def test_job_worker_executes_source_sync_job_and_marks_completed(tmp_path, monke
     job = create_ingestion_job(kb, source_id="team-docs", trigger="manual")
     update_job_payload(kb, job.job_id, payload_kind="source-sync")
 
-    async def fake_run_source_sync(_kb_path, source_id):
+    async def fake_run_source_sync(_kb_path, source_id, **kwargs):
+        assert kwargs["attempt_count"] == 1
         return IngestionSummary(
             source_id=source_id, pages_seen=4, modules_staged=3, modules_marked_stale=1
         )
@@ -208,9 +382,15 @@ def test_job_worker_renews_lease_while_job_runs(tmp_path, monkeypatch):
         renewals.append(args[1])
         return real_renew(*args, **kwargs)
 
-    def slow_upload(_kb_path, claimed_job, _payload):
+    def slow_upload(_kb_path, claimed_job, _payload, _lease_lost):
         sleep(0.05)
-        return complete_ingestion_job(_kb_path, claimed_job.job_id, pages_seen=1, modules_staged=1)
+        return complete_ingestion_job(
+            _kb_path,
+            claimed_job.job_id,
+            attempt_count=claimed_job.attempt_count,
+            pages_seen=1,
+            modules_staged=1,
+        )
 
     monkeypatch.setattr("knowledge_manager.job_worker.JOB_HEARTBEAT_INTERVAL_SECONDS", 0.01)
     monkeypatch.setattr("knowledge_manager.job_worker.renew_ingestion_job_lease", tracked_renew)
@@ -282,13 +462,13 @@ def test_update_job_stage_refreshes_heartbeat_for_running_jobs(tmp_path):
     stale = claimed.model_copy(
         update={
             "heartbeat_at": datetime.now(timezone.utc) - timedelta(seconds=10),
-            "lease_expires_at": datetime.now(timezone.utc) - timedelta(seconds=5),
+            "lease_expires_at": datetime.now(timezone.utc) + timedelta(seconds=5),
         }
     )
     job_path = kb / ".jobs" / "ingestion" / f"{job.job_id}.json"
     job_path.write_text(stale.model_dump_json(indent=2), encoding="utf-8")
 
-    updated = update_job_stage(kb, job.job_id, "extracting")
+    updated = update_job_stage(kb, job.job_id, "extracting", attempt_count=claimed.attempt_count)
 
     assert updated.stage == "extracting"
     assert updated.heartbeat_at is not None
@@ -306,13 +486,15 @@ def test_renew_ingestion_job_lease_refreshes_heartbeat_for_running_jobs(tmp_path
     stale = claimed.model_copy(
         update={
             "heartbeat_at": datetime.now(timezone.utc) - timedelta(seconds=10),
-            "lease_expires_at": datetime.now(timezone.utc) - timedelta(seconds=5),
+            "lease_expires_at": datetime.now(timezone.utc) + timedelta(seconds=5),
         }
     )
     job_path = kb / ".jobs" / "ingestion" / f"{job.job_id}.json"
     job_path.write_text(stale.model_dump_json(indent=2), encoding="utf-8")
 
-    renewed = renew_ingestion_job_lease(kb, job.job_id, lease_seconds=60)
+    renewed = renew_ingestion_job_lease(
+        kb, job.job_id, lease_seconds=60, attempt_count=claimed.attempt_count
+    )
 
     assert renewed.heartbeat_at is not None
     assert renewed.lease_expires_at is not None

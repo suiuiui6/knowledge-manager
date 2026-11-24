@@ -2357,3 +2357,62 @@ async def test_extractor_caps_chunk_size_and_module_budget(monkeypatch):
 
     assert captured["chunk_size"] == 4000
     assert len(modules) == 3
+
+
+@pytest.mark.parametrize(
+    "patch",
+    [
+        {"title": "x"},
+        {"summary": ""},
+        {"title": None},
+        {"content": {"overview": "x"}},
+        {"content": None},
+        {"metadata": {"confidence": "invalid"}},
+        {"metadata": {"tags": 3}},
+    ],
+)
+def test_invalid_partial_update_preserves_module(client, patch):
+    before = client.get("/api/modules/general/test-mod").json()
+    response = client.put("/api/modules/general/test-mod", json=patch)
+    assert response.status_code == 422
+    assert client.get("/api/modules/general/test-mod").json() == before
+
+
+def test_partial_update_can_clear_optional_content(client):
+    assert (
+        client.put(
+            "/api/modules/general/test-mod", json={"content": {"examples": "example"}}
+        ).status_code
+        == 200
+    )
+    response = client.put("/api/modules/general/test-mod", json={"content": {"examples": ""}})
+    assert response.status_code == 200
+    assert response.json()["content"]["examples"] == ""
+
+
+def test_http_review_retry_is_idempotent(tmp_path):
+    from knowledge_manager.schemas import Config, ReviewConfig, Index, Module, ModuleContent
+    from knowledge_manager.storage import save_index, save_to_staging
+
+    kb = tmp_path / "kb"
+    kb.mkdir()
+    save_index(Index(), kb)
+    (kb / "config.json").write_text(
+        Config(review=ReviewConfig(required_approvals=2)).model_dump_json(), encoding="utf-8"
+    )
+    module = Module(
+        id="retry-review",
+        category="general",
+        title="Retry review test",
+        summary="A draft for duplicate review requests",
+        content=ModuleContent(
+            overview="A sufficiently long overview", details="A sufficiently long details section"
+        ),
+    )
+    save_to_staging(module, kb / ".staging")
+    client = TestClient(create_app(kb))
+    first = client.post("/api/staging/retry-review/approve", json={})
+    second = client.post("/api/staging/retry-review/approve", json={})
+    assert first.status_code == second.status_code == 200
+    assert first.json()["approvals"] == second.json()["approvals"] == 1
+    assert second.json()["status"] == "pending"

@@ -375,3 +375,220 @@ def test_ops_report_schema_defaults():
     assert report.source_backlog == []
     assert report.policy_suppressed_modules == []
     assert report.lifecycle_backlog.status_counts == {}
+
+
+@pytest.mark.parametrize(
+    "timestamp", ["2026-11-23T09:15:30Z", "2026-11-23T09:15:30+05:30", "2026-11-23T09:15:30-04:00"]
+)
+@pytest.mark.parametrize(
+    "kind",
+    [
+        "module",
+        "index",
+        "review",
+        "staging",
+        "source",
+        "sync",
+        "metadata",
+        "health",
+        "recommendation",
+        "ops",
+        "webhook",
+        "marketplace",
+        "job",
+    ],
+)
+def test_json_datetimes_use_stdlib_timezone_and_preserve_instant(kind, timestamp):
+    import json
+    from knowledge_manager.schemas import (
+        ReviewRecord,
+        StagingMeta,
+        KBHealthReport,
+        RecommendationReport,
+        OpsReport,
+        WebhookEvent,
+        MarketplaceIndex,
+    )
+    from knowledge_manager.ingestion_jobs import IngestionJob
+
+    if kind == "module":
+        model_type = Module
+        data = dict(
+            id="timezone-test",
+            category="general",
+            title="Timezone regression",
+            summary="Datetime parsing preserves the instant and offset",
+            created_at=timestamp,
+            updated_at=timestamp,
+            content={
+                "overview": "Sufficient overview text",
+                "details": "Sufficient detailed content for model validation",
+            },
+        )
+        paths = [("created_at",), ("updated_at",)]
+    elif kind == "index":
+        model_type, data = Index, {"updated_at": timestamp, "stats": {"last_updated": timestamp}}
+        paths = [("updated_at",), ("stats", "last_updated")]
+    elif kind == "review":
+        model_type, data = ReviewRecord, {
+            "reviewer": "alice",
+            "action": "approved",
+            "timestamp": timestamp,
+        }
+        paths = [("timestamp",)]
+    elif kind == "staging":
+        model_type, data = StagingMeta, {
+            "module_id": "timezone-test",
+            "submitted_at": timestamp,
+            "reviews": [{"reviewer": "alice", "action": "approved", "timestamp": timestamp}],
+        }
+        paths = [("submitted_at",), ("reviews", 0, "timestamp")]
+    elif kind == "source":
+        model_type, data = SourceDocumentRef, {
+            "source_type": "notion",
+            "source_id": "notes",
+            "external_id": "1",
+            "title": "Notes",
+            "fetched_at": timestamp,
+        }
+        paths = [("fetched_at",)]
+    elif kind == "sync":
+        model_type, data = SourceSyncState, {"last_synced_at": timestamp}
+        paths = [("last_synced_at",)]
+    elif kind == "metadata":
+        model_type, data = ModuleMetadata, {"reviewed_at": timestamp, "expires_at": timestamp}
+        paths = [("reviewed_at",), ("expires_at",)]
+    elif kind == "health":
+        model_type, data = KBHealthReport, {
+            "generated_at": timestamp,
+            "at_risk_modules": [
+                {
+                    "module_id": "test",
+                    "category": "general",
+                    "title": "Test",
+                    "status": "published",
+                    "last_load": timestamp,
+                }
+            ],
+        }
+        paths = [("generated_at",), ("at_risk_modules", 0, "last_load")]
+    elif kind == "recommendation":
+        model_type, data = RecommendationReport, {"generated_at": timestamp}
+        paths = [("generated_at",)]
+    elif kind == "ops":
+        model_type, data = OpsReport, {
+            "generated_at": timestamp,
+            "source_backlog": [{"source_id": "test", "last_synced_at": timestamp}],
+        }
+        paths = [("generated_at",), ("source_backlog", 0, "last_synced_at")]
+    elif kind == "webhook":
+        model_type, data = WebhookEvent, {"event": "module.updated", "timestamp": timestamp}
+        paths = [("timestamp",)]
+    elif kind == "marketplace":
+        model_type, data = MarketplaceIndex, {
+            "last_updated": timestamp,
+            "modules": {
+                "test": {
+                    "id": "test",
+                    "category": "general",
+                    "title": "Test",
+                    "summary": "Test",
+                    "updated_at": timestamp,
+                }
+            },
+        }
+        paths = [("last_updated",), ("modules", "test", "updated_at")]
+    else:
+        model_type, data = IngestionJob, {
+            "job_id": "test",
+            "source_id": "test",
+            "trigger": "manual",
+            "created_at": timestamp,
+            "updated_at": timestamp,
+            "lease_expires_at": timestamp,
+            "heartbeat_at": timestamp,
+        }
+        paths = [("created_at",), ("updated_at",), ("lease_expires_at",), ("heartbeat_at",)]
+    model = model_type.model_validate_json(json.dumps(data))
+    expected = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+    for path in paths:
+        actual = model
+        for part in path:
+            actual = actual[part] if isinstance(actual, (dict, list)) else getattr(actual, part)
+        assert type(actual.tzinfo) is timezone
+        assert actual == expected
+        assert actual.utcoffset() == expected.utcoffset()
+        assert actual.isoformat() == expected.isoformat()
+
+
+def test_datetime_normalization_preserves_naive_and_zoneinfo_contracts():
+    from zoneinfo import ZoneInfo
+    from knowledge_manager.schemas import ReviewRecord, StagingMeta
+
+    naive = datetime(2026, 11, 23, 9, 15, 30)
+    assert ReviewRecord(reviewer="alice", action="approved", timestamp=naive).timestamp == naive
+    assert StagingMeta(module_id="test", submitted_at=naive).submitted_at.tzinfo is None
+    assert ModuleMetadata(reviewed_at=naive).reviewed_at == naive.replace(tzinfo=timezone.utc)
+    assert SourceSyncState(last_synced_at=naive).last_synced_at == naive.replace(
+        tzinfo=timezone.utc
+    )
+    # Existing stdlib zoneinfo retains its object identity and fold semantics.
+    from io import BytesIO
+    import struct
+
+    # 使用内存 TZif，Windows 无系统 tzdata 也能验证已有 ZoneInfo 对象语义。
+    tzif = (
+        b"TZif"
+        + b"\0" * 16
+        + struct.pack(">6l", 0, 0, 0, 0, 1, 4)
+        + struct.pack(">lbb", 3600, 0, 0)
+        + b"FIX\0"
+    )
+    paris = ZoneInfo.from_file(BytesIO(tzif), key="Test/Fixed")
+    aware = datetime(2026, 10, 25, 2, 30, tzinfo=paris, fold=1)
+    parsed = ReviewRecord(reviewer="alice", action="approved", timestamp=aware).timestamp
+    assert parsed.tzinfo is paris
+    assert parsed.fold == 1
+    assert parsed.timestamp() == aware.timestamp()
+
+
+def test_json_datetime_models_survive_subprocess_shutdown(tmp_path):
+    import os
+    from pathlib import Path
+    import subprocess
+    import sys
+
+    script = """
+import json
+from datetime import timezone
+from knowledge_manager.schemas import Index, Module, ReviewRecord, StagingMeta
+payload = {"id": "retained-model", "category": "general", "title": "Retained model",
+           "summary": "Model remains reachable through interpreter shutdown",
+           "created_at": "2026-11-23T09:15:30+05:30", "updated_at": "2026-11-23T09:15:30Z",
+           "content": {"overview": "Retained overview content", "details": "Retained detailed model content"}}
+class RetainedModels:
+    module = Module.model_validate_json(json.dumps(payload))
+    index = Index.model_validate_json('{"updated_at":"2026-11-23T09:15:30-04:00"}')
+    review = ReviewRecord.model_validate_json('{"reviewer":"alice","action":"approved","timestamp":"2026-11-23T09:15:30Z"}')
+    staging = StagingMeta.model_validate_json('{"module_id":"retained-model","submitted_at":"2026-11-23T09:15:30+05:30"}')
+assert type(RetainedModels.module.created_at.tzinfo) is timezone
+assert type(RetainedModels.index.updated_at.tzinfo) is timezone
+assert type(RetainedModels.review.timestamp.tzinfo) is timezone
+assert type(RetainedModels.staging.submitted_at.tzinfo) is timezone
+print("retained-models-ready", flush=True)
+"""
+    env = os.environ.copy()
+    source = str(Path(__file__).resolve().parents[1] / "src")
+    env["PYTHONPATH"] = os.pathsep.join(filter(None, [source, env.get("PYTHONPATH", "")]))
+    result = subprocess.run(
+        [sys.executable, "-X", "faulthandler", "-c", script],
+        env=env,
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "retained-models-ready" in result.stdout

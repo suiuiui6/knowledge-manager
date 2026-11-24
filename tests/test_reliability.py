@@ -6,6 +6,130 @@ from pathlib import Path
 import pytest
 
 
+def _old_upload_after_takeover(kb, job_id, extracting, release):
+    """在父进程确认接管后再让旧提取返回，形成确定的跨进程交错。"""
+    import knowledge_manager.job_worker as worker
+    from knowledge_manager.schemas import Module, ModuleContent
+
+    def extract(*_args):
+        extracting.set()
+        assert release.wait(20)
+        return [
+            Module(
+                id="old-attempt",
+                category="ops",
+                title="Old attempt",
+                summary="Old attempt must never enter staging.",
+                content=ModuleContent(
+                    overview="Old overview",
+                    details="Old module details long enough for validation.",
+                ),
+            )
+        ]
+
+    worker._extract_upload_modules = extract
+    worker.run_single_job(Path(kb), job_id)
+
+
+def test_multiprocess_takeover_rejects_old_staging_commit(tmp_path):
+    """租约过期接管后只保留新尝试产物，并保留旧尝试的输入。"""
+    from datetime import datetime, timedelta, timezone
+    from knowledge_manager.ingestion_jobs import (
+        create_ingestion_job,
+        update_job_payload,
+        load_ingestion_job,
+        claim_ingestion_job,
+        complete_ingestion_job,
+    )
+    from knowledge_manager.file_locks import kb_write_lock
+
+    payload = tmp_path / "upload.txt"
+    payload.write_text("original input", encoding="utf-8")
+    job = create_ingestion_job(tmp_path, "upload", "test")
+    update_job_payload(tmp_path, job.job_id, payload_kind="upload", payload_path=str(payload))
+    ctx = multiprocessing.get_context("spawn")
+    extracting, release = ctx.Event(), ctx.Event()
+    process = ctx.Process(
+        target=_old_upload_after_takeover, args=(str(tmp_path), job.job_id, extracting, release)
+    )
+    process.start()
+    try:
+        assert extracting.wait(20)
+        with kb_write_lock(tmp_path):
+            old = load_ingestion_job(tmp_path, job.job_id)
+            expired = old.model_copy(
+                update={"lease_expires_at": datetime.now(timezone.utc) - timedelta(seconds=1)}
+            )
+            (tmp_path / ".jobs" / "ingestion" / f"{job.job_id}.json").write_text(
+                expired.model_dump_json(), encoding="utf-8"
+            )
+        claimed = claim_ingestion_job(tmp_path, job.job_id, "replacement")
+        completed = complete_ingestion_job(
+            tmp_path,
+            job.job_id,
+            attempt_count=claimed.attempt_count,
+            pages_seen=2,
+            modules_staged=0,
+        )
+        release.set()
+        process.join(20)
+        assert process.exitcode == 0
+        assert load_ingestion_job(tmp_path, job.job_id) == completed
+        assert payload.exists()
+        assert not list((tmp_path / ".staging").glob("**/*.json"))
+    finally:
+        release.set()
+        if process.is_alive():
+            process.terminate()
+        process.join(10)
+
+
+def _recover_job(kb, job_id, attempt_count, start, results):
+    """两个恢复进程共同等待屏障，返回真实原子回收结果。"""
+    from knowledge_manager.ingestion_jobs import requeue_expired_ingestion_job
+
+    assert start.wait(15)
+    results.put(requeue_expired_ingestion_job(Path(kb), job_id, attempt_count))
+
+
+def test_two_recovery_processes_requeue_expired_attempt_once(tmp_path):
+    from knowledge_manager.ingestion_jobs import (
+        create_ingestion_job,
+        claim_ingestion_job,
+        load_ingestion_job,
+    )
+
+    job = create_ingestion_job(tmp_path, "upload", "recovery-contention")
+    claimed = claim_ingestion_job(tmp_path, job.job_id, "abandoned", lease_seconds=-1)
+    ctx = multiprocessing.get_context("spawn")
+    start, results = ctx.Event(), ctx.Queue()
+    workers = [
+        ctx.Process(
+            target=_recover_job,
+            args=(str(tmp_path), job.job_id, claimed.attempt_count, start, results),
+        )
+        for _ in range(2)
+    ]
+    try:
+        for process in workers:
+            process.start()
+        start.set()
+        for process in workers:
+            process.join(20)
+            assert process.exitcode == 0
+        assert sorted(results.get(timeout=5) for _ in workers) == [False, True]
+        recovered = load_ingestion_job(tmp_path, job.job_id)
+        assert recovered.status == "queued"
+        assert recovered.attempt_count == 1
+        assert claim_ingestion_job(tmp_path, job.job_id, "replacement").attempt_count == 2
+    finally:
+        for process in workers:
+            if process.is_alive():
+                process.terminate()
+            process.join(5)
+        results.close()
+
+
 def _hold_lock(kb, ready):
     from knowledge_manager.file_locks import kb_write_lock
 

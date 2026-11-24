@@ -3,6 +3,69 @@ from pathlib import Path
 from knowledge_manager.ingestion_jobs import create_ingestion_job
 
 
+def test_worker_recovers_jobs_that_expire_after_start(tmp_path, monkeypatch):
+    """第二轮轮询须回收启动时尚未过期的任务。"""
+    from datetime import datetime, timedelta, timezone
+    from knowledge_manager.ingestion_jobs import claim_ingestion_job, load_ingestion_job
+    from knowledge_manager.worker_service import run_worker_loop
+
+    job = create_ingestion_job(tmp_path, "upload", "manual")
+    claim_ingestion_job(tmp_path, job.job_id, "abandoned")
+    processed = []
+    ticks = []
+
+    class StopLoop(Exception):
+        pass
+
+    def tick(_interval):
+        ticks.append(1)
+        if len(ticks) == 2:
+            raise StopLoop
+        current = load_ingestion_job(tmp_path, job.job_id)
+        expired = current.model_copy(
+            update={"lease_expires_at": datetime.now(timezone.utc) - timedelta(seconds=1)}
+        )
+        (tmp_path / ".jobs" / "ingestion" / f"{job.job_id}.json").write_text(
+            expired.model_dump_json(), encoding="utf-8"
+        )
+
+    monkeypatch.setattr("knowledge_manager.worker_service.time.sleep", tick)
+    monkeypatch.setattr(
+        "knowledge_manager.worker_service.run_single_job",
+        lambda _kb, job_id: processed.append(job_id),
+    )
+    import pytest
+
+    with pytest.raises(StopLoop):
+        run_worker_loop(tmp_path)
+    assert processed == [job.job_id]
+
+
+def test_stale_scan_cannot_overwrite_new_heartbeat(tmp_path, monkeypatch):
+    """扫描旧快照后续租，回收必须重读并保留新的有效租约。"""
+    from knowledge_manager.ingestion_jobs import (
+        claim_ingestion_job,
+        renew_ingestion_job_lease,
+        load_ingestion_job,
+    )
+    from knowledge_manager.worker_service import requeue_stale_jobs
+    from datetime import datetime, timedelta, timezone
+
+    job = create_ingestion_job(tmp_path, "upload", "manual")
+    claimed = claim_ingestion_job(tmp_path, job.job_id, "worker")
+    stale_snapshot = claimed.model_copy(
+        update={"lease_expires_at": datetime.now(timezone.utc) - timedelta(seconds=1)}
+    )
+
+    def scan(_kb):
+        renew_ingestion_job_lease(tmp_path, job.job_id, attempt_count=claimed.attempt_count)
+        return [stale_snapshot]
+
+    monkeypatch.setattr("knowledge_manager.worker_service.list_ingestion_jobs", scan)
+    assert requeue_stale_jobs(tmp_path) == []
+    assert load_ingestion_job(tmp_path, job.job_id).status == "running"
+
+
 def test_worker_run_once_drains_queued_jobs(tmp_path, monkeypatch):
     from knowledge_manager.worker_service import run_worker_loop
 

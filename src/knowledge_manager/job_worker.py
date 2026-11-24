@@ -10,6 +10,7 @@ import subprocess
 import time
 from datetime import datetime, timezone
 from threading import Event, Lock, Thread
+from tempfile import TemporaryDirectory
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -20,6 +21,7 @@ from knowledge_manager.ingestion_jobs import (
     claim_ingestion_job,
     complete_ingestion_job,
     fail_ingestion_job,
+    ingestion_attempt,
     load_ingestion_job,
     renew_ingestion_job_lease,
     store_job_result_modules,
@@ -210,9 +212,19 @@ def _resolve_submitter(kb_path: Path) -> str:
     git_user = "web-upload"
     try:
         result = subprocess.run(
-            ["git", "-C", str(kb_path), "config", "user.name"],
+            [
+                "git",
+                "-c",
+                "i18n.logOutputEncoding=UTF-8",
+                "-C",
+                str(kb_path),
+                "config",
+                "user.name",
+            ],
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             check=False,
         )
         if result.returncode == 0 and result.stdout.strip():
@@ -259,21 +271,23 @@ def _extract_upload_modules(kb_path: Path, filename: str, payload: bytes, catego
         if resolved_mode == "image":
             tmp_dir = kb_path / ".tmp" / "worker-images"
             tmp_dir.mkdir(parents=True, exist_ok=True)
-            tmp_path = tmp_dir / filename
-            tmp_path.write_bytes(payload)
-            try:
+            # 每次提取独立临时目录，旧尝试清理时不会删除接管者的图片。
+            with TemporaryDirectory(dir=tmp_dir) as scratch:
+                tmp_path = Path(scratch) / Path(filename).name
+                tmp_path.write_bytes(payload)
                 return await extractor.extract_from_image(
                     str(tmp_path), category, existing_categories
                 )
-            finally:
-                tmp_path.unlink(missing_ok=True)
         text = payload.decode("utf-8", errors="replace")
         return await extractor.extract(text, category, existing_categories)
 
     return asyncio.run(_run())
 
 
-def _run_upload_job(kb_path: Path, job: IngestionJob, payload: dict[str, Any]) -> IngestionJob:
+def _run_upload_job(
+    kb_path: Path, job: IngestionJob, payload: dict[str, Any], lease_lost: Event
+) -> IngestionJob:
+    """提取在锁外执行，staging、结果和输入清理在当前尝试提交边界内完成。"""
     from knowledge_manager.schemas import StagingMeta
     from knowledge_manager.storage import save_staging_meta, save_to_staging
 
@@ -288,60 +302,86 @@ def _run_upload_job(kb_path: Path, job: IngestionJob, payload: dict[str, Any]) -
         path = Path(payload.get("path") or job.payload_path)
         content = path.read_bytes()
 
-    update_job_stage(kb_path, job.job_id, "extracting")
+    update_job_stage(kb_path, job.job_id, "extracting", attempt_count=job.attempt_count)
     modules = _extract_upload_modules(kb_path, filename, content, category, mode)
 
-    update_job_stage(kb_path, job.job_id, "staging")
-    staging = kb_path / ".staging"
-    staging.mkdir(exist_ok=True)
     submitter = _resolve_submitter(kb_path)
-    for module in modules:
-        save_to_staging(module, staging)
-        save_staging_meta(StagingMeta(module_id=module.id, submitted_by=submitter), staging)
+    with ingestion_attempt(kb_path, job.job_id, job.attempt_count, lease_lost=lease_lost):
+        update_job_stage(kb_path, job.job_id, "staging", attempt_count=job.attempt_count)
+        staging = kb_path / ".staging"
+        staging.mkdir(exist_ok=True)
+        for module in modules:
+            save_to_staging(module, staging)
+            save_staging_meta(StagingMeta(module_id=module.id, submitted_by=submitter), staging)
+        store_job_result_modules(
+            kb_path,
+            job.job_id,
+            [
+                {"id": module.id, "category": module.category, "title": module.title}
+                for module in modules
+            ],
+            attempt_count=job.attempt_count,
+        )
+        completed = complete_ingestion_job(
+            kb_path,
+            job.job_id,
+            attempt_count=job.attempt_count,
+            pages_seen=1,
+            modules_staged=len(modules),
+        )
+        path_str = payload.get("path") or job.payload_path
+        if path_str:
+            Path(path_str).unlink(missing_ok=True)
+        return completed
 
-    store_job_result_modules(
-        kb_path,
-        job.job_id,
-        [
-            {"id": module.id, "category": module.category, "title": module.title}
-            for module in modules
-        ],
-    )
 
-    path_str = payload.get("path") or job.payload_path
-    if path_str:
-        Path(path_str).unlink(missing_ok=True)
-    return complete_ingestion_job(kb_path, job.job_id, pages_seen=1, modules_staged=len(modules))
-
-
-def _run_source_sync_job(kb_path: Path, job: IngestionJob, payload: dict[str, Any]) -> IngestionJob:
+def _run_source_sync_job(
+    kb_path: Path, job: IngestionJob, payload: dict[str, Any], lease_lost: Event
+) -> IngestionJob:
     from knowledge_manager.source_ingestion import run_source_sync_once
 
     source_id = payload.get("source_id") or job.source_id
-    update_job_stage(kb_path, job.job_id, "pulling-source")
-    summary = asyncio.run(run_source_sync_once(kb_path, source_id))
-    return complete_ingestion_job(
-        kb_path,
-        job.job_id,
-        pages_seen=summary.pages_seen,
-        modules_staged=summary.modules_staged,
-        modules_marked_stale=summary.modules_marked_stale,
+    update_job_stage(kb_path, job.job_id, "pulling-source", attempt_count=job.attempt_count)
+    summary = asyncio.run(
+        run_source_sync_once(
+            kb_path,
+            source_id,
+            job_id=job.job_id,
+            attempt_count=job.attempt_count,
+            lease_lost=lease_lost,
+        )
     )
+    with ingestion_attempt(kb_path, job.job_id, job.attempt_count, lease_lost=lease_lost):
+        return complete_ingestion_job(
+            kb_path,
+            job.job_id,
+            attempt_count=job.attempt_count,
+            pages_seen=summary.pages_seen,
+            modules_staged=summary.modules_staged,
+            modules_marked_stale=summary.modules_marked_stale,
+        )
 
 
-def _start_job_heartbeat(kb_path: Path, job_id: str) -> tuple[Event, Thread]:
+def _start_job_heartbeat(
+    kb_path: Path, job_id: str, attempt_count: int
+) -> tuple[Event, Event, Thread]:
+    """心跳异常设置失效标志，使提取返回后停止本地提交。"""
     stop_event = Event()
+    lease_lost = Event()
 
     def _heartbeat_loop() -> None:
         while not stop_event.wait(JOB_HEARTBEAT_INTERVAL_SECONDS):
             try:
-                renew_ingestion_job_lease(kb_path, job_id, lease_seconds=JOB_LEASE_SECONDS)
+                renew_ingestion_job_lease(
+                    kb_path, job_id, lease_seconds=JOB_LEASE_SECONDS, attempt_count=attempt_count
+                )
             except Exception:
+                lease_lost.set()
                 return
 
     thread = Thread(target=_heartbeat_loop, daemon=True)
     thread.start()
-    return stop_event, thread
+    return stop_event, lease_lost, thread
 
 
 def run_single_job(
@@ -351,11 +391,6 @@ def run_single_job(
     if job is None:
         raise FileNotFoundError(job_id)
 
-    effective_payload = payload or {
-        "kind": job.payload_kind,
-        "path": job.payload_path,
-        **job.payload_meta,
-    }
     try:
         job = claim_ingestion_job(
             kb_path, job_id, worker_id="local-worker", lease_seconds=JOB_LEASE_SECONDS
@@ -365,16 +400,43 @@ def run_single_job(
         if current is None:
             raise FileNotFoundError(job_id)
         return current
-    stop_heartbeat, heartbeat_thread = _start_job_heartbeat(kb_path, job_id)
+    effective_payload = (
+        payload
+        if payload is not None
+        else {
+            "kind": job.payload_kind,
+            "path": job.payload_path,
+            **job.payload_meta,
+        }
+    )
+    stop_heartbeat, lease_lost, heartbeat_thread = _start_job_heartbeat(
+        kb_path, job_id, job.attempt_count
+    )
 
     try:
         if effective_payload.get("kind") == "upload":
-            return _run_upload_job(kb_path, job, effective_payload)
+            return _run_upload_job(kb_path, job, effective_payload, lease_lost)
         if effective_payload.get("kind") == "source-sync":
-            return _run_source_sync_job(kb_path, job, effective_payload)
-        return fail_ingestion_job(kb_path, job_id, "unknown job payload")
+            return _run_source_sync_job(kb_path, job, effective_payload, lease_lost)
+        raise ValueError("unknown job payload")
+    except JobClaimConflict:
+        return _current_job(kb_path, job_id)
     except Exception as exc:
-        return fail_ingestion_job(kb_path, job_id, str(exc))
+        try:
+            with ingestion_attempt(kb_path, job_id, job.attempt_count, lease_lost=lease_lost):
+                return fail_ingestion_job(
+                    kb_path, job_id, str(exc), attempt_count=job.attempt_count
+                )
+        except JobClaimConflict:
+            return _current_job(kb_path, job_id)
     finally:
         stop_heartbeat.set()
         heartbeat_thread.join(timeout=0.1)
+
+
+def _current_job(kb_path: Path, job_id: str) -> IngestionJob:
+    """失去尝试归属时返回持久化现状，不把冲突转成新尝试失败。"""
+    current = load_ingestion_job(kb_path, job_id)
+    if current is None:
+        raise FileNotFoundError(job_id)
+    return current

@@ -2564,7 +2564,7 @@ def test_review_approve_merges_module(cli_runner, initialized_kb):
     assert mod.title == "Review Test mod-ok"
 
 
-def test_review_approve_requires_multiple_approvals(cli_runner, initialized_kb):
+def test_review_approve_requires_multiple_approvals(cli_runner, initialized_kb, monkeypatch):
     """approve should not merge until required_approvals met."""
     kb = initialized_kb
     from knowledge_manager.schemas import Config, ReviewConfig
@@ -2575,6 +2575,7 @@ def test_review_approve_requires_multiple_approvals(cli_runner, initialized_kb):
     _save_config(kb, cfg)
 
     _stage_module(kb, "mod-needs2")
+    monkeypatch.setattr("knowledge_manager.cli._git_user_name", lambda path: "alice")
 
     # First approval
     result = cli_runner.invoke(cli, ["--kb-path", str(kb), "review", "approve", "mod-needs2"])
@@ -2586,11 +2587,43 @@ def test_review_approve_requires_multiple_approvals(cli_runner, initialized_kb):
 
     assert load_module("mod-needs2", "test", kb) is None
 
-    # Second approval
+    # Retrying the same review does not supply a second independent opinion.
+    result = cli_runner.invoke(cli, ["--kb-path", str(kb), "review", "approve", "mod-needs2"])
+    assert result.exit_code == 0
+    assert "1/2 approvals" in result.output
+    assert load_module("mod-needs2", "test", kb) is None
+
+    monkeypatch.setattr("knowledge_manager.cli._git_user_name", lambda path: "bob")
     result = cli_runner.invoke(cli, ["--kb-path", str(kb), "review", "approve", "mod-needs2"])
     assert result.exit_code == 0
     assert "Approved and merged" in result.output
     assert load_module("mod-needs2", "test", kb) is not None
+
+
+def test_interactive_review_obeys_threshold(cli_runner, initialized_kb):
+    from knowledge_manager.schemas import Config, ReviewConfig
+    from knowledge_manager.cli import _save_config
+    from knowledge_manager.storage import load_module, load_staging_meta
+
+    _save_config(initialized_kb, Config(review=ReviewConfig(required_approvals=2)))
+    _stage_module(initialized_kb, "interactive-threshold")
+    result = cli_runner.invoke(cli, ["--kb-path", str(initialized_kb), "review"], input="a\n")
+    assert result.exit_code == 0, result.output
+    assert load_module("interactive-threshold", "test", initialized_kb) is None
+    assert (
+        load_staging_meta("interactive-threshold", initialized_kb / ".staging").approval_count()
+        == 1
+    )
+
+
+def test_cli_review_retry_after_publish_is_idempotent(cli_runner, initialized_kb):
+    _stage_module(initialized_kb, "retry-published")
+    arguments = ["--kb-path", str(initialized_kb), "review", "approve", "retry-published"]
+    first = cli_runner.invoke(cli, arguments)
+    assert first.exit_code == 0, first.output
+    second = cli_runner.invoke(cli, arguments)
+    assert second.exit_code == 0, second.output
+    assert "already" in second.output.lower() or "merged" in second.output.lower()
 
 
 def test_review_approve_missing_module(cli_runner, initialized_kb):
@@ -3704,3 +3737,57 @@ def test_cli_worker_run_once_processes_queued_jobs(cli_runner, initialized_kb, m
     assert any(
         event["operation"] == "worker.run" and event["result"] == "success" for event in events
     )
+
+
+def test_review_views_count_only_current_content(cli_runner, initialized_kb):
+    from knowledge_manager.storage import review_staged_module, load_from_staging, save_to_staging
+
+    kb = initialized_kb
+    _stage_module(kb, "changed-draft")
+    staging = kb / ".staging"
+    review_staged_module(
+        "changed-draft", staging, kb, reviewer="alice", action="approved", required_approvals=2
+    )
+    module = load_from_staging("changed-draft", staging)
+    module.summary = "Edited summary must invalidate the displayed approvals"
+    save_to_staging(module, staging)
+    result = cli_runner.invoke(cli, ["--kb-path", str(kb), "review", "show", "changed-draft"])
+    assert result.exit_code == 0
+    assert "Approvals: 0" in result.output
+
+
+@pytest.mark.parametrize("action", ["a", "r"])
+@pytest.mark.parametrize("change", ["content", "round"])
+def test_interactive_review_refuses_changed_displayed_draft(
+    cli_runner, initialized_kb, monkeypatch, action, change
+):
+    from knowledge_manager.storage import (
+        load_from_staging,
+        save_to_staging,
+        load_staging_meta,
+        save_staging_meta,
+        load_module,
+    )
+
+    kb = initialized_kb
+    _stage_module(kb, "prompt-race")
+    staging = kb / ".staging"
+
+    def change_during_prompt(*args, **kwargs):
+        if change == "content":
+            module = load_from_staging("prompt-race", staging)
+            module.summary = "A concurrent edit not displayed to this reviewer"
+            save_to_staging(module, staging)
+        else:
+            meta = load_staging_meta("prompt-race", staging)
+            meta.review_round += 1
+            save_staging_meta(meta, staging)
+        return action
+
+    monkeypatch.setattr("knowledge_manager.cli.Prompt.ask", change_during_prompt)
+    result = cli_runner.invoke(cli, ["--kb-path", str(kb), "review"])
+    assert result.exit_code != 0
+    assert "review again" in result.output
+    assert load_from_staging("prompt-race", staging) is not None
+    assert load_module("prompt-race", "test", kb) is None
+    assert not load_staging_meta("prompt-race", staging).reviews

@@ -3,13 +3,17 @@ from __future__ import annotations
 from knowledge_manager.file_locks import serialized_write
 
 from datetime import datetime, timedelta, timezone
-import os
+from contextlib import contextmanager
 from pathlib import Path
+from threading import Event
+from typing import Any, Iterator
 from uuid import uuid4
 
 from knowledge_manager.materialized_views import invalidate_materialized_views
 from knowledge_manager.json_io import atomic_write_text
 from pydantic import BaseModel, Field
+
+from knowledge_manager.schemas import StoredDatetime
 
 
 class IngestionJob(BaseModel):
@@ -26,19 +30,52 @@ class IngestionJob(BaseModel):
     result_modules: list[dict] = Field(default_factory=list)
     worker_id: str = ""
     attempt_count: int = 0
-    lease_expires_at: datetime | None = None
-    heartbeat_at: datetime | None = None
+    lease_expires_at: StoredDatetime | None = None
+    heartbeat_at: StoredDatetime | None = None
     resume_cursor: str = ""
     pages_seen: int = 0
     modules_staged: int = 0
     modules_marked_stale: int = 0
     error: str = ""
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: StoredDatetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: StoredDatetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class JobClaimConflict(RuntimeError):
-    """Raised when a queued job cannot be claimed by this worker."""
+    """任务领取或执行尝试已失效，调用者必须停止提交。"""
+
+
+def _aware(value: datetime) -> datetime:
+    """兼容旧任务文件中的无时区时间，统一按UTC判断租约。"""
+    return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+
+
+def _require_attempt(kb_path: Path, job_id: str, attempt_count: int) -> IngestionJob:
+    """在持有知识库写锁时核对当前执行和有效租约。"""
+    job = load_ingestion_job(kb_path, job_id)
+    if job is None:
+        raise FileNotFoundError(job_id)
+    if (
+        job.status != "running"
+        or job.attempt_count != attempt_count
+        or job.lease_expires_at is None
+        or _aware(job.lease_expires_at) <= datetime.now(timezone.utc)
+    ):
+        raise JobClaimConflict(f"job {job_id} attempt {attempt_count} is no longer active")
+    return job
+
+
+@contextmanager
+def ingestion_attempt(
+    kb_path: Path, job_id: str, attempt_count: int, *, lease_lost: Event | None = None
+) -> Iterator[IngestionJob]:
+    """原子核对归属并提交本地结果；禁止在此上下文执行外部提取调用。"""
+    from knowledge_manager.file_locks import kb_write_lock
+
+    with kb_write_lock(kb_path):
+        if lease_lost is not None and lease_lost.is_set():
+            raise JobClaimConflict(f"job {job_id} heartbeat lost")
+        yield _require_attempt(kb_path, job_id, attempt_count)
 
 
 def _jobs_dir(kb_path: Path) -> Path:
@@ -124,6 +161,8 @@ def claim_ingestion_job(
         raise JobClaimConflict(f"job {job_id} is terminal")
     now = datetime.now(timezone.utc)
     lease = job.lease_expires_at
+    if job.status == "running" and lease is None:
+        raise JobClaimConflict(f"job {job_id} requires explicit recovery")
     if job.status == "running" and lease is not None:
         if lease.tzinfo is None:
             lease = lease.replace(tzinfo=timezone.utc)
@@ -138,7 +177,7 @@ def claim_ingestion_job(
                 "worker_id": worker_id,
                 "attempt_count": job.attempt_count + 1,
                 "heartbeat_at": now,
-                "lease_expires_at": now.replace(microsecond=0) + timedelta(seconds=lease_seconds),
+                "lease_expires_at": now + timedelta(seconds=lease_seconds),
             }
         ),
     )
@@ -149,13 +188,12 @@ def complete_ingestion_job(
     kb_path: Path,
     job_id: str,
     *,
+    attempt_count: int,
     pages_seen: int,
     modules_staged: int,
     modules_marked_stale: int = 0,
 ) -> IngestionJob:
-    job = load_ingestion_job(kb_path, job_id)
-    if job is None:
-        raise FileNotFoundError(job_id)
+    job = _require_attempt(kb_path, job_id, attempt_count)
     return _save_job(
         kb_path,
         job.model_copy(
@@ -174,10 +212,11 @@ def complete_ingestion_job(
 
 
 @serialized_write
-def fail_ingestion_job(kb_path: Path, job_id: str, error: str) -> IngestionJob:
-    job = load_ingestion_job(kb_path, job_id)
-    if job is None:
-        raise FileNotFoundError(job_id)
+def fail_ingestion_job(
+    kb_path: Path, job_id: str, error: str, *, attempt_count: int
+) -> IngestionJob:
+    """仅允许当前有效尝试记录失败，避免迟到异常覆盖接管者。"""
+    job = _require_attempt(kb_path, job_id, attempt_count)
     return _save_job(
         kb_path,
         job.model_copy(
@@ -194,11 +233,9 @@ def fail_ingestion_job(kb_path: Path, job_id: str, error: str) -> IngestionJob:
 
 @serialized_write
 def update_ingestion_checkpoint(
-    kb_path: Path, job_id: str, cursor: str, pages_seen: int
+    kb_path: Path, job_id: str, cursor: str, pages_seen: int, *, attempt_count: int
 ) -> IngestionJob:
-    job = load_ingestion_job(kb_path, job_id)
-    if job is None:
-        raise FileNotFoundError(job_id)
+    job = _require_attempt(kb_path, job_id, attempt_count)
     return _save_job(
         kb_path,
         job.model_copy(
@@ -212,9 +249,12 @@ def update_ingestion_checkpoint(
 
 @serialized_write
 def resume_ingestion_job(kb_path: Path, job_id: str) -> IngestionJob:
+    """显式人工重试失败或中断任务；已完成任务保持终态。"""
     job = load_ingestion_job(kb_path, job_id)
     if job is None:
         raise FileNotFoundError(job_id)
+    if job.status == "completed":
+        raise JobClaimConflict(f"job {job_id} is terminal")
     return _save_job(
         kb_path,
         job.model_copy(
@@ -230,6 +270,24 @@ def resume_ingestion_job(kb_path: Path, job_id: str) -> IngestionJob:
 
 
 @serialized_write
+def requeue_expired_ingestion_job(kb_path: Path, job_id: str, attempt_count: int) -> bool:
+    """重读并原子回收扫描到的过期尝试，避免覆盖新心跳或接管者。"""
+    job = load_ingestion_job(kb_path, job_id)
+    if (
+        job is None
+        or job.status != "running"
+        or job.attempt_count != attempt_count
+        or (
+            job.lease_expires_at is not None
+            and _aware(job.lease_expires_at) > datetime.now(timezone.utc)
+        )
+    ):
+        return False
+    resume_ingestion_job(kb_path, job_id)
+    return True
+
+
+@serialized_write
 def update_job_payload(
     kb_path: Path,
     job_id: str,
@@ -241,6 +299,8 @@ def update_job_payload(
     job = load_ingestion_job(kb_path, job_id)
     if job is None:
         raise FileNotFoundError(job_id)
+    if job.status != "queued":
+        raise JobClaimConflict(f"job {job_id} payload is already assigned")
     return _save_job(
         kb_path,
         job.model_copy(
@@ -254,40 +314,40 @@ def update_job_payload(
 
 
 @serialized_write
-def update_job_stage(kb_path: Path, job_id: str, stage: str) -> IngestionJob:
-    job = load_ingestion_job(kb_path, job_id)
-    if job is None:
-        raise FileNotFoundError(job_id)
-    updates = {"stage": stage}
-    if job.status == "running":
-        now = datetime.now(timezone.utc)
-        updates["heartbeat_at"] = now
-        updates["lease_expires_at"] = now.replace(microsecond=0) + timedelta(seconds=60)
+def update_job_stage(kb_path: Path, job_id: str, stage: str, *, attempt_count: int) -> IngestionJob:
+    """当前尝试更新阶段时同时续租。"""
+    job = _require_attempt(kb_path, job_id, attempt_count)
+    now = datetime.now(timezone.utc)
+    updates: dict[str, Any] = {
+        "stage": stage,
+        "heartbeat_at": now,
+        "lease_expires_at": now + timedelta(seconds=60),
+    }
     return _save_job(kb_path, job.model_copy(update=updates))
 
 
 @serialized_write
-def renew_ingestion_job_lease(kb_path: Path, job_id: str, lease_seconds: int = 60) -> IngestionJob:
-    job = load_ingestion_job(kb_path, job_id)
-    if job is None:
-        raise FileNotFoundError(job_id)
-    if job.status != "running":
-        return job
+def renew_ingestion_job_lease(
+    kb_path: Path, job_id: str, lease_seconds: int = 60, *, attempt_count: int
+) -> IngestionJob:
+    """续租不能复活已经到期或失去归属的执行。"""
+    job = _require_attempt(kb_path, job_id, attempt_count)
     now = datetime.now(timezone.utc)
     return _save_job(
         kb_path,
         job.model_copy(
             update={
                 "heartbeat_at": now,
-                "lease_expires_at": now.replace(microsecond=0) + timedelta(seconds=lease_seconds),
+                "lease_expires_at": now + timedelta(seconds=lease_seconds),
             }
         ),
     )
 
 
 @serialized_write
-def store_job_result_modules(kb_path: Path, job_id: str, modules: list[dict]) -> IngestionJob:
-    job = load_ingestion_job(kb_path, job_id)
-    if job is None:
-        raise FileNotFoundError(job_id)
+def store_job_result_modules(
+    kb_path: Path, job_id: str, modules: list[dict], *, attempt_count: int
+) -> IngestionJob:
+    """结果引用仅属于当前有效尝试。"""
+    job = _require_attempt(kb_path, job_id, attempt_count)
     return _save_job(kb_path, job.model_copy(update={"result_modules": modules}))

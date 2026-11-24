@@ -26,6 +26,7 @@ from knowledge_manager.storage import (
     approve_from_staging,
     delete_module,
     delete_staging_meta,
+    discard_staged_module,
     list_modules,
     list_staging,
     list_staging_meta,
@@ -34,7 +35,9 @@ from knowledge_manager.storage import (
     load_module,
     load_search_events,
     load_staging_meta,
+    module_content_version,
     rebuild_index,
+    review_staged_module,
     sanitize_config,
     save_index,
     save_module,
@@ -1275,7 +1278,7 @@ def review(ctx: click.Context) -> None:
     kb = ctx.obj["kb_path"]
     _require_kb(kb)
     staging = _staging_path(kb)
-    from knowledge_manager.storage import save_staging_meta
+    from knowledge_manager.file_locks import kb_write_lock
     from knowledge_manager.schemas import StagingMeta
 
     pending = list_staging(staging)
@@ -1284,14 +1287,21 @@ def review(ctx: click.Context) -> None:
         return
 
     for i, module in enumerate(pending, 1):
-        # Load or create metadata
-        meta = load_staging_meta(module.id, staging)
-        if meta is None:
-            meta = StagingMeta(module_id=module.id)
+        # 展示内容和轮次来自同一快照，等待输入期间不持有写锁。
+        with kb_write_lock(kb):
+            current = load_from_staging(module.id, staging)
+            if current is None:
+                continue
+            module = current
+            meta = load_staging_meta(module.id, staging) or StagingMeta(module_id=module.id)
+            displayed_version = module_content_version(module)
+            displayed_round = meta.review_round
 
         console.print(f"\n[bold cyan]Module {i}/{len(pending)}[/bold cyan]")
         if meta.status != "pending":
-            console.print(f"[dim]Status: {meta.status} ({meta.approval_count()} approval(s))[/dim]")
+            console.print(
+                f"[dim]Status: {meta.status} ({meta.approval_count(module_content_version(module))} approval(s))[/dim]"
+            )
         console.print(f"[bold]Category:[/bold] {module.category}")
         console.print(f"[bold]ID:[/bold] {module.id}")
         console.print(f"[bold]Title:[/bold] {module.title}")
@@ -1301,18 +1311,39 @@ def review(ctx: click.Context) -> None:
 
         action = Prompt.ask("Action", choices=["a", "r", "s"], default="a")
 
-        if action == "a":
-            meta.status = "approved"
-            save_staging_meta(meta, staging)
-            approve_from_staging(module.id, staging, kb)
-            delete_staging_meta(module.id, staging)
-            console.print("[green]Approved[/green]")
-        elif action == "r":
-            (staging / f"{module.id}.json").unlink()
-            delete_staging_meta(module.id, staging)
-            console.print("[red]Rejected[/red]")
-        else:
-            console.print("[yellow]Skipped[/yellow]")
+        try:
+            if action == "a":
+                outcome = review_staged_module(
+                    module.id,
+                    staging,
+                    kb,
+                    reviewer=_git_user_name(kb),
+                    action="approved",
+                    required_approvals=_load_config(kb).review.required_approvals,
+                    expected_content_version=displayed_version,
+                    expected_review_round=displayed_round,
+                )
+                if outcome["status"] == "merged":
+                    console.print("[green]Approved[/green]")
+                else:
+                    console.print(
+                        f"Approved: {module.id} ({outcome['approvals']}/{outcome['required']} approvals needed)"
+                    )
+            elif action == "r":
+                if discard_staged_module(
+                    module.id,
+                    staging,
+                    kb,
+                    expected_content_version=displayed_version,
+                    expected_review_round=displayed_round,
+                ):
+                    console.print("[red]Rejected[/red]")
+                else:
+                    console.print("[yellow]Already processed[/yellow]")
+            else:
+                console.print("[yellow]Skipped[/yellow]")
+        except ValueError as exc:
+            raise click.ClickException(str(exc)) from exc
 
     rebuild_index(kb)
 
@@ -1338,7 +1369,7 @@ def review_list(ctx: click.Context) -> None:
     for m in pending:
         meta = load_staging_meta(m.id, staging)
         status = meta.status if meta else "pending"
-        approvals = str(meta.approval_count()) if meta else "0"
+        approvals = str(meta.approval_count(module_content_version(m))) if meta else "0"
         submitted_by = meta.submitted_by if meta else "-"
         table.add_row(f"{m.category}/{m.id}", status, approvals, submitted_by)
     console.print(table)
@@ -1365,6 +1396,9 @@ def review_show(ctx: click.Context, module_id: str) -> None:
     console.print(f"[bold]Summary:[/bold] {module.summary}")
     if meta:
         console.print(f"[bold]Status:[/bold] {meta.status}")
+        console.print(
+            f"[bold]Approvals:[/bold] {meta.approval_count(module_content_version(module))}"
+        )
         console.print(f"[bold]Submitted by:[/bold] {meta.submitted_by or 'unknown'}")
         console.print(f"[bold]Submitted at:[/bold] {meta.submitted_at}")
         if meta.reviews:
@@ -1385,48 +1419,32 @@ def review_show(ctx: click.Context, module_id: str) -> None:
 @click.option("--comment", "-m", default="", help="Approval comment")
 @click.pass_context
 def review_approve(ctx: click.Context, module_id: str, comment: str) -> None:
-    """Approve a staged module for inclusion in the KB."""
+    """按当前内容版本记录独立审核意见，重试复用已发布结果。"""
     kb = ctx.obj["kb_path"]
     _require_kb(kb)
     staging = _staging_path(kb)
-    from knowledge_manager.schemas import ReviewRecord, StagingMeta
-
-    module = load_from_staging(module_id, staging)
-    if module is None:
+    reviewer = _git_user_name(kb)
+    try:
+        outcome = review_staged_module(
+            module_id,
+            staging,
+            kb,
+            reviewer=reviewer,
+            action="approved",
+            comment=comment,
+            required_approvals=_load_config(kb).review.required_approvals,
+        )
+    except FileNotFoundError:
         click.echo(f"Module not found in staging: {module_id}", err=True)
         raise click.Abort()
-
-    meta = load_staging_meta(module_id, staging)
-    if meta is None:
-        meta = StagingMeta(module_id=module_id)
-
-    meta.reviews.append(
-        ReviewRecord(reviewer=_git_user_name(kb), action="approved", comment=comment)
-    )
-    meta.status = "approved" if meta.approval_count() >= 1 else meta.status
-
-    cfg = _load_config(kb)
-    required = cfg.review.required_approvals
-    if meta.approval_count() >= required:
-        approve_from_staging(module_id, staging, kb)
-        delete_staging_meta(module_id, staging)
-        rebuild_index(kb)
-        from knowledge_manager.webhooks import emit_event
-
-        emit_event(
-            kb,
-            "review.approved",
-            module_id,
-            module.category,
-            {
-                "reviewer": meta.reviews[-1].reviewer if meta.reviews else "",
-                "approvals_count": meta.approval_count(),
-            },
-        )
-        click.echo(f"Approved and merged: {module_id} ({meta.approval_count()} approval(s))")
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    if outcome["status"] == "merged":
+        click.echo(f"Approved and merged: {module_id} ({outcome['approvals']} approval(s))")
     else:
-        save_staging_meta(meta, staging)
-        click.echo(f"Approved: {module_id} ({meta.approval_count()}/{required} approvals needed)")
+        click.echo(
+            f"Approved: {module_id} ({outcome['approvals']}/{outcome['required']} approvals needed)"
+        )
 
 
 @review.command("request-changes")
@@ -1434,26 +1452,28 @@ def review_approve(ctx: click.Context, module_id: str, comment: str) -> None:
 @click.option("--comment", "-m", required=True, help="Reason for changes requested")
 @click.pass_context
 def review_request_changes(ctx: click.Context, module_id: str, comment: str) -> None:
-    """Request changes on a staged module."""
+    """记录当前版本的修改意见并撤销该审核者此前的有效批准。"""
     kb = ctx.obj["kb_path"]
     _require_kb(kb)
     staging = _staging_path(kb)
-    from knowledge_manager.schemas import ReviewRecord, StagingMeta
-
-    module = load_from_staging(module_id, staging)
-    if module is None:
+    try:
+        outcome = review_staged_module(
+            module_id,
+            staging,
+            kb,
+            reviewer=_git_user_name(kb),
+            action="changes-requested",
+            comment=comment,
+            required_approvals=_load_config(kb).review.required_approvals,
+        )
+    except FileNotFoundError:
         click.echo(f"Module not found in staging: {module_id}", err=True)
         raise click.Abort()
-
-    meta = load_staging_meta(module_id, staging)
-    if meta is None:
-        meta = StagingMeta(module_id=module_id)
-
-    meta.reviews.append(
-        ReviewRecord(reviewer=_git_user_name(kb), action="changes-requested", comment=comment)
-    )
-    meta.status = "changes-requested"
-    save_staging_meta(meta, staging)
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    if outcome["status"] == "already-processed":
+        click.echo(f"Already processed: {module_id}")
+        return
     click.echo(f"Changes requested for {module_id}: {comment}")
 
 
@@ -1476,10 +1496,12 @@ def review_my_submissions(ctx: click.Context) -> None:
     table.add_column("Approvals")
     table.add_column("Submitted At")
     for meta in sorted(metas, key=lambda m: m.submitted_at, reverse=True):
+        staged = load_from_staging(meta.module_id, staging)
+        version = module_content_version(staged) if staged is not None else meta.published_version
         table.add_row(
             meta.module_id,
             meta.status,
-            str(meta.approval_count()),
+            str(meta.approval_count(version)),
             meta.submitted_at.strftime("%Y-%m-%d %H:%M"),
         )
     console.print(table)
@@ -3804,11 +3826,14 @@ def source_pull(ctx: click.Context, source_id: str) -> None:
     from knowledge_manager.audit import AuditEvent, log_audit_event
     from knowledge_manager.confluence import ConfluenceClient
     from knowledge_manager.ingestion_jobs import (
+        JobClaimConflict,
         claim_ingestion_job,
         complete_ingestion_job,
         create_ingestion_job,
         fail_ingestion_job,
+        ingestion_attempt,
     )
+    from knowledge_manager.job_worker import _start_job_heartbeat
     from knowledge_manager.notion import NotionClient
     from knowledge_manager.source_ingestion import (
         ingest_confluence_pages,
@@ -3842,7 +3867,10 @@ def source_pull(ctx: click.Context, source_id: str) -> None:
     llm_client = create_client(provider_name, provider_cfg)
     extractor = Extractor(llm_client, cfg.extraction)
     job = create_ingestion_job(kb, source_id=source_id, trigger="manual")
-    claim_ingestion_job(kb, job.job_id, worker_id="cli")
+    job = claim_ingestion_job(kb, job.job_id, worker_id="cli")
+    stop_heartbeat, lease_lost, heartbeat_thread = _start_job_heartbeat(
+        kb, job.job_id, job.attempt_count
+    )
 
     async def _run_pull() -> tuple[int, int, int]:
         last_error: Exception | None = None
@@ -3880,15 +3908,39 @@ def source_pull(ctx: click.Context, source_id: str) -> None:
             raise last_error
 
         summary = await ingest_confluence_pages(
-            source_def, pages, kb, extractor, next_cursor=next_cursor
+            source_def,
+            pages,
+            kb,
+            extractor,
+            next_cursor=next_cursor,
+            job_id=job.job_id,
+            attempt_count=job.attempt_count,
+            lease_lost=lease_lost,
         )
         return summary.pages_seen, summary.modules_staged, summary.modules_marked_stale
 
     try:
         pages_seen, modules_staged, modules_marked_stale = asyncio.run(_run_pull())
+        with ingestion_attempt(kb, job.job_id, job.attempt_count, lease_lost=lease_lost):
+            complete_ingestion_job(
+                kb,
+                job.job_id,
+                attempt_count=job.attempt_count,
+                pages_seen=pages_seen,
+                modules_staged=modules_staged,
+                modules_marked_stale=modules_marked_stale,
+            )
+    except JobClaimConflict as exc:
+        raise click.ClickException(f"Source pull attempt is no longer active: {exc}") from exc
     except Exception as exc:
-        fail_ingestion_job(kb, job.job_id, str(exc))
-        record_source_sync_error(source_id, str(exc), kb)
+        try:
+            with ingestion_attempt(kb, job.job_id, job.attempt_count, lease_lost=lease_lost):
+                fail_ingestion_job(kb, job.job_id, str(exc), attempt_count=job.attempt_count)
+                record_source_sync_error(source_id, str(exc), kb)
+        except JobClaimConflict as conflict:
+            raise click.ClickException(
+                f"Source pull attempt is no longer active: {conflict}"
+            ) from conflict
         log_audit_event(
             kb,
             AuditEvent(
@@ -3901,13 +3953,9 @@ def source_pull(ctx: click.Context, source_id: str) -> None:
         )
         click.echo(f"Error: source pull failed: {exc}", err=True)
         raise click.Abort()
-    complete_ingestion_job(
-        kb,
-        job.job_id,
-        pages_seen=pages_seen,
-        modules_staged=modules_staged,
-        modules_marked_stale=modules_marked_stale,
-    )
+    finally:
+        stop_heartbeat.set()
+        heartbeat_thread.join(timeout=1.0)
     log_audit_event(
         kb,
         AuditEvent(

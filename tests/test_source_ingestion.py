@@ -85,6 +85,36 @@ class FakeExtractor:
         ]
 
 
+async def test_source_attempt_lost_during_extract_preserves_local_state(tmp_path):
+    """提取在锁外进行，但接管后旧尝试不得写来源状态和staging。"""
+    import pytest
+    from knowledge_manager.ingestion_jobs import claim_ingestion_job, JobClaimConflict
+
+    source = _make_source()
+    upsert_source(source, tmp_path)
+    registry_before = _registry_path(tmp_path).read_bytes()
+    job = create_ingestion_job(tmp_path, source.id, "manual")
+    claimed = claim_ingestion_job(tmp_path, job.job_id, "old")
+
+    class TakingOverExtractor(FakeExtractor):
+        async def extract(self, *args):
+            resume_ingestion_job(tmp_path, job.job_id)
+            claim_ingestion_job(tmp_path, job.job_id, "new")
+            return await super().extract(*args)
+
+    with pytest.raises(JobClaimConflict):
+        await ingest_confluence_pages(
+            source,
+            [_make_page()],
+            tmp_path,
+            TakingOverExtractor(),
+            job_id=job.job_id,
+            attempt_count=claimed.attempt_count,
+        )
+    assert _registry_path(tmp_path).read_bytes() == registry_before
+    assert not list((tmp_path / ".staging").glob("**/*.json"))
+
+
 def test_source_registry_round_trip(tmp_path):
     kb_path = tmp_path / "kb"
     synced_at = datetime(2026, 6, 11, 14, 30, tzinfo=timezone.utc)
@@ -209,7 +239,12 @@ def test_ingestion_job_checkpoint_round_trip(tmp_path):
     kb_path.mkdir()
 
     job = create_ingestion_job(kb_path, source_id="team-docs", trigger="manual")
-    update_ingestion_checkpoint(kb_path, job.job_id, cursor="cursor-2", pages_seen=10)
+    from knowledge_manager.ingestion_jobs import claim_ingestion_job
+
+    claimed = claim_ingestion_job(kb_path, job.job_id, "worker")
+    update_ingestion_checkpoint(
+        kb_path, job.job_id, cursor="cursor-2", pages_seen=10, attempt_count=claimed.attempt_count
+    )
     resumed = resume_ingestion_job(kb_path, job.job_id)
 
     assert resumed.resume_cursor == "cursor-2"
