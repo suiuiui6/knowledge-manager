@@ -1,8 +1,41 @@
 # 代码质量与工程可靠性修复记录
 
-日期：2026-11-23。状态：产品修复及本地适用验证完成；保留旧运行时兼容问题，不作为上线验收。
+创建：2026-11-23；更新：2026-11-24。状态：产品修复已提交到 PR #4；日期兼容补丁已通过本地原失败运行时，等待最终版本矩阵和远端检查后合并 main。不作为上线验收。
 
 范围仅为代码质量、业务一致性和工程验证，不涉及网安。基准为 `86144a18405160bc176ee4dfe2c3fc62ededce63`，修改位于独立克隆 `tmp/github-quality-review-20261123`，未改动其他工作副本。用户授权使用子 Agent 实施，并在本地验证后授权提交到 GitHub；下述未提交记录描述验证时状态，实际提交以包含本报告的 Git 提交为准。没有部署。
+
+
+## 2026-11-24：main 交付与 CI 退出修复
+
+用户已授权提交 GitHub 并合并 main。初始修复提交为 `7d728ff670f6633138208a61e02115bdabe0a4d3`，推送至 `codex/code-quality-remediation-20261123`，PR #4。直接推送 main 被现有保护规则拒绝；继续使用正常 PR 流程，没有绕过保护。
+
+远端 PR CI `45178618420` 在 Ubuntu Python 3.12.16 上 908 项断言通过后发生退出段错误（139），该轮失败。3.10、wheel、Black、mypy、公开目录及可靠性证据通过。检查还确认保护要求 `Ubuntu tests` 和 `public-surface`，管理员同样受约束；矩阵改名后缺少前者，因此新增同名汇总 job，要求两个测试版本、安装和质量 job 全部 success，失败、跳过及取消均不能放行。未修改分支保护。
+
+对照表明 Pydantic JSON 日期解析产生的原生 `TzInfo` 可保留在长寿命模型中。原 Python 3.12.8 六文件组合 463 项通过后崩溃；仅替换时区表示的隔离副本同组合 463 项通过并退出 0。生产补丁使用显式 `StoredDatetime` 注解，在 schemas 日期字段和任务四个日期字段校验后转为标准库固定时区，保留时间点、偏移、旧 naive 行为和既有 ZoneInfo/fold；未升级依赖、关闭 GC 或修改测试退出判定。不扩展到所有应用模型（例如 memory.py 仍沿用原注解）。
+
+原生时区生命周期是有项目对照证据的触发因素，尚无本地 native 栈证明具体析构函数；上游 PyO3 #6110 / Pydantic #12867 是关联解释，精确上游 MRE 在本地退出 0。新增子进程测试保留模型到退出并检查实际状态，但其 RED 来自时区合同断言，不能声称单独稳定复现原崩溃。
+
+当前补丁证据：
+
+| 检查 | 结果与证据 |
+| --- | --- |
+| 原失败 Python 3.12.8 全套 | 931 passed，10 warnings，真实退出 0；`review-timezone-full-py3128.log`、`test-results/tz-full-py3128.exit.txt`。其后新增18项日期用例另由下行覆盖 |
+| 最终 schema 合同及子进程退出 | 65 passed，退出 0；`review-timezone-schema-final.log`、`test-results/tz-final-schema.exit.txt` |
+| 最终 Python 3.10 全套 | 运行中，结果待补，不引用历史通过数代替 |
+| Black / mypy / 公开目录 / diff | 134 文件格式、61 源文件类型、公开目录及 diff 检查均退出 0 |
+| 锁文件 | `poetry check --lock` 退出 0；`review-timezone-lock.log`。SHA256 未变化，见下文 |
+| 真实 CLI / 图关系 / 任务恢复 | 退出 0、ok=true；`test-results/timezone-engineering-behavior/report.json`；恢复记录 failed→completed、attempt=2、输入保留及 staging 校验通过 |
+
+复跑命令：
+
+```text
+.venv/Scripts/python.exe -X faulthandler -m pytest -q --basetemp=tmp/tz-full-py3128 --junitxml=test-results/tz-full-py3128.xml
+.venv/Scripts/python.exe -X faulthandler -m pytest -q tests/test_schemas.py --basetemp=tmp/tz-final-schema
+tmp/py310-env/Scripts/python.exe -X faulthandler -m pytest -q --basetemp=tmp/tz-full-py310 --junitxml=test-results/tz-full-py310.xml
+.venv/Scripts/python.exe scripts/verify_engineering_behavior.py --output-dir test-results/timezone-engineering-behavior
+```
+
+适用验证技能已核对三份 feature map 并补充日期兼容范围；真实行为及完整回归覆盖其消费者。没有改变任务并发合同，既有TLC证据范围仍适用。Windows 仍仅 audit-only-windows。未部署；完整容量矩阵和上线人工复核未执行。下文是 11-23 初始提交前的历史验证记录，历史失败与未提交状态保留，不代表当前 PR 状态。
 
 ## 已实施
 
@@ -20,7 +53,7 @@
 
 保留文件型单节点架构。旧任务缺少租约时先明确恢复，再重新领取；已完成任务拒绝恢复和迟到失败。旧审核意见可以读取，未绑定当前版本的意见不计入新批准。没有新增自动重试次数上限，也不承诺外部提取调用恰好一次。
 
-## 当前证据
+## 初始补丁历史证据（2026-11-23）
 
 本报告提到的根目录日志、`tmp/` 与 `test-results/` 为本地验证证据，不随产品提交上传；结果摘要与可复跑脚本随仓库保留。
 
@@ -68,7 +101,7 @@ stateDiagram-v2
 
 复跑通过项目技能 `.agents/skills/verify-ingestion-model/SKILL.md` 调用 `$statechart`，以 `verification/ingestion/Attempts.tla --view verification/ingestion/view.mjs --out <新的证据目录>` 执行，运行时按 `$statechart` 当前主机配置解析。真实行为入口为 `.agents/skills/verify-engineering-behavior/SKILL.md`，不需要外部 LLM 服务，恢复演练采用确定的故障注入。
 
-## 未决与交接
+## 初始补丁历史未决与交接
 
 - Python 3.12.8 的解释器最终清理崩溃仍未定位到具体组件，保留真实失败；不承诺该旧环境可用。
 - Python 3.10.20 锁定安装及完整回归退出 0；Python 3.12.13 最终完整回归退出 0。远端 Ubuntu CI 未运行，分支保护未核验。
@@ -76,7 +109,7 @@ stateDiagram-v2
 - 未运行完整 XS/S/M 性能矩阵；局部性能测试不代表整体容量或上线验收。
 - 未提交、推送或部署，不宣称达到上线条件。
 
-## 最终快照与复跑
+## 初始补丁快照与复跑
 
 产品代码最后变更为交互审核快照核对。其后 Black 134 文件、mypy 61 文件、锁文件及 diff 检查均退出 0，见 `test-results/final-quality-exits.txt`；公开分发目录检查 `python -B tools/check_public_surface.py` 退出 0，见 `review-final-public-surface.log`。
 

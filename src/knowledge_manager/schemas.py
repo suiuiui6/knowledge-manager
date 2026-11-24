@@ -1,9 +1,21 @@
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Tuple
+from typing import Annotated, Any, Dict, List, Literal, Optional, Tuple
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, field_validator, model_validator
+
+
+def _stdlib_datetime(value: datetime) -> datetime:
+    """解析边界使用标准库固定时区，避免长寿命模型保留原生时区对象。"""
+    if type(value.tzinfo).__module__.startswith("pydantic_core"):
+        offset = value.utcoffset()
+        if offset is not None:
+            return value.replace(tzinfo=timezone(offset))
+    return value
+
+
+StoredDatetime = Annotated[datetime, AfterValidator(_stdlib_datetime)]
 
 
 def utc_now() -> datetime:
@@ -32,7 +44,7 @@ class SourceDocumentRef(BaseModel):
     url: str = ""
     version: str = ""
     checksum: str = ""
-    fetched_at: datetime = Field(default_factory=utc_now)
+    fetched_at: StoredDatetime = Field(default_factory=utc_now)
 
     @field_validator("fetched_at", mode="after")
     @classmethod
@@ -81,7 +93,7 @@ class SourceSyncState(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     last_cursor: str = ""
-    last_synced_at: Optional[datetime] = None
+    last_synced_at: Optional[StoredDatetime] = None
     last_error: str = ""
     page_versions: Dict[str, str] = Field(default_factory=dict)
 
@@ -144,11 +156,11 @@ class ModuleMetadata(BaseModel):
     source_spans: List[SourceSpan] = Field(default_factory=list)
     extraction_run_id: str = ""
     reviewed_by: str = ""
-    reviewed_at: Optional[datetime] = None
+    reviewed_at: Optional[StoredDatetime] = None
     stale_due_to_source_change: bool = False
     supersedes: List[str] = Field(default_factory=list)
     derived_from: List[str] = Field(default_factory=list)
-    expires_at: Optional[datetime] = None
+    expires_at: Optional[StoredDatetime] = None
     review_interval_days: Optional[int] = None
     status: Literal["draft", "reviewed", "published", "deprecated", "archived"] = "published"
 
@@ -163,8 +175,8 @@ class Module(BaseModel):
     category: str
     title: str = Field(..., min_length=5)
     summary: str = Field(..., min_length=10, max_length=500)
-    created_at: datetime = Field(default_factory=utc_now)
-    updated_at: datetime = Field(default_factory=utc_now)
+    created_at: StoredDatetime = Field(default_factory=utc_now)
+    updated_at: StoredDatetime = Field(default_factory=utc_now)
     content: ModuleContent
     metadata: ModuleMetadata = Field(default_factory=ModuleMetadata)
 
@@ -230,7 +242,7 @@ class IndexStats(BaseModel):
     total_modules: int = 0
     total_words: int = 0
     categories: int = 0
-    last_updated: datetime = Field(default_factory=utc_now)
+    last_updated: StoredDatetime = Field(default_factory=utc_now)
 
 
 class Index(BaseModel):
@@ -239,7 +251,7 @@ class Index(BaseModel):
     categories: Dict[str, IndexCategory] = Field(default_factory=dict)
     graph: Dict[str, List[str]] = Field(default_factory=dict)
     stats: IndexStats = Field(default_factory=IndexStats)
-    updated_at: datetime = Field(default_factory=utc_now)
+    updated_at: StoredDatetime = Field(default_factory=utc_now)
     tree: Optional[Any] = None
 
     def add_module(self, module: Module) -> None:
@@ -335,7 +347,7 @@ class ReviewRecord(BaseModel):
     reviewer: str
     action: Literal["approved", "changes-requested"]
     comment: str = ""
-    timestamp: datetime = Field(default_factory=utc_now)
+    timestamp: StoredDatetime = Field(default_factory=utc_now)
     content_version: str = ""
     review_round: int = 0
 
@@ -344,7 +356,7 @@ class StagingMeta(BaseModel):
     module_id: str
     status: Literal["pending", "approved", "changes-requested"] = "pending"
     submitted_by: str = ""
-    submitted_at: datetime = Field(default_factory=utc_now)
+    submitted_at: StoredDatetime = Field(default_factory=utc_now)
     reviews: List[ReviewRecord] = Field(default_factory=list)
     content_version: str = ""
     published_version: str = ""
@@ -503,7 +515,7 @@ class ModuleHealth(BaseModel):
     status: str
     score: HealthScore = Field(default_factory=HealthScore)
     issues: List[str] = Field(default_factory=list)  # "zombie", "stale", "expired", "incomplete"
-    last_load: Optional[datetime] = None
+    last_load: Optional[StoredDatetime] = None
     load_count_30d: int = 0
     days_since_update: int = 0
 
@@ -516,7 +528,7 @@ class CategoryHealth(BaseModel):
 
 
 class KBHealthReport(BaseModel):
-    generated_at: datetime = Field(default_factory=utc_now)
+    generated_at: StoredDatetime = Field(default_factory=utc_now)
     total_modules: int = 0
     total_categories: int = 0
     overall_score: float = 0.0
@@ -621,7 +633,7 @@ class Recommendation(BaseModel):
 
 
 class RecommendationReport(BaseModel):
-    generated_at: datetime = Field(default_factory=utc_now)
+    generated_at: StoredDatetime = Field(default_factory=utc_now)
     archive_candidates: List[Recommendation] = Field(default_factory=list)
     enrichment_needed: List[Recommendation] = Field(default_factory=list)
     suggested_links: List[Recommendation] = Field(default_factory=list)
@@ -631,7 +643,7 @@ class RecommendationReport(BaseModel):
 class SourceBacklogEntry(BaseModel):
     source_id: str
     source_type: str = ""
-    last_synced_at: Optional[datetime] = None
+    last_synced_at: Optional[StoredDatetime] = None
     tracked_pages: int = 0
     stale_module_count: int = 0
     sync_error: str = ""
@@ -650,7 +662,7 @@ class PolicySuppressedModule(BaseModel):
 
 
 class OpsReport(BaseModel):
-    generated_at: datetime = Field(default_factory=utc_now)
+    generated_at: StoredDatetime = Field(default_factory=utc_now)
     source_backlog: List[SourceBacklogEntry] = Field(default_factory=list)
     lifecycle_backlog: LifecycleBacklog = Field(default_factory=LifecycleBacklog)
     policy_suppressed_modules: List[PolicySuppressedModule] = Field(default_factory=list)
@@ -698,7 +710,7 @@ class WebhookEndpoint(BaseModel):
 
 class WebhookEvent(BaseModel):
     event: str  # "module.created", "module.deprecated", etc.
-    timestamp: datetime = Field(default_factory=utc_now)
+    timestamp: StoredDatetime = Field(default_factory=utc_now)
     kb_path: str = ""
     kb_name: str = ""
     module_id: str = ""
@@ -726,14 +738,14 @@ class MarketplaceModule(BaseModel):
     downloads: int = 0
     rating: float = 0.0
     ratings_count: int = 0
-    updated_at: datetime = Field(default_factory=utc_now)
+    updated_at: StoredDatetime = Field(default_factory=utc_now)
     dependencies: List[str] = Field(default_factory=list)
 
 
 class MarketplaceIndex(BaseModel):
     version: str = "1.0"
     modules: Dict[str, MarketplaceModule] = Field(default_factory=dict)
-    last_updated: datetime = Field(default_factory=utc_now)
+    last_updated: StoredDatetime = Field(default_factory=utc_now)
 
 
 class InstallPlan(BaseModel):

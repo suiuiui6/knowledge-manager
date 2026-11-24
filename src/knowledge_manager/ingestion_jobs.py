@@ -13,6 +13,8 @@ from knowledge_manager.materialized_views import invalidate_materialized_views
 from knowledge_manager.json_io import atomic_write_text
 from pydantic import BaseModel, Field
 
+from knowledge_manager.schemas import StoredDatetime
+
 
 class IngestionJob(BaseModel):
     job_id: str
@@ -28,15 +30,15 @@ class IngestionJob(BaseModel):
     result_modules: list[dict] = Field(default_factory=list)
     worker_id: str = ""
     attempt_count: int = 0
-    lease_expires_at: datetime | None = None
-    heartbeat_at: datetime | None = None
+    lease_expires_at: StoredDatetime | None = None
+    heartbeat_at: StoredDatetime | None = None
     resume_cursor: str = ""
     pages_seen: int = 0
     modules_staged: int = 0
     modules_marked_stale: int = 0
     error: str = ""
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: StoredDatetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: StoredDatetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class JobClaimConflict(RuntimeError):

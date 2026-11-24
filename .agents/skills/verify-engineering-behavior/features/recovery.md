@@ -15,3 +15,5 @@ The helper runs scripts/run_ingestion_recovery_drill.py in an empty isolated KB.
 ## Gotchas
 
 The recovery drill deliberately replaces the external extraction provider. It does not prove network behavior, liveness under a stopped worker or exactly-once external execution. An empty KB is mandatory; never point the drill at user data.
+
+Task JSON timestamps share the schemas' standard-library fixed-offset boundary. Offset preservation is covered in `tests/test_schemas.py`; old naive leases still use UTC comparison. Include that suite with ingestion/reliability/worker tests when changing timestamp validation.
